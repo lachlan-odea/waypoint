@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Designer, Project } from "../types";
+import { Avatar } from "./Avatar";
 import { writeDraggedProjectId } from "../dnd";
 
 type Props = {
@@ -46,11 +47,7 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
       {!compact && <p className="card-client">{project.client}</p>}
       <div className="card-row card-foot">
         <span className="card-brand">{project.brand}</span>
-        {assignee && (
-          <span className="card-assignee" style={{ background: assignee.color }} title={assignee.name}>
-            {assignee.initials}
-          </span>
-        )}
+        {assignee && <Avatar designer={assignee} className="card-assignee" />}
       </div>
       {project.milestones.length > 0 && (
         <div className="card-progress">

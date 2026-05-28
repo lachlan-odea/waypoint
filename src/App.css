@@ -172,6 +172,18 @@ textarea {
   font-weight: 700;
   flex: 0 0 auto;
 }
+.dot-avatar.has-image,
+.card-assignee.has-image {
+  overflow: hidden;
+  background: transparent;
+}
+.dot-avatar.has-image img,
+.card-assignee.has-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .designer-name {
   font-size: 14px;
   white-space: nowrap;

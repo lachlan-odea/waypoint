@@ -17,6 +17,7 @@ import { SettingsModal } from "./components/SettingsModal";
 import { Analytics } from "./components/Analytics";
 import { Login } from "./components/Login";
 import { ChangePinModal } from "./components/ChangePinModal";
+import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
 import "./App.css";
 
@@ -383,9 +384,7 @@ export default function App() {
                       {...dropHandlers(d.id)}
                     >
                       <header className="team-col-head">
-                        <span className="dot-avatar" style={{ background: d.color }}>
-                          {d.initials}
-                        </span>
+                        <Avatar designer={d} />
                         <div>
                           <div className="team-col-name">{d.name}</div>
                           <div className="muted small">

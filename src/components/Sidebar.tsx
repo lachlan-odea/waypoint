@@ -1,4 +1,5 @@
 import type { Designer } from "../types";
+import { Avatar } from "./Avatar";
 
 export type SidebarView = "workspace" | "analytics";
 
@@ -35,13 +36,7 @@ export function Sidebar({
       </div>
 
       <div className="sidebar-user">
-        <span
-          className="dot-avatar"
-          style={{ background: currentDesigner.color }}
-          title={currentDesigner.name}
-        >
-          {currentDesigner.initials}
-        </span>
+        <Avatar designer={currentDesigner} />
         {!collapsed && (
           <div className="sidebar-user-info">
             <div className="sidebar-user-name">{currentDesigner.name}</div>

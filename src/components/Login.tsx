@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Designer } from "../types";
+import { Avatar } from "./Avatar";
 
 type Props = {
   designers: Designer[];
@@ -53,12 +54,7 @@ export function Login({ designers, onLogin }: Props) {
                     setError(null);
                   }}
                 >
-                  <span
-                    className="dot-avatar login-avatar"
-                    style={{ background: d.color }}
-                  >
-                    {d.initials}
-                  </span>
+                  <Avatar designer={d} className="dot-avatar login-avatar" />
                   <span className="login-name">{d.name}</span>
                 </button>
               ))}
@@ -70,12 +66,7 @@ export function Login({ designers, onLogin }: Props) {
               ← back
             </button>
             <div className="login-selected">
-              <span
-                className="dot-avatar login-avatar lg"
-                style={{ background: selected.color }}
-              >
-                {selected.initials}
-              </span>
+              <Avatar designer={selected} className="dot-avatar login-avatar lg" />
               <h1 className="login-title">{selected.name}</h1>
               <p className="muted">Enter your 4-digit PIN.</p>
             </div>

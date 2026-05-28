@@ -6,6 +6,7 @@ export type Designer = {
   initials: string;
   color: string;
   pin: string;
+  avatar?: string;
 };
 
 export type Milestone = {

@@ -1,17 +1,26 @@
 import type { Workspace } from "./types";
+import avatarJess from "./assets/Jessica Duguid-162x162.jpg";
+import avatarOliver from "./assets/Oliver Braun-162x162.jpg";
+import avatarBen from "./assets/Ben Marin-162x162.jpg";
+import avatarKaren from "./assets/Karen DeLara-162x162.jpg";
+import avatarAttreyee from "./assets/Attreyee Ghosh- 162x162.jpg";
+import avatarRachel from "./assets/Rachel Tse-162x162.jpg";
+import avatarDanielle from "./assets/Danielle Clarke- 162x162.jpg";
+import avatarHeather from "./assets/Heather Cipullo- 162x162.jpg";
+import avatarPatrice from "./assets/Patrice Roarke- 162x162.jpg";
 
 export const seedWorkspace: Workspace = {
   currentDesignerId: "d-jess",
   designers: [
-    { id: "d-jess", name: "Jess Duguid", initials: "JD", color: "#7c5cff", pin: "1001" },
-    { id: "d-oliver", name: "Oliver Braun", initials: "OB", color: "#ff7a59", pin: "1002" },
-    { id: "d-ben", name: "Ben Marin", initials: "BM", color: "#22b8a6", pin: "1003" },
-    { id: "d-karen", name: "Karen De Lara", initials: "KD", color: "#f2c94c", pin: "1004" },
-    { id: "d-attreyee", name: "Attreyee Ghosh", initials: "AG", color: "#3b82f6", pin: "1005" },
-    { id: "d-rachel", name: "Rachel Tse", initials: "RT", color: "#ec4899", pin: "1006" },
-    { id: "d-danielle", name: "Danielle Clark", initials: "DC", color: "#10b981", pin: "1007" },
-    { id: "d-heather", name: "Heather Cipullo", initials: "HC", color: "#f97316", pin: "1008" },
-    { id: "d-patrice", name: "Patrice Roarke", initials: "PR", color: "#8b5cf6", pin: "1009" },
+    { id: "d-jess", name: "Jess Duguid", initials: "JD", color: "#7c5cff", pin: "1001", avatar: avatarJess },
+    { id: "d-oliver", name: "Oliver Braun", initials: "OB", color: "#ff7a59", pin: "1002", avatar: avatarOliver },
+    { id: "d-ben", name: "Ben Marin", initials: "BM", color: "#22b8a6", pin: "1003", avatar: avatarBen },
+    { id: "d-karen", name: "Karen De Lara", initials: "KD", color: "#f2c94c", pin: "1004", avatar: avatarKaren },
+    { id: "d-attreyee", name: "Attreyee Ghosh", initials: "AG", color: "#3b82f6", pin: "1005", avatar: avatarAttreyee },
+    { id: "d-rachel", name: "Rachel Tse", initials: "RT", color: "#ec4899", pin: "1006", avatar: avatarRachel },
+    { id: "d-danielle", name: "Danielle Clarke", initials: "DC", color: "#10b981", pin: "1007", avatar: avatarDanielle },
+    { id: "d-heather", name: "Heather Cipullo", initials: "HC", color: "#f97316", pin: "1008", avatar: avatarHeather },
+    { id: "d-patrice", name: "Patrice Roarke", initials: "PR", color: "#8b5cf6", pin: "1009", avatar: avatarPatrice },
   ],
   projects: [
     {
