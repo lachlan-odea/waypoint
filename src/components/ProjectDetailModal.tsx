@@ -10,6 +10,7 @@ import { BRANDS } from "../constants";
 import { ContentTypeField } from "./ContentTypeField";
 import { LinkifiedText } from "./LinkifiedText";
 import { findMentionedDesigners, findNewMentions } from "../mentions";
+import { Avatar } from "./Avatar";
 
 type Props = {
   project: Project;
@@ -520,20 +521,32 @@ export function ProjectDetailModal({
                 }
               />
             </Field>
-            <Field label="Assignee">
-              <select
-                value={project.assigneeId ?? ""}
-                onChange={(e) =>
-                  onChange((p) => ({ ...p, assigneeId: e.target.value || null }))
-                }
-              >
-                <option value="">Unassigned</option>
-                {designers.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+            <Field label="Assignees">
+              <div className="assignee-picker">
+                {designers.map((d) => {
+                  const active = project.assigneeIds.includes(d.id);
+                  return (
+                    <button
+                      type="button"
+                      key={d.id}
+                      className={`assignee-chip ${active ? "active" : ""}`}
+                      onClick={() => {
+                        const next = active
+                          ? project.assigneeIds.filter((id) => id !== d.id)
+                          : [...project.assigneeIds, d.id];
+                        onChange((p) => ({ ...p, assigneeIds: next }));
+                      }}
+                      title={active ? `Remove ${d.name}` : `Add ${d.name}`}
+                    >
+                      <Avatar
+                        designer={d}
+                        className="dot-avatar assignee-chip-avatar"
+                      />
+                      <span>{d.name.split(" ")[0]}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </Field>
             <Field label="Review">
               {project.flaggedForReview ? (

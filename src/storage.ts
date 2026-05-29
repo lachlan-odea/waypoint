@@ -23,10 +23,13 @@ function withFreshAvatars(ws: Workspace): Workspace {
     //  - `reviewerId` → `flaggedForReview: true` (per-reviewer field replaced
     //     by a shared boolean).
     //  - `productArea` → `contentType` (field renamed).
+    //  - `assigneeId: string | null` → `assigneeIds: string[]` (a project can
+    //     now have multiple assignees).
     projects: ws.projects.map((p) => {
       const legacy = p as Project & {
         reviewerId?: string | null;
         productArea?: string;
+        assigneeId?: string | null;
       };
       let next: Project = p;
       if (legacy.reviewerId && next.flaggedForReview === undefined) {
@@ -38,6 +41,15 @@ function withFreshAvatars(ws: Workspace): Workspace {
           productArea?: string;
         };
         next = { ...rest, contentType: legacy.productArea };
+      }
+      if (!Array.isArray((next as { assigneeIds?: unknown }).assigneeIds)) {
+        const { assigneeId, ...rest } = next as Project & {
+          assigneeId?: string | null;
+        };
+        next = {
+          ...rest,
+          assigneeIds: assigneeId ? [assigneeId] : [],
+        };
       }
       return next;
     }),

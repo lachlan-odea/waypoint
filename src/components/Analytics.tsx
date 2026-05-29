@@ -47,8 +47,13 @@ function commencedDate(p: Project): string {
 }
 
 function toCsv(projects: Project[], designers: Designer[]): string {
-  const designerName = (id: string | null) =>
-    id ? designers.find((d) => d.id === id)?.name ?? "" : "Unassigned";
+  const designerNames = (ids: string[]) =>
+    ids.length === 0
+      ? "Unassigned"
+      : ids
+          .map((id) => designers.find((d) => d.id === id)?.name ?? "")
+          .filter(Boolean)
+          .join("; ");
   const header = [
     "id",
     "title",
@@ -56,7 +61,7 @@ function toCsv(projects: Project[], designers: Designer[]): string {
     "client",
     "brand",
     "contentType",
-    "assignee",
+    "assignees",
     "dueDate",
     "commencedDate",
     "milestonesTotal",
@@ -71,7 +76,7 @@ function toCsv(projects: Project[], designers: Designer[]): string {
     p.client,
     p.brand,
     p.contentType,
-    designerName(p.assigneeId),
+    designerNames(p.assigneeIds),
     p.dueDate,
     commencedDate(p),
     p.milestones.length,
@@ -143,10 +148,10 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
       .map((d) => ({
         label: d.name,
         color: d.color,
-        count: filtered.filter((p) => p.assigneeId === d.id).length,
+        count: filtered.filter((p) => p.assigneeIds.includes(d.id)).length,
       }))
       .sort((a, b) => b.count - a.count);
-    const unassigned = filtered.filter((p) => !p.assigneeId).length;
+    const unassigned = filtered.filter((p) => p.assigneeIds.length === 0).length;
     if (unassigned > 0) {
       byDesigner.push({ label: "Unassigned", color: "#94a3b8", count: unassigned });
     }

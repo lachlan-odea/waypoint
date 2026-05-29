@@ -36,7 +36,7 @@ export type Project = {
   briefUrl: string;
   dueDate: string;
   priority: Priority;
-  assigneeId: string | null;
+  assigneeIds: string[];
   flaggedForReview?: boolean;
   status?: ProjectStatus;
   archived?: boolean;

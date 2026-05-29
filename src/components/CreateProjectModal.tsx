@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Designer, Priority, Project } from "../types";
 import { BRANDS } from "../constants";
 import { ContentTypeField } from "./ContentTypeField";
+import { Avatar } from "./Avatar";
 
 type Props = {
   designers: Designer[];
@@ -28,9 +29,11 @@ export function CreateProjectModal({
   const [briefUrl, setBriefUrl] = useState(initial?.briefUrl ?? "");
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? "");
   const [priority, setPriority] = useState<Priority>(initial?.priority ?? "Normal");
-  const [assigneeId, setAssigneeId] = useState<string | null>(
-    initial?.assigneeId ?? defaultAssigneeId
-  );
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(() => {
+    if (initial?.assigneeIds && initial.assigneeIds.length > 0)
+      return initial.assigneeIds;
+    return defaultAssigneeId ? [defaultAssigneeId] : [];
+  });
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -52,7 +55,7 @@ export function CreateProjectModal({
       briefUrl,
       dueDate,
       priority,
-      assigneeId,
+      assigneeIds,
       milestones: initial?.milestones ?? [],
       comments: initial?.comments ?? [],
       createdAt: initial?.createdAt ?? new Date().toISOString(),
@@ -124,19 +127,33 @@ export function CreateProjectModal({
                 placeholder="https://…"
               />
             </label>
-            <label className="field">
-              <span>Assign to</span>
-              <select
-                value={assigneeId ?? ""}
-                onChange={(e) => setAssigneeId(e.target.value || null)}
-              >
-                <option value="">Unassigned</option>
-                {designers.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+            <label className="field" style={{ gridColumn: "1 / -1" }}>
+              <span>Assignees</span>
+              <div className="assignee-picker">
+                {designers.map((d) => {
+                  const active = assigneeIds.includes(d.id);
+                  return (
+                    <button
+                      type="button"
+                      key={d.id}
+                      className={`assignee-chip ${active ? "active" : ""}`}
+                      onClick={() => {
+                        setAssigneeIds((cur) =>
+                          active
+                            ? cur.filter((id) => id !== d.id)
+                            : [...cur, d.id],
+                        );
+                      }}
+                    >
+                      <Avatar
+                        designer={d}
+                        className="dot-avatar assignee-chip-avatar"
+                      />
+                      <span>{d.name.split(" ")[0]}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </label>
           </div>
         </div>

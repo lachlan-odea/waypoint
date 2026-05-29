@@ -24,8 +24,14 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+const MAX_VISIBLE_ASSIGNEES = 3;
+
 export function ProjectCard({ project, designers, onClick, compact }: Props) {
-  const assignee = designers.find((d) => d.id === project.assigneeId);
+  const assignees = project.assigneeIds
+    .map((id) => designers.find((d) => d.id === id))
+    .filter((d): d is Designer => Boolean(d));
+  const visibleAssignees = assignees.slice(0, MAX_VISIBLE_ASSIGNEES);
+  const extraAssignees = assignees.length - visibleAssignees.length;
   const doneCount = project.milestones.filter((m) => m.done).length;
   const [dragging, setDragging] = useState(false);
   return (
@@ -47,7 +53,16 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
       {!compact && <p className="card-client">{project.client}</p>}
       <div className="card-row card-foot">
         <span className="card-brand">{project.brand}</span>
-        {assignee && <Avatar designer={assignee} className="card-assignee" />}
+        {assignees.length > 0 && (
+          <span className="card-assignees" title={assignees.map((a) => a.name).join(", ")}>
+            {visibleAssignees.map((a) => (
+              <Avatar key={a.id} designer={a} className="card-assignee" />
+            ))}
+            {extraAssignees > 0 && (
+              <span className="card-assignee-extra">+{extraAssignees}</span>
+            )}
+          </span>
+        )}
       </div>
       {project.milestones.length > 0 && (
         <div className="card-progress">

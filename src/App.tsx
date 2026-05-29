@@ -188,7 +188,9 @@ export default function App() {
   const myProjects = useMemo(
     () =>
       activeProjects
-        .filter((p) => p.assigneeId === sessionDesignerId)
+        .filter((p) =>
+          sessionDesignerId ? p.assigneeIds.includes(sessionDesignerId) : false,
+        )
         .sort(sortByPriorityThenDue),
     [activeProjects, sessionDesignerId]
   );
@@ -248,16 +250,22 @@ export default function App() {
     setOpenProjectId(project.id);
   }
 
-  function assignProjectTo(projectId: string, designerId: string | null) {
+  // Drop semantics: dropping a card on a designer's column adds them as an
+  // additional assignee (the card stays in any existing assignees' columns
+  // too). Dropping on the Unassigned column clears all assignees.
+  function dropProjectOnto(projectId: string, designerId: string | null) {
     setWorkspace((ws) =>
       ws
         ? {
             ...ws,
-            projects: ws.projects.map((p) =>
-              p.id === projectId ? { ...p, assigneeId: designerId } : p
-            ),
+            projects: ws.projects.map((p) => {
+              if (p.id !== projectId) return p;
+              if (designerId === null) return { ...p, assigneeIds: [] };
+              if (p.assigneeIds.includes(designerId)) return p;
+              return { ...p, assigneeIds: [...p.assigneeIds, designerId] };
+            }),
           }
-        : ws
+        : ws,
     );
   }
 
@@ -374,7 +382,7 @@ export default function App() {
     : null;
 
   const unassigned = activeProjects
-    .filter((p) => !p.assigneeId)
+    .filter((p) => p.assigneeIds.length === 0)
     .sort(sortByPriorityThenDue);
 
   function dropHandlers(targetId: string | null) {
@@ -392,7 +400,7 @@ export default function App() {
         e.preventDefault();
         setDropOverColumn(null);
         const pid = readDraggedProjectId(e);
-        if (pid) assignProjectTo(pid, targetId);
+        if (pid) dropProjectOnto(pid, targetId);
       },
     };
   }
@@ -558,7 +566,7 @@ export default function App() {
               <div className="team-columns">
                 {otherDesigners.map((d) => {
                   const projects = activeProjects
-                    .filter((p) => p.assigneeId === d.id)
+                    .filter((p) => p.assigneeIds.includes(d.id))
                     .sort(sortByPriorityThenDue);
                   return (
                     <div
