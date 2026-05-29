@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Designer, Priority, Project } from "../types";
 import { BRANDS } from "../constants";
-import { ProductAreaField } from "./ProductAreaField";
+import { ContentTypeField } from "./ContentTypeField";
 
 type Props = {
   designers: Designer[];
@@ -24,7 +24,7 @@ export function CreateProjectModal({
   const [overview, setOverview] = useState(initial?.overview ?? "");
   const [client, setClient] = useState(initial?.client ?? "");
   const [brand, setBrand] = useState(initial?.brand ?? "");
-  const [productArea, setProductArea] = useState(initial?.productArea ?? "");
+  const [contentType, setContentType] = useState(initial?.contentType ?? "");
   const [briefUrl, setBriefUrl] = useState(initial?.briefUrl ?? "");
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? "");
   const [priority, setPriority] = useState<Priority>(initial?.priority ?? "Normal");
@@ -48,7 +48,7 @@ export function CreateProjectModal({
       overview,
       client,
       brand,
-      productArea,
+      contentType,
       briefUrl,
       dueDate,
       priority,
@@ -113,8 +113,8 @@ export function CreateProjectModal({
               </select>
             </label>
             <label className="field">
-              <span>Product area</span>
-              <ProductAreaField value={productArea} onChange={setProductArea} />
+              <span>Content type</span>
+              <ContentTypeField value={contentType} onChange={setContentType} />
             </label>
             <label className="field">
               <span>Brief URL</span>

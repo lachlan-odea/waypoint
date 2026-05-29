@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
-import { PRODUCT_AREAS } from "../constants";
+import { CONTENT_TYPES } from "../constants";
 
 type Props = {
   value: string;
   onChange: (next: string) => void;
 };
 
-export function ProductAreaField({ value, onChange }: Props) {
+export function ContentTypeField({ value, onChange }: Props) {
   const isKnown = useMemo(
-    () => !value || (PRODUCT_AREAS as readonly string[]).includes(value),
+    () => !value || (CONTENT_TYPES as readonly string[]).includes(value),
     [value]
   );
   const [otherMode, setOtherMode] = useState(!isKnown);
@@ -29,7 +29,7 @@ export function ProductAreaField({ value, onChange }: Props) {
     <>
       <select value={selectValue} onChange={(e) => handleSelect(e.target.value)}>
         <option value="">— select —</option>
-        {PRODUCT_AREAS.map((p) => (
+        {CONTENT_TYPES.map((p) => (
           <option key={p} value={p}>
             {p}
           </option>
@@ -39,7 +39,7 @@ export function ProductAreaField({ value, onChange }: Props) {
       {otherMode && (
         <input
           autoFocus
-          placeholder="Type product area"
+          placeholder="Type content type"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           style={{ marginTop: 6 }}

@@ -30,7 +30,7 @@ export type Project = {
   overview: string;
   client: string;
   brand: string;
-  productArea: string;
+  contentType: string;
   briefUrl: string;
   dueDate: string;
   priority: Priority;

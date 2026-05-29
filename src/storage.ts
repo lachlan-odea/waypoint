@@ -19,17 +19,27 @@ function withFreshAvatars(ws: Workspace): Workspace {
       const fresh = seedAvatarById.get(d.id);
       return fresh ? { ...d, avatar: fresh } : d;
     }),
-    // Legacy: earlier versions stored a per-reviewer `reviewerId`; the flag is
-    // now a simple boolean shared across all reviewers.
+    // Legacy migrations:
+    //  - `reviewerId` → `flaggedForReview: true` (per-reviewer field replaced
+    //     by a shared boolean).
+    //  - `productArea` → `contentType` (field renamed).
     projects: ws.projects.map((p) => {
-      const legacy = (p as unknown as { reviewerId?: string | null }).reviewerId;
-      if (legacy && p.flaggedForReview === undefined) {
-        const { reviewerId: _drop, ...rest } = p as Project & {
-          reviewerId?: string | null;
-        };
-        return { ...rest, flaggedForReview: true };
+      const legacy = p as Project & {
+        reviewerId?: string | null;
+        productArea?: string;
+      };
+      let next: Project = p;
+      if (legacy.reviewerId && next.flaggedForReview === undefined) {
+        const { reviewerId: _drop, ...rest } = legacy;
+        next = { ...rest, flaggedForReview: true };
       }
-      return p;
+      if (legacy.productArea !== undefined && !next.contentType) {
+        const { productArea: _drop, ...rest } = next as Project & {
+          productArea?: string;
+        };
+        next = { ...rest, contentType: legacy.productArea };
+      }
+      return next;
     }),
     notifications: ws.notifications ?? [],
   };

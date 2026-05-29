@@ -55,7 +55,7 @@ function toCsv(projects: Project[], designers: Designer[]): string {
     "priority",
     "client",
     "brand",
-    "productArea",
+    "contentType",
     "assignee",
     "dueDate",
     "commencedDate",
@@ -70,7 +70,7 @@ function toCsv(projects: Project[], designers: Designer[]): string {
     p.priority,
     p.client,
     p.brand,
-    p.productArea,
+    p.contentType,
     designerName(p.assigneeId),
     p.dueDate,
     commencedDate(p),
@@ -158,12 +158,12 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
     const byBrand = [...brands.entries()]
       .map(([label, count]) => ({ label, count }))
       .sort((a, b) => b.count - a.count);
-    const productAreas = new Map<string, number>();
+    const contentTypes = new Map<string, number>();
     filtered.forEach((p) => {
-      const key = p.productArea || "—";
-      productAreas.set(key, (productAreas.get(key) ?? 0) + 1);
+      const key = p.contentType || "—";
+      contentTypes.set(key, (contentTypes.get(key) ?? 0) + 1);
     });
-    const byProductArea = [...productAreas.entries()]
+    const byContentType = [...contentTypes.entries()]
       .map(([label, count]) => ({ label, count }))
       .sort((a, b) => b.count - a.count);
 
@@ -198,7 +198,7 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
       byPriority,
       byDesigner,
       byBrand,
-      byProductArea,
+      byContentType,
       totalMilestones,
       doneMilestones,
       completionPct,
@@ -337,11 +337,11 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
       )}
 
       <div className="panel">
-        <h3>By product area</h3>
-        {stats.byProductArea.length === 0 ? (
+        <h3>By content type</h3>
+        {stats.byContentType.length === 0 ? (
           <p className="muted small">No data.</p>
         ) : (
-          <CategoryBars data={stats.byProductArea} />
+          <CategoryBars data={stats.byContentType} />
         )}
       </div>
 

@@ -138,7 +138,7 @@ export default function App() {
     const q = filter.trim().toLowerCase();
     if (!q) return workspace.projects;
     return workspace.projects.filter((p) =>
-      [p.title, p.client, p.brand, p.productArea]
+      [p.title, p.client, p.brand, p.contentType]
         .join(" ")
         .toLowerCase()
         .includes(q)

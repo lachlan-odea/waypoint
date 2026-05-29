@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Designer, Notification, Project, Priority } from "../types";
 import { BRANDS } from "../constants";
-import { ProductAreaField } from "./ProductAreaField";
+import { ContentTypeField } from "./ContentTypeField";
 import { LinkifiedText } from "./LinkifiedText";
 import { findMentionedDesigners, findNewMentions } from "../mentions";
 
@@ -483,11 +483,11 @@ export function ProjectDetailModal({
                 ))}
               </select>
             </Field>
-            <Field label="Product area">
-              <ProductAreaField
-                value={project.productArea}
+            <Field label="Content type">
+              <ContentTypeField
+                value={project.contentType}
                 onChange={(next) =>
-                  onChange((p) => ({ ...p, productArea: next }))
+                  onChange((p) => ({ ...p, contentType: next }))
                 }
               />
             </Field>

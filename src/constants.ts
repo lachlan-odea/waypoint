@@ -10,7 +10,7 @@ export const BRANDS = [
 // and who get a "For review" section in their workspace.
 export const REVIEWER_IDS = ["d-jess", "d-oliver"] as const;
 
-export const PRODUCT_AREAS = [
+export const CONTENT_TYPES = [
   "Web",
   "Landing page",
   "Social",
