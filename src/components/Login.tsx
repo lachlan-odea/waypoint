@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Designer } from "../types";
 import { Avatar } from "./Avatar";
+import heroImage from "../assets/hero.png";
 
 type Props = {
   designers: Designer[];
@@ -39,6 +40,7 @@ export function Login({ designers, onLogin }: Props) {
   return (
     <div className="login">
       <div className="login-card">
+        <img src={heroImage} alt="Design PM" className="login-hero" />
         <div className="login-brand">Design&nbsp;PM</div>
         {!selected ? (
           <>
