@@ -440,6 +440,7 @@ textarea {
 /* Team columns */
 .team-section {
   padding: 0 2px;
+  margin-bottom: 22px;
 }
 .team-columns {
   display: grid;
