@@ -296,7 +296,7 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number) => [value, "projects"]}
+                    formatter={(value) => [value, "projects"]}
                   />
                   <Legend
                     verticalAlign="middle"
@@ -469,7 +469,7 @@ function CategoryBars({
           />
           <Tooltip
             cursor={{ fill: "rgba(15, 23, 42, 0.04)" }}
-            formatter={(value: number) => [value, "projects"]}
+            formatter={(value) => [value, "projects"]}
           />
           <Bar dataKey="count" radius={[0, 6, 6, 0]}>
             {data.map((row, i) => (
