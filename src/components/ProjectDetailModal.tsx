@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import type { Designer, Notification, Project, Priority } from "../types";
+import type {
+  Designer,
+  Notification,
+  Project,
+  Priority,
+  ProjectStatus,
+} from "../types";
 import { BRANDS } from "../constants";
 import { ContentTypeField } from "./ContentTypeField";
 import { LinkifiedText } from "./LinkifiedText";
@@ -13,11 +19,17 @@ type Props = {
   onClose: () => void;
   onChange: (updater: (p: Project) => Project) => void;
   onFlagForReview: (flagged: boolean) => void;
+  onStatusChange: (status: ProjectStatus) => void;
   onDelete: () => void;
   onNotify: (notifications: Notification[]) => void;
 };
 
 const priorities: Priority[] = ["Urgent", "High", "Normal", "Low"];
+const statuses: { value: ProjectStatus; label: string }[] = [
+  { value: "active", label: "Active" },
+  { value: "completed", label: "Completed" },
+  { value: "paused", label: "Paused" },
+];
 
 function HeartIcon({ filled }: { filled: boolean }) {
   return (
@@ -50,6 +62,7 @@ export function ProjectDetailModal({
   onClose,
   onChange,
   onFlagForReview,
+  onStatusChange,
   onDelete,
   onNotify,
 }: Props) {
@@ -393,9 +406,23 @@ export function ProjectDetailModal({
               <span>{project.source === "outlook" ? "From Outlook" : "Manual"}</span>
             </div>
           </div>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
-            ✕
-          </button>
+          <div className="modal-head-actions">
+            <select
+              className={`status-select status-${project.status ?? "active"}`}
+              value={project.status ?? "active"}
+              onChange={(e) => onStatusChange(e.target.value as ProjectStatus)}
+              aria-label="Project status"
+            >
+              {statuses.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <button className="icon-btn" onClick={onClose} aria-label="Close">
+              ✕
+            </button>
+          </div>
         </header>
 
         <div className="modal-body">

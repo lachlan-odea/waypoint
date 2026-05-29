@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Notification, Project, StorageConfig, Workspace } from "./types";
+import type {
+  Notification,
+  Project,
+  ProjectStatus,
+  StorageConfig,
+  Workspace,
+} from "./types";
 import {
   clearSession,
   loadConfig,
@@ -145,12 +151,33 @@ export default function App() {
     );
   }, [workspace, filter]);
 
-  const myProjects = useMemo(
+  const activeProjects = useMemo(
+    () => visibleProjects.filter((p) => (p.status ?? "active") === "active"),
+    [visibleProjects],
+  );
+
+  const completedProjects = useMemo(
     () =>
       visibleProjects
+        .filter((p) => p.status === "completed")
+        .sort(sortByPriorityThenDue),
+    [visibleProjects],
+  );
+
+  const pausedProjects = useMemo(
+    () =>
+      visibleProjects
+        .filter((p) => p.status === "paused")
+        .sort(sortByPriorityThenDue),
+    [visibleProjects],
+  );
+
+  const myProjects = useMemo(
+    () =>
+      activeProjects
         .filter((p) => p.assigneeId === sessionDesignerId)
         .sort(sortByPriorityThenDue),
-    [visibleProjects, sessionDesignerId]
+    [activeProjects, sessionDesignerId]
   );
 
   const otherDesigners = useMemo(
@@ -179,11 +206,11 @@ export default function App() {
   const reviewProjects = useMemo(
     () =>
       isReviewer
-        ? visibleProjects
+        ? activeProjects
             .filter((p) => p.flaggedForReview)
             .sort(sortByPriorityThenDue)
         : [],
-    [visibleProjects, isReviewer],
+    [activeProjects, isReviewer],
   );
 
   function updateProject(id: string, updater: (p: Project) => Project) {
@@ -249,6 +276,19 @@ export default function App() {
     );
   }
 
+  function setProjectStatus(projectId: string, status: ProjectStatus) {
+    setWorkspace((ws) =>
+      ws
+        ? {
+            ...ws,
+            projects: ws.projects.map((p) =>
+              p.id === projectId ? { ...p, status } : p,
+            ),
+          }
+        : ws,
+    );
+  }
+
   function flagForReview(projectId: string, flagged: boolean) {
     setWorkspace((ws) =>
       ws
@@ -307,7 +347,7 @@ export default function App() {
     ? workspace.projects.find((p) => p.id === openProjectId)
     : null;
 
-  const unassigned = visibleProjects
+  const unassigned = activeProjects
     .filter((p) => !p.assigneeId)
     .sort(sortByPriorityThenDue);
 
@@ -461,7 +501,7 @@ export default function App() {
               </div>
               <div className="team-columns">
                 {otherDesigners.map((d) => {
-                  const projects = visibleProjects
+                  const projects = activeProjects
                     .filter((p) => p.assigneeId === d.id)
                     .sort(sortByPriorityThenDue);
                   return (
@@ -532,6 +572,51 @@ export default function App() {
                 </div>
               </div>
             </section>
+
+            {pausedProjects.length > 0 && (
+              <section className="workspace-section paused-section">
+                <div className="section-head">
+                  <h2>Paused</h2>
+                  <span className="muted small">
+                    {pausedProjects.length} project
+                    {pausedProjects.length === 1 ? "" : "s"} on hold · open one
+                    to resume
+                  </span>
+                </div>
+                <div className="workspace-grid">
+                  {pausedProjects.map((p) => (
+                    <ProjectCard
+                      key={p.id}
+                      project={p}
+                      designers={workspace.designers}
+                      onClick={() => setOpenProjectId(p.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {completedProjects.length > 0 && (
+              <section className="workspace-section completed-section">
+                <div className="section-head">
+                  <h2>Completed</h2>
+                  <span className="muted small">
+                    {completedProjects.length} project
+                    {completedProjects.length === 1 ? "" : "s"} done
+                  </span>
+                </div>
+                <div className="workspace-grid">
+                  {completedProjects.map((p) => (
+                    <ProjectCard
+                      key={p.id}
+                      project={p}
+                      designers={workspace.designers}
+                      onClick={() => setOpenProjectId(p.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
           </>
         )}
       </main>
@@ -545,6 +630,7 @@ export default function App() {
           onClose={() => setOpenProjectId(null)}
           onChange={(updater) => updateProject(openProject.id, updater)}
           onFlagForReview={(flagged) => flagForReview(openProject.id, flagged)}
+          onStatusChange={(status) => setProjectStatus(openProject.id, status)}
           onDelete={() => deleteProject(openProject.id)}
           onNotify={addNotifications}
         />

@@ -1,5 +1,7 @@
 export type Priority = "Urgent" | "High" | "Normal" | "Low";
 
+export type ProjectStatus = "active" | "completed" | "paused";
+
 export type Designer = {
   id: string;
   name: string;
@@ -36,6 +38,7 @@ export type Project = {
   priority: Priority;
   assigneeId: string | null;
   flaggedForReview?: boolean;
+  status?: ProjectStatus;
   milestones: Milestone[];
   comments: Comment[];
   createdAt: string;

@@ -688,6 +688,54 @@ textarea {
   border-color: #fdba74;
   background: #fffbf5;
 }
+.paused-section {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.completed-section {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.modal-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-select {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 26px 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 4.5 L6 7.5 L9 4.5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 10px;
+  cursor: pointer;
+  outline: none;
+}
+.status-select:focus {
+  border-color: var(--primary);
+}
+.status-select.status-active {
+  background-color: var(--surface);
+  color: var(--muted);
+}
+.status-select.status-completed {
+  background-color: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+.status-select.status-paused {
+  background-color: #e2e8f0;
+  border-color: #94a3b8;
+  color: #475569;
+}
 
 .mention {
   background: rgba(79, 70, 229, 0.1);
