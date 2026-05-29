@@ -697,6 +697,10 @@ textarea {
   border-color: #bbf7d0;
   background: #f0fdf4;
 }
+.archived-section {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
 
 .modal-head-actions {
   display: flex;
@@ -1243,6 +1247,9 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
 }
+.kpi-row-status {
+  grid-template-columns: repeat(3, 1fr);
+}
 .kpi {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1269,6 +1276,15 @@ textarea {
 }
 .kpi.duesoon .kpi-value {
   color: var(--high);
+}
+.kpi.completed .kpi-value {
+  color: #16a34a;
+}
+.kpi.paused .kpi-value {
+  color: #475569;
+}
+.kpi.archived .kpi-value {
+  color: #64748b;
 }
 .kpi-sub {
   font-size: 14px;

@@ -39,6 +39,7 @@ export type Project = {
   assigneeId: string | null;
   flaggedForReview?: boolean;
   status?: ProjectStatus;
+  archived?: boolean;
   milestones: Milestone[];
   comments: Comment[];
   createdAt: string;

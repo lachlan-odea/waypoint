@@ -20,6 +20,7 @@ type Props = {
   onChange: (updater: (p: Project) => Project) => void;
   onFlagForReview: (flagged: boolean) => void;
   onStatusChange: (status: ProjectStatus) => void;
+  onArchiveToggle: (archived: boolean) => void;
   onDelete: () => void;
   onNotify: (notifications: Notification[]) => void;
 };
@@ -63,6 +64,7 @@ export function ProjectDetailModal({
   onChange,
   onFlagForReview,
   onStatusChange,
+  onArchiveToggle,
   onDelete,
   onNotify,
 }: Props) {
@@ -663,6 +665,9 @@ export function ProjectDetailModal({
         <footer className="modal-foot">
           <button className="danger" onClick={onDelete}>
             Delete project
+          </button>
+          <button onClick={() => onArchiveToggle(!project.archived)}>
+            {project.archived ? "Unarchive" : "Archive"}
           </button>
           <button onClick={onClose}>Done</button>
         </footer>

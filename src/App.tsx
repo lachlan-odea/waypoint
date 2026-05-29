@@ -151,23 +151,36 @@ export default function App() {
     );
   }, [workspace, filter]);
 
-  const activeProjects = useMemo(
-    () => visibleProjects.filter((p) => (p.status ?? "active") === "active"),
+  const nonArchived = useMemo(
+    () => visibleProjects.filter((p) => !p.archived),
     [visibleProjects],
+  );
+
+  const activeProjects = useMemo(
+    () => nonArchived.filter((p) => (p.status ?? "active") === "active"),
+    [nonArchived],
   );
 
   const completedProjects = useMemo(
     () =>
-      visibleProjects
+      nonArchived
         .filter((p) => p.status === "completed")
         .sort(sortByPriorityThenDue),
-    [visibleProjects],
+    [nonArchived],
   );
 
   const pausedProjects = useMemo(
     () =>
-      visibleProjects
+      nonArchived
         .filter((p) => p.status === "paused")
+        .sort(sortByPriorityThenDue),
+    [nonArchived],
+  );
+
+  const archivedProjects = useMemo(
+    () =>
+      visibleProjects
+        .filter((p) => p.archived)
         .sort(sortByPriorityThenDue),
     [visibleProjects],
   );
@@ -272,6 +285,19 @@ export default function App() {
     setWorkspace((ws) =>
       ws
         ? { ...ws, notifications: ws.notifications.filter((n) => n.id !== id) }
+        : ws,
+    );
+  }
+
+  function setProjectArchived(projectId: string, archived: boolean) {
+    setWorkspace((ws) =>
+      ws
+        ? {
+            ...ws,
+            projects: ws.projects.map((p) =>
+              p.id === projectId ? { ...p, archived } : p,
+            ),
+          }
         : ws,
     );
   }
@@ -395,6 +421,8 @@ export default function App() {
             <h1 className="page-title">
               {view === "analytics" ? (
                 "Analytics"
+              ) : view === "archived" ? (
+                "Archived projects"
               ) : (
                 <>
                   {currentDesigner.name}
@@ -405,13 +433,15 @@ export default function App() {
             <p className="muted small">
               {view === "analytics"
                 ? `${workspace.projects.length} project${workspace.projects.length === 1 ? "" : "s"} across the team`
-                : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned`}
+                : view === "archived"
+                  ? `${archivedProjects.length} archived project${archivedProjects.length === 1 ? "" : "s"}`
+                  : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned`}
               {" · "}
               {config.mode === "jsonbin" && config.binId ? "JSONBin synced" : "local only"}
             </p>
           </div>
           <div className="topbar-actions">
-            {view === "workspace" && (
+            {(view === "workspace" || view === "archived") && (
               <input
                 className="search"
                 placeholder="Search projects…"
@@ -439,6 +469,32 @@ export default function App() {
             designers={workspace.designers}
             canViewByDesigner={isReviewer}
           />
+        ) : view === "archived" ? (
+          <section className="workspace-section archived-section">
+            <div className="section-head">
+              <h2>Archived</h2>
+              <span className="muted small">
+                Open a project and click Unarchive to bring it back.
+              </span>
+            </div>
+            {archivedProjects.length === 0 ? (
+              <p className="muted">
+                Nothing archived yet. Archive a project from its detail window
+                to tuck it out of the way.
+              </p>
+            ) : (
+              <div className="workspace-grid">
+                {archivedProjects.map((p) => (
+                  <ProjectCard
+                    key={p.id}
+                    project={p}
+                    designers={workspace.designers}
+                    onClick={() => setOpenProjectId(p.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
         ) : (
           <>
             <section
@@ -631,6 +687,10 @@ export default function App() {
           onChange={(updater) => updateProject(openProject.id, updater)}
           onFlagForReview={(flagged) => flagForReview(openProject.id, flagged)}
           onStatusChange={(status) => setProjectStatus(openProject.id, status)}
+          onArchiveToggle={(archived) => {
+            setProjectArchived(openProject.id, archived);
+            if (archived) setOpenProjectId(null);
+          }}
           onDelete={() => deleteProject(openProject.id)}
           onNotify={addNotifications}
         />

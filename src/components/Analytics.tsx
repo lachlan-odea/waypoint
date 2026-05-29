@@ -177,6 +177,9 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
     });
 
     const urgentCount = filtered.filter((p) => p.priority === "Urgent").length;
+    const completedCount = filtered.filter((p) => p.status === "completed").length;
+    const pausedCount = filtered.filter((p) => p.status === "paused").length;
+    const archivedCount = filtered.filter((p) => p.archived).length;
 
     let totalMilestones = 0;
     let doneMilestones = 0;
@@ -195,6 +198,9 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
       urgentCount,
       overdue,
       dueThisWeek,
+      completedCount,
+      pausedCount,
+      archivedCount,
       byPriority,
       byDesigner,
       byBrand,
@@ -270,6 +276,20 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
           done={stats.doneMilestones}
           total={stats.totalMilestones}
           pct={stats.completionPct}
+        />
+      </div>
+
+      <div className="kpi-row kpi-row-status">
+        <Kpi
+          label="Completed"
+          value={stats.completedCount}
+          variant="completed"
+        />
+        <Kpi label="Paused" value={stats.pausedCount} variant="paused" />
+        <Kpi
+          label="Archived"
+          value={stats.archivedCount}
+          variant="archived"
         />
       </div>
 
@@ -380,7 +400,7 @@ function Kpi({
 }: {
   label: string;
   value: number | string;
-  variant?: "urgent" | "overdue" | "duesoon";
+  variant?: "urgent" | "overdue" | "duesoon" | "completed" | "paused" | "archived";
 }) {
   return (
     <div className={`kpi ${variant ?? ""}`}>
