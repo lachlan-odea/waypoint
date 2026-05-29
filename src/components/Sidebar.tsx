@@ -45,6 +45,40 @@ function SettingsIcon() {
   );
 }
 
+const navGlyphProps = {
+  width: 14,
+  height: 14,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+function WorkspaceGlyph() {
+  return (
+    <svg {...navGlyphProps}>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
+}
+
+function AnalyticsGlyph() {
+  return (
+    <svg {...navGlyphProps}>
+      <line x1="6" y1="20" x2="6" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="18" y1="20" x2="18" y2="14" />
+      <line x1="3" y1="20" x2="21" y2="20" />
+    </svg>
+  );
+}
+
 function ArchiveGlyph() {
   return (
     <svg
@@ -119,8 +153,8 @@ export function Sidebar({
               onClick={() => onSelectView("workspace")}
               title="Workspace"
             >
-              <span className="dot-avatar" style={{ background: "#1f2937" }}>
-                ▦
+              <span className="dot-avatar" style={{ background: "#4f46e5" }}>
+                <WorkspaceGlyph />
               </span>
               {!collapsed && <span className="designer-name">Workspace</span>}
             </button>
@@ -132,7 +166,7 @@ export function Sidebar({
               title="Analytics"
             >
               <span className="dot-avatar" style={{ background: "#0ea5e9" }}>
-                ⌬
+                <AnalyticsGlyph />
               </span>
               {!collapsed && <span className="designer-name">Analytics</span>}
             </button>
