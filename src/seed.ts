@@ -22,6 +22,7 @@ export const seedWorkspace: Workspace = {
     { id: "d-heather", name: "Heather Cipullo", initials: "HC", color: "#f97316", pin: "1008", avatar: avatarHeather },
     { id: "d-patrice", name: "Patrice Roarke", initials: "PR", color: "#8b5cf6", pin: "1009", avatar: avatarPatrice },
   ],
+  notifications: [],
   projects: [
     {
       id: "p-001",

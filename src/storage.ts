@@ -1,9 +1,39 @@
-import type { StorageConfig, Workspace } from "./types";
+import type { Project, StorageConfig, Workspace } from "./types";
 import { seedWorkspace } from "./seed";
 
 const CONFIG_KEY = "pmtool.config.v1";
 const LOCAL_DATA_KEY = "pmtool.workspace.v3";
 const SESSION_KEY = "pmtool.session.v1";
+
+// Avatar URLs are produced by Vite's asset pipeline and change between builds
+// (and when the base path changes). Persisted URLs therefore go stale, so we
+// re-apply the current seed avatar for every known designer on load.
+const seedAvatarById = new Map(
+  seedWorkspace.designers.map((d) => [d.id, d.avatar] as const),
+);
+
+function withFreshAvatars(ws: Workspace): Workspace {
+  return {
+    ...ws,
+    designers: ws.designers.map((d) => {
+      const fresh = seedAvatarById.get(d.id);
+      return fresh ? { ...d, avatar: fresh } : d;
+    }),
+    // Legacy: earlier versions stored a per-reviewer `reviewerId`; the flag is
+    // now a simple boolean shared across all reviewers.
+    projects: ws.projects.map((p) => {
+      const legacy = (p as unknown as { reviewerId?: string | null }).reviewerId;
+      if (legacy && p.flaggedForReview === undefined) {
+        const { reviewerId: _drop, ...rest } = p as Project & {
+          reviewerId?: string | null;
+        };
+        return { ...rest, flaggedForReview: true };
+      }
+      return p;
+    }),
+    notifications: ws.notifications ?? [],
+  };
+}
 
 export type Session = { designerId: string };
 
@@ -42,7 +72,7 @@ export function saveConfig(cfg: StorageConfig) {
 function loadLocal(): Workspace {
   try {
     const raw = localStorage.getItem(LOCAL_DATA_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return withFreshAvatars(JSON.parse(raw));
   } catch {
     // ignore
   }
@@ -69,7 +99,7 @@ async function readBin(cfg: StorageConfig): Promise<Workspace> {
   if (!record || !Array.isArray(record.projects)) {
     return seedWorkspace;
   }
-  return record;
+  return withFreshAvatars(record);
 }
 
 async function writeBin(cfg: StorageConfig, ws: Workspace): Promise<void> {

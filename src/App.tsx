@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Project, StorageConfig, Workspace } from "./types";
+import type { Notification, Project, StorageConfig, Workspace } from "./types";
 import {
   clearSession,
   loadConfig,
@@ -12,13 +12,14 @@ import {
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetailModal } from "./components/ProjectDetailModal";
+import { NotificationsPanel } from "./components/NotificationsPanel";
 import { CreateProjectModal } from "./components/CreateProjectModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { Analytics } from "./components/Analytics";
 import { Login } from "./components/Login";
-import { ChangePinModal } from "./components/ChangePinModal";
 import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
+import { REVIEWER_IDS } from "./constants";
 import "./App.css";
 
 const PRIORITY_ORDER: Record<string, number> = {
@@ -46,7 +47,7 @@ export default function App() {
   const [creating, setCreating] = useState(false);
   const [createInitial, setCreateInitial] = useState<Partial<Project> | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [changingPin, setChangingPin] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [filter, setFilter] = useState("");
   const [status, setStatus] = useState<string>("");
   const [dropOverColumn, setDropOverColumn] = useState<string | null>(null);
@@ -157,6 +158,34 @@ export default function App() {
     [workspace, sessionDesignerId]
   );
 
+  const myNotifications = useMemo(
+    () =>
+      workspace
+        ? workspace.notifications.filter((n) => n.recipientId === sessionDesignerId)
+        : [],
+    [workspace, sessionDesignerId],
+  );
+
+  const unreadNotifications = myNotifications.length;
+
+  const isReviewer = useMemo(
+    () =>
+      sessionDesignerId
+        ? (REVIEWER_IDS as readonly string[]).includes(sessionDesignerId)
+        : false,
+    [sessionDesignerId],
+  );
+
+  const reviewProjects = useMemo(
+    () =>
+      isReviewer
+        ? visibleProjects
+            .filter((p) => p.flaggedForReview)
+            .sort(sortByPriorityThenDue)
+        : [],
+    [visibleProjects, isReviewer],
+  );
+
   function updateProject(id: string, updater: (p: Project) => Project) {
     setWorkspace((ws) =>
       ws
@@ -192,10 +221,45 @@ export default function App() {
     );
   }
 
-  function saveConfigAndClose(cfg: StorageConfig) {
-    saveConfig(cfg);
-    setConfig(cfg);
-    setSettingsOpen(false);
+  function addNotifications(notifs: Notification[]) {
+    if (notifs.length === 0) return;
+    setWorkspace((ws) =>
+      ws ? { ...ws, notifications: [...notifs, ...ws.notifications] } : ws,
+    );
+  }
+
+  function clearAllNotifications() {
+    setWorkspace((ws) =>
+      ws
+        ? {
+            ...ws,
+            notifications: ws.notifications.filter(
+              (n) => n.recipientId !== sessionDesignerId,
+            ),
+          }
+        : ws,
+    );
+  }
+
+  function deleteNotification(id: string) {
+    setWorkspace((ws) =>
+      ws
+        ? { ...ws, notifications: ws.notifications.filter((n) => n.id !== id) }
+        : ws,
+    );
+  }
+
+  function flagForReview(projectId: string, flagged: boolean) {
+    setWorkspace((ws) =>
+      ws
+        ? {
+            ...ws,
+            projects: ws.projects.map((p) =>
+              p.id === projectId ? { ...p, flaggedForReview: flagged } : p,
+            ),
+          }
+        : ws,
+    );
   }
 
   function login(designerId: string) {
@@ -210,7 +274,6 @@ export default function App() {
     setOpenProjectId(null);
     setCreating(false);
     setSettingsOpen(false);
-    setChangingPin(false);
     setView("workspace");
   }
 
@@ -226,7 +289,6 @@ export default function App() {
           }
         : ws
     );
-    setChangingPin(false);
   }
 
   if (!workspace) {
@@ -275,14 +337,15 @@ export default function App() {
         currentDesigner={currentDesigner}
         collapsed={collapsed}
         view={view}
+        unreadNotifications={unreadNotifications}
         onToggleCollapsed={() => setCollapsed((c) => !c)}
         onSelectView={setView}
         onNewProject={() => {
           setCreateInitial(undefined);
           setCreating(true);
         }}
+        onOpenNotifications={() => setNotificationsOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
-        onChangePin={() => setChangingPin(true)}
         onLogout={logout}
       />
 
@@ -331,7 +394,11 @@ export default function App() {
         {status && <div className="banner">{status}</div>}
 
         {view === "analytics" ? (
-          <Analytics projects={workspace.projects} designers={workspace.designers} />
+          <Analytics
+            projects={workspace.projects}
+            designers={workspace.designers}
+            canViewByDesigner={isReviewer}
+          />
         ) : (
           <>
             <section
@@ -364,6 +431,28 @@ export default function App() {
                 </div>
               )}
             </section>
+
+            {reviewProjects.length > 0 && (
+              <section className="workspace-section review-section">
+                <div className="section-head">
+                  <h2>For review</h2>
+                  <span className="muted small">
+                    Flagged for your review — still owned by the original
+                    designer
+                  </span>
+                </div>
+                <div className="workspace-grid">
+                  {reviewProjects.map((p) => (
+                    <ProjectCard
+                      key={p.id}
+                      project={p}
+                      designers={workspace.designers}
+                      onClick={() => setOpenProjectId(p.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
 
             <section className="team-section">
               <div className="section-head">
@@ -451,10 +540,13 @@ export default function App() {
         <ProjectDetailModal
           project={openProject}
           designers={workspace.designers}
+          currentDesignerId={currentDesigner.id}
           currentDesignerName={currentDesigner.name}
           onClose={() => setOpenProjectId(null)}
           onChange={(updater) => updateProject(openProject.id, updater)}
+          onFlagForReview={(flagged) => flagForReview(openProject.id, flagged)}
           onDelete={() => deleteProject(openProject.id)}
+          onNotify={addNotifications}
         />
       )}
 
@@ -474,16 +566,27 @@ export default function App() {
       {settingsOpen && (
         <SettingsModal
           config={config}
-          onSave={saveConfigAndClose}
-          onCancel={() => setSettingsOpen(false)}
+          currentDesigner={currentDesigner}
+          onSaveStorage={(cfg) => {
+            saveConfig(cfg);
+            setConfig(cfg);
+          }}
+          onChangePin={updateDesignerPin}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
 
-      {changingPin && (
-        <ChangePinModal
-          designer={currentDesigner}
-          onCancel={() => setChangingPin(false)}
-          onSave={updateDesignerPin}
+      {notificationsOpen && (
+        <NotificationsPanel
+          notifications={myNotifications}
+          projects={workspace.projects}
+          onClose={() => setNotificationsOpen(false)}
+          onOpenProject={(projectId, notificationId) => {
+            deleteNotification(notificationId);
+            setOpenProjectId(projectId);
+            setNotificationsOpen(false);
+          }}
+          onClearAll={clearAllNotifications}
         />
       )}
     </div>

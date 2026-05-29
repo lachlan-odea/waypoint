@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Designer } from "../types";
 
 type Props = {
@@ -7,10 +8,15 @@ type Props = {
 };
 
 export function Avatar({ designer, className = "dot-avatar", title }: Props) {
-  if (designer.avatar) {
+  const [imgFailed, setImgFailed] = useState(false);
+  if (designer.avatar && !imgFailed) {
     return (
       <span className={`${className} has-image`} title={title ?? designer.name}>
-        <img src={designer.avatar} alt={designer.name} />
+        <img
+          src={designer.avatar}
+          alt={designer.name}
+          onError={() => setImgFailed(true)}
+        />
       </span>
     );
   }

@@ -1,12 +1,37 @@
 import { useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import type { Designer, Priority, Project } from "../types";
 
 type Props = {
   projects: Project[];
   designers: Designer[];
+  canViewByDesigner: boolean;
 };
 
 const PRIORITIES: Priority[] = ["Urgent", "High", "Normal", "Low"];
+
+const PRIORITY_COLORS: Record<Priority, string> = {
+  Urgent: "#dc2626",
+  High: "#ea580c",
+  Normal: "#2563eb",
+  Low: "#6b7280",
+};
+
+const NEUTRAL_BAR = "#4f46e5";
 
 function daysFromNow(iso: string): number | null {
   if (!iso) return null;
@@ -61,7 +86,7 @@ function toCsv(projects: Project[], designers: Designer[]): string {
           const s = String(cell ?? "");
           return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
         })
-        .join(",")
+        .join(","),
     )
     .join("\n");
 }
@@ -92,7 +117,7 @@ function startOfMonth(base: string): string {
   return `${base.slice(0, 7)}-01`;
 }
 
-export function Analytics({ projects, designers }: Props) {
+export function Analytics({ projects, designers, canViewByDesigner }: Props) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
@@ -112,6 +137,7 @@ export function Analytics({ projects, designers }: Props) {
     const byPriority = PRIORITIES.map((p) => ({
       label: p,
       count: filtered.filter((x) => x.priority === p).length,
+      color: PRIORITY_COLORS[p],
     }));
     const byDesigner = designers
       .map((d) => ({
@@ -159,6 +185,11 @@ export function Analytics({ projects, designers }: Props) {
       doneMilestones += p.milestones.filter((m) => m.done).length;
     });
 
+    const completionPct =
+      totalMilestones === 0
+        ? 0
+        : Math.round((doneMilestones / totalMilestones) * 100);
+
     return {
       total,
       urgentCount,
@@ -170,13 +201,9 @@ export function Analytics({ projects, designers }: Props) {
       byProductArea,
       totalMilestones,
       doneMilestones,
+      completionPct,
     };
   }, [filtered, designers]);
-
-  const maxDesigner = Math.max(1, ...stats.byDesigner.map((d) => d.count));
-  const maxBrand = Math.max(1, ...stats.byBrand.map((d) => d.count));
-  const maxArea = Math.max(1, ...stats.byProductArea.map((d) => d.count));
-  const maxPrio = Math.max(1, ...stats.byPriority.map((d) => d.count));
 
   function applyQuickRange(kind: "7" | "30" | "90" | "month" | "all") {
     const today = todayISO();
@@ -194,10 +221,9 @@ export function Analytics({ projects, designers }: Props) {
     setTo(today);
   }
 
-  const rangeLabel =
-    from || to
-      ? `${from || "…"} → ${to || "…"}`
-      : "All time";
+  const rangeLabel = from || to ? `${from || "…"} → ${to || "…"}` : "All time";
+
+  const priorityChartData = stats.byPriority.filter((p) => p.count > 0);
 
   return (
     <div className="analytics">
@@ -231,7 +257,8 @@ export function Analytics({ projects, designers }: Props) {
         </div>
       </div>
       <p className="muted small filter-summary">
-        Showing projects commenced {rangeLabel} ({filtered.length} of {projects.length})
+        Showing projects commenced {rangeLabel} ({filtered.length} of{" "}
+        {projects.length})
       </p>
 
       <div className="kpi-row">
@@ -239,80 +266,83 @@ export function Analytics({ projects, designers }: Props) {
         <Kpi label="Urgent" value={stats.urgentCount} variant="urgent" />
         <Kpi label="Due in 7 days" value={stats.dueThisWeek} variant="duesoon" />
         <Kpi label="Overdue" value={stats.overdue} variant="overdue" />
-        <Kpi
-          label="Milestones complete"
-          value={`${stats.doneMilestones} / ${stats.totalMilestones}`}
+        <CompletionKpi
+          done={stats.doneMilestones}
+          total={stats.totalMilestones}
+          pct={stats.completionPct}
         />
-      </div>
-
-      <div className="panel">
-        <h3>By priority</h3>
-        {stats.byPriority.map((row) => (
-          <div key={row.label} className={`bar-row ${row.label.toLowerCase()}`}>
-            <span>{row.label}</span>
-            <span className="bar">
-              <span
-                className="bar-fill"
-                style={{ width: `${(row.count / maxPrio) * 100}%` }}
-              />
-            </span>
-            <span className="bar-count">{row.count}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="panel">
-        <h3>By designer</h3>
-        {stats.byDesigner.map((row) => (
-          <div key={row.label} className="bar-row">
-            <span>{row.label}</span>
-            <span className="bar">
-              <span
-                className="bar-fill"
-                style={{
-                  width: `${(row.count / maxDesigner) * 100}%`,
-                  background: row.color,
-                }}
-              />
-            </span>
-            <span className="bar-count">{row.count}</span>
-          </div>
-        ))}
       </div>
 
       <div className="panel-grid">
         <div className="panel">
-          <h3>By brand</h3>
-          {stats.byBrand.length === 0 && <p className="muted small">No data.</p>}
-          {stats.byBrand.map((row) => (
-            <div key={row.label} className="bar-row">
-              <span>{row.label}</span>
-              <span className="bar">
-                <span
-                  className="bar-fill"
-                  style={{ width: `${(row.count / maxBrand) * 100}%` }}
-                />
-              </span>
-              <span className="bar-count">{row.count}</span>
+          <h3>By priority</h3>
+          {priorityChartData.length === 0 ? (
+            <p className="muted small">No data.</p>
+          ) : (
+            <div className="chart-wrap" style={{ height: 240 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={priorityChartData}
+                    dataKey="count"
+                    nameKey="label"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={2}
+                    stroke="none"
+                  >
+                    {priorityChartData.map((entry) => (
+                      <Cell key={entry.label} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number) => [value, "projects"]}
+                  />
+                  <Legend
+                    verticalAlign="middle"
+                    align="right"
+                    layout="vertical"
+                    iconType="circle"
+                    wrapperStyle={{ fontSize: 12 }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-          ))}
+          )}
         </div>
+
         <div className="panel">
-          <h3>By product area</h3>
-          {stats.byProductArea.length === 0 && <p className="muted small">No data.</p>}
-          {stats.byProductArea.map((row) => (
-            <div key={row.label} className="bar-row">
-              <span>{row.label}</span>
-              <span className="bar">
-                <span
-                  className="bar-fill"
-                  style={{ width: `${(row.count / maxArea) * 100}%` }}
-                />
-              </span>
-              <span className="bar-count">{row.count}</span>
-            </div>
-          ))}
+          <h3>By brand</h3>
+          {stats.byBrand.length === 0 ? (
+            <p className="muted small">No data.</p>
+          ) : (
+            <CategoryBars data={stats.byBrand} />
+          )}
         </div>
+      </div>
+
+      {canViewByDesigner && (
+        <div className="panel">
+          <h3>By designer</h3>
+          {stats.byDesigner.length === 0 ? (
+            <p className="muted small">No data.</p>
+          ) : (
+            <CategoryBars
+              data={stats.byDesigner}
+              colored
+              height={Math.max(220, stats.byDesigner.length * 36)}
+            />
+          )}
+        </div>
+      )}
+
+      <div className="panel">
+        <h3>By product area</h3>
+        {stats.byProductArea.length === 0 ? (
+          <p className="muted small">No data.</p>
+        ) : (
+          <CategoryBars data={stats.byProductArea} />
+        )}
       </div>
 
       <div className="export-row">
@@ -321,7 +351,7 @@ export function Analytics({ projects, designers }: Props) {
             download(
               `design-pm-projects-${todayISO()}.csv`,
               toCsv(filtered, designers),
-              "text/csv;charset=utf-8"
+              "text/csv;charset=utf-8",
             )
           }
         >
@@ -332,7 +362,7 @@ export function Analytics({ projects, designers }: Props) {
             download(
               `design-pm-projects-${todayISO()}.json`,
               JSON.stringify(filtered, null, 2),
-              "application/json"
+              "application/json",
             )
           }
         >
@@ -356,6 +386,101 @@ function Kpi({
     <div className={`kpi ${variant ?? ""}`}>
       <p className="kpi-label">{label}</p>
       <p className="kpi-value">{value}</p>
+    </div>
+  );
+}
+
+function CompletionKpi({
+  done,
+  total,
+  pct,
+}: {
+  done: number;
+  total: number;
+  pct: number;
+}) {
+  return (
+    <div className="kpi kpi-gauge">
+      <div>
+        <p className="kpi-label">Milestones</p>
+        <p className="kpi-value">
+          {done}
+          <span className="kpi-sub"> / {total}</span>
+        </p>
+        <p className="muted small">{pct}% complete</p>
+      </div>
+      <div className="kpi-gauge-chart" aria-hidden>
+        <ResponsiveContainer width="100%" height="100%">
+          <RadialBarChart
+            innerRadius="70%"
+            outerRadius="100%"
+            data={[{ value: pct, fill: "#10b981" }]}
+            startAngle={90}
+            endAngle={-270}
+          >
+            <PolarAngleAxis
+              type="number"
+              domain={[0, 100]}
+              tick={false}
+              axisLine={false}
+            />
+            <RadialBar dataKey="value" cornerRadius={8} background />
+          </RadialBarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+type CategoryRow = { label: string; count: number; color?: string };
+
+function CategoryBars({
+  data,
+  colored,
+  height,
+}: {
+  data: CategoryRow[];
+  colored?: boolean;
+  height?: number;
+}) {
+  const chartHeight = height ?? Math.max(180, data.length * 32);
+  return (
+    <div className="chart-wrap" style={{ height: chartHeight }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={data}
+          layout="vertical"
+          margin={{ top: 4, right: 20, bottom: 4, left: 8 }}
+        >
+          <XAxis
+            type="number"
+            allowDecimals={false}
+            tick={{ fontSize: 11, fill: "#6b7280" }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            type="category"
+            dataKey="label"
+            tick={{ fontSize: 12, fill: "#1d2433" }}
+            axisLine={false}
+            tickLine={false}
+            width={120}
+          />
+          <Tooltip
+            cursor={{ fill: "rgba(15, 23, 42, 0.04)" }}
+            formatter={(value: number) => [value, "projects"]}
+          />
+          <Bar dataKey="count" radius={[0, 6, 6, 0]}>
+            {data.map((row, i) => (
+              <Cell
+                key={i}
+                fill={colored && row.color ? row.color : NEUTRAL_BAR}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }

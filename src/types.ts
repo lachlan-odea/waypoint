@@ -20,6 +20,8 @@ export type Comment = {
   author: string;
   text: string;
   createdAt: string;
+  likes?: string[];
+  parentId?: string | null;
 };
 
 export type Project = {
@@ -33,16 +35,29 @@ export type Project = {
   dueDate: string;
   priority: Priority;
   assigneeId: string | null;
+  flaggedForReview?: boolean;
   milestones: Milestone[];
   comments: Comment[];
   createdAt: string;
   source?: "manual" | "outlook";
 };
 
+export type Notification = {
+  id: string;
+  recipientId: string;
+  fromName: string;
+  projectId: string;
+  kind: "comment" | "milestone" | "like" | "reply";
+  snippet: string;
+  createdAt: string;
+  read: boolean;
+};
+
 export type Workspace = {
   designers: Designer[];
   projects: Project[];
   currentDesignerId: string;
+  notifications: Notification[];
 };
 
 export type StorageConfig = {

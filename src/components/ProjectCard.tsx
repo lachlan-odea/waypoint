@@ -57,6 +57,12 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
           />
         </div>
       )}
+      {project.flaggedForReview && (
+        <span className="flag-indicator" title="Flagged for review">
+          <span className="flag-dot" aria-hidden />
+          <span>For review</span>
+        </span>
+      )}
     </button>
   );
 }
