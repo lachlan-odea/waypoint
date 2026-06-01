@@ -559,9 +559,6 @@ textarea {
   gap: 6px;
   font-size: 12px;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .card-next-milestone-dot {
   flex: none;
@@ -569,6 +566,12 @@ textarea {
   height: 6px;
   border-radius: 999px;
   background: var(--primary);
+}
+.card-next-milestone-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .card-foot {
   margin-top: 2px;

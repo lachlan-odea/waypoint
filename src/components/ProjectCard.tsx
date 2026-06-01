@@ -55,7 +55,9 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
       {nextMilestone && (
         <p className="card-next-milestone" title={nextMilestone.label}>
           <span className="card-next-milestone-dot" aria-hidden />
-          Next: {nextMilestone.label}
+          <span className="card-next-milestone-label">
+            Next: {nextMilestone.label}
+          </span>
         </p>
       )}
       <div className="card-row card-foot">
