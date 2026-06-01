@@ -4,6 +4,9 @@ export const BRANDS = [
   "WiseTech Global",
   "WiseTech Academy",
   "e2open",
+  "Blume",
+  "BorderWise",
+  "No brand",
 ] as const;
 
 // Designers who can be selected as reviewers from the "Flag for review" picker
