@@ -76,6 +76,7 @@ export function ProjectDetailModal({
   const [editingCommentText, setEditingCommentText] = useState("");
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -676,13 +677,30 @@ export function ProjectDetailModal({
         </div>
 
         <footer className="modal-foot">
-          <button className="danger" onClick={onDelete}>
-            Delete project
-          </button>
-          <button onClick={() => onArchiveToggle(!project.archived)}>
-            {project.archived ? "Unarchive" : "Archive"}
-          </button>
-          <button onClick={onClose}>Done</button>
+          {confirmingDelete ? (
+            <>
+              <span className="delete-confirm-prompt">
+                Delete this project? It can't be undone.
+              </span>
+              <button onClick={() => setConfirmingDelete(false)}>Cancel</button>
+              <button className="danger" onClick={onDelete}>
+                Yes, delete
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="danger"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                Delete project
+              </button>
+              <button onClick={() => onArchiveToggle(!project.archived)}>
+                {project.archived ? "Unarchive" : "Archive"}
+              </button>
+              <button onClick={onClose}>Done</button>
+            </>
+          )}
         </footer>
       </div>
     </div>
