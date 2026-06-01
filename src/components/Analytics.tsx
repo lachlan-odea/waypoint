@@ -427,7 +427,7 @@ function CompletionKpi({
   return (
     <div className="kpi kpi-gauge">
       <div>
-        <p className="kpi-label">Milestones</p>
+        <p className="kpi-label">Tasks</p>
         <p className="kpi-value">
           {done}
           <span className="kpi-sub"> / {total}</span>

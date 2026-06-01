@@ -586,7 +586,7 @@ export function ProjectDetailModal({
           </section>
 
           <section className="modal-section">
-            <h3>Milestones</h3>
+            <h3>Tasks</h3>
             <ul className="milestones">
               {project.milestones.map((m) => (
                 <li key={m.id}>
