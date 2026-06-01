@@ -51,8 +51,8 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
         <span className="card-due">Due {formatDate(project.dueDate)}</span>
       </div>
       <h4 className="card-title">{project.title}</h4>
-      {!compact && <p className="card-client">{project.client}</p>}
-      {!compact && nextMilestone && (
+      <p className="card-client">{project.client}</p>
+      {nextMilestone && (
         <p className="card-next-milestone" title={nextMilestone.label}>
           <span className="card-next-milestone-dot" aria-hidden />
           Next: {nextMilestone.label}
