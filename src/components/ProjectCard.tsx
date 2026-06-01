@@ -33,6 +33,7 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
   const visibleAssignees = assignees.slice(0, MAX_VISIBLE_ASSIGNEES);
   const extraAssignees = assignees.length - visibleAssignees.length;
   const doneCount = project.milestones.filter((m) => m.done).length;
+  const nextMilestone = project.milestones.find((m) => !m.done);
   const [dragging, setDragging] = useState(false);
   return (
     <button
@@ -51,6 +52,12 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
       </div>
       <h4 className="card-title">{project.title}</h4>
       {!compact && <p className="card-client">{project.client}</p>}
+      {!compact && nextMilestone && (
+        <p className="card-next-milestone" title={nextMilestone.label}>
+          <span className="card-next-milestone-dot" aria-hidden />
+          Next: {nextMilestone.label}
+        </p>
+      )}
       <div className="card-row card-foot">
         <span className="card-brand">{project.brand}</span>
         {assignees.length > 0 && (
