@@ -124,7 +124,7 @@ export function Sidebar({
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="sidebar-head">
-        {!collapsed && <span className="brand-mark">Design&nbsp;PM</span>}
+        {!collapsed && <span className="brand-mark">Waypoint</span>}
         <button className="icon-btn" onClick={onToggleCollapsed} aria-label="Toggle sidebar">
           ☰
         </button>

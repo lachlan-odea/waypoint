@@ -40,8 +40,8 @@ export function Login({ designers, onLogin }: Props) {
   return (
     <div className="login">
       <div className="login-card">
-        <img src={heroImage} alt="Design PM" className="login-hero" />
-        <div className="login-brand">Design&nbsp;PM</div>
+        <img src={heroImage} alt="Waypoint" className="login-hero" />
+        <div className="login-brand">Waypoint</div>
         {!selected ? (
           <>
             <h1 className="login-title">Who are you?</h1>
