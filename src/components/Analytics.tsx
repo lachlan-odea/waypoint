@@ -374,7 +374,7 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
         <button
           onClick={() =>
             download(
-              `design-pm-projects-${todayISO()}.csv`,
+              `waypoint-projects-${todayISO()}.csv`,
               toCsv(filtered, designers),
               "text/csv;charset=utf-8",
             )
@@ -385,7 +385,7 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
         <button
           onClick={() =>
             download(
-              `design-pm-projects-${todayISO()}.json`,
+              `waypoint-projects-${todayISO()}.json`,
               JSON.stringify(filtered, null, 2),
               "application/json",
             )

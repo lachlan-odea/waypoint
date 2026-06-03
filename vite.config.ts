@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/design-pm/',
+  base: '/waypoint/',
   plugins: [
     react(),
     VitePWA({
@@ -17,8 +17,8 @@ export default defineConfig({
         theme_color: '#4f46e5',
         background_color: '#f5f6fa',
         display: 'standalone',
-        start_url: '/design-pm/',
-        scope: '/design-pm/',
+        start_url: '/waypoint/',
+        scope: '/waypoint/',
         icons: [
           {
             src: 'hero.png',
@@ -39,7 +39,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        navigateFallback: '/design-pm/index.html',
+        navigateFallback: '/waypoint/index.html',
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,ico,webp}'],
       },
     }),
