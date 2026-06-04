@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'hero.png'],
+      includeAssets: ['favicon.png', 'hero.png'],
       manifest: {
         name: 'Waypoint',
         short_name: 'Waypoint',

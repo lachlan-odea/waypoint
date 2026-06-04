@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { Designer } from "../types";
 import { Avatar } from "./Avatar";
-import heroImage from "../assets/hero.png";
+
+const heroImage = `${import.meta.env.BASE_URL}hero.png`;
 
 type Props = {
   designers: Designer[];
