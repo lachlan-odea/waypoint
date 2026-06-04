@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import type { Designer, StorageConfig } from "../types";
+import type { Designer } from "../types";
 
 type Props = {
-  config: StorageConfig;
   currentDesigner: Designer;
-  onSaveStorage: (cfg: StorageConfig) => void;
   onChangePin: (newPin: string) => void;
   onClose: () => void;
 };
@@ -12,18 +10,10 @@ type Props = {
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
 
 export function SettingsModal({
-  config,
   currentDesigner,
-  onSaveStorage,
   onChangePin,
   onClose,
 }: Props) {
-  const [mode, setMode] = useState<StorageConfig["mode"]>(config.mode);
-  const [binId, setBinId] = useState(config.binId ?? "");
-  const [apiKey, setApiKey] = useState(config.apiKey ?? "");
-  const [accessKey, setAccessKey] = useState(config.accessKey ?? "");
-  const [storageSaved, setStorageSaved] = useState(false);
-
   const [currentPin, setCurrentPin] = useState("");
   const [nextPin, setNextPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
@@ -37,17 +27,6 @@ export function SettingsModal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-
-  function saveStorage() {
-    onSaveStorage({
-      mode,
-      binId: binId.trim() || undefined,
-      apiKey: apiKey.trim() || undefined,
-      accessKey: accessKey.trim() || undefined,
-    });
-    setStorageSaved(true);
-    window.setTimeout(() => setStorageSaved(false), 1500);
-  }
 
   function savePin() {
     if (currentPin !== currentDesigner.pin) {
@@ -82,73 +61,6 @@ export function SettingsModal({
         </header>
 
         <div className="modal-body">
-          <section className="modal-section">
-            <h3>Storage</h3>
-            <div className="seg">
-              <button
-                className={mode === "local" ? "seg-on" : ""}
-                onClick={() => setMode("local")}
-              >
-                Browser only
-              </button>
-              <button
-                className={mode === "jsonbin" ? "seg-on" : ""}
-                onClick={() => setMode("jsonbin")}
-              >
-                JSONBin
-              </button>
-            </div>
-            {mode === "local" ? (
-              <p className="muted">
-                Projects are saved locally in this browser. Good for trying it
-                out — switch to JSONBin to share across devices and let the
-                Outlook plugin post in.
-              </p>
-            ) : (
-              <>
-                <p className="muted">
-                  Create a bin at{" "}
-                  <a href="https://jsonbin.io" target="_blank" rel="noreferrer">
-                    jsonbin.io
-                  </a>
-                  , then paste its ID and your master key here. The Outlook
-                  plugin should POST/PUT to the same bin.
-                </p>
-                <label className="field">
-                  <span>Bin ID</span>
-                  <input
-                    value={binId}
-                    onChange={(e) => setBinId(e.target.value)}
-                  />
-                </label>
-                <label className="field">
-                  <span>Master key (X-Master-Key)</span>
-                  <input
-                    value={apiKey}
-                    type="password"
-                    onChange={(e) => setApiKey(e.target.value)}
-                  />
-                </label>
-                <label className="field">
-                  <span>Access key (optional)</span>
-                  <input
-                    value={accessKey}
-                    type="password"
-                    onChange={(e) => setAccessKey(e.target.value)}
-                  />
-                </label>
-              </>
-            )}
-            <div className="section-actions">
-              {storageSaved && (
-                <span className="muted small">Storage saved</span>
-              )}
-              <button className="primary" onClick={saveStorage}>
-                Save storage
-              </button>
-            </div>
-          </section>
-
           <section className="modal-section">
             <h3>Change PIN</h3>
             <label className="field">

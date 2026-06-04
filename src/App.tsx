@@ -3,17 +3,9 @@ import type {
   Notification,
   Project,
   ProjectStatus,
-  StorageConfig,
   Workspace,
 } from "./types";
-import {
-  clearSession,
-  loadConfig,
-  loadSession,
-  loadWorkspace,
-  saveConfig,
-  saveSession,
-} from "./storage";
+import { clearSession, loadSession, saveSession } from "./storage";
 import { ensureSignedIn } from "./firebase";
 import {
   deleteNotification as firestoreDeleteNotification,
@@ -54,7 +46,6 @@ function sortByPriorityThenDue(a: Project, b: Project): number {
 }
 
 export default function App() {
-  const [config, setConfig] = useState<StorageConfig>(() => loadConfig());
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [sessionDesignerId, setSessionDesignerId] = useState<string | null>(
     () => loadSession()?.designerId ?? null
@@ -70,8 +61,9 @@ export default function App() {
   const [status, setStatus] = useState<string>("");
   const [dropOverColumn, setDropOverColumn] = useState<string | null>(null);
 
-  // Sign in to Firestore, run the one-off JSONBin migration if Firestore is
-  // empty, then live-subscribe to designers / projects / notifications.
+  // Sign in to Firestore and live-subscribe to designers / projects /
+  // notifications. On a brand-new project where the collections are empty,
+  // seed them once with the bundled defaults so designers can log in.
   useEffect(() => {
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
@@ -84,20 +76,7 @@ export default function App() {
 
         if (await firestoreIsEmpty()) {
           if (cancelled) return;
-          // First-run seed: prefer existing JSONBin data so the team keeps
-          // their history; fall back to the bundled seed for new installs.
-          if (config.mode === "jsonbin" && config.binId && config.apiKey) {
-            setStatus("Migrating from JSONBin…");
-            try {
-              const imported = await loadWorkspace(config);
-              await seedFirestore(imported);
-            } catch (err) {
-              console.error("JSONBin migration failed; seeding defaults.", err);
-              await seedFirestore(seedWorkspace);
-            }
-          } else {
-            await seedFirestore(seedWorkspace);
-          }
+          await seedFirestore(seedWorkspace);
         }
 
         if (cancelled) return;
@@ -131,7 +110,7 @@ export default function App() {
       cancelled = true;
       if (unsubscribe) unsubscribe();
     };
-  }, [config]);
+  }, []);
 
   // If the workspace gets reloaded and the session points at a designer that
   // no longer exists, drop the session.
@@ -461,8 +440,7 @@ export default function App() {
                 : view === "archived"
                   ? `${archivedProjects.length} archived project${archivedProjects.length === 1 ? "" : "s"}`
                   : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned`}
-              {" · "}
-              {config.mode === "jsonbin" && config.binId ? "JSONBin synced" : "local only"}
+              {" · live"}
             </p>
           </div>
           <div className="topbar-actions">
@@ -736,12 +714,7 @@ export default function App() {
 
       {settingsOpen && (
         <SettingsModal
-          config={config}
           currentDesigner={currentDesigner}
-          onSaveStorage={(cfg) => {
-            saveConfig(cfg);
-            setConfig(cfg);
-          }}
           onChangePin={updateDesignerPin}
           onClose={() => setSettingsOpen(false)}
         />

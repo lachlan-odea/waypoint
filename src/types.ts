@@ -64,9 +64,3 @@ export type Workspace = {
   notifications: Notification[];
 };
 
-export type StorageConfig = {
-  mode: "jsonbin" | "local";
-  binId?: string;
-  apiKey?: string;
-  accessKey?: string;
-};
