@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   Notification,
   Project,
@@ -13,8 +13,20 @@ import {
   loadWorkspace,
   saveConfig,
   saveSession,
-  saveWorkspace,
 } from "./storage";
+import { ensureSignedIn } from "./firebase";
+import {
+  deleteNotification as firestoreDeleteNotification,
+  deleteNotificationsForRecipient as firestoreDeleteNotificationsForRecipient,
+  deleteProject as firestoreDeleteProject,
+  firestoreIsEmpty,
+  seedFirestore,
+  setDesigner as firestoreSetDesigner,
+  setNotification as firestoreSetNotification,
+  setProject as firestoreSetProject,
+  subscribeWorkspace,
+} from "./firestore";
+import { seedWorkspace } from "./seed";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetailModal } from "./components/ProjectDetailModal";
@@ -57,37 +69,69 @@ export default function App() {
   const [filter, setFilter] = useState("");
   const [status, setStatus] = useState<string>("");
   const [dropOverColumn, setDropOverColumn] = useState<string | null>(null);
-  const saveTimer = useRef<number | null>(null);
 
+  // Sign in to Firestore, run the one-off JSONBin migration if Firestore is
+  // empty, then live-subscribe to designers / projects / notifications.
   useEffect(() => {
     let cancelled = false;
-    setStatus("Loading…");
-    loadWorkspace(config)
-      .then((ws) => {
+    let unsubscribe: (() => void) | null = null;
+    setStatus("Connecting…");
+
+    (async () => {
+      try {
+        await ensureSignedIn();
         if (cancelled) return;
-        setWorkspace(ws);
-        setStatus("");
-      })
-      .catch((err) => {
+
+        if (await firestoreIsEmpty()) {
+          if (cancelled) return;
+          // First-run seed: prefer existing JSONBin data so the team keeps
+          // their history; fall back to the bundled seed for new installs.
+          if (config.mode === "jsonbin" && config.binId && config.apiKey) {
+            setStatus("Migrating from JSONBin…");
+            try {
+              const imported = await loadWorkspace(config);
+              await seedFirestore(imported);
+            } catch (err) {
+              console.error("JSONBin migration failed; seeding defaults.", err);
+              await seedFirestore(seedWorkspace);
+            }
+          } else {
+            await seedFirestore(seedWorkspace);
+          }
+        }
+
+        if (cancelled) return;
+        unsubscribe = subscribeWorkspace(
+          (ws) => {
+            if (cancelled) return;
+            setWorkspace({
+              currentDesignerId: "",
+              designers: ws.designers,
+              projects: ws.projects,
+              notifications: ws.notifications,
+            });
+            setStatus("");
+          },
+          (err) => {
+            if (cancelled) return;
+            console.error(err);
+            setStatus(`Sync error: ${err.message}`);
+          },
+        );
+      } catch (err) {
         if (cancelled) return;
         console.error(err);
-        setStatus(`Load failed: ${err.message}. Falling back to local data.`);
-        loadWorkspace({ mode: "local" }).then((ws) => setWorkspace(ws));
-      });
+        setStatus(
+          `Sign-in failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    })();
+
     return () => {
       cancelled = true;
+      if (unsubscribe) unsubscribe();
     };
   }, [config]);
-
-  useEffect(() => {
-    if (!workspace) return;
-    if (saveTimer.current) window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => {
-      saveWorkspace(config, workspace)
-        .then(() => setStatus(""))
-        .catch((err) => setStatus(`Save failed: ${err.message}`));
-    }, 400);
-  }, [workspace, config]);
 
   // If the workspace gets reloaded and the session points at a designer that
   // no longer exists, drop the session.
@@ -228,23 +272,34 @@ export default function App() {
     [activeProjects, isReviewer],
   );
 
-  function updateProject(id: string, updater: (p: Project) => Project) {
-    setWorkspace((ws) =>
-      ws
-        ? { ...ws, projects: ws.projects.map((p) => (p.id === id ? updater(p) : p)) }
-        : ws
+  // Every mutator writes the target doc to Firestore and relies on the live
+  // subscription to update `workspace` — the SDK's offline persistence makes
+  // the listener fire immediately from the IndexedDB cache, so the UI feels
+  // instant while the server write happens in the background.
+  function writeError(err: unknown) {
+    console.error("Firestore write failed", err);
+    setStatus(
+      `Save failed: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
+  function findProject(id: string): Project | null {
+    return workspace?.projects.find((p) => p.id === id) ?? null;
+  }
+
+  function updateProject(id: string, updater: (p: Project) => Project) {
+    const project = findProject(id);
+    if (!project) return;
+    firestoreSetProject(updater(project)).catch(writeError);
+  }
+
   function deleteProject(id: string) {
-    setWorkspace((ws) =>
-      ws ? { ...ws, projects: ws.projects.filter((p) => p.id !== id) } : ws
-    );
+    firestoreDeleteProject(id).catch(writeError);
     setOpenProjectId(null);
   }
 
   function createProject(project: Project) {
-    setWorkspace((ws) => (ws ? { ...ws, projects: [project, ...ws.projects] } : ws));
+    firestoreSetProject(project).catch(writeError);
     setCreating(false);
     setCreateInitial(undefined);
     setOpenProjectId(project.id);
@@ -254,85 +309,52 @@ export default function App() {
   // additional assignee (the card stays in any existing assignees' columns
   // too). Dropping on the Unassigned column clears all assignees.
   function dropProjectOnto(projectId: string, designerId: string | null) {
-    setWorkspace((ws) =>
-      ws
-        ? {
-            ...ws,
-            projects: ws.projects.map((p) => {
-              if (p.id !== projectId) return p;
-              if (designerId === null) return { ...p, assigneeIds: [] };
-              if (p.assigneeIds.includes(designerId)) return p;
-              return { ...p, assigneeIds: [...p.assigneeIds, designerId] };
-            }),
-          }
-        : ws,
-    );
+    const project = findProject(projectId);
+    if (!project) return;
+    let updated: Project;
+    if (designerId === null) {
+      if (project.assigneeIds.length === 0) return;
+      updated = { ...project, assigneeIds: [] };
+    } else {
+      if (project.assigneeIds.includes(designerId)) return;
+      updated = { ...project, assigneeIds: [...project.assigneeIds, designerId] };
+    }
+    firestoreSetProject(updated).catch(writeError);
   }
 
   function addNotifications(notifs: Notification[]) {
     if (notifs.length === 0) return;
-    setWorkspace((ws) =>
-      ws ? { ...ws, notifications: [...notifs, ...ws.notifications] } : ws,
-    );
+    notifs.forEach((n) => firestoreSetNotification(n).catch(writeError));
   }
 
   function clearAllNotifications() {
-    setWorkspace((ws) =>
-      ws
-        ? {
-            ...ws,
-            notifications: ws.notifications.filter(
-              (n) => n.recipientId !== sessionDesignerId,
-            ),
-          }
-        : ws,
+    if (!sessionDesignerId) return;
+    firestoreDeleteNotificationsForRecipient(sessionDesignerId).catch(
+      writeError,
     );
   }
 
   function deleteNotification(id: string) {
-    setWorkspace((ws) =>
-      ws
-        ? { ...ws, notifications: ws.notifications.filter((n) => n.id !== id) }
-        : ws,
-    );
+    firestoreDeleteNotification(id).catch(writeError);
   }
 
   function setProjectArchived(projectId: string, archived: boolean) {
-    setWorkspace((ws) =>
-      ws
-        ? {
-            ...ws,
-            projects: ws.projects.map((p) =>
-              p.id === projectId ? { ...p, archived } : p,
-            ),
-          }
-        : ws,
-    );
+    const project = findProject(projectId);
+    if (!project) return;
+    firestoreSetProject({ ...project, archived }).catch(writeError);
   }
 
   function setProjectStatus(projectId: string, status: ProjectStatus) {
-    setWorkspace((ws) =>
-      ws
-        ? {
-            ...ws,
-            projects: ws.projects.map((p) =>
-              p.id === projectId ? { ...p, status } : p,
-            ),
-          }
-        : ws,
-    );
+    const project = findProject(projectId);
+    if (!project) return;
+    firestoreSetProject({ ...project, status }).catch(writeError);
   }
 
   function flagForReview(projectId: string, flagged: boolean) {
-    setWorkspace((ws) =>
-      ws
-        ? {
-            ...ws,
-            projects: ws.projects.map((p) =>
-              p.id === projectId ? { ...p, flaggedForReview: flagged } : p,
-            ),
-          }
-        : ws,
+    const project = findProject(projectId);
+    if (!project) return;
+    firestoreSetProject({ ...project, flaggedForReview: flagged }).catch(
+      writeError,
     );
   }
 
@@ -353,16 +375,11 @@ export default function App() {
 
   function updateDesignerPin(newPin: string) {
     if (!sessionDesignerId) return;
-    setWorkspace((ws) =>
-      ws
-        ? {
-            ...ws,
-            designers: ws.designers.map((d) =>
-              d.id === sessionDesignerId ? { ...d, pin: newPin } : d
-            ),
-          }
-        : ws
+    const designer = workspace?.designers.find(
+      (d) => d.id === sessionDesignerId,
     );
+    if (!designer) return;
+    firestoreSetDesigner({ ...designer, pin: newPin }).catch(writeError);
   }
 
   if (!workspace) {
