@@ -24,6 +24,17 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+// True if `iso` (a YYYY-MM-DD due date) is strictly before today in local
+// time. An empty / invalid date is not overdue.
+function isPastDue(iso: string): boolean {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return d.getTime() < today.getTime();
+}
+
 const MAX_VISIBLE_ASSIGNEES = 3;
 
 export function ProjectCard({ project, designers, onClick, compact }: Props) {
@@ -35,6 +46,12 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
   const doneCount = project.milestones.filter((m) => m.done).length;
   const nextMilestone = project.milestones.find((m) => !m.done);
   const [dragging, setDragging] = useState(false);
+  // Only living work can be overdue — completed and archived projects keep a
+  // neutral due date so the column doesn't scream at finished items.
+  const overdue =
+    isPastDue(project.dueDate) &&
+    project.status !== "completed" &&
+    !project.archived;
   return (
     <button
       className={`project-card ${compact ? "compact" : ""} ${dragging ? "dragging" : ""}`}
@@ -48,7 +65,10 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
     >
       <div className="card-row">
         <span className={priorityClass[project.priority]}>{project.priority}</span>
-        <span className="card-due">Due {formatDate(project.dueDate)}</span>
+        <span className={`card-due ${overdue ? "overdue" : ""}`}>
+          {overdue && <span className="card-overdue-chip">Overdue</span>}
+          Due {formatDate(project.dueDate)}
+        </span>
       </div>
       <h4 className="card-title">{project.title}</h4>
       <p className="card-client">{project.client}</p>

@@ -1,4 +1,5 @@
-import type { Workspace } from "./types";
+import type { WorkspaceData } from "./types";
+import { SEED_WORKSPACES } from "./constants";
 import avatarJess from "./assets/Jessica Duguid-162x162.jpg";
 import avatarOliver from "./assets/Oliver Braun-162x162.jpg";
 import avatarBen from "./assets/Ben Marin-162x162.jpg";
@@ -9,23 +10,25 @@ import avatarDanielle from "./assets/Danielle Clarke- 162x162.jpg";
 import avatarHeather from "./assets/Heather Cipullo- 162x162.jpg";
 import avatarPatrice from "./assets/Patrice Roarke- 162x162.jpg";
 
-export const seedWorkspace: Workspace = {
+export const seedWorkspace: WorkspaceData = {
   currentDesignerId: "d-jess",
+  workspaces: SEED_WORKSPACES.map((w) => ({ ...w })),
   designers: [
-    { id: "d-jess", name: "Jess Duguid", initials: "JD", color: "#7c5cff", pin: "1001", avatar: avatarJess },
-    { id: "d-oliver", name: "Oliver Braun", initials: "OB", color: "#ff7a59", pin: "1002", avatar: avatarOliver },
-    { id: "d-ben", name: "Ben Marin", initials: "BM", color: "#22b8a6", pin: "1003", avatar: avatarBen },
-    { id: "d-karen", name: "Karen De Lara", initials: "KD", color: "#f2c94c", pin: "1004", avatar: avatarKaren },
-    { id: "d-attreyee", name: "Attreyee Ghosh", initials: "AG", color: "#3b82f6", pin: "1005", avatar: avatarAttreyee },
-    { id: "d-rachel", name: "Rachel Tse", initials: "RT", color: "#ec4899", pin: "1006", avatar: avatarRachel },
-    { id: "d-danielle", name: "Danielle Clarke", initials: "DC", color: "#10b981", pin: "1007", avatar: avatarDanielle },
-    { id: "d-heather", name: "Heather Cipullo", initials: "HC", color: "#f97316", pin: "1008", avatar: avatarHeather },
-    { id: "d-patrice", name: "Patrice Roarke", initials: "PR", color: "#8b5cf6", pin: "1009", avatar: avatarPatrice },
+    { id: "d-jess", name: "Jess Duguid", initials: "JD", color: "#7c5cff", avatar: avatarJess },
+    { id: "d-oliver", name: "Oliver Braun", initials: "OB", color: "#ff7a59", avatar: avatarOliver },
+    { id: "d-ben", name: "Ben Marin", initials: "BM", color: "#22b8a6", avatar: avatarBen },
+    { id: "d-karen", name: "Karen De Lara", initials: "KD", color: "#f2c94c", avatar: avatarKaren },
+    { id: "d-attreyee", name: "Attreyee Ghosh", initials: "AG", color: "#3b82f6", avatar: avatarAttreyee },
+    { id: "d-rachel", name: "Rachel Tse", initials: "RT", color: "#ec4899", avatar: avatarRachel },
+    { id: "d-danielle", name: "Danielle Clarke", initials: "DC", color: "#10b981", avatar: avatarDanielle },
+    { id: "d-heather", name: "Heather Cipullo", initials: "HC", color: "#f97316", avatar: avatarHeather },
+    { id: "d-patrice", name: "Patrice Roarke", initials: "PR", color: "#8b5cf6", avatar: avatarPatrice },
   ],
   notifications: [],
   projects: [
     {
       id: "p-001",
+      workspaceId: "design",
       title: "CargoWise Q3 Launch Banner",
       overview: "Hero banner set for the Q3 product launch landing page.",
       client: "CargoWise — Marketing",
@@ -53,6 +56,7 @@ export const seedWorkspace: Workspace = {
     },
     {
       id: "p-002",
+      workspaceId: "design",
       title: "Customs Webinar Social Pack",
       overview: "LinkedIn + Twitter social tiles for the customs webinar series.",
       client: "Customs Team",
@@ -72,6 +76,7 @@ export const seedWorkspace: Workspace = {
     },
     {
       id: "p-101",
+      workspaceId: "design",
       title: "Compliance Whitepaper Layout",
       overview: "20-page whitepaper interior design with diagrams.",
       client: "Compliance",
@@ -88,6 +93,7 @@ export const seedWorkspace: Workspace = {
     },
     {
       id: "p-102",
+      workspaceId: "design",
       title: "Trade Show Booth Graphics",
       overview: "Large-format graphics for the June trade show booth.",
       client: "Events",
@@ -104,6 +110,7 @@ export const seedWorkspace: Workspace = {
     },
     {
       id: "p-201",
+      workspaceId: "design",
       title: "Onboarding Email Templates",
       overview: "Refresh of the customer onboarding email series.",
       client: "Customer Success",
@@ -120,6 +127,7 @@ export const seedWorkspace: Workspace = {
     },
     {
       id: "p-301",
+      workspaceId: "design",
       title: "Mobile App Icon Refresh",
       overview: "Updated iOS / Android icon set for the customer portal.",
       client: "Product",
@@ -136,6 +144,7 @@ export const seedWorkspace: Workspace = {
     },
     {
       id: "p-401",
+      workspaceId: "design",
       title: "Annual Report 2026 Cover",
       overview: "Cover artwork concepts for the 2026 annual report.",
       client: "Investor Relations",
@@ -152,6 +161,7 @@ export const seedWorkspace: Workspace = {
     },
     {
       id: "p-501",
+      workspaceId: "design",
       title: "Sales Deck Refresh",
       overview: "Updated master sales deck template — 40+ slides.",
       client: "Sales Enablement",
@@ -168,6 +178,7 @@ export const seedWorkspace: Workspace = {
     },
     {
       id: "p-601",
+      workspaceId: "design",
       title: "Brand Refresh Style Guide",
       overview: "Updated style guide with new typography and colour tokens.",
       client: "Brand",
@@ -184,6 +195,7 @@ export const seedWorkspace: Workspace = {
     },
     {
       id: "p-701",
+      workspaceId: "design",
       title: "Partner Portal Illustrations",
       overview: "Custom illustration set for the partner portal empty states.",
       client: "Partners Team",

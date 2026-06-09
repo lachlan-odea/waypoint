@@ -14,7 +14,14 @@ import { Avatar } from "./Avatar";
 
 type Props = {
   project: Project;
+  // Full designer list — used for looking up names/avatars on existing
+  // assignees, comment authors, and @-mention parsing. Stays unfiltered so
+  // people who've been removed from the workspace still render correctly on
+  // historical assignments and mentions.
   designers: Designer[];
+  // Designers who can be picked as assignees from the picker — narrowed to
+  // members of the project's workspace.
+  assignableDesigners: Designer[];
   currentDesignerId: string;
   currentDesignerName: string;
   onClose: () => void;
@@ -59,6 +66,7 @@ function snippetFrom(text: string, max = 80): string {
 export function ProjectDetailModal({
   project,
   designers,
+  assignableDesigners,
   currentDesignerId,
   currentDesignerName,
   onClose,
@@ -96,6 +104,7 @@ export function ProjectDetailModal({
       .filter((r) => r.id !== currentDesignerId)
       .map((r) => ({
         id: `n-${Date.now()}-${r.id}`,
+        workspaceId: project.workspaceId,
         recipientId: r.id,
         fromName: currentDesignerName,
         projectId: project.id,
@@ -224,6 +233,7 @@ export function ProjectDetailModal({
       if (parentAuthor && parentAuthor.id !== currentDesignerId) {
         notifs.push({
           id: `n-${Date.now()}-reply-${parentAuthor.id}`,
+          workspaceId: project.workspaceId,
           recipientId: parentAuthor.id,
           fromName: currentDesignerName,
           projectId: project.id,
@@ -370,6 +380,7 @@ export function ProjectDetailModal({
         onNotify([
           {
             id: `n-${Date.now()}-like-${author.id}`,
+            workspaceId: project.workspaceId,
             recipientId: author.id,
             fromName: currentDesignerName,
             projectId: project.id,
@@ -524,7 +535,7 @@ export function ProjectDetailModal({
             </Field>
             <Field label="Assignees">
               <div className="assignee-picker">
-                {designers.map((d) => {
+                {assignableDesigners.map((d) => {
                   const active = project.assigneeIds.includes(d.id);
                   return (
                     <button

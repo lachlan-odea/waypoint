@@ -1,24 +1,52 @@
 import { useEffect, useState } from "react";
-import type { Designer } from "../types";
+import type { Designer, Workspace } from "../types";
+import { changePassword } from "../firebase";
+import { Avatar } from "./Avatar";
 
 type Props = {
   currentDesigner: Designer;
-  onChangePin: (newPin: string) => void;
+  isAdmin: boolean;
+  designers: Designer[];
+  workspaces: Workspace[];
+  onUpdateWorkspaceMembers: (
+    workspaceId: string,
+    memberIds: string[],
+  ) => Promise<void>;
+  onUpdatePhotoUrl: (url: string) => Promise<void>;
   onClose: () => void;
 };
 
-const onlyDigits = (s: string) => s.replace(/\D/g, "");
+function friendlyError(err: unknown): string {
+  if (err && typeof err === "object" && "code" in err) {
+    const code = (err as { code: string }).code;
+    switch (code) {
+      case "auth/wrong-password":
+      case "auth/invalid-credential":
+        return "Current password is incorrect.";
+      case "auth/weak-password":
+        return "New password needs to be at least 6 characters.";
+      case "auth/requires-recent-login":
+        return "Please sign out and back in, then try again.";
+    }
+  }
+  return err instanceof Error ? err.message : String(err);
+}
 
 export function SettingsModal({
   currentDesigner,
-  onChangePin,
+  isAdmin,
+  designers,
+  workspaces,
+  onUpdateWorkspaceMembers,
+  onUpdatePhotoUrl,
   onClose,
 }: Props) {
-  const [currentPin, setCurrentPin] = useState("");
-  const [nextPin, setNextPin] = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
-  const [pinError, setPinError] = useState<string | null>(null);
-  const [pinSaved, setPinSaved] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [nextPassword, setNextPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -28,31 +56,38 @@ export function SettingsModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  function savePin() {
-    if (currentPin !== currentDesigner.pin) {
-      setPinError("Current PIN is incorrect.");
+  async function savePassword() {
+    setError(null);
+    if (nextPassword.length < 6) {
+      setError("New password must be at least 6 characters.");
       return;
     }
-    if (nextPin.length < 4) {
-      setPinError("New PIN must be at least 4 digits.");
+    if (nextPassword !== confirmPassword) {
+      setError("New password and confirmation don't match.");
       return;
     }
-    if (nextPin !== confirmPin) {
-      setPinError("New PIN and confirmation don't match.");
-      return;
+    setBusy(true);
+    try {
+      await changePassword(currentPassword, nextPassword);
+      setCurrentPassword("");
+      setNextPassword("");
+      setConfirmPassword("");
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 1500);
+    } catch (err) {
+      console.error(err);
+      setError(friendlyError(err));
+    } finally {
+      setBusy(false);
     }
-    onChangePin(nextPin);
-    setPinError(null);
-    setCurrentPin("");
-    setNextPin("");
-    setConfirmPin("");
-    setPinSaved(true);
-    window.setTimeout(() => setPinSaved(false), 1500);
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-narrow" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`modal ${isAdmin ? "" : "modal-narrow"}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className="modal-head">
           <h2 className="modal-title-static">Settings</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
@@ -61,50 +96,74 @@ export function SettingsModal({
         </header>
 
         <div className="modal-body">
+          {isAdmin && (
+            <ManageWorkspaces
+              designers={designers}
+              workspaces={workspaces}
+              onUpdateWorkspaceMembers={onUpdateWorkspaceMembers}
+            />
+          )}
+
           <section className="modal-section">
-            <h3>Change PIN</h3>
+            <h3>Account</h3>
+            <p className="muted small">
+              Signed in as <strong>{currentDesigner.name}</strong>
+              {currentDesigner.email ? ` · ${currentDesigner.email}` : ""}
+            </p>
+          </section>
+
+          <ProfilePhotoSection
+            currentDesigner={currentDesigner}
+            onSave={onUpdatePhotoUrl}
+          />
+
+          <section className="modal-section">
+            <h3>Change password</h3>
             <label className="field">
-              <span>Current PIN</span>
+              <span>Current password</span>
               <input
                 type="password"
-                inputMode="numeric"
-                value={currentPin}
+                autoComplete="current-password"
+                value={currentPassword}
                 onChange={(e) => {
-                  setCurrentPin(onlyDigits(e.target.value));
-                  setPinError(null);
+                  setCurrentPassword(e.target.value);
+                  setError(null);
                 }}
+                disabled={busy}
               />
             </label>
             <label className="field">
-              <span>New PIN</span>
+              <span>New password</span>
               <input
                 type="password"
-                inputMode="numeric"
-                value={nextPin}
+                autoComplete="new-password"
+                value={nextPassword}
                 onChange={(e) => {
-                  setNextPin(onlyDigits(e.target.value));
-                  setPinError(null);
+                  setNextPassword(e.target.value);
+                  setError(null);
                 }}
+                disabled={busy}
               />
             </label>
             <label className="field">
-              <span>Confirm new PIN</span>
+              <span>Confirm new password</span>
               <input
                 type="password"
-                inputMode="numeric"
-                value={confirmPin}
+                autoComplete="new-password"
+                value={confirmPassword}
                 onChange={(e) => {
-                  setConfirmPin(onlyDigits(e.target.value));
-                  setPinError(null);
+                  setConfirmPassword(e.target.value);
+                  setError(null);
                 }}
-                onKeyDown={(e) => e.key === "Enter" && savePin()}
+                onKeyDown={(e) => e.key === "Enter" && !busy && savePassword()}
+                disabled={busy}
               />
             </label>
-            {pinError && <p className="login-error">{pinError}</p>}
+            {error && <p className="login-error">{error}</p>}
             <div className="section-actions">
-              {pinSaved && <span className="muted small">PIN updated</span>}
-              <button className="primary" onClick={savePin}>
-                Save PIN
+              {saved && <span className="muted small">Password updated</span>}
+              <button className="primary" onClick={savePassword} disabled={busy}>
+                {busy ? "Saving…" : "Save password"}
               </button>
             </div>
           </section>
@@ -113,6 +172,223 @@ export function SettingsModal({
         <footer className="modal-foot">
           <button onClick={onClose}>Close</button>
         </footer>
+      </div>
+    </div>
+  );
+}
+
+type ProfilePhotoSectionProps = {
+  currentDesigner: Designer;
+  onSave: (url: string) => Promise<void>;
+};
+
+function ProfilePhotoSection({
+  currentDesigner,
+  onSave,
+}: ProfilePhotoSectionProps) {
+  const initial = currentDesigner.photoUrl ?? "";
+  const [url, setUrl] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Re-sync if the upstream doc changes (e.g. saved on another tab).
+  useEffect(() => {
+    setUrl(currentDesigner.photoUrl ?? "");
+  }, [currentDesigner.photoUrl]);
+
+  const trimmed = url.trim();
+  const dirty = trimmed !== (currentDesigner.photoUrl ?? "");
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      await onSave(trimmed);
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 1500);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Preview reflects the as-typed URL so you can see whether your link works
+  // before saving. Falls back to the saved avatar (or initials) if blank.
+  const previewDesigner: Designer = {
+    ...currentDesigner,
+    photoUrl: trimmed || undefined,
+  };
+
+  return (
+    <section className="modal-section">
+      <h3>Profile photo</h3>
+      <p className="muted small">
+        Paste a link to a hosted headshot (e.g. a public OneDrive or
+        SharePoint image URL). Leave blank to fall back to your initials.
+      </p>
+      <div className="profile-photo-row">
+        <Avatar
+          key={previewDesigner.photoUrl ?? "initials"}
+          designer={previewDesigner}
+          className="dot-avatar profile-photo-preview"
+        />
+        <label className="field profile-photo-field">
+          <span>Photo URL</span>
+          <input
+            type="url"
+            placeholder="https://…"
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              setError(null);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && dirty && !busy && save()}
+            disabled={busy}
+          />
+        </label>
+      </div>
+      {error && <p className="login-error">{error}</p>}
+      <div className="section-actions">
+        {saved && <span className="muted small">Saved</span>}
+        <button
+          className="primary"
+          onClick={save}
+          disabled={busy || !dirty}
+        >
+          {busy ? "Saving…" : "Save photo"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+type ManageWorkspacesProps = {
+  designers: Designer[];
+  workspaces: Workspace[];
+  onUpdateWorkspaceMembers: (
+    workspaceId: string,
+    memberIds: string[],
+  ) => Promise<void>;
+};
+
+function ManageWorkspaces({
+  designers,
+  workspaces,
+  onUpdateWorkspaceMembers,
+}: ManageWorkspacesProps) {
+  return (
+    <section className="modal-section">
+      <h3>Manage workspaces</h3>
+      <p className="muted small">
+        Pick who's on each team. Everyone can see every workspace; this just
+        controls who shows up in the Team columns and assignee pickers
+        inside it. Leave a workspace empty to show every designer.
+      </p>
+      <div className="manage-workspaces">
+        {workspaces.map((w) => (
+          <WorkspaceMemberRow
+            key={w.id}
+            workspace={w}
+            designers={designers}
+            onSave={(ids) => onUpdateWorkspaceMembers(w.id, ids)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+type WorkspaceMemberRowProps = {
+  workspace: Workspace;
+  designers: Designer[];
+  onSave: (ids: string[]) => Promise<void>;
+};
+
+function WorkspaceMemberRow({
+  workspace,
+  designers,
+  onSave,
+}: WorkspaceMemberRowProps) {
+  const initial = workspace.memberIds ?? [];
+  const [selected, setSelected] = useState<string[]>(initial);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Reset local selection if the upstream workspace doc changes (e.g. a
+  // concurrent edit from another admin).
+  useEffect(() => {
+    setSelected(workspace.memberIds ?? []);
+  }, [workspace.memberIds]);
+
+  const initialKey = initial.slice().sort().join(",");
+  const selectedKey = selected.slice().sort().join(",");
+  const dirty = initialKey !== selectedKey;
+
+  function toggle(id: string) {
+    setSelected((cur) =>
+      cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
+    );
+  }
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      await onSave(selected);
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 1500);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="workspace-member-row">
+      <div className="workspace-member-head">
+        <strong>{workspace.name}</strong>
+        <span className="muted small">
+          {selected.length === 0
+            ? "Open to everyone"
+            : `${selected.length} member${selected.length === 1 ? "" : "s"}`}
+        </span>
+      </div>
+      <div className="assignee-picker">
+        {designers.map((d) => {
+          const active = selected.includes(d.id);
+          return (
+            <button
+              type="button"
+              key={d.id}
+              className={`assignee-chip ${active ? "active" : ""}`}
+              onClick={() => toggle(d.id)}
+              disabled={busy}
+            >
+              <Avatar
+                designer={d}
+                className="dot-avatar assignee-chip-avatar"
+              />
+              <span>{d.name.split(" ")[0]}</span>
+            </button>
+          );
+        })}
+      </div>
+      {error && <p className="login-error">{error}</p>}
+      <div className="section-actions">
+        {saved && <span className="muted small">Saved</span>}
+        <button
+          className="primary"
+          onClick={save}
+          disabled={busy || !dirty}
+        >
+          {busy ? "Saving…" : "Save"}
+        </button>
       </div>
     </div>
   );

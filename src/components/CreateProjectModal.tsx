@@ -47,6 +47,7 @@ export function CreateProjectModal({
     if (!title.trim()) return;
     const project: Project = {
       id: initial?.id ?? `p-${Date.now()}`,
+      workspaceId: initial?.workspaceId ?? "design",
       title: title.trim(),
       overview,
       client,

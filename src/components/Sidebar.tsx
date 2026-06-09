@@ -1,4 +1,4 @@
-import type { Designer } from "../types";
+import type { Designer, Workspace } from "../types";
 import { Avatar } from "./Avatar";
 
 export type SidebarView = "workspace" | "analytics" | "archived";
@@ -8,6 +8,9 @@ type Props = {
   collapsed: boolean;
   view: SidebarView;
   unreadNotifications: number;
+  workspaces: Workspace[];
+  currentWorkspaceId: string;
+  onSelectWorkspace: (id: string) => void;
   onToggleCollapsed: () => void;
   onSelectView: (view: SidebarView) => void;
   onNewProject: () => void;
@@ -68,6 +71,42 @@ function WorkspaceGlyph() {
   );
 }
 
+function BrushGlyph() {
+  return (
+    <svg {...navGlyphProps}>
+      <path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08" />
+      <path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z" />
+    </svg>
+  );
+}
+
+function VideoGlyph() {
+  return (
+    <svg {...navGlyphProps}>
+      <polygon points="23 7 16 12 23 17 23 7" />
+      <rect x="1" y="5" width="15" height="14" rx="2" />
+    </svg>
+  );
+}
+
+function MegaphoneGlyph() {
+  return (
+    <svg {...navGlyphProps}>
+      <path d="m3 11 18-5v12L3 14v-3z" />
+      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+    </svg>
+  );
+}
+
+const WORKSPACE_VISUALS: Record<
+  string,
+  { color: string; Glyph: () => React.ReactElement }
+> = {
+  design: { color: "#4f46e5", Glyph: BrushGlyph },
+  video: { color: "#ef4444", Glyph: VideoGlyph },
+  marketing: { color: "#10b981", Glyph: MegaphoneGlyph },
+};
+
 function AnalyticsGlyph() {
   return (
     <svg {...navGlyphProps}>
@@ -114,6 +153,9 @@ export function Sidebar({
   collapsed,
   view,
   unreadNotifications,
+  workspaces,
+  currentWorkspaceId,
+  onSelectWorkspace,
   onToggleCollapsed,
   onSelectView,
   onNewProject,
@@ -145,20 +187,33 @@ export function Sidebar({
           {collapsed ? "+" : "+ New project"}
         </button>
 
+        {!collapsed && <div className="nav-section">Workspaces</div>}
+        <ul className="designer-list">
+          {workspaces.map((w) => {
+            const v = WORKSPACE_VISUALS[w.id] ?? {
+              color: "#64748b",
+              Glyph: WorkspaceGlyph,
+            };
+            const active = view === "workspace" && currentWorkspaceId === w.id;
+            return (
+              <li key={w.id}>
+                <button
+                  className={`designer-btn ${active ? "active" : ""}`}
+                  onClick={() => onSelectWorkspace(w.id)}
+                  title={w.name}
+                >
+                  <span className="dot-avatar" style={{ background: v.color }}>
+                    <v.Glyph />
+                  </span>
+                  {!collapsed && <span className="designer-name">{w.name}</span>}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
         {!collapsed && <div className="nav-section">View</div>}
         <ul className="designer-list">
-          <li>
-            <button
-              className={`designer-btn ${view === "workspace" ? "active" : ""}`}
-              onClick={() => onSelectView("workspace")}
-              title="Workspace"
-            >
-              <span className="dot-avatar" style={{ background: "#4f46e5" }}>
-                <WorkspaceGlyph />
-              </span>
-              {!collapsed && <span className="designer-name">Workspace</span>}
-            </button>
-          </li>
           <li>
             <button
               className={`designer-btn ${view === "analytics" ? "active" : ""}`}

@@ -3,22 +3,20 @@ import type {
   Notification,
   Project,
   ProjectStatus,
-  Workspace,
+  WorkspaceData,
 } from "./types";
-import { clearSession, loadSession, saveSession } from "./storage";
-import { ensureSignedIn } from "./firebase";
+import { auth, observeAuth, signOut as fbSignOut } from "./firebase";
 import {
   deleteNotification as firestoreDeleteNotification,
   deleteNotificationsForRecipient as firestoreDeleteNotificationsForRecipient,
   deleteProject as firestoreDeleteProject,
-  firestoreIsEmpty,
-  seedFirestore,
-  setDesigner as firestoreSetDesigner,
+  seedWorkspacesIfMissing,
+  setDesignerPhotoUrl as firestoreSetDesignerPhotoUrl,
   setNotification as firestoreSetNotification,
   setProject as firestoreSetProject,
+  setWorkspaceMembers as firestoreSetWorkspaceMembers,
   subscribeWorkspace,
 } from "./firestore";
-import { seedWorkspace } from "./seed";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetailModal } from "./components/ProjectDetailModal";
@@ -27,9 +25,14 @@ import { CreateProjectModal } from "./components/CreateProjectModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { Analytics } from "./components/Analytics";
 import { Login } from "./components/Login";
+import { ProfileSetup } from "./components/ProfileSetup";
 import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
-import { REVIEWER_IDS } from "./constants";
+import {
+  DEFAULT_WORKSPACE_ID,
+  REVIEWER_IDS,
+  SUPER_USER_EMAILS,
+} from "./constants";
 import "./App.css";
 
 const PRIORITY_ORDER: Record<string, number> = {
@@ -46,10 +49,14 @@ function sortByPriorityThenDue(a: Project, b: Project): number {
 }
 
 export default function App() {
-  const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [sessionDesignerId, setSessionDesignerId] = useState<string | null>(
-    () => loadSession()?.designerId ?? null
-  );
+  const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
+  // null = not signed in. undefined = still waiting for the initial auth
+  // state-change callback (Firebase persists across reloads but the
+  // restoration is async). We distinguish so the login screen doesn't
+  // flash before the persisted user is restored.
+  const [sessionDesignerId, setSessionDesignerId] = useState<
+    string | null | undefined
+  >(undefined);
   const [collapsed, setCollapsed] = useState(false);
   const [view, setView] = useState<SidebarView>("workspace");
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
@@ -60,68 +67,80 @@ export default function App() {
   const [filter, setFilter] = useState("");
   const [status, setStatus] = useState<string>("");
   const [dropOverColumn, setDropOverColumn] = useState<string | null>(null);
+  // Which workspace tab is currently active (Design / Video / Marketing).
+  // Persisted per browser so a refresh keeps you on the same workspace.
+  const [currentWorkspaceId, setCurrentWorkspaceIdState] = useState<string>(
+    () => localStorage.getItem("waypoint.workspaceId") || DEFAULT_WORKSPACE_ID,
+  );
+  function setCurrentWorkspaceId(id: string) {
+    setCurrentWorkspaceIdState(id);
+    localStorage.setItem("waypoint.workspaceId", id);
+  }
 
-  // Sign in to Firestore and live-subscribe to designers / projects /
-  // notifications. On a brand-new project where the collections are empty,
-  // seed them once with the bundled defaults so designers can log in.
+  // Watch Firebase auth state. Sets the session designer id to the user's
+  // UID (which is also their Designer doc id) when signed in, or null when
+  // signed out. The Login screen calls signIn/signUp directly and the
+  // resulting auth change flows back through here.
   useEffect(() => {
-    let cancelled = false;
-    let unsubscribe: (() => void) | null = null;
-    setStatus("Connecting…");
-
-    (async () => {
-      try {
-        await ensureSignedIn();
-        if (cancelled) return;
-
-        if (await firestoreIsEmpty()) {
-          if (cancelled) return;
-          await seedFirestore(seedWorkspace);
-        }
-
-        if (cancelled) return;
-        unsubscribe = subscribeWorkspace(
-          (ws) => {
-            if (cancelled) return;
-            setWorkspace({
-              currentDesignerId: "",
-              designers: ws.designers,
-              projects: ws.projects,
-              notifications: ws.notifications,
-            });
-            setStatus("");
-          },
-          (err) => {
-            if (cancelled) return;
-            console.error(err);
-            setStatus(`Sync error: ${err.message}`);
-          },
-        );
-      } catch (err) {
-        if (cancelled) return;
-        console.error(err);
-        setStatus(
-          `Sign-in failed: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      if (unsubscribe) unsubscribe();
-    };
+    return observeAuth((user) => {
+      setSessionDesignerId(user ? user.uid : null);
+    });
   }, []);
 
-  // If the workspace gets reloaded and the session points at a designer that
-  // no longer exists, drop the session.
+  // Make sure the seeded workspaces (Design / Video / Marketing) exist in
+  // Firestore once we're signed in. Idempotent — only creates docs that
+  // aren't already there.
   useEffect(() => {
-    if (!workspace || !sessionDesignerId) return;
-    const exists = workspace.designers.some((d) => d.id === sessionDesignerId);
-    if (!exists) {
-      clearSession();
-      setSessionDesignerId(null);
+    if (!sessionDesignerId) return;
+    seedWorkspacesIfMissing().catch((err) => {
+      console.warn("Couldn't seed workspaces", err);
+    });
+  }, [sessionDesignerId]);
+
+  // Live-subscribe to Firestore once we have a signed-in user. The
+  // subscription stays up for the lifetime of the session and tears down on
+  // sign-out.
+  useEffect(() => {
+    if (!sessionDesignerId) {
+      setWorkspace(null);
+      return;
     }
-  }, [workspace, sessionDesignerId]);
+    setStatus("Loading workspace…");
+    const unsubscribe = subscribeWorkspace(
+      (ws) => {
+        setWorkspace({
+          currentDesignerId: "",
+          designers: ws.designers,
+          workspaces: ws.workspaces,
+          projects: ws.projects,
+          notifications: ws.notifications,
+        });
+        setStatus("");
+      },
+      (err) => {
+        console.error(err);
+        setStatus(`Sync error: ${err.message}`);
+      },
+    );
+    return unsubscribe;
+  }, [sessionDesignerId]);
+
+  // If the workspace loads and the signed-in user has no Designer doc, give
+  // signup a short grace period to finish writing the doc (race window
+  // between observeAuth and the claim/create batch). After that, surface a
+  // ProfileSetup recovery screen so an orphan account can be repaired.
+  const designerExists = !!workspace?.designers.some(
+    (d) => d.id === sessionDesignerId,
+  );
+  const [profileSetupNeeded, setProfileSetupNeeded] = useState(false);
+  useEffect(() => {
+    if (!sessionDesignerId || !workspace || designerExists) {
+      setProfileSetupNeeded(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setProfileSetupNeeded(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, [sessionDesignerId, workspace, designerExists]);
 
   // Outlook plugin can send: { type: "pmtool:create-project", payload: <Partial<Project>> }
   useEffect(() => {
@@ -162,17 +181,67 @@ export default function App() {
     [workspace, sessionDesignerId]
   );
 
+  // Projects belonging to the currently-selected workspace tab.
+  const workspaceProjects = useMemo(
+    () =>
+      workspace
+        ? workspace.projects.filter((p) => p.workspaceId === currentWorkspaceId)
+        : [],
+    [workspace, currentWorkspaceId],
+  );
+
   const visibleProjects = useMemo(() => {
-    if (!workspace) return [];
     const q = filter.trim().toLowerCase();
-    if (!q) return workspace.projects;
-    return workspace.projects.filter((p) =>
+    if (!q) return workspaceProjects;
+    return workspaceProjects.filter((p) =>
       [p.title, p.client, p.brand, p.contentType]
         .join(" ")
         .toLowerCase()
-        .includes(q)
+        .includes(q),
     );
-  }, [workspace, filter]);
+  }, [workspaceProjects, filter]);
+
+  const isAdmin = useMemo(() => {
+    const email = currentDesigner?.email?.toLowerCase();
+    return !!email && (SUPER_USER_EMAILS as readonly string[]).includes(email);
+  }, [currentDesigner]);
+
+  // Every workspace is visible to everyone — workspace membership only
+  // controls who shows up *inside* a workspace (the Team columns, assignee
+  // pickers, by-designer analytics).
+  const availableWorkspaces = useMemo(
+    () =>
+      (workspace?.workspaces ?? [])
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [workspace],
+  );
+
+  const currentWorkspace = useMemo(
+    () => availableWorkspaces.find((w) => w.id === currentWorkspaceId) ?? null,
+    [availableWorkspaces, currentWorkspaceId],
+  );
+
+  // Designers who belong in the current workspace. A workspace with no
+  // explicit memberIds is "open" — everyone shows up.
+  const workspaceDesigners = useMemo(() => {
+    if (!workspace) return [];
+    const members = currentWorkspace?.memberIds ?? [];
+    if (members.length === 0) return workspace.designers;
+    const memberSet = new Set(members);
+    return workspace.designers.filter((d) => memberSet.has(d.id));
+  }, [workspace, currentWorkspace]);
+
+  const currentWorkspaceName = currentWorkspace?.name ?? currentWorkspaceId;
+
+  // Safety net: if the selected workspace gets deleted entirely, snap back to
+  // the first one we know about.
+  useEffect(() => {
+    if (availableWorkspaces.length === 0) return;
+    if (availableWorkspaces.some((w) => w.id === currentWorkspaceId)) return;
+    setCurrentWorkspaceId(availableWorkspaces[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableWorkspaces, currentWorkspaceId]);
 
   const nonArchived = useMemo(
     () => visibleProjects.filter((p) => !p.archived),
@@ -219,16 +288,20 @@ export default function App() {
   );
 
   const otherDesigners = useMemo(
-    () => workspace?.designers.filter((d) => d.id !== sessionDesignerId) ?? [],
-    [workspace, sessionDesignerId]
+    () => workspaceDesigners.filter((d) => d.id !== sessionDesignerId),
+    [workspaceDesigners, sessionDesignerId],
   );
 
   const myNotifications = useMemo(
     () =>
       workspace
-        ? workspace.notifications.filter((n) => n.recipientId === sessionDesignerId)
+        ? workspace.notifications.filter(
+            (n) =>
+              n.recipientId === sessionDesignerId &&
+              n.workspaceId === currentWorkspaceId,
+          )
         : [],
-    [workspace, sessionDesignerId],
+    [workspace, sessionDesignerId, currentWorkspaceId],
   );
 
   const unreadNotifications = myNotifications.length;
@@ -337,40 +410,46 @@ export default function App() {
     );
   }
 
-  function login(designerId: string) {
-    saveSession({ designerId });
-    setSessionDesignerId(designerId);
-    setView("workspace");
-  }
-
+  // Sign-out resets local UI state; the observeAuth callback will clear
+  // sessionDesignerId, which tears down the subscription.
   function logout() {
-    clearSession();
-    setSessionDesignerId(null);
     setOpenProjectId(null);
     setCreating(false);
     setSettingsOpen(false);
     setView("workspace");
+    fbSignOut().catch(console.error);
   }
 
-  function updateDesignerPin(newPin: string) {
-    if (!sessionDesignerId) return;
-    const designer = workspace?.designers.find(
-      (d) => d.id === sessionDesignerId,
+  // sessionDesignerId === undefined means we haven't heard from Firebase yet
+  // (auth is restoring from IndexedDB). Show a brief boot screen instead of
+  // flashing Login.
+  if (sessionDesignerId === undefined) {
+    return (
+      <div className="boot">
+        <p>Loading…</p>
+      </div>
     );
-    if (!designer) return;
-    firestoreSetDesigner({ ...designer, pin: newPin }).catch(writeError);
   }
 
-  if (!workspace) {
+  if (!sessionDesignerId) {
+    return <Login onSignedIn={() => { /* auth state listener does the rest */ }} />;
+  }
+
+  if (profileSetupNeeded && workspace && !designerExists) {
+    return (
+      <ProfileSetup
+        uid={sessionDesignerId}
+        email={auth.currentUser?.email ?? ""}
+      />
+    );
+  }
+
+  if (!workspace || !currentDesigner) {
     return (
       <div className="boot">
         <p>{status || "Loading workspace…"}</p>
       </div>
     );
-  }
-
-  if (!currentDesigner) {
-    return <Login designers={workspace.designers} onLogin={login} />;
   }
 
   const openProject = openProjectId
@@ -408,10 +487,16 @@ export default function App() {
         collapsed={collapsed}
         view={view}
         unreadNotifications={unreadNotifications}
+        workspaces={availableWorkspaces}
+        currentWorkspaceId={currentWorkspaceId}
+        onSelectWorkspace={(id) => {
+          setCurrentWorkspaceId(id);
+          setView("workspace");
+        }}
         onToggleCollapsed={() => setCollapsed((c) => !c)}
         onSelectView={setView}
         onNewProject={() => {
-          setCreateInitial(undefined);
+          setCreateInitial({ workspaceId: currentWorkspaceId });
           setCreating(true);
         }}
         onOpenNotifications={() => setNotificationsOpen(true)}
@@ -430,16 +515,19 @@ export default function App() {
               ) : (
                 <>
                   {currentDesigner.name}
-                  <span className="topbar-sub"> — workspace</span>
+                  <span className="topbar-sub">
+                    {" "}
+                    — {currentWorkspaceName.toLowerCase()}
+                  </span>
                 </>
               )}
             </h1>
             <p className="muted small">
               {view === "analytics"
-                ? `${workspace.projects.length} project${workspace.projects.length === 1 ? "" : "s"} across the team`
+                ? `${workspaceProjects.length} project${workspaceProjects.length === 1 ? "" : "s"} in ${currentWorkspaceName}`
                 : view === "archived"
-                  ? `${archivedProjects.length} archived project${archivedProjects.length === 1 ? "" : "s"}`
-                  : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned`}
+                  ? `${archivedProjects.length} archived project${archivedProjects.length === 1 ? "" : "s"} in ${currentWorkspaceName}`
+                  : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned · ${currentWorkspaceName}`}
               {" · live"}
             </p>
           </div>
@@ -455,7 +543,7 @@ export default function App() {
             <button
               className="primary"
               onClick={() => {
-                setCreateInitial(undefined);
+                setCreateInitial({ workspaceId: currentWorkspaceId });
                 setCreating(true);
               }}
             >
@@ -468,8 +556,8 @@ export default function App() {
 
         {view === "analytics" ? (
           <Analytics
-            projects={workspace.projects}
-            designers={workspace.designers}
+            projects={workspaceProjects}
+            designers={workspaceDesigners}
             canViewByDesigner={isReviewer}
           />
         ) : view === "archived" ? (
@@ -684,6 +772,7 @@ export default function App() {
         <ProjectDetailModal
           project={openProject}
           designers={workspace.designers}
+          assignableDesigners={workspaceDesigners}
           currentDesignerId={currentDesigner.id}
           currentDesignerName={currentDesigner.name}
           onClose={() => setOpenProjectId(null)}
@@ -701,7 +790,7 @@ export default function App() {
 
       {creating && (
         <CreateProjectModal
-          designers={workspace.designers}
+          designers={workspaceDesigners}
           defaultAssigneeId={sessionDesignerId}
           initial={createInitial}
           onCancel={() => {
@@ -715,7 +804,13 @@ export default function App() {
       {settingsOpen && (
         <SettingsModal
           currentDesigner={currentDesigner}
-          onChangePin={updateDesignerPin}
+          isAdmin={isAdmin}
+          designers={workspace.designers}
+          workspaces={workspace.workspaces}
+          onUpdateWorkspaceMembers={firestoreSetWorkspaceMembers}
+          onUpdatePhotoUrl={(url) =>
+            firestoreSetDesignerPhotoUrl(currentDesigner.id, url)
+          }
           onClose={() => setSettingsOpen(false)}
         />
       )}

@@ -7,8 +7,25 @@ export type Designer = {
   name: string;
   initials: string;
   color: string;
-  pin: string;
+  email?: string;
+  // Bundled seed photo (Vite-hashed asset URL). Not persisted to Firestore —
+  // re-overlaid on read by overlayAvatar() so the URL stays in sync with the
+  // current build.
   avatar?: string;
+  // User-supplied headshot URL pasted from Settings. Persisted to Firestore
+  // and takes precedence over `avatar` when rendering.
+  photoUrl?: string;
+};
+
+// A named container that scopes projects + notifications (Design, Video,
+// Marketing). Designers stay global; per-workspace membership is opt-in via
+// `memberIds` — an empty/missing list means the workspace is open to
+// everyone, populating it restricts visibility to listed users (plus
+// super-users, who always see every workspace).
+export type Workspace = {
+  id: string;
+  name: string;
+  memberIds?: string[];
 };
 
 export type Milestone = {
@@ -28,6 +45,7 @@ export type Comment = {
 
 export type Project = {
   id: string;
+  workspaceId: string;
   title: string;
   overview: string;
   client: string;
@@ -48,6 +66,7 @@ export type Project = {
 
 export type Notification = {
   id: string;
+  workspaceId: string;
   recipientId: string;
   fromName: string;
   projectId: string;
@@ -57,10 +76,12 @@ export type Notification = {
   read: boolean;
 };
 
-export type Workspace = {
+// The in-memory snapshot of everything App.tsx needs to render. Loaded
+// progressively via the Firestore subscriptions in firestore.ts.
+export type WorkspaceData = {
   designers: Designer[];
+  workspaces: Workspace[];
   projects: Project[];
   currentDesignerId: string;
   notifications: Notification[];
 };
-
