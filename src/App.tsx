@@ -67,6 +67,12 @@ export default function App() {
   const [filter, setFilter] = useState("");
   const [status, setStatus] = useState<string>("");
   const [dropOverColumn, setDropOverColumn] = useState<string | null>(null);
+  // Transient banner shown after a project is moved between workspaces.
+  // `undo` reverts the move and clears the toast.
+  const [toast, setToast] = useState<{
+    message: string;
+    undo: () => void;
+  } | null>(null);
   // Which workspace tab is currently active (Design / Video / Marketing).
   // Persisted per browser so a refresh keeps you on the same workspace.
   const [currentWorkspaceId, setCurrentWorkspaceIdState] = useState<string>(
@@ -141,6 +147,14 @@ export default function App() {
     const timer = window.setTimeout(() => setProfileSetupNeeded(true), 3000);
     return () => window.clearTimeout(timer);
   }, [sessionDesignerId, workspace, designerExists]);
+
+  // Auto-dismiss the move-project toast after a few seconds so it doesn't
+  // linger. Clicking Undo dismisses earlier.
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   // Outlook plugin can send: { type: "pmtool:create-project", payload: <Partial<Project>> }
   useEffect(() => {
@@ -410,6 +424,28 @@ export default function App() {
     );
   }
 
+  // Move a project to another workspace. No-op if it's already there.
+  // Surfaces a toast with an Undo that restores the original workspaceId.
+  function moveProjectToWorkspace(projectId: string, workspaceId: string) {
+    const project = findProject(projectId);
+    if (!project) return;
+    if (project.workspaceId === workspaceId) return;
+    const fromId = project.workspaceId;
+    const destName =
+      availableWorkspaces.find((w) => w.id === workspaceId)?.name ??
+      workspaceId;
+    firestoreSetProject({ ...project, workspaceId }).catch(writeError);
+    setToast({
+      message: `Moved "${project.title}" to ${destName}`,
+      undo: () => {
+        firestoreSetProject({ ...project, workspaceId: fromId }).catch(
+          writeError,
+        );
+        setToast(null);
+      },
+    });
+  }
+
   // Sign-out resets local UI state; the observeAuth callback will clear
   // sessionDesignerId, which tears down the subscription.
   function logout() {
@@ -493,6 +529,7 @@ export default function App() {
           setCurrentWorkspaceId(id);
           setView("workspace");
         }}
+        onDropProjectOnWorkspace={moveProjectToWorkspace}
         onToggleCollapsed={() => setCollapsed((c) => !c)}
         onSelectView={setView}
         onNewProject={() => {
@@ -773,6 +810,7 @@ export default function App() {
           project={openProject}
           designers={workspace.designers}
           assignableDesigners={workspaceDesigners}
+          workspaces={availableWorkspaces}
           currentDesignerId={currentDesigner.id}
           currentDesignerName={currentDesigner.name}
           onClose={() => setOpenProjectId(null)}
@@ -785,6 +823,9 @@ export default function App() {
           }}
           onDelete={() => deleteProject(openProject.id)}
           onNotify={addNotifications}
+          onMoveToWorkspace={(workspaceId) =>
+            moveProjectToWorkspace(openProject.id, workspaceId)
+          }
         />
       )}
 
@@ -827,6 +868,22 @@ export default function App() {
           }}
           onClearAll={clearAllNotifications}
         />
+      )}
+
+      {toast && (
+        <div className="toast" role="status">
+          <span>{toast.message}</span>
+          <button className="toast-undo" onClick={toast.undo}>
+            Undo
+          </button>
+          <button
+            className="toast-close"
+            onClick={() => setToast(null)}
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
       )}
     </div>
   );

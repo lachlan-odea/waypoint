@@ -5,6 +5,7 @@ import type {
   Project,
   Priority,
   ProjectStatus,
+  Workspace,
 } from "../types";
 import { BRANDS } from "../constants";
 import { ContentTypeField } from "./ContentTypeField";
@@ -22,6 +23,8 @@ type Props = {
   // Designers who can be picked as assignees from the picker — narrowed to
   // members of the project's workspace.
   assignableDesigners: Designer[];
+  // All known workspaces, used to render the Workspace move dropdown.
+  workspaces: Workspace[];
   currentDesignerId: string;
   currentDesignerName: string;
   onClose: () => void;
@@ -31,6 +34,9 @@ type Props = {
   onArchiveToggle: (archived: boolean) => void;
   onDelete: () => void;
   onNotify: (notifications: Notification[]) => void;
+  // Move this project to another workspace. Routed through App.tsx so the
+  // toast / undo path is shared with the sidebar-drop flow.
+  onMoveToWorkspace: (workspaceId: string) => void;
 };
 
 const priorities: Priority[] = ["Urgent", "High", "Normal", "Low"];
@@ -67,6 +73,7 @@ export function ProjectDetailModal({
   project,
   designers,
   assignableDesigners,
+  workspaces,
   currentDesignerId,
   currentDesignerName,
   onClose,
@@ -76,6 +83,7 @@ export function ProjectDetailModal({
   onArchiveToggle,
   onDelete,
   onNotify,
+  onMoveToWorkspace,
 }: Props) {
   const [newComment, setNewComment] = useState("");
   const [newMilestone, setNewMilestone] = useState("");
@@ -593,6 +601,23 @@ export function ProjectDetailModal({
                   Open brief ↗
                 </a>
               )}
+            </Field>
+            <Field label="Workspace">
+              <select
+                value={project.workspaceId}
+                onChange={(e) => {
+                  if (e.target.value !== project.workspaceId) {
+                    onMoveToWorkspace(e.target.value);
+                  }
+                }}
+                aria-label="Move project to another workspace"
+              >
+                {workspaces.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
+                ))}
+              </select>
             </Field>
           </section>
 

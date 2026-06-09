@@ -1,5 +1,7 @@
+import { useState } from "react";
 import type { Designer, Workspace } from "../types";
 import { Avatar } from "./Avatar";
+import { readDraggedProjectId } from "../dnd";
 
 export type SidebarView = "workspace" | "analytics" | "archived";
 
@@ -11,6 +13,9 @@ type Props = {
   workspaces: Workspace[];
   currentWorkspaceId: string;
   onSelectWorkspace: (id: string) => void;
+  // Fired when a project card is dropped on a workspace nav item. Receives
+  // the project id and the destination workspace id.
+  onDropProjectOnWorkspace: (projectId: string, workspaceId: string) => void;
   onToggleCollapsed: () => void;
   onSelectView: (view: SidebarView) => void;
   onNewProject: () => void;
@@ -156,6 +161,7 @@ export function Sidebar({
   workspaces,
   currentWorkspaceId,
   onSelectWorkspace,
+  onDropProjectOnWorkspace,
   onToggleCollapsed,
   onSelectView,
   onNewProject,
@@ -163,6 +169,12 @@ export function Sidebar({
   onOpenSettings,
   onLogout,
 }: Props) {
+  // Which workspace item the dragged project is currently hovering over.
+  // Local state so the highlight stays in sync without round-tripping through
+  // the parent.
+  const [dropOverWorkspaceId, setDropOverWorkspaceId] = useState<string | null>(
+    null,
+  );
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="sidebar-head">
@@ -195,11 +207,34 @@ export function Sidebar({
               Glyph: WorkspaceGlyph,
             };
             const active = view === "workspace" && currentWorkspaceId === w.id;
+            const isDropTarget = dropOverWorkspaceId === w.id;
+            // Dragging onto the workspace you're already viewing is a no-op,
+            // so don't highlight or accept the drop there — keeps the gesture
+            // honest.
+            const canDrop = w.id !== currentWorkspaceId;
             return (
               <li key={w.id}>
                 <button
-                  className={`designer-btn ${active ? "active" : ""}`}
+                  className={`designer-btn ${active ? "active" : ""} ${
+                    isDropTarget && canDrop ? "drop-over" : ""
+                  }`}
                   onClick={() => onSelectWorkspace(w.id)}
+                  onDragOver={(e) => {
+                    if (!canDrop) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setDropOverWorkspaceId(w.id);
+                  }}
+                  onDragLeave={() =>
+                    setDropOverWorkspaceId((cur) => (cur === w.id ? null : cur))
+                  }
+                  onDrop={(e) => {
+                    if (!canDrop) return;
+                    e.preventDefault();
+                    setDropOverWorkspaceId(null);
+                    const pid = readDraggedProjectId(e);
+                    if (pid) onDropProjectOnWorkspace(pid, w.id);
+                  }}
                   title={w.name}
                 >
                   <span className="dot-avatar" style={{ background: v.color }}>
