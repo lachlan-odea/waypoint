@@ -847,7 +847,7 @@ export default function App() {
           currentDesigner={currentDesigner}
           isAdmin={isAdmin}
           designers={workspace.designers}
-          workspaces={workspace.workspaces}
+          workspaces={availableWorkspaces}
           onUpdateWorkspaceMembers={firestoreSetWorkspaceMembers}
           onUpdatePhotoUrl={(url) =>
             firestoreSetDesignerPhotoUrl(currentDesigner.id, url)

@@ -72,7 +72,9 @@ export function subscribeWorkspace(
   const unsubDesigners = onSnapshot(
     designersCol(),
     (snap) => {
-      designers = snap.docs.map((d) => overlayAvatar(d.data() as Designer));
+      designers = snap.docs
+        .map((d) => overlayAvatar(d.data() as Designer))
+        .sort((a, b) => a.name.localeCompare(b.name));
       designersReady = true;
       emit();
     },
