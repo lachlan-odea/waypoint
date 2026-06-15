@@ -61,7 +61,7 @@ export type Project = {
   milestones: Milestone[];
   comments: Comment[];
   createdAt: string;
-  source?: "manual" | "outlook";
+  source?: "manual" | "outlook" | "teams";
 };
 
 export type Notification = {

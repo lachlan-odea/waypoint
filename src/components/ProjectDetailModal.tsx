@@ -426,7 +426,13 @@ export function ProjectDetailModal({
                 ))}
               </select>
               <span className="dot" />
-              <span>{project.source === "outlook" ? "From Outlook" : "Manual"}</span>
+              <span>
+                {project.source === "outlook"
+                  ? "From Outlook"
+                  : project.source === "teams"
+                    ? "From Teams"
+                    : "Manual"}
+              </span>
             </div>
           </div>
           <div className="modal-head-actions">
