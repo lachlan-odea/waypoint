@@ -12,6 +12,7 @@ import {
   deleteProject as firestoreDeleteProject,
   seedWorkspacesIfMissing,
   setDesignerPhotoUrl as firestoreSetDesignerPhotoUrl,
+  setDesignerSuperUser as firestoreSetDesignerSuperUser,
   setNotification as firestoreSetNotification,
   setProject as firestoreSetProject,
   setWorkspaceMembers as firestoreSetWorkspaceMembers,
@@ -30,7 +31,6 @@ import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
 import {
   DEFAULT_WORKSPACE_ID,
-  REVIEWER_IDS,
   SUPER_USER_EMAILS,
 } from "./constants";
 import "./App.css";
@@ -320,22 +320,38 @@ export default function App() {
 
   const unreadNotifications = myNotifications.length;
 
-  const isReviewer = useMemo(
-    () =>
-      sessionDesignerId
-        ? (REVIEWER_IDS as readonly string[]).includes(sessionDesignerId)
-        : false,
-    [sessionDesignerId],
-  );
+  // Super user is the canonical "elevated permissions" role: super users see
+  // by-designer analytics and can be picked as reviewers on any project. The
+  // flag lives on the Designer doc, with SUPER_USER_EMAILS as a bootstrap so
+  // there's always at least one super user able to grant the flag to others.
+  const isSuperUser = useMemo(() => {
+    if (currentDesigner?.isSuperUser) return true;
+    const email = currentDesigner?.email?.toLowerCase();
+    return !!email && (SUPER_USER_EMAILS as readonly string[]).includes(email);
+  }, [currentDesigner]);
 
+  const superUsers = useMemo(() => {
+    if (!workspace) return [];
+    const bootstrap = new Set(
+      (SUPER_USER_EMAILS as readonly string[]).map((e) => e.toLowerCase()),
+    );
+    return workspace.designers.filter(
+      (d) =>
+        d.isSuperUser || (d.email && bootstrap.has(d.email.toLowerCase())),
+    );
+  }, [workspace]);
+
+  // A project lands in your "For review" queue when your own UID is in its
+  // reviewerIds list. No separate role check needed — non-super-users never
+  // appear in any project's reviewerIds anyway.
   const reviewProjects = useMemo(
     () =>
-      isReviewer
+      sessionDesignerId
         ? activeProjects
-            .filter((p) => p.flaggedForReview)
+            .filter((p) => p.reviewerIds?.includes(sessionDesignerId))
             .sort(sortByPriorityThenDue)
         : [],
-    [activeProjects, isReviewer],
+    [activeProjects, sessionDesignerId],
   );
 
   // Every mutator writes the target doc to Firestore and relies on the live
@@ -416,12 +432,13 @@ export default function App() {
     firestoreSetProject({ ...project, status }).catch(writeError);
   }
 
-  function flagForReview(projectId: string, flagged: boolean) {
+  // Set the reviewer list on a project. Passing [] clears the flag (no
+  // reviewers requested). Each reviewer in the list sees the project in
+  // their own "For review" queue.
+  function setProjectReviewers(projectId: string, reviewerIds: string[]) {
     const project = findProject(projectId);
     if (!project) return;
-    firestoreSetProject({ ...project, flaggedForReview: flagged }).catch(
-      writeError,
-    );
+    firestoreSetProject({ ...project, reviewerIds }).catch(writeError);
   }
 
   // Move a project to another workspace. No-op if it's already there.
@@ -561,7 +578,7 @@ export default function App() {
             </h1>
             <p className="muted small">
               {view === "analytics"
-                ? `${workspaceProjects.length} project${workspaceProjects.length === 1 ? "" : "s"} in ${currentWorkspaceName}`
+                ? "Filter by workspace, date range, and export — see the filter row below"
                 : view === "archived"
                   ? `${archivedProjects.length} archived project${archivedProjects.length === 1 ? "" : "s"} in ${currentWorkspaceName}`
                   : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned · ${currentWorkspaceName}`}
@@ -593,9 +610,10 @@ export default function App() {
 
         {view === "analytics" ? (
           <Analytics
-            projects={workspaceProjects}
-            designers={workspaceDesigners}
-            canViewByDesigner={isReviewer}
+            allProjects={workspace.projects}
+            allDesigners={workspace.designers}
+            workspaces={availableWorkspaces}
+            canViewByDesigner={isSuperUser}
           />
         ) : view === "archived" ? (
           <section className="workspace-section archived-section">
@@ -810,12 +828,15 @@ export default function App() {
           project={openProject}
           designers={workspace.designers}
           assignableDesigners={workspaceDesigners}
+          superUsers={superUsers}
           workspaces={availableWorkspaces}
           currentDesignerId={currentDesigner.id}
           currentDesignerName={currentDesigner.name}
           onClose={() => setOpenProjectId(null)}
           onChange={(updater) => updateProject(openProject.id, updater)}
-          onFlagForReview={(flagged) => flagForReview(openProject.id, flagged)}
+          onSetReviewers={(reviewerIds) =>
+            setProjectReviewers(openProject.id, reviewerIds)
+          }
           onStatusChange={(status) => setProjectStatus(openProject.id, status)}
           onArchiveToggle={(archived) => {
             setProjectArchived(openProject.id, archived);
@@ -846,12 +867,15 @@ export default function App() {
         <SettingsModal
           currentDesigner={currentDesigner}
           isAdmin={isAdmin}
+          isSuperUser={isSuperUser}
           designers={workspace.designers}
+          superUsers={superUsers}
           workspaces={availableWorkspaces}
           onUpdateWorkspaceMembers={firestoreSetWorkspaceMembers}
           onUpdatePhotoUrl={(url) =>
             firestoreSetDesignerPhotoUrl(currentDesigner.id, url)
           }
+          onUpdateDesignerSuperUser={firestoreSetDesignerSuperUser}
           onClose={() => setSettingsOpen(false)}
         />
       )}

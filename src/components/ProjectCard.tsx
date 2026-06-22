@@ -101,7 +101,7 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
           />
         </div>
       )}
-      {project.flaggedForReview && (
+      {(project.reviewerIds?.length ?? 0) > 0 && (
         <span className="flag-indicator" title="Flagged for review">
           <span className="flag-dot" aria-hidden />
           <span>For review</span>

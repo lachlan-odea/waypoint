@@ -317,6 +317,21 @@ export async function setDesignerPhotoUrl(
   );
 }
 
+// Flip the super-user flag on a designer doc. Gated to existing super users
+// at the UI layer; the Firestore rules currently allow any signed-in user to
+// write to a designer doc, so this is trust-based and would need a stricter
+// rule if we ever opened the workspace to untrusted users.
+export async function setDesignerSuperUser(
+  designerId: string,
+  isSuperUser: boolean,
+): Promise<void> {
+  await setDoc(
+    doc(designersCol(), designerId),
+    { isSuperUser },
+    { merge: true },
+  );
+}
+
 // Admin write: update a workspace's member list.
 export async function setWorkspaceMembers(
   workspaceId: string,

@@ -1586,11 +1586,18 @@ textarea {
   border-radius: 8px;
   padding: 7px 12px;
   font-size: 13px;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 .export-row button:hover,
 .filter-quick button:hover {
   background: var(--surface-2);
   border-color: var(--border-strong);
+}
+.filter-quick button.active,
+.filter-quick button.active:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
 }
 
 .filter-bar {
@@ -1621,15 +1628,19 @@ textarea {
   letter-spacing: 0.06em;
   color: var(--muted);
 }
-.field-inline input {
+.field-inline input,
+.field-inline select {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 7px 10px;
   background: var(--surface);
   outline: none;
   font-family: inherit;
+  font-size: 13px;
+  color: inherit;
 }
-.field-inline input:focus {
+.field-inline input:focus,
+.field-inline select:focus {
   border-color: var(--primary);
 }
 .filter-quick {

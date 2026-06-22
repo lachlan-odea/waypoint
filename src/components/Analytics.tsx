@@ -14,13 +14,31 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { Designer, Priority, Project } from "../types";
+import type { Designer, Priority, Project, Workspace } from "../types";
 
 type Props = {
-  projects: Project[];
-  designers: Designer[];
+  // Every project across every workspace. Analytics filters this down based
+  // on its own workspace selector — the sidebar's currently-active workspace
+  // only sets the initial selection.
+  allProjects: Project[];
+  // Full designer list, used as the source for the By-designer chart. When
+  // a single workspace is selected, the chart is narrowed to that
+  // workspace's memberIds (if any).
+  allDesigners: Designer[];
+  // All known workspaces, used to populate the workspace selector.
+  workspaces: Workspace[];
   canViewByDesigner: boolean;
 };
+
+const ALL_WORKSPACES = "__all__";
+
+// A project counts toward the "needs attention" KPIs (Urgent / Due in 7
+// days / Overdue) only if it's live work — active status and not archived.
+// Matches the predicate used by the Overdue chip on project cards.
+function isLiveWork(p: Project): boolean {
+  if (p.archived) return false;
+  return (p.status ?? "active") === "active";
+}
 
 const PRIORITIES: Priority[] = ["Urgent", "High", "Normal", "Low"];
 
@@ -122,20 +140,66 @@ function startOfMonth(base: string): string {
   return `${base.slice(0, 7)}-01`;
 }
 
-export function Analytics({ projects, designers, canViewByDesigner }: Props) {
+type QuickRange = "7" | "30" | "90" | "month" | "all";
+
+// Derive which quick-range button (if any) corresponds to the current
+// from/to values. Returns null when the dates don't line up with a preset —
+// e.g. the user typed a custom range. Today's-date-sensitive so it'll
+// silently lose the highlight at midnight, which is fine.
+function detectActiveQuickRange(from: string, to: string): QuickRange | null {
+  if (!from && !to) return "all";
+  if (!from || !to) return null;
+  const today = todayISO();
+  if (to !== today) return null;
+  if (from === startOfMonth(today)) return "month";
+  if (from === shiftDays(today, -6)) return "7";
+  if (from === shiftDays(today, -29)) return "30";
+  if (from === shiftDays(today, -89)) return "90";
+  return null;
+}
+
+export function Analytics({
+  allProjects,
+  allDesigners,
+  workspaces,
+  canViewByDesigner,
+}: Props) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  // Default to All workspaces so the page opens on the broadest view; users
+  // narrow to a specific workspace via the dropdown.
+  const [selectedWorkspaceId, setSelectedWorkspaceId] =
+    useState<string>(ALL_WORKSPACES);
+
+  // Projects narrowed to the selected workspace (or all of them when
+  // ALL_WORKSPACES is picked).
+  const workspaceProjects = useMemo(() => {
+    if (selectedWorkspaceId === ALL_WORKSPACES) return allProjects;
+    return allProjects.filter((p) => p.workspaceId === selectedWorkspaceId);
+  }, [allProjects, selectedWorkspaceId]);
+
+  // Designers shown in the By-designer chart. For a specific workspace, use
+  // the workspace's memberIds when set; an empty memberIds list is "open"
+  // (everyone). For "All workspaces", show the full designer list.
+  const designers = useMemo(() => {
+    if (selectedWorkspaceId === ALL_WORKSPACES) return allDesigners;
+    const ws = workspaces.find((w) => w.id === selectedWorkspaceId);
+    const members = ws?.memberIds ?? [];
+    if (members.length === 0) return allDesigners;
+    const memberSet = new Set(members);
+    return allDesigners.filter((d) => memberSet.has(d.id));
+  }, [allDesigners, workspaces, selectedWorkspaceId]);
 
   const filtered = useMemo(() => {
-    if (!from && !to) return projects;
-    return projects.filter((p) => {
+    if (!from && !to) return workspaceProjects;
+    return workspaceProjects.filter((p) => {
       const c = commencedDate(p);
       if (!c) return false;
       if (from && c < from) return false;
       if (to && c > to) return false;
       return true;
     });
-  }, [projects, from, to]);
+  }, [workspaceProjects, from, to]);
 
   const stats = useMemo(() => {
     const total = filtered.length;
@@ -172,16 +236,21 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
       .map(([label, count]) => ({ label, count }))
       .sort((a, b) => b.count - a.count);
 
+    // "Needs attention" KPIs are scoped to live work only — completed,
+    // paused, and archived projects don't count as overdue / due-soon /
+    // urgent even if their due date or priority would otherwise qualify.
+    const live = filtered.filter(isLiveWork);
+
     let overdue = 0;
     let dueThisWeek = 0;
-    filtered.forEach((p) => {
+    live.forEach((p) => {
       const d = daysFromNow(p.dueDate);
       if (d === null) return;
       if (d < 0) overdue++;
       else if (d <= 7) dueThisWeek++;
     });
 
-    const urgentCount = filtered.filter((p) => p.priority === "Urgent").length;
+    const urgentCount = live.filter((p) => p.priority === "Urgent").length;
     const completedCount = filtered.filter((p) => p.status === "completed").length;
     const pausedCount = filtered.filter((p) => p.status === "paused").length;
     const archivedCount = filtered.filter((p) => p.archived).length;
@@ -216,7 +285,7 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
     };
   }, [filtered, designers]);
 
-  function applyQuickRange(kind: "7" | "30" | "90" | "month" | "all") {
+  function applyQuickRange(kind: QuickRange) {
     const today = todayISO();
     if (kind === "all") {
       setFrom("");
@@ -232,6 +301,7 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
     setTo(today);
   }
 
+  const activeQuickRange = detectActiveQuickRange(from, to);
   const rangeLabel = from || to ? `${from || "…"} → ${to || "…"}` : "All time";
 
   const priorityChartData = stats.byPriority.filter((p) => p.count > 0);
@@ -240,6 +310,20 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
     <div className="analytics">
       <div className="filter-bar">
         <div className="filter-fields">
+          <label className="field-inline">
+            <span>Workspace</span>
+            <select
+              value={selectedWorkspaceId}
+              onChange={(e) => setSelectedWorkspaceId(e.target.value)}
+            >
+              <option value={ALL_WORKSPACES}>All workspaces</option>
+              {workspaces.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="field-inline">
             <span>From</span>
             <input
@@ -260,16 +344,31 @@ export function Analytics({ projects, designers, canViewByDesigner }: Props) {
           </label>
         </div>
         <div className="filter-quick">
-          <button onClick={() => applyQuickRange("7")}>Last 7d</button>
-          <button onClick={() => applyQuickRange("30")}>Last 30d</button>
-          <button onClick={() => applyQuickRange("90")}>Last 90d</button>
-          <button onClick={() => applyQuickRange("month")}>This month</button>
-          <button onClick={() => applyQuickRange("all")}>All time</button>
+          {(
+            [
+              ["7", "Last 7d"],
+              ["30", "Last 30d"],
+              ["90", "Last 90d"],
+              ["month", "This month"],
+              ["all", "All time"],
+            ] as Array<[QuickRange, string]>
+          ).map(([kind, label]) => (
+            <button
+              key={kind}
+              className={activeQuickRange === kind ? "active" : ""}
+              onClick={() => applyQuickRange(kind)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
       <p className="muted small filter-summary">
-        Showing projects commenced {rangeLabel} ({filtered.length} of{" "}
-        {projects.length})
+        Showing {filtered.length} of {workspaceProjects.length}{" "}
+        {selectedWorkspaceId === ALL_WORKSPACES
+          ? "projects across all workspaces"
+          : `${workspaces.find((w) => w.id === selectedWorkspaceId)?.name ?? ""} projects`}
+        {", "}commenced {rangeLabel}
       </p>
 
       <div className="kpi-row">

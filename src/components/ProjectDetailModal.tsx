@@ -23,13 +23,18 @@ type Props = {
   // Designers who can be picked as assignees from the picker — narrowed to
   // members of the project's workspace.
   assignableDesigners: Designer[];
+  // Designers eligible to be picked as reviewers (super users only). The
+  // picker shows these as toggleable chips; their UIDs end up in
+  // project.reviewerIds.
+  superUsers: Designer[];
   // All known workspaces, used to render the Workspace move dropdown.
   workspaces: Workspace[];
   currentDesignerId: string;
   currentDesignerName: string;
   onClose: () => void;
   onChange: (updater: (p: Project) => Project) => void;
-  onFlagForReview: (flagged: boolean) => void;
+  // Set the reviewer list for this project. Pass [] to clear.
+  onSetReviewers: (reviewerIds: string[]) => void;
   onStatusChange: (status: ProjectStatus) => void;
   onArchiveToggle: (archived: boolean) => void;
   onDelete: () => void;
@@ -73,12 +78,13 @@ export function ProjectDetailModal({
   project,
   designers,
   assignableDesigners,
+  superUsers,
   workspaces,
   currentDesignerId,
   currentDesignerName,
   onClose,
   onChange,
-  onFlagForReview,
+  onSetReviewers,
   onStatusChange,
   onArchiveToggle,
   onDelete,
@@ -645,26 +651,43 @@ export function ProjectDetailModal({
                 })}
               </div>
             </Field>
-            <Field label="Review">
-              {project.flaggedForReview ? (
-                <button
-                  type="button"
-                  className="flag-btn flagged"
-                  onClick={() => onFlagForReview(false)}
-                  title="Flagged for review. Click to clear."
-                >
-                  <span className="flag-dot" aria-hidden />
-                  <span>For review · click to clear</span>
-                </button>
+            <Field label="Reviewers">
+              {superUsers.length === 0 ? (
+                <p className="muted small" style={{ margin: 0 }}>
+                  No super users yet. Promote someone in Settings to make
+                  them pickable as a reviewer.
+                </p>
               ) : (
-                <button
-                  type="button"
-                  className="flag-btn"
-                  onClick={() => onFlagForReview(true)}
-                >
-                  <span className="flag-dot" aria-hidden />
-                  <span>Flag for review</span>
-                </button>
+                <div className="assignee-picker">
+                  {superUsers.map((d) => {
+                    const reviewerIds = project.reviewerIds ?? [];
+                    const active = reviewerIds.includes(d.id);
+                    return (
+                      <button
+                        type="button"
+                        key={d.id}
+                        className={`assignee-chip ${active ? "active" : ""}`}
+                        onClick={() => {
+                          const next = active
+                            ? reviewerIds.filter((id) => id !== d.id)
+                            : [...reviewerIds, d.id];
+                          onSetReviewers(next);
+                        }}
+                        title={
+                          active
+                            ? `Remove ${d.name} as reviewer`
+                            : `Ask ${d.name} to review`
+                        }
+                      >
+                        <Avatar
+                          designer={d}
+                          className="dot-avatar assignee-chip-avatar"
+                        />
+                        <span>{d.name.split(" ")[0]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
             </Field>
             <Field label="Brief">

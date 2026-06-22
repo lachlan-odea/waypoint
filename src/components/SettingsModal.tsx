@@ -6,13 +6,25 @@ import { Avatar } from "./Avatar";
 type Props = {
   currentDesigner: Designer;
   isAdmin: boolean;
+  // Whether the current user is a super user. Super users (a superset that
+  // includes admins) can promote / demote others via the Super users
+  // section. Today isSuperUser is equivalent to isAdmin, but kept as a
+  // separate prop in case the bootstrap-admin concept diverges later.
+  isSuperUser: boolean;
   designers: Designer[];
+  // Designers currently marked as super users — used to render their state
+  // in the Super users section.
+  superUsers: Designer[];
   workspaces: Workspace[];
   onUpdateWorkspaceMembers: (
     workspaceId: string,
     memberIds: string[],
   ) => Promise<void>;
   onUpdatePhotoUrl: (url: string) => Promise<void>;
+  onUpdateDesignerSuperUser: (
+    designerId: string,
+    isSuperUser: boolean,
+  ) => Promise<void>;
   onClose: () => void;
 };
 
@@ -35,10 +47,13 @@ function friendlyError(err: unknown): string {
 export function SettingsModal({
   currentDesigner,
   isAdmin,
+  isSuperUser,
   designers,
+  superUsers,
   workspaces,
   onUpdateWorkspaceMembers,
   onUpdatePhotoUrl,
+  onUpdateDesignerSuperUser,
   onClose,
 }: Props) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -85,7 +100,7 @@ export function SettingsModal({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className={`modal ${isAdmin ? "" : "modal-narrow"}`}
+        className={`modal ${isSuperUser ? "" : "modal-narrow"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="modal-head">
@@ -96,6 +111,15 @@ export function SettingsModal({
         </header>
 
         <div className="modal-body">
+          {isSuperUser && (
+            <ManageSuperUsers
+              designers={designers}
+              superUsers={superUsers}
+              currentDesignerId={currentDesigner.id}
+              onUpdateDesignerSuperUser={onUpdateDesignerSuperUser}
+            />
+          )}
+
           {isAdmin && (
             <ManageWorkspaces
               designers={designers}
@@ -273,6 +297,80 @@ type ManageWorkspacesProps = {
     memberIds: string[],
   ) => Promise<void>;
 };
+
+type ManageSuperUsersProps = {
+  designers: Designer[];
+  superUsers: Designer[];
+  currentDesignerId: string;
+  onUpdateDesignerSuperUser: (
+    designerId: string,
+    isSuperUser: boolean,
+  ) => Promise<void>;
+};
+
+function ManageSuperUsers({
+  designers,
+  superUsers,
+  currentDesignerId,
+  onUpdateDesignerSuperUser,
+}: ManageSuperUsersProps) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const superUserIds = new Set(superUsers.map((d) => d.id));
+
+  async function toggle(designerId: string, next: boolean) {
+    setBusyId(designerId);
+    setError(null);
+    try {
+      await onUpdateDesignerSuperUser(designerId, next);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <section className="modal-section">
+      <h3>Super users</h3>
+      <p className="muted small">
+        Super users can see the by-designer analytics chart and be picked as
+        reviewers on any project. Toggling someone here grants or removes
+        that access immediately.
+      </p>
+      <div className="assignee-picker">
+        {designers.map((d) => {
+          const active = superUserIds.has(d.id);
+          const isSelf = d.id === currentDesignerId;
+          return (
+            <button
+              type="button"
+              key={d.id}
+              className={`assignee-chip ${active ? "active" : ""}`}
+              onClick={() => toggle(d.id, !active)}
+              disabled={busyId === d.id}
+              title={
+                isSelf && active
+                  ? `Remove super-user status from yourself`
+                  : active
+                    ? `Remove ${d.name} as super user`
+                    : `Make ${d.name} a super user`
+              }
+            >
+              <Avatar
+                designer={d}
+                className="dot-avatar assignee-chip-avatar"
+              />
+              <span>{d.name.split(" ")[0]}</span>
+            </button>
+          );
+        })}
+      </div>
+      {error && <p className="login-error">{error}</p>}
+    </section>
+  );
+}
 
 function ManageWorkspaces({
   designers,

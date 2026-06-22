@@ -15,6 +15,11 @@ export type Designer = {
   // User-supplied headshot URL pasted from Settings. Persisted to Firestore
   // and takes precedence over `avatar` when rendering.
   photoUrl?: string;
+  // Super users can view the by-designer analytics chart and be picked as
+  // reviewers on projects. Toggled from Settings by an existing super user.
+  // The SUPER_USER_EMAILS constant in src/constants.ts is the bootstrap so
+  // there's always at least one super user who can grant the flag to others.
+  isSuperUser?: boolean;
 };
 
 // A named container that scopes projects + notifications (Design, Video,
@@ -55,7 +60,11 @@ export type Project = {
   dueDate: string;
   priority: Priority;
   assigneeIds: string[];
-  flaggedForReview?: boolean;
+  // Designer UIDs of super users who've been asked to review this project.
+  // Empty / missing means no review requested. Replaces the old boolean
+  // `flaggedForReview` — a project is "flagged" iff reviewerIds is non-empty,
+  // and each reviewer only sees projects where their own UID is in this list.
+  reviewerIds?: string[];
   status?: ProjectStatus;
   archived?: boolean;
   milestones: Milestone[];

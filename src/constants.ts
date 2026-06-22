@@ -9,14 +9,13 @@ export const BRANDS = [
   "No brand",
 ] as const;
 
-// Designers who can be selected as reviewers from the "Flag for review" picker
-// and who get a "For review" section in their workspace.
-export const REVIEWER_IDS = ["d-jess", "d-oliver"] as const;
-
-// Emails that should be treated as super-users in the app: they see every
-// workspace regardless of membership, and get the "Manage workspaces"
-// section in Settings. Add more entries to grant admin access to other
-// designers.
+// Bootstrap super users. Anyone whose Firebase Auth email matches an entry
+// here is treated as a super user regardless of the `isSuperUser` flag on
+// their Designer doc — this guarantees there's always at least one person
+// who can grant the flag to others from the Settings UI. Designers can also
+// be promoted at runtime via the Super users section in Settings (writes
+// /designers/{uid}.isSuperUser to true). The reviewer pool and the
+// "Manage workspaces" admin section are both gated on super-user status.
 export const SUPER_USER_EMAILS = [
   "lachlan.odea@wisetechglobal.com",
 ] as const;
