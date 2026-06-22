@@ -10,6 +10,8 @@ import {
   deleteNotification as firestoreDeleteNotification,
   deleteNotificationsForRecipient as firestoreDeleteNotificationsForRecipient,
   deleteProject as firestoreDeleteProject,
+  createPlaceholderDesigner as firestoreCreatePlaceholderDesigner,
+  deleteDesigner as firestoreDeleteDesigner,
   seedWorkspacesIfMissing,
   setDesignerPhotoUrl as firestoreSetDesignerPhotoUrl,
   setDesignerReviewer as firestoreSetDesignerReviewer,
@@ -887,6 +889,10 @@ export default function App() {
           }
           onUpdateDesignerSuperUser={firestoreSetDesignerSuperUser}
           onUpdateDesignerReviewer={firestoreSetDesignerReviewer}
+          onCreateDesigner={(name, email) =>
+            firestoreCreatePlaceholderDesigner(name, email).then(() => {})
+          }
+          onDeleteDesigner={firestoreDeleteDesigner}
           onClose={() => setSettingsOpen(false)}
         />
       )}

@@ -156,6 +156,45 @@ export async function createDesignerProfile(
   return designer;
 }
 
+// Admin-created placeholder designer. Lives in /designers under a
+// "placeholder-…" id so the person shows up in pickers / team rosters
+// immediately. When the real user signs up, they pick this profile from
+// the claim picker on the Login screen and claimDesignerProfile re-keys
+// the doc + every reference to their Firebase UID.
+export async function createPlaceholderDesigner(
+  name: string,
+  email?: string,
+): Promise<Designer> {
+  const trimmed = name.trim();
+  const initials = trimmed
+    .split(/\s+/)
+    .map((w) => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const existing = await getDocs(designersCol());
+  const color = COLOR_PALETTE[existing.size % COLOR_PALETTE.length];
+  const id = `placeholder-${Date.now()}`;
+  const designer: Designer = {
+    id,
+    name: trimmed,
+    initials: initials || "??",
+    color,
+    ...(email && email.trim() ? { email: email.trim() } : {}),
+  };
+  await setDoc(doc(designersCol(), id), designer);
+  return designer;
+}
+
+// Delete a designer doc outright. Their UID may still appear in project
+// assigneeIds / reviewerIds / comment likes / notification recipientId
+// fields — those become dangling but render harmlessly (avatars fall
+// through). For a small team tool the cascade-cleanup tradeoff isn't
+// worth it; revisit if/when the team grows.
+export async function deleteDesigner(id: string): Promise<void> {
+  await deleteDoc(doc(designersCol(), id));
+}
+
 // Atomically claim an existing seed designer profile (e.g. d-jess) for a
 // freshly signed-up Firebase user. Creates a new designer doc at the user's
 // UID with the legacy doc's name/initials/color, rewrites every project's

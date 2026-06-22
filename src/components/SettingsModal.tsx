@@ -29,6 +29,8 @@ type Props = {
     designerId: string,
     isReviewer: boolean,
   ) => Promise<void>;
+  onCreateDesigner: (name: string, email?: string) => Promise<void>;
+  onDeleteDesigner: (designerId: string) => Promise<void>;
   onClose: () => void;
 };
 
@@ -59,6 +61,8 @@ export function SettingsModal({
   onUpdatePhotoUrl,
   onUpdateDesignerSuperUser,
   onUpdateDesignerReviewer,
+  onCreateDesigner,
+  onDeleteDesigner,
   onClose,
 }: Props) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -218,6 +222,8 @@ export function SettingsModal({
           onUpdateDesignerSuperUser={onUpdateDesignerSuperUser}
           onUpdateDesignerReviewer={onUpdateDesignerReviewer}
           onUpdateWorkspaceMembers={onUpdateWorkspaceMembers}
+          onCreateDesigner={onCreateDesigner}
+          onDeleteDesigner={onDeleteDesigner}
           onClose={() => setManageUsersOpen(false)}
         />
       )}
@@ -331,6 +337,8 @@ type ManageUsersModalProps = {
     workspaceId: string,
     memberIds: string[],
   ) => Promise<void>;
+  onCreateDesigner: (name: string, email?: string) => Promise<void>;
+  onDeleteDesigner: (designerId: string) => Promise<void>;
   onClose: () => void;
 };
 
@@ -347,6 +355,8 @@ function ManageUsersModal({
   onUpdateDesignerSuperUser,
   onUpdateDesignerReviewer,
   onUpdateWorkspaceMembers,
+  onCreateDesigner,
+  onDeleteDesigner,
   onClose,
 }: ManageUsersModalProps) {
   useEffect(() => {
@@ -361,6 +371,11 @@ function ManageUsersModal({
   // row.
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Inline "Add user" form state. Collapsed by default; expands when the
+  // admin clicks the + Add user button.
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
 
   const superUserIds = new Set(superUsers.map((d) => d.id));
   const reviewerIds = new Set(reviewers.map((d) => d.id));
@@ -391,6 +406,29 @@ function ManageUsersModal({
     );
   }
 
+  async function submitNew() {
+    const name = newName.trim();
+    if (!name) return;
+    await run("create", () => onCreateDesigner(name, newEmail.trim() || undefined));
+    setNewName("");
+    setNewEmail("");
+    setAdding(false);
+  }
+
+  function cancelNew() {
+    setNewName("");
+    setNewEmail("");
+    setAdding(false);
+  }
+
+  function confirmDelete(designerId: string, name: string) {
+    const ok = window.confirm(
+      `Delete ${name}? Their profile is removed but any existing project assignments stay referenced by their ID. They can sign up again as a new user.`,
+    );
+    if (!ok) return;
+    void run(`delete:${designerId}`, () => onDeleteDesigner(designerId));
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -408,22 +446,72 @@ function ManageUsersModal({
             columns on that team's board. A team with no members chosen
             stays open to everyone.
           </p>
+          <div className="manage-users-toolbar">
+            {!adding ? (
+              <button
+                className="primary"
+                onClick={() => setAdding(true)}
+                disabled={busyKey === "create"}
+              >
+                + Add user
+              </button>
+            ) : (
+              <div className="manage-users-add">
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Full name (required)"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newName.trim()) void submitNew();
+                    if (e.key === "Escape") cancelNew();
+                  }}
+                  disabled={busyKey === "create"}
+                />
+                <input
+                  type="email"
+                  placeholder="Email (optional)"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newName.trim()) void submitNew();
+                    if (e.key === "Escape") cancelNew();
+                  }}
+                  disabled={busyKey === "create"}
+                />
+                <button onClick={cancelNew} disabled={busyKey === "create"}>
+                  Cancel
+                </button>
+                <button
+                  className="primary"
+                  onClick={submitNew}
+                  disabled={!newName.trim() || busyKey === "create"}
+                >
+                  {busyKey === "create" ? "Adding…" : "Add"}
+                </button>
+              </div>
+            )}
+          </div>
           <div className="manage-users">
         {designers.map((d) => {
           const isSelf = d.id === currentDesignerId;
           const isSuper = superUserIds.has(d.id);
           const isReviewerActive = reviewerIds.has(d.id);
+          const isPlaceholder = d.id.startsWith("placeholder-");
           return (
             <div key={d.id} className="manage-user-row">
               <div className="manage-user-identity">
                 <Avatar designer={d} />
                 <div>
                   <div className="manage-user-name">{d.name}</div>
-                  {d.email && (
-                    <div className="muted small manage-user-email">
-                      {d.email}
-                    </div>
-                  )}
+                  <div className="muted small manage-user-email">
+                    {d.email
+                      ? d.email
+                      : isPlaceholder
+                        ? "Pending sign-in"
+                        : "—"}
+                  </div>
                 </div>
               </div>
               <div className="manage-user-chips">
@@ -491,6 +579,19 @@ function ManageUsersModal({
                   })}
                 </div>
               </div>
+              <button
+                type="button"
+                className="manage-user-delete"
+                onClick={() => confirmDelete(d.id, d.name)}
+                disabled={isSelf || busyKey === `delete:${d.id}`}
+                title={
+                  isSelf
+                    ? "You can't delete your own account"
+                    : `Delete ${d.name}`
+                }
+              >
+                {busyKey === `delete:${d.id}` ? "Deleting…" : "Delete"}
+              </button>
             </div>
           );
         })}

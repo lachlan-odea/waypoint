@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'hero.png'],
+      includeAssets: ['favicon.png', 'hero.png', 'app-icon.png'],
       manifest: {
         name: 'Waypoint',
         short_name: 'Waypoint',
@@ -21,17 +21,17 @@ export default defineConfig({
         scope: '/waypoint/',
         icons: [
           {
-            src: 'hero.png',
+            src: 'app-icon.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'hero.png',
+            src: 'app-icon.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'hero.png',
+            src: 'app-icon.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
