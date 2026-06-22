@@ -1218,15 +1218,71 @@ textarea {
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 13px;
+  position: relative;
+  transition: opacity 0.12s ease;
 }
 .milestones label {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 .milestones .done {
   text-decoration: line-through;
   color: var(--muted);
+}
+.milestone-edit-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: inherit;
+}
+.milestone-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.milestone-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: var(--muted);
+  margin-right: 4px;
+  padding: 0 2px;
+  font-size: 11px;
+  letter-spacing: -2px;
+  user-select: none;
+  line-height: 1;
+}
+.milestone-handle:active {
+  cursor: grabbing;
+}
+.milestones li.milestone-dragging {
+  opacity: 0.4;
+}
+.milestones li.milestone-drop-before::before,
+.milestones li.milestone-drop-after::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 1px;
+  pointer-events: none;
+}
+.milestones li.milestone-drop-before::before {
+  top: -4px;
+}
+.milestones li.milestone-drop-after::after {
+  bottom: -4px;
 }
 .link-btn {
   background: transparent;

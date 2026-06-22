@@ -93,6 +93,28 @@ export function ProjectDetailModal({
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // Inline edit state for milestones. `id` is the row being edited and
+  // `label` is the in-progress text — null means no edit in flight.
+  const [editingMilestone, setEditingMilestone] = useState<{
+    id: string;
+    label: string;
+  } | null>(null);
+
+  // Drag state for milestone reordering. We track the dragging row, the row
+  // currently being hovered, and which side of that row the cursor is on so
+  // the drop indicator can render above or below.
+  const [draggingMilestoneId, setDraggingMilestoneId] = useState<string | null>(
+    null,
+  );
+  const [milestoneDropTarget, setMilestoneDropTarget] = useState<{
+    id: string;
+    position: "before" | "after";
+  } | null>(null);
+
+  function clearMilestoneDrag() {
+    setDraggingMilestoneId(null);
+    setMilestoneDropTarget(null);
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -166,6 +188,55 @@ export function ProjectDetailModal({
 
   function removeMilestone(id: string) {
     onChange((p) => ({ ...p, milestones: p.milestones.filter((m) => m.id !== id) }));
+  }
+
+  function startEditMilestone(id: string, label: string) {
+    setEditingMilestone({ id, label });
+  }
+
+  function cancelEditMilestone() {
+    setEditingMilestone(null);
+  }
+
+  // Commit the in-progress edit. Empty / whitespace-only labels cancel the
+  // edit instead of writing an empty string (use "remove" to delete).
+  function saveMilestoneEdit() {
+    if (!editingMilestone) return;
+    const trimmed = editingMilestone.label.trim();
+    if (!trimmed) {
+      cancelEditMilestone();
+      return;
+    }
+    const { id } = editingMilestone;
+    onChange((p) => ({
+      ...p,
+      milestones: p.milestones.map((m) =>
+        m.id === id ? { ...m, label: trimmed } : m,
+      ),
+    }));
+    setEditingMilestone(null);
+  }
+
+  // Move milestone `fromId` to sit immediately `position` (before/after) the
+  // milestone with `toId`. Same-position drops resolve to no-ops via index
+  // comparison after the splice.
+  function reorderMilestone(
+    fromId: string,
+    toId: string,
+    position: "before" | "after",
+  ) {
+    if (fromId === toId) return;
+    onChange((p) => {
+      const fromIdx = p.milestones.findIndex((m) => m.id === fromId);
+      if (fromIdx === -1) return p;
+      const next = p.milestones.slice();
+      const [moved] = next.splice(fromIdx, 1);
+      const toIdx = next.findIndex((m) => m.id === toId);
+      if (toIdx === -1) return p;
+      const insertAt = position === "after" ? toIdx + 1 : toIdx;
+      next.splice(insertAt, 0, moved);
+      return { ...p, milestones: next };
+    });
   }
 
   function startEditComment(id: string, text: string) {
@@ -630,23 +701,136 @@ export function ProjectDetailModal({
           <section className="modal-section">
             <h3>Tasks</h3>
             <ul className="milestones">
-              {project.milestones.map((m) => (
-                <li key={m.id}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={m.done}
-                      onChange={() => toggleMilestone(m.id)}
-                    />
-                    <span className={m.done ? "done" : ""}>
-                      <LinkifiedText text={m.label} designers={designers} />
+              {project.milestones.map((m) => {
+                const isDragging = draggingMilestoneId === m.id;
+                const isDropTarget =
+                  milestoneDropTarget?.id === m.id &&
+                  draggingMilestoneId !== null &&
+                  draggingMilestoneId !== m.id;
+                const dropPos = isDropTarget
+                  ? milestoneDropTarget.position
+                  : null;
+                return (
+                  <li
+                    key={m.id}
+                    className={[
+                      isDragging ? "milestone-dragging" : "",
+                      dropPos === "before" ? "milestone-drop-before" : "",
+                      dropPos === "after" ? "milestone-drop-after" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onDragOver={(e) => {
+                      if (!draggingMilestoneId || draggingMilestoneId === m.id)
+                        return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const position =
+                        e.clientY < rect.top + rect.height / 2
+                          ? "before"
+                          : "after";
+                      setMilestoneDropTarget((cur) =>
+                        cur?.id === m.id && cur.position === position
+                          ? cur
+                          : { id: m.id, position },
+                      );
+                    }}
+                    onDragLeave={(e) => {
+                      // Only clear if we're leaving the row entirely, not
+                      // bouncing between child elements.
+                      const next = e.relatedTarget as Node | null;
+                      if (next && e.currentTarget.contains(next)) return;
+                      setMilestoneDropTarget((cur) =>
+                        cur?.id === m.id ? null : cur,
+                      );
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (
+                        draggingMilestoneId &&
+                        milestoneDropTarget &&
+                        milestoneDropTarget.id === m.id
+                      ) {
+                        reorderMilestone(
+                          draggingMilestoneId,
+                          milestoneDropTarget.id,
+                          milestoneDropTarget.position,
+                        );
+                      }
+                      clearMilestoneDrag();
+                    }}
+                  >
+                    <span
+                      className="milestone-handle"
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingMilestoneId(m.id);
+                        // Set some payload so the browser actually starts a
+                        // drag. Used only as a side-effect — drop logic reads
+                        // component state.
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", m.id);
+                      }}
+                      onDragEnd={clearMilestoneDrag}
+                      title="Drag to reorder"
+                      aria-label="Drag to reorder task"
+                    >
+                      ⋮⋮
                     </span>
-                  </label>
-                  <button className="link-btn" onClick={() => removeMilestone(m.id)}>
-                    remove
-                  </button>
-                </li>
-              ))}
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={m.done}
+                        onChange={() => toggleMilestone(m.id)}
+                      />
+                      {editingMilestone?.id === m.id ? (
+                        <input
+                          className="milestone-edit-input"
+                          autoFocus
+                          value={editingMilestone.label}
+                          onChange={(e) =>
+                            setEditingMilestone({
+                              id: m.id,
+                              label: e.target.value,
+                            })
+                          }
+                          onBlur={saveMilestoneEdit}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              saveMilestoneEdit();
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              cancelEditMilestone();
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className={m.done ? "done" : ""}>
+                          <LinkifiedText text={m.label} designers={designers} />
+                        </span>
+                      )}
+                    </label>
+                    <div className="milestone-actions">
+                      {editingMilestone?.id !== m.id && (
+                        <button
+                          className="link-btn"
+                          onClick={() => startEditMilestone(m.id, m.label)}
+                        >
+                          edit
+                        </button>
+                      )}
+                      <button
+                        className="link-btn"
+                        onClick={() => removeMilestone(m.id)}
+                      >
+                        remove
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
             <div className="row">
               <input
