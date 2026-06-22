@@ -94,6 +94,23 @@ export function ProjectDetailModal({
   const [newComment, setNewComment] = useState("");
   const [newMilestone, setNewMilestone] = useState("");
   const [editingOverview, setEditingOverview] = useState(false);
+  // Local draft of the overview textarea. Binding the textarea directly to
+  // `project.overview` caused a cursor-jump bug: each keystroke fires a
+  // Firestore write, the live subscription re-emits the project, and
+  // between the keystroke and the listener firing, React reconciles the
+  // DOM against the stale prop and snaps the caret to the end. Owning the
+  // value locally and flushing in parallel keeps the cursor stable.
+  const [draftOverview, setDraftOverview] = useState(project.overview);
+  // Re-sync the draft from the project ONLY when we (re)enter edit mode, so
+  // external changes (a co-editor's update) are picked up next time the
+  // user clicks in. Deliberately not depending on project.overview — if the
+  // user types two characters faster than the Firestore round-trip, the
+  // second keystroke would otherwise get clobbered by the late-arriving
+  // first-keystroke snapshot.
+  useEffect(() => {
+    if (editingOverview) setDraftOverview(project.overview);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingOverview]);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
@@ -538,10 +555,12 @@ export function ProjectDetailModal({
               <>
                 <textarea
                   autoFocus
-                  value={project.overview}
-                  onChange={(e) =>
-                    onChange((p) => ({ ...p, overview: e.target.value }))
-                  }
+                  value={draftOverview}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setDraftOverview(next);
+                    onChange((p) => ({ ...p, overview: next }));
+                  }}
                   onBlur={() => setEditingOverview(false)}
                   rows={3}
                 />
