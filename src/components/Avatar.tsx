@@ -9,7 +9,7 @@ type Props = {
 
 export function Avatar({ designer, className = "dot-avatar", title }: Props) {
   const [imgFailed, setImgFailed] = useState(false);
-  const src = designer.photoUrl || designer.avatar;
+  const src = designer.photoUrl;
   if (src && !imgFailed) {
     return (
       <span className={`${className} has-image`} title={title ?? designer.name}>

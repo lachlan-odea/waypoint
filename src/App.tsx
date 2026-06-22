@@ -12,6 +12,7 @@ import {
   deleteProject as firestoreDeleteProject,
   seedWorkspacesIfMissing,
   setDesignerPhotoUrl as firestoreSetDesignerPhotoUrl,
+  setDesignerReviewer as firestoreSetDesignerReviewer,
   setDesignerSuperUser as firestoreSetDesignerSuperUser,
   setNotification as firestoreSetNotification,
   setProject as firestoreSetProject,
@@ -111,16 +112,10 @@ export default function App() {
       setWorkspace(null);
       return;
     }
-    setStatus("Loading workspace…");
+    setStatus("Loading…");
     const unsubscribe = subscribeWorkspace(
       (ws) => {
-        setWorkspace({
-          currentDesignerId: "",
-          designers: ws.designers,
-          workspaces: ws.workspaces,
-          projects: ws.projects,
-          notifications: ws.notifications,
-        });
+        setWorkspace(ws);
         setStatus("");
       },
       (err) => {
@@ -215,11 +210,6 @@ export default function App() {
     );
   }, [workspaceProjects, filter]);
 
-  const isAdmin = useMemo(() => {
-    const email = currentDesigner?.email?.toLowerCase();
-    return !!email && (SUPER_USER_EMAILS as readonly string[]).includes(email);
-  }, [currentDesigner]);
-
   // Every workspace is visible to everyone — workspace membership only
   // controls who shows up *inside* a workspace (the Team columns, assignee
   // pickers, by-designer analytics).
@@ -291,39 +281,45 @@ export default function App() {
     [visibleProjects],
   );
 
-  const myProjects = useMemo(
-    () =>
-      activeProjects
-        .filter((p) =>
-          sessionDesignerId ? p.assigneeIds.includes(sessionDesignerId) : false,
-        )
-        .sort(sortByPriorityThenDue),
-    [activeProjects, sessionDesignerId]
-  );
+  // "My work" is global — every active project assigned to me regardless
+  // of which team it lives under. Each card in this section gets a team
+  // badge when it belongs to a different team than the one we're viewing,
+  // so the cross-team origin is visible without switching boards.
+  const myProjects = useMemo(() => {
+    if (!workspace || !sessionDesignerId) return [];
+    return workspace.projects
+      .filter((p) => p.assigneeIds.includes(sessionDesignerId))
+      .filter((p) => (p.status ?? "active") === "active")
+      .filter((p) => !p.archived)
+      .sort(sortByPriorityThenDue);
+  }, [workspace, sessionDesignerId]);
 
   const otherDesigners = useMemo(
     () => workspaceDesigners.filter((d) => d.id !== sessionDesignerId),
     [workspaceDesigners, sessionDesignerId],
   );
 
+  // Notifications are global to the user — a mention or like on a
+  // cross-team project still pings them regardless of which team's board
+  // they're currently viewing. The notification's workspaceId is still
+  // stored (so we could re-introduce per-team filtering later), but the
+  // current panel shows everything addressed to me.
   const myNotifications = useMemo(
     () =>
       workspace
         ? workspace.notifications.filter(
-            (n) =>
-              n.recipientId === sessionDesignerId &&
-              n.workspaceId === currentWorkspaceId,
+            (n) => n.recipientId === sessionDesignerId,
           )
         : [],
-    [workspace, sessionDesignerId, currentWorkspaceId],
+    [workspace, sessionDesignerId],
   );
 
   const unreadNotifications = myNotifications.length;
 
-  // Super user is the canonical "elevated permissions" role: super users see
-  // by-designer analytics and can be picked as reviewers on any project. The
-  // flag lives on the Designer doc, with SUPER_USER_EMAILS as a bootstrap so
-  // there's always at least one super user able to grant the flag to others.
+  // Super users are admins: they manage teams, manage super users and
+  // reviewers, and see the by-designer analytics chart. SUPER_USER_EMAILS
+  // is the bootstrap so there's always at least one admin able to grant
+  // the flag to others.
   const isSuperUser = useMemo(() => {
     if (currentDesigner?.isSuperUser) return true;
     const email = currentDesigner?.email?.toLowerCase();
@@ -339,6 +335,14 @@ export default function App() {
       (d) =>
         d.isSuperUser || (d.email && bootstrap.has(d.email.toLowerCase())),
     );
+  }, [workspace]);
+
+  // Reviewers are a separate, independent role. They populate the Reviewer
+  // picker on every project. No bootstrap — admins toggle the flag from
+  // Settings. A reviewer doesn't have to be a super user (and vice versa).
+  const reviewers = useMemo(() => {
+    if (!workspace) return [];
+    return workspace.designers.filter((d) => d.isReviewer);
   }, [workspace]);
 
   // A project lands in your "For review" queue when your own UID is in its
@@ -500,7 +504,7 @@ export default function App() {
   if (!workspace || !currentDesigner) {
     return (
       <div className="boot">
-        <p>{status || "Loading workspace…"}</p>
+        <p>{status || "Loading…"}</p>
       </div>
     );
   }
@@ -578,7 +582,7 @@ export default function App() {
             </h1>
             <p className="muted small">
               {view === "analytics"
-                ? "Filter by workspace, date range, and export — see the filter row below"
+                ? "Filter by team, date range, and export — see the filter row below"
                 : view === "archived"
                   ? `${archivedProjects.length} archived project${archivedProjects.length === 1 ? "" : "s"} in ${currentWorkspaceName}`
                   : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned · ${currentWorkspaceName}`}
@@ -650,7 +654,7 @@ export default function App() {
               {...dropHandlers(sessionDesignerId)}
             >
               <div className="section-head">
-                <h2>My workspace</h2>
+                <h2>My work</h2>
                 <span className="muted small">
                   High priority first · drop cards here to claim
                 </span>
@@ -668,6 +672,13 @@ export default function App() {
                       project={p}
                       designers={workspace.designers}
                       onClick={() => setOpenProjectId(p.id)}
+                      teamBadge={
+                        p.workspaceId !== currentWorkspaceId
+                          ? availableWorkspaces.find(
+                              (w) => w.id === p.workspaceId,
+                            )?.name
+                          : undefined
+                      }
                     />
                   ))}
                 </div>
@@ -827,8 +838,7 @@ export default function App() {
         <ProjectDetailModal
           project={openProject}
           designers={workspace.designers}
-          assignableDesigners={workspaceDesigners}
-          superUsers={superUsers}
+          reviewers={reviewers}
           workspaces={availableWorkspaces}
           currentDesignerId={currentDesigner.id}
           currentDesignerName={currentDesigner.name}
@@ -852,7 +862,7 @@ export default function App() {
 
       {creating && (
         <CreateProjectModal
-          designers={workspaceDesigners}
+          designers={workspace.designers}
           defaultAssigneeId={sessionDesignerId}
           initial={createInitial}
           onCancel={() => {
@@ -866,16 +876,17 @@ export default function App() {
       {settingsOpen && (
         <SettingsModal
           currentDesigner={currentDesigner}
-          isAdmin={isAdmin}
           isSuperUser={isSuperUser}
           designers={workspace.designers}
           superUsers={superUsers}
+          reviewers={reviewers}
           workspaces={availableWorkspaces}
           onUpdateWorkspaceMembers={firestoreSetWorkspaceMembers}
           onUpdatePhotoUrl={(url) =>
             firestoreSetDesignerPhotoUrl(currentDesigner.id, url)
           }
           onUpdateDesignerSuperUser={firestoreSetDesignerSuperUser}
+          onUpdateDesignerReviewer={firestoreSetDesignerReviewer}
           onClose={() => setSettingsOpen(false)}
         />
       )}

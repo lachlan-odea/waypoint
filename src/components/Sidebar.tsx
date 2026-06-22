@@ -199,7 +199,7 @@ export function Sidebar({
           {collapsed ? "+" : "+ New project"}
         </button>
 
-        {!collapsed && <div className="nav-section">Workspaces</div>}
+        {!collapsed && <div className="nav-section">Teams</div>}
         <ul className="designer-list">
           {workspaces.map((w) => {
             const v = WORKSPACE_VISUALS[w.id] ?? {

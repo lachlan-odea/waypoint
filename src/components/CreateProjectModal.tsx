@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Designer, Priority, Project } from "../types";
 import { BRANDS } from "../constants";
 import { ContentTypeField } from "./ContentTypeField";
-import { Avatar } from "./Avatar";
+import { AssigneePicker } from "./AssigneePicker";
 
 type Props = {
   designers: Designer[];
@@ -130,31 +130,11 @@ export function CreateProjectModal({
             </label>
             <label className="field" style={{ gridColumn: "1 / -1" }}>
               <span>Assignees</span>
-              <div className="assignee-picker">
-                {designers.map((d) => {
-                  const active = assigneeIds.includes(d.id);
-                  return (
-                    <button
-                      type="button"
-                      key={d.id}
-                      className={`assignee-chip ${active ? "active" : ""}`}
-                      onClick={() => {
-                        setAssigneeIds((cur) =>
-                          active
-                            ? cur.filter((id) => id !== d.id)
-                            : [...cur, d.id],
-                        );
-                      }}
-                    >
-                      <Avatar
-                        designer={d}
-                        className="dot-avatar assignee-chip-avatar"
-                      />
-                      <span>{d.name.split(" ")[0]}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <AssigneePicker
+                designers={designers}
+                assigneeIds={assigneeIds}
+                onChange={setAssigneeIds}
+              />
             </label>
           </div>
         </div>

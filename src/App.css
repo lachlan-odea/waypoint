@@ -614,6 +614,19 @@ textarea {
   font-size: 12px;
   color: var(--muted);
 }
+.card-team-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 .card-next-milestone {
   margin: 4px 0 0;
   display: flex;
@@ -687,6 +700,104 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.assignee-tag-picker {
+  position: relative;
+}
+.assignee-tag-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: var(--surface);
+  min-height: 38px;
+  cursor: text;
+  transition: border-color 0.12s ease;
+}
+.assignee-tag-input:focus-within {
+  border-color: var(--primary);
+}
+.assignee-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 4px 2px 2px;
+  font-size: 12px;
+  color: var(--text);
+}
+.assignee-tag-avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+}
+.assignee-tag-name {
+  padding-right: 2px;
+}
+.assignee-tag-remove {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  border-radius: 999px;
+}
+.assignee-tag-remove:hover {
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--text);
+}
+.assignee-tag-text {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: inherit;
+  padding: 4px 0;
+}
+.assignee-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  list-style: none;
+  padding: 4px;
+  margin: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 50;
+}
+.assignee-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  user-select: none;
+}
+.assignee-suggestion.highlighted,
+.assignee-suggestion:hover {
+  background: var(--surface-2);
+}
+.assignee-suggestion-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
 }
 .assignee-chip {
   display: inline-flex;
@@ -1084,6 +1195,71 @@ textarea {
   flex-direction: column;
   gap: 12px;
   margin-top: 10px;
+}
+
+.manage-users {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.manage-user-row {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+.manage-user-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.manage-user-identity > div {
+  min-width: 0;
+}
+.manage-user-name,
+.manage-user-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.manage-user-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+.manage-user-email {
+  font-size: 11px;
+}
+@media (max-width: 720px) {
+  .manage-user-row {
+    grid-template-columns: 1fr;
+  }
+}
+.manage-user-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.manage-user-chip-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.manage-user-chip-label {
+  min-width: 56px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-right: 2px;
 }
 .workspace-member-row {
   border: 1px solid var(--border);

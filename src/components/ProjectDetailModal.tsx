@@ -12,21 +12,19 @@ import { ContentTypeField } from "./ContentTypeField";
 import { LinkifiedText } from "./LinkifiedText";
 import { findMentionedDesigners, findNewMentions } from "../mentions";
 import { Avatar } from "./Avatar";
+import { AssigneePicker } from "./AssigneePicker";
 
 type Props = {
   project: Project;
   // Full designer list — used for looking up names/avatars on existing
-  // assignees, comment authors, and @-mention parsing. Stays unfiltered so
-  // people who've been removed from the workspace still render correctly on
-  // historical assignments and mentions.
+  // assignees, comment authors, @-mention parsing, AND as the source for
+  // the assignee picker. Cross-team assignment is allowed: anyone on the
+  // platform can be added regardless of team membership.
   designers: Designer[];
-  // Designers who can be picked as assignees from the picker — narrowed to
-  // members of the project's workspace.
-  assignableDesigners: Designer[];
-  // Designers eligible to be picked as reviewers (super users only). The
-  // picker shows these as toggleable chips; their UIDs end up in
-  // project.reviewerIds.
-  superUsers: Designer[];
+  // Designers eligible to be picked as reviewers (anyone with isReviewer
+  // toggled on in Settings). The picker shows these as toggleable chips;
+  // their UIDs end up in project.reviewerIds.
+  reviewers: Designer[];
   // All known workspaces, used to render the Workspace move dropdown.
   workspaces: Workspace[];
   currentDesignerId: string;
@@ -77,8 +75,7 @@ function snippetFrom(text: string, max = 80): string {
 export function ProjectDetailModal({
   project,
   designers,
-  assignableDesigners,
-  superUsers,
+  reviewers,
   workspaces,
   currentDesignerId,
   currentDesignerName,
@@ -644,41 +641,23 @@ export function ProjectDetailModal({
               />
             </Field>
             <Field label="Assignees">
-              <div className="assignee-picker">
-                {assignableDesigners.map((d) => {
-                  const active = project.assigneeIds.includes(d.id);
-                  return (
-                    <button
-                      type="button"
-                      key={d.id}
-                      className={`assignee-chip ${active ? "active" : ""}`}
-                      onClick={() => {
-                        const next = active
-                          ? project.assigneeIds.filter((id) => id !== d.id)
-                          : [...project.assigneeIds, d.id];
-                        onChange((p) => ({ ...p, assigneeIds: next }));
-                      }}
-                      title={active ? `Remove ${d.name}` : `Add ${d.name}`}
-                    >
-                      <Avatar
-                        designer={d}
-                        className="dot-avatar assignee-chip-avatar"
-                      />
-                      <span>{d.name.split(" ")[0]}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <AssigneePicker
+                designers={designers}
+                assigneeIds={project.assigneeIds}
+                onChange={(ids) =>
+                  onChange((p) => ({ ...p, assigneeIds: ids }))
+                }
+              />
             </Field>
             <Field label="Reviewers">
-              {superUsers.length === 0 ? (
+              {reviewers.length === 0 ? (
                 <p className="muted small" style={{ margin: 0 }}>
-                  No super users yet. Promote someone in Settings to make
-                  them pickable as a reviewer.
+                  No reviewers yet. Mark someone as a reviewer in Settings
+                  to make them pickable here.
                 </p>
               ) : (
                 <div className="assignee-picker">
-                  {superUsers.map((d) => {
+                  {reviewers.map((d) => {
                     const reviewerIds = project.reviewerIds ?? [];
                     const active = reviewerIds.includes(d.id);
                     return (
@@ -721,7 +700,7 @@ export function ProjectDetailModal({
                 </a>
               )}
             </Field>
-            <Field label="Workspace">
+            <Field label="Team">
               <select
                 value={project.workspaceId}
                 onChange={(e) => {
@@ -729,7 +708,7 @@ export function ProjectDetailModal({
                     onMoveToWorkspace(e.target.value);
                   }
                 }}
-                aria-label="Move project to another workspace"
+                aria-label="Move project to another team"
               >
                 {workspaces.map((w) => (
                   <option key={w.id} value={w.id}>

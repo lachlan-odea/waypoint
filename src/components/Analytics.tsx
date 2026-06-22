@@ -311,12 +311,12 @@ export function Analytics({
       <div className="filter-bar">
         <div className="filter-fields">
           <label className="field-inline">
-            <span>Workspace</span>
+            <span>Team</span>
             <select
               value={selectedWorkspaceId}
               onChange={(e) => setSelectedWorkspaceId(e.target.value)}
             >
-              <option value={ALL_WORKSPACES}>All workspaces</option>
+              <option value={ALL_WORKSPACES}>All teams</option>
               {workspaces.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
@@ -366,7 +366,7 @@ export function Analytics({
       <p className="muted small filter-summary">
         Showing {filtered.length} of {workspaceProjects.length}{" "}
         {selectedWorkspaceId === ALL_WORKSPACES
-          ? "projects across all workspaces"
+          ? "projects across all teams"
           : `${workspaces.find((w) => w.id === selectedWorkspaceId)?.name ?? ""} projects`}
         {", "}commenced {rangeLabel}
       </p>

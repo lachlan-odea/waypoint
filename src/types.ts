@@ -8,18 +8,18 @@ export type Designer = {
   initials: string;
   color: string;
   email?: string;
-  // Bundled seed photo (Vite-hashed asset URL). Not persisted to Firestore —
-  // re-overlaid on read by overlayAvatar() so the URL stays in sync with the
-  // current build.
-  avatar?: string;
-  // User-supplied headshot URL pasted from Settings. Persisted to Firestore
-  // and takes precedence over `avatar` when rendering.
+  // User-supplied headshot URL pasted from Settings. Empty / missing falls
+  // back to the initials chip.
   photoUrl?: string;
-  // Super users can view the by-designer analytics chart and be picked as
-  // reviewers on projects. Toggled from Settings by an existing super user.
-  // The SUPER_USER_EMAILS constant in src/constants.ts is the bootstrap so
-  // there's always at least one super user who can grant the flag to others.
+  // Super users are admins: they manage team membership, promote / demote
+  // other super users and reviewers, and view the by-designer analytics
+  // chart. SUPER_USER_EMAILS in src/constants.ts is the bootstrap so
+  // there's always at least one super user who can grant the flag.
   isSuperUser?: boolean;
+  // Reviewers appear in the Reviewer picker on every project. Independent
+  // from isSuperUser — a designer can be one, both, or neither. Toggled
+  // from Settings by a super user.
+  isReviewer?: boolean;
 };
 
 // A named container that scopes projects + notifications (Design, Video,
@@ -91,6 +91,5 @@ export type WorkspaceData = {
   designers: Designer[];
   workspaces: Workspace[];
   projects: Project[];
-  currentDesignerId: string;
   notifications: Notification[];
 };

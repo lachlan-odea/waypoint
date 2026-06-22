@@ -8,6 +8,11 @@ type Props = {
   designers: Designer[];
   onClick: () => void;
   compact?: boolean;
+  // Optional team-origin label. Set when this card is rendered in a
+  // section (e.g. "My work") that shows projects from a different team
+  // than the one currently being viewed, so the cross-team origin is
+  // visible at a glance.
+  teamBadge?: string;
 };
 
 const priorityClass: Record<string, string> = {
@@ -37,7 +42,13 @@ function isPastDue(iso: string): boolean {
 
 const MAX_VISIBLE_ASSIGNEES = 3;
 
-export function ProjectCard({ project, designers, onClick, compact }: Props) {
+export function ProjectCard({
+  project,
+  designers,
+  onClick,
+  compact,
+  teamBadge,
+}: Props) {
   const assignees = project.assigneeIds
     .map((id) => designers.find((d) => d.id === id))
     .filter((d): d is Designer => Boolean(d));
@@ -72,6 +83,11 @@ export function ProjectCard({ project, designers, onClick, compact }: Props) {
       </div>
       <h4 className="card-title">{project.title}</h4>
       <p className="card-client">{project.client}</p>
+      {teamBadge && (
+        <span className="card-team-badge" title={`Team: ${teamBadge}`}>
+          {teamBadge}
+        </span>
+      )}
       {nextMilestone && (
         <p className="card-next-milestone" title={nextMilestone.label}>
           <span className="card-next-milestone-dot" aria-hidden />

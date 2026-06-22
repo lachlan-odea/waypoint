@@ -9,7 +9,6 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { seedWorkspace } from "./seed";
 import { DEFAULT_WORKSPACE_ID, SEED_WORKSPACES } from "./constants";
 import type {
   Designer,
@@ -18,18 +17,6 @@ import type {
   Workspace,
   WorkspaceData,
 } from "./types";
-
-// Designer avatar URLs are produced by Vite's asset pipeline and change
-// between builds. We don't persist them — we re-overlay the current build's
-// hashed URL on top of every designer we read from Firestore.
-const seedAvatarById = new Map(
-  seedWorkspace.designers.map((d) => [d.id, d.avatar] as const),
-);
-
-function overlayAvatar(d: Designer): Designer {
-  const fresh = seedAvatarById.get(d.id);
-  return fresh ? { ...d, avatar: fresh } : d;
-}
 
 const designersCol = () => collection(db, "designers");
 const workspacesCol = () => collection(db, "workspaces");
@@ -46,7 +33,7 @@ function withDefaultWorkspace<T extends { workspaceId?: string }>(doc: T): T {
 // document in any collection changes. We assemble a WorkspaceData shape so
 // the rest of the app can stay the same.
 export function subscribeWorkspace(
-  onChange: (ws: Omit<WorkspaceData, "currentDesignerId">) => void,
+  onChange: (ws: WorkspaceData) => void,
   onError: (err: Error) => void,
 ): () => void {
   let designers: Designer[] = [];
@@ -73,7 +60,7 @@ export function subscribeWorkspace(
     designersCol(),
     (snap) => {
       designers = snap.docs
-        .map((d) => overlayAvatar(d.data() as Designer))
+        .map((d) => d.data() as Designer)
         .sort((a, b) => a.name.localeCompare(b.name));
       designersReady = true;
       emit();
@@ -123,21 +110,17 @@ export function subscribeWorkspace(
   };
 }
 
-export async function setDesigner(d: Designer): Promise<void> {
-  await setDoc(doc(designersCol(), d.id), stripAvatar(d));
-}
-
 // One-shot read used by the sign-up "claim existing profile" picker. Must be
 // callable without auth, so /designers needs public read in firestore.rules.
 export async function loadDesignerProfiles(): Promise<Designer[]> {
   const snap = await getDocs(designersCol());
-  return snap.docs.map((d) => overlayAvatar(d.data() as Designer));
+  return snap.docs.map((d) => d.data() as Designer);
 }
 
 export async function loadDesigner(id: string): Promise<Designer | null> {
   const snap = await getDoc(doc(designersCol(), id));
   if (!snap.exists()) return null;
-  return overlayAvatar(snap.data() as Designer);
+  return snap.data() as Designer;
 }
 
 // Create a brand-new Designer document for a freshly signed-up user.
@@ -243,12 +226,6 @@ export async function claimDesignerProfile(
   return next;
 }
 
-function stripAvatar(d: Designer): Designer {
-  // Don't persist Vite-hashed URLs; overlayAvatar re-applies them on read.
-  const { avatar: _drop, ...rest } = d;
-  return rest as Designer;
-}
-
 export async function setProject(p: Project): Promise<void> {
   await setDoc(doc(projectsCol(), p.id), p);
 }
@@ -278,31 +255,6 @@ export async function deleteNotificationsForRecipient(
   await batch.commit();
 }
 
-// Returns true if Firestore is empty (no designers and no projects). Used
-// to gate the one-off JSONBin migrator on first launch.
-export async function firestoreIsEmpty(): Promise<boolean> {
-  const [designers, projects] = await Promise.all([
-    getDocs(designersCol()),
-    getDocs(projectsCol()),
-  ]);
-  return designers.empty && projects.empty;
-}
-
-// Bulk seed Firestore from a workspace blob. Uses one batch per collection
-// (Firestore caps batches at 500 ops; the seed/JSONBin data is much smaller).
-export async function seedFirestore(ws: WorkspaceData): Promise<void> {
-  const batch = writeBatch(db);
-  ws.workspaces.forEach((w) => batch.set(doc(workspacesCol(), w.id), w));
-  ws.designers.forEach((d) =>
-    batch.set(doc(designersCol(), d.id), stripAvatar(d)),
-  );
-  ws.projects.forEach((p) => batch.set(doc(projectsCol(), p.id), p));
-  ws.notifications.forEach((n) =>
-    batch.set(doc(notificationsCol(), n.id), n),
-  );
-  await batch.commit();
-}
-
 // Persist a user-supplied headshot URL onto their designer doc. Pass an
 // empty string to clear it.
 export async function setDesignerPhotoUrl(
@@ -328,6 +280,19 @@ export async function setDesignerSuperUser(
   await setDoc(
     doc(designersCol(), designerId),
     { isSuperUser },
+    { merge: true },
+  );
+}
+
+// Flip the reviewer flag on a designer doc. Same trust model as
+// setDesignerSuperUser — gated by the UI, not Firestore rules.
+export async function setDesignerReviewer(
+  designerId: string,
+  isReviewer: boolean,
+): Promise<void> {
+  await setDoc(
+    doc(designersCol(), designerId),
+    { isReviewer },
     { merge: true },
   );
 }

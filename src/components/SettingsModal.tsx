@@ -5,16 +5,16 @@ import { Avatar } from "./Avatar";
 
 type Props = {
   currentDesigner: Designer;
-  isAdmin: boolean;
-  // Whether the current user is a super user. Super users (a superset that
-  // includes admins) can promote / demote others via the Super users
-  // section. Today isSuperUser is equivalent to isAdmin, but kept as a
-  // separate prop in case the bootstrap-admin concept diverges later.
+  // Whether the current user is a super user. Gates the Manage users
+  // section (the only admin surface in Settings).
   isSuperUser: boolean;
   designers: Designer[];
   // Designers currently marked as super users — used to render their state
   // in the Super users section.
   superUsers: Designer[];
+  // Designers currently marked as reviewers — used to render their state
+  // in the Reviewers section.
+  reviewers: Designer[];
   workspaces: Workspace[];
   onUpdateWorkspaceMembers: (
     workspaceId: string,
@@ -24,6 +24,10 @@ type Props = {
   onUpdateDesignerSuperUser: (
     designerId: string,
     isSuperUser: boolean,
+  ) => Promise<void>;
+  onUpdateDesignerReviewer: (
+    designerId: string,
+    isReviewer: boolean,
   ) => Promise<void>;
   onClose: () => void;
 };
@@ -46,14 +50,15 @@ function friendlyError(err: unknown): string {
 
 export function SettingsModal({
   currentDesigner,
-  isAdmin,
   isSuperUser,
   designers,
   superUsers,
+  reviewers,
   workspaces,
   onUpdateWorkspaceMembers,
   onUpdatePhotoUrl,
   onUpdateDesignerSuperUser,
+  onUpdateDesignerReviewer,
   onClose,
 }: Props) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -62,14 +67,18 @@ export function SettingsModal({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [manageUsersOpen, setManageUsersOpen] = useState(false);
 
   useEffect(() => {
+    // Suspend the Settings Escape handler while the Manage users sub-modal
+    // is up — that modal owns Escape until it's closed.
+    if (manageUsersOpen) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, manageUsersOpen]);
 
   async function savePassword() {
     setError(null);
@@ -112,20 +121,21 @@ export function SettingsModal({
 
         <div className="modal-body">
           {isSuperUser && (
-            <ManageSuperUsers
-              designers={designers}
-              superUsers={superUsers}
-              currentDesignerId={currentDesigner.id}
-              onUpdateDesignerSuperUser={onUpdateDesignerSuperUser}
-            />
-          )}
-
-          {isAdmin && (
-            <ManageWorkspaces
-              designers={designers}
-              workspaces={workspaces}
-              onUpdateWorkspaceMembers={onUpdateWorkspaceMembers}
-            />
+            <section className="modal-section">
+              <h3>Manage users</h3>
+              <p className="muted small">
+                Set roles (Super user / Reviewer) and team membership for
+                every designer on the platform. Opens in a dedicated window.
+              </p>
+              <div className="section-actions">
+                <button
+                  className="primary"
+                  onClick={() => setManageUsersOpen(true)}
+                >
+                  Manage users →
+                </button>
+              </div>
+            </section>
           )}
 
           <section className="modal-section">
@@ -197,6 +207,20 @@ export function SettingsModal({
           <button onClick={onClose}>Close</button>
         </footer>
       </div>
+
+      {manageUsersOpen && (
+        <ManageUsersModal
+          designers={designers}
+          superUsers={superUsers}
+          reviewers={reviewers}
+          workspaces={workspaces}
+          currentDesignerId={currentDesigner.id}
+          onUpdateDesignerSuperUser={onUpdateDesignerSuperUser}
+          onUpdateDesignerReviewer={onUpdateDesignerReviewer}
+          onUpdateWorkspaceMembers={onUpdateWorkspaceMembers}
+          onClose={() => setManageUsersOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -289,204 +313,193 @@ function ProfilePhotoSection({
   );
 }
 
-type ManageWorkspacesProps = {
-  designers: Designer[];
-  workspaces: Workspace[];
-  onUpdateWorkspaceMembers: (
-    workspaceId: string,
-    memberIds: string[],
-  ) => Promise<void>;
-};
-
-type ManageSuperUsersProps = {
+type ManageUsersModalProps = {
   designers: Designer[];
   superUsers: Designer[];
+  reviewers: Designer[];
+  workspaces: Workspace[];
   currentDesignerId: string;
   onUpdateDesignerSuperUser: (
     designerId: string,
     isSuperUser: boolean,
   ) => Promise<void>;
+  onUpdateDesignerReviewer: (
+    designerId: string,
+    isReviewer: boolean,
+  ) => Promise<void>;
+  onUpdateWorkspaceMembers: (
+    workspaceId: string,
+    memberIds: string[],
+  ) => Promise<void>;
+  onClose: () => void;
 };
 
-function ManageSuperUsers({
+// Dedicated sub-modal that opens on top of Settings. One row per designer,
+// with Role chips (Super user / Reviewer) stacked above the Teams chips
+// for every workspace. Replaces the trio of ManageSuperUsers /
+// ManageReviewers / ManageWorkspaces sections that used to live inline.
+function ManageUsersModal({
   designers,
   superUsers,
+  reviewers,
+  workspaces,
   currentDesignerId,
   onUpdateDesignerSuperUser,
-}: ManageSuperUsersProps) {
-  const [busyId, setBusyId] = useState<string | null>(null);
+  onUpdateDesignerReviewer,
+  onUpdateWorkspaceMembers,
+  onClose,
+}: ManageUsersModalProps) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  // A composite busy key like "super:abc123" or "team:design:abc123" so
+  // each chip can show its own loading state without locking the entire
+  // row.
+  const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const superUserIds = new Set(superUsers.map((d) => d.id));
 
-  async function toggle(designerId: string, next: boolean) {
-    setBusyId(designerId);
+  const superUserIds = new Set(superUsers.map((d) => d.id));
+  const reviewerIds = new Set(reviewers.map((d) => d.id));
+  const workspaceMembership = new Map(
+    workspaces.map((w) => [w.id, new Set(w.memberIds ?? [])]),
+  );
+
+  async function run<T>(key: string, op: () => Promise<T>) {
+    setBusyKey(key);
     setError(null);
     try {
-      await onUpdateDesignerSuperUser(designerId, next);
+      await op();
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setBusyId(null);
+      setBusyKey(null);
     }
   }
 
-  return (
-    <section className="modal-section">
-      <h3>Super users</h3>
-      <p className="muted small">
-        Super users can see the by-designer analytics chart and be picked as
-        reviewers on any project. Toggling someone here grants or removes
-        that access immediately.
-      </p>
-      <div className="assignee-picker">
-        {designers.map((d) => {
-          const active = superUserIds.has(d.id);
-          const isSelf = d.id === currentDesignerId;
-          return (
-            <button
-              type="button"
-              key={d.id}
-              className={`assignee-chip ${active ? "active" : ""}`}
-              onClick={() => toggle(d.id, !active)}
-              disabled={busyId === d.id}
-              title={
-                isSelf && active
-                  ? `Remove super-user status from yourself`
-                  : active
-                    ? `Remove ${d.name} as super user`
-                    : `Make ${d.name} a super user`
-              }
-            >
-              <Avatar
-                designer={d}
-                className="dot-avatar assignee-chip-avatar"
-              />
-              <span>{d.name.split(" ")[0]}</span>
-            </button>
-          );
-        })}
-      </div>
-      {error && <p className="login-error">{error}</p>}
-    </section>
-  );
-}
-
-function ManageWorkspaces({
-  designers,
-  workspaces,
-  onUpdateWorkspaceMembers,
-}: ManageWorkspacesProps) {
-  return (
-    <section className="modal-section">
-      <h3>Manage workspaces</h3>
-      <p className="muted small">
-        Pick who's on each team. Everyone can see every workspace; this just
-        controls who shows up in the Team columns and assignee pickers
-        inside it. Leave a workspace empty to show every designer.
-      </p>
-      <div className="manage-workspaces">
-        {workspaces.map((w) => (
-          <WorkspaceMemberRow
-            key={w.id}
-            workspace={w}
-            designers={designers}
-            onSave={(ids) => onUpdateWorkspaceMembers(w.id, ids)}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-type WorkspaceMemberRowProps = {
-  workspace: Workspace;
-  designers: Designer[];
-  onSave: (ids: string[]) => Promise<void>;
-};
-
-function WorkspaceMemberRow({
-  workspace,
-  designers,
-  onSave,
-}: WorkspaceMemberRowProps) {
-  const initial = workspace.memberIds ?? [];
-  const [selected, setSelected] = useState<string[]>(initial);
-  const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Reset local selection if the upstream workspace doc changes (e.g. a
-  // concurrent edit from another admin).
-  useEffect(() => {
-    setSelected(workspace.memberIds ?? []);
-  }, [workspace.memberIds]);
-
-  const initialKey = initial.slice().sort().join(",");
-  const selectedKey = selected.slice().sort().join(",");
-  const dirty = initialKey !== selectedKey;
-
-  function toggle(id: string) {
-    setSelected((cur) =>
-      cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
+  function toggleTeamMembership(workspace: Workspace, designerId: string) {
+    const current = workspace.memberIds ?? [];
+    const next = current.includes(designerId)
+      ? current.filter((x) => x !== designerId)
+      : [...current, designerId];
+    return run(`team:${workspace.id}:${designerId}`, () =>
+      onUpdateWorkspaceMembers(workspace.id, next),
     );
   }
 
-  async function save() {
-    setBusy(true);
-    setError(null);
-    try {
-      await onSave(selected);
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 1500);
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
-    <div className="workspace-member-row">
-      <div className="workspace-member-head">
-        <strong>{workspace.name}</strong>
-        <span className="muted small">
-          {selected.length === 0
-            ? "Open to everyone"
-            : `${selected.length} member${selected.length === 1 ? "" : "s"}`}
-        </span>
-      </div>
-      <div className="assignee-picker">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <header className="modal-head">
+          <h2 className="modal-title-static">Manage users</h2>
+          <button className="icon-btn" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </header>
+        <div className="modal-body">
+          <p className="muted small" style={{ marginTop: 0 }}>
+            One row per designer. Toggle roles (Super user, Reviewer) and
+            team membership independently — anyone can be assigned to a
+            project regardless of team, but only team members appear as
+            columns on that team's board. A team with no members chosen
+            stays open to everyone.
+          </p>
+          <div className="manage-users">
         {designers.map((d) => {
-          const active = selected.includes(d.id);
+          const isSelf = d.id === currentDesignerId;
+          const isSuper = superUserIds.has(d.id);
+          const isReviewerActive = reviewerIds.has(d.id);
           return (
-            <button
-              type="button"
-              key={d.id}
-              className={`assignee-chip ${active ? "active" : ""}`}
-              onClick={() => toggle(d.id)}
-              disabled={busy}
-            >
-              <Avatar
-                designer={d}
-                className="dot-avatar assignee-chip-avatar"
-              />
-              <span>{d.name.split(" ")[0]}</span>
-            </button>
+            <div key={d.id} className="manage-user-row">
+              <div className="manage-user-identity">
+                <Avatar designer={d} />
+                <div>
+                  <div className="manage-user-name">{d.name}</div>
+                  {d.email && (
+                    <div className="muted small manage-user-email">
+                      {d.email}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="manage-user-chips">
+                <div className="manage-user-chip-group">
+                  <span className="manage-user-chip-label">Role</span>
+                  <button
+                    type="button"
+                    className={`assignee-chip ${isSuper ? "active" : ""}`}
+                    onClick={() =>
+                      run(`super:${d.id}`, () =>
+                        onUpdateDesignerSuperUser(d.id, !isSuper),
+                      )
+                    }
+                    disabled={busyKey === `super:${d.id}`}
+                    title={
+                      isSelf && isSuper
+                        ? "Remove super-user status from yourself"
+                        : isSuper
+                          ? `Remove ${d.name} as super user`
+                          : `Make ${d.name} a super user`
+                    }
+                  >
+                    Super user
+                  </button>
+                  <button
+                    type="button"
+                    className={`assignee-chip ${isReviewerActive ? "active" : ""}`}
+                    onClick={() =>
+                      run(`reviewer:${d.id}`, () =>
+                        onUpdateDesignerReviewer(d.id, !isReviewerActive),
+                      )
+                    }
+                    disabled={busyKey === `reviewer:${d.id}`}
+                    title={
+                      isReviewerActive
+                        ? `Remove ${d.name} as reviewer`
+                        : `Make ${d.name} a reviewer`
+                    }
+                  >
+                    Reviewer
+                  </button>
+                </div>
+                <div className="manage-user-chip-group">
+                  <span className="manage-user-chip-label">Teams</span>
+                  {workspaces.map((w) => {
+                    const active =
+                      workspaceMembership.get(w.id)?.has(d.id) ?? false;
+                    const key = `team:${w.id}:${d.id}`;
+                    return (
+                      <button
+                        type="button"
+                        key={w.id}
+                        className={`assignee-chip ${active ? "active" : ""}`}
+                        onClick={() => toggleTeamMembership(w, d.id)}
+                        disabled={busyKey === key}
+                        title={
+                          active
+                            ? `Remove ${d.name} from ${w.name}`
+                            : `Add ${d.name} to ${w.name}`
+                        }
+                      >
+                        {w.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           );
         })}
-      </div>
-      {error && <p className="login-error">{error}</p>}
-      <div className="section-actions">
-        {saved && <span className="muted small">Saved</span>}
-        <button
-          className="primary"
-          onClick={save}
-          disabled={busy || !dirty}
-        >
-          {busy ? "Saving…" : "Save"}
-        </button>
+          </div>
+          {error && <p className="login-error">{error}</p>}
+        </div>
+        <footer className="modal-foot">
+          <button onClick={onClose}>Done</button>
+        </footer>
       </div>
     </div>
   );
