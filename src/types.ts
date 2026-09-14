@@ -206,6 +206,12 @@ export type SocialPost = {
   // `month` (the month they were written) and normally have no `date`; one
   // that does get scheduled shows on the calendar and stays in the library.
   evergreen: boolean;
+  // Link to the live post on LinkedIn once it's up. Pasted by whoever posted
+  // it — publishing goes through LinkedIn's own composer, so there's no API
+  // response to take this from.
+  postUrl?: string;
+  // ISO timestamp of when someone marked the post published in Waypoint.
+  publishedAt?: string;
   createdAt: string;
   source?: "import" | "manual";
 };

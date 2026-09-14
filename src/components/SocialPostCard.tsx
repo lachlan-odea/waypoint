@@ -4,6 +4,7 @@ import { socialChannelColor, socialStatusMeta } from "../constants";
 import { formatShort } from "../dates";
 import { writeDraggedSocialPostId } from "../dnd";
 import { socialPostTitle } from "../socialPosts";
+import { LinkedInGlyph } from "./LinkedInGlyph";
 
 type Props = {
   post: SocialPost;
@@ -109,6 +110,11 @@ export function SocialPostCard({ post, onClick, detailed }: Props) {
           {post.ctaLink && (
             <span title="Has a CTA link">
               <LinkGlyph />
+            </span>
+          )}
+          {post.postUrl && (
+            <span className="soc-card-live" title="Live on LinkedIn">
+              <LinkedInGlyph size={11} />
             </span>
           )}
         </span>

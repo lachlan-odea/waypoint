@@ -4256,3 +4256,65 @@ textarea {
   border-color: #86efac;
   color: #14532d;
 }
+
+/* Publish hand-off in the post editor */
+.soc-publish {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.soc-publish h3 {
+  margin: 0;
+}
+.soc-publish-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.soc-linkedin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #0a66c2;
+  border-color: #0a66c2;
+  color: white;
+  font-weight: 600;
+}
+.soc-linkedin-btn:hover {
+  background: #084f96;
+  border-color: #084f96;
+}
+.soc-linkedin-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.soc-publish-note {
+  margin: 0;
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #dcfce7;
+  color: #14532d;
+}
+:root.dark-mode .soc-publish-note,
+:root.dark-mode .soc-import-note {
+  background: rgba(22, 163, 74, 0.2);
+  color: #bbf7d0;
+  border-color: rgba(22, 163, 74, 0.4);
+}
+.soc-publish-steps {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.soc-publish-steps strong {
+  color: var(--text);
+}
+.soc-card-live {
+  color: #0a66c2;
+}

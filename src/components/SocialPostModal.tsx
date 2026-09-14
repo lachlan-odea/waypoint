@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import type { SocialPost, SocialPostStatus } from "../types";
 import { SOCIAL_POST_STATUSES } from "../constants";
 import { todayIso } from "../dates";
+import {
+  isHttpUrl,
+  linkedInComposeUrl,
+  linkedInPostText,
+} from "../socialPosts";
+import { LinkedInGlyph } from "./LinkedInGlyph";
 
 type Props = {
   // Everything known about the post so far. For a new post this is whatever
@@ -17,7 +23,7 @@ type Props = {
   onDelete?: () => void;
 };
 
-const isUrl = (s: string) => /^https?:\/\//i.test(s.trim());
+const isUrl = isHttpUrl;
 
 function newPostId(): string {
   return `sp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -45,7 +51,11 @@ export function SocialPostModal({
   const [ctaLink, setCtaLink] = useState(initial.ctaLink ?? "");
   const [notes, setNotes] = useState(initial.notes ?? "");
   const [evergreen, setEvergreen] = useState(initial.evergreen ?? false);
+  const [postUrl, setPostUrl] = useState(initial.postUrl ?? "");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // Feedback after handing off to LinkedIn — whether the copy made it onto
+  // the clipboard, mostly.
+  const [shareNote, setShareNote] = useState<string | null>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -57,14 +67,20 @@ export function SocialPostModal({
 
   const canSave = topic.trim().length > 0 || copy.trim().length > 0;
 
-  function submit() {
-    if (!canSave) return;
-    const post: SocialPost = {
+  // The post as the form currently describes it. `overrides` lets "Mark as
+  // published" flip a couple of fields on the way out without a render in
+  // between.
+  function buildPost(overrides: Partial<SocialPost> = {}): SocialPost {
+    const finalDate = overrides.date ?? date;
+    const trimmedUrl = postUrl.trim();
+    return {
       id: initial.id ?? newPostId(),
       // A dated post lives in its date's month. An undated one keeps the
       // month it was filed under so it stays visible in that month's tray.
-      month: date ? date.slice(0, 7) : initial.month || todayIso().slice(0, 7),
-      date,
+      month: finalDate
+        ? finalDate.slice(0, 7)
+        : initial.month || todayIso().slice(0, 7),
+      date: finalDate,
       channel: channel.trim(),
       topic: topic.trim(),
       copy: copy.trimEnd(),
@@ -75,10 +91,56 @@ export function SocialPostModal({
       notes: notes.trimEnd(),
       owner: owner.trim(),
       evergreen,
+      // Firestore is configured to drop undefined fields, so clearing the
+      // link removes it from the document rather than storing "".
+      postUrl: trimmedUrl || undefined,
+      publishedAt: initial.publishedAt,
       createdAt: initial.createdAt ?? new Date().toISOString(),
       source: initial.source ?? "manual",
+      ...overrides,
     };
-    onSave(post);
+  }
+
+  function submit() {
+    if (!canSave) return;
+    onSave(buildPost());
+  }
+
+  // Hand off to LinkedIn's composer. The text goes on the clipboard first so
+  // an empty composer (LinkedIn occasionally ignores the pre-fill) is a
+  // paste away, then the composer opens in a new tab.
+  function openLinkedIn() {
+    const text = linkedInPostText({ copy, ctaLink });
+    if (!text) return;
+    const url = linkedInComposeUrl(text);
+    const copyToClipboard = navigator.clipboard?.writeText(text);
+    (copyToClipboard ?? Promise.reject(new Error("no clipboard")))
+      .then(() =>
+        setShareNote(
+          "LinkedIn opened in a new tab with the copy pre-filled. It's on your clipboard too, in case the composer came up empty.",
+        ),
+      )
+      .catch(() =>
+        setShareNote(
+          "LinkedIn opened in a new tab with the copy pre-filled. Copy it from the box above if the composer came up empty.",
+        ),
+      );
+    window.open(url, "_blank", "noopener");
+  }
+
+  // Once it's live: status published, stamped now, and an undated post
+  // lands on today so it shows on the calendar. Saves straight away — this
+  // is the last thing you do with a post, and a "remember to hit Save"
+  // step here is how a published post stays pending.
+  function markPublished() {
+    if (!canSave) return;
+    onSave(
+      buildPost({
+        status: "published",
+        publishedAt: new Date().toISOString(),
+        date: date || todayIso(),
+      }),
+    );
   }
 
   return (
@@ -257,6 +319,79 @@ export function SocialPostModal({
               </span>
             </span>
           </label>
+
+          <div className="modal-section soc-publish">
+            <h3>Publish</h3>
+            <div className="soc-publish-actions">
+              <button
+                type="button"
+                className="btn-mini soc-linkedin-btn"
+                onClick={openLinkedIn}
+                disabled={!copy.trim()}
+                title={
+                  copy.trim()
+                    ? "Open LinkedIn's composer with this copy"
+                    : "Add some copy first"
+                }
+              >
+                <LinkedInGlyph />
+                Post on LinkedIn
+              </button>
+              {status !== "published" && (
+                <button
+                  type="button"
+                  className="btn-mini"
+                  onClick={markPublished}
+                  disabled={!canSave}
+                  title="Set the status to Published and save"
+                >
+                  Mark as published
+                </button>
+              )}
+            </div>
+            {shareNote && <p className="soc-publish-note">{shareNote}</p>}
+            <ol className="soc-publish-steps">
+              <li>
+                In the composer, click the name at the top and choose the{" "}
+                <strong>{channel.trim() || "brand"}</strong> page as the author.
+              </li>
+              <li>
+                Check the copy came through (it's on your clipboard if not),
+                then attach the asset from the link above.
+              </li>
+              <li>
+                Post it, paste the live link below and mark it published.
+              </li>
+            </ol>
+            <label className="field">
+              <span>Live post link</span>
+              <input
+                value={postUrl}
+                onChange={(e) => setPostUrl(e.target.value)}
+                placeholder="https://www.linkedin.com/posts/…"
+              />
+              {isUrl(postUrl) && (
+                <a
+                  className="brief-link"
+                  href={postUrl.trim()}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open on LinkedIn ↗
+                </a>
+              )}
+            </label>
+            {initial.publishedAt && (
+              <p className="field-hint">
+                Marked published{" "}
+                {new Date(initial.publishedAt).toLocaleString(undefined, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+                .
+              </p>
+            )}
+          </div>
         </div>
 
         <footer className="modal-foot">
