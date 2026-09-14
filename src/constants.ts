@@ -1,4 +1,4 @@
-import type { ProjectStatus } from "./types";
+import type { ProjectStatus, SocialPostStatus } from "./types";
 
 // The status picker's options, in lifecycle order. Single source of truth for
 // both the dropdown and every label rendered elsewhere — see the note on
@@ -72,6 +72,47 @@ export const SEED_HUBS = [
     workEndHour: 18,
   },
 ] as const;
+
+// Social calendar statuses in lifecycle order, with the colour each renders
+// in. The greens and pinks deliberately echo the cell fills the marketing
+// team used in their spreadsheet so the calendar reads the same way it did
+// there. Single source of truth for the status picker, the card pills and
+// the legend.
+export const SOCIAL_POST_STATUSES: {
+  value: SocialPostStatus;
+  label: string;
+  color: string;
+}[] = [
+  { value: "draft", label: "Draft", color: "#94a3b8" },
+  { value: "pending", label: "Pending", color: "#c2417f" },
+  { value: "scheduled", label: "Scheduled", color: "#d97706" },
+  { value: "published", label: "Published", color: "#16a34a" },
+  { value: "cancelled", label: "Cancelled", color: "#dc2626" },
+  { value: "backlog", label: "Backlog", color: "#64748b" },
+];
+
+export function socialStatusMeta(status: SocialPostStatus | undefined) {
+  return (
+    SOCIAL_POST_STATUSES.find((s) => s.value === status) ??
+    SOCIAL_POST_STATUSES[0]
+  );
+}
+
+// Brand channels a post can go out on. Suggestions, not a closed list: the
+// channel field accepts any text, and the calendar's filter pills are built
+// from whatever channels are actually in use plus these.
+export const SOCIAL_CHANNELS = ["CargoWise", "WiseTech"] as const;
+
+const SOCIAL_CHANNEL_COLORS: Record<string, string> = {
+  cargowise: "#2563eb",
+  wisetech: "#0f766e",
+};
+
+// Colour for a channel chip. Unknown channels fall back to a neutral slate
+// so a new channel is legible before anyone has picked it a colour.
+export function socialChannelColor(channel: string): string {
+  return SOCIAL_CHANNEL_COLORS[channel.trim().toLowerCase()] ?? "#64748b";
+}
 
 export const CONTENT_TYPES = [
   "Web",

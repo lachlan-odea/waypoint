@@ -4,7 +4,13 @@ import { Avatar } from "./Avatar";
 import { HubClocks } from "./HubClocks";
 import { readDraggedProjectId } from "../dnd";
 
-export type SidebarView = "myDesk" | "executiveDashboard" | "board" | "analytics" | "archived";
+export type SidebarView =
+  | "myDesk"
+  | "executiveDashboard"
+  | "board"
+  | "socialCalendar"
+  | "analytics"
+  | "archived";
 
 type Props = {
   currentDesigner: Designer;
@@ -143,6 +149,19 @@ function DashboardGlyph() {
       <rect x="14" y="3" width="7" height="7" />
       <rect x="14" y="14" width="7" height="7" />
       <rect x="3" y="14" width="7" height="7" />
+    </svg>
+  );
+}
+
+function CalendarGlyph() {
+  return (
+    <svg {...navGlyphProps}>
+      <rect x="3" y="4" width="18" height="17" rx="2" />
+      <line x1="3" y1="9" x2="21" y2="9" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <rect x="7" y="12" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
+      <rect x="14" y="12" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -316,6 +335,18 @@ export function Sidebar({
                 <DashboardGlyph />
               </span>
               {!collapsed && <span className="designer-name">Executive Dashboard</span>}
+            </button>
+          </li>
+          <li>
+            <button
+              className={`designer-btn ${view === "socialCalendar" ? "active" : ""}`}
+              onClick={() => onSelectView("socialCalendar")}
+              title="Social calendar"
+            >
+              <span className="dot-avatar" style={{ background: "#ec4899" }}>
+                <CalendarGlyph />
+              </span>
+              {!collapsed && <span className="designer-name">Social calendar</span>}
             </button>
           </li>
           <li>

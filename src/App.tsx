@@ -13,6 +13,7 @@ import {
   createPlaceholderDesigner as firestoreCreatePlaceholderDesigner,
   deleteDesigner as firestoreDeleteDesigner,
   seedHubsIfMissing,
+  seedSocialPostsIfMissing,
   seedWorkspacesIfMissing,
   setHub as firestoreSetHub,
   deleteHub as firestoreDeleteHub,
@@ -34,6 +35,7 @@ import { SettingsModal } from "./components/SettingsModal";
 import { Analytics } from "./components/Analytics";
 import { Dashboard } from "./components/Dashboard";
 import { MyDesk } from "./components/MyDesk";
+import { SocialCalendar } from "./components/SocialCalendar";
 import { Login } from "./components/Login";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Avatar } from "./components/Avatar";
@@ -150,6 +152,12 @@ export default function App() {
     // a location an admin has deleted.
     seedHubsIfMissing().catch((err) => {
       console.warn("Couldn't seed locations", err);
+    });
+    // Loads the marketing team's 2026 calendar into an empty /socialPosts
+    // collection. Checks the server, not the cache, so this quietly fails
+    // when offline rather than queueing a re-import.
+    seedSocialPostsIfMissing().catch((err) => {
+      console.warn("Couldn't seed the social calendar", err);
     });
   }, [sessionDesignerId]);
 
@@ -768,6 +776,8 @@ export default function App() {
                 </>
               ) : view === "executiveDashboard" ? (
                 "Executive Dashboard"
+              ) : view === "socialCalendar" ? (
+                "Social calendar"
               ) : (
                 <>
                   {currentDesigner.name}
@@ -793,7 +803,9 @@ export default function App() {
                     ? "Focus on your assigned projects, deadlines, and priorities"
                     : view === "executiveDashboard"
                       ? "View all projects, deadlines, and recent activity"
-                      : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned · ${currentWorkspaceName}`}
+                      : view === "socialCalendar"
+                        ? "Plan and track posts across the CargoWise and WiseTech channels"
+                        : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned · ${currentWorkspaceName}`}
               {" · live"}
             </p>
           </div>
@@ -906,6 +918,8 @@ export default function App() {
             currentDesignerId={sessionDesignerId}
             onOpenProject={setOpenProjectId}
           />
+        ) : view === "socialCalendar" ? (
+          <SocialCalendar designers={workspace.designers} />
         ) : view === "board" ? (
           <>
             <section

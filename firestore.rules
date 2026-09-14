@@ -26,6 +26,11 @@ service cloud.firestore {
     match /hubs/{hubId} {
       allow read, write: if request.auth != null;
     }
+    // Social calendar posts. One shared plan for the whole team, so the same
+    // any-signed-in-user model as projects.
+    match /socialPosts/{postId} {
+      allow read, write: if request.auth != null;
+    }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any
     // signed-in user. Reads are constrained by the ownerId == uid filter the

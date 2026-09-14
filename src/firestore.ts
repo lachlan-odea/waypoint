@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  getDocsFromServer,
   onSnapshot,
   query,
   setDoc,
@@ -18,6 +19,7 @@ import type {
   Hub,
   Notification,
   Project,
+  SocialPost,
   Workspace,
   WorkspaceData,
 } from "./types";
@@ -28,6 +30,7 @@ const projectsCol = () => collection(db, "projects");
 const notificationsCol = () => collection(db, "notifications");
 const deskItemsCol = () => collection(db, "deskItems");
 const hubsCol = () => collection(db, "hubs");
+const socialPostsCol = () => collection(db, "socialPosts");
 
 // Backfill missing workspaceId on legacy docs that predate the multi-
 // workspace feature. They all belonged to the original Design workspace.
@@ -458,6 +461,63 @@ export async function seedHubsIfMissing(): Promise<void> {
   const batch = writeBatch(db);
   SEED_HUBS.forEach((h) => batch.set(doc(hubsCol(), h.id), { ...h }));
   await batch.commit();
+}
+
+// ── Social calendar ────────────────────────────────────────────────────
+// Its own subscription rather than part of subscribeWorkspace: the posts are
+// only needed on the Social calendar view, and they carry full post copy, so
+// there's no reason to make the board wait on them.
+
+export function subscribeSocialPosts(
+  onChange: (posts: SocialPost[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    socialPostsCol(),
+    (snap) => onChange(snap.docs.map((d) => d.data() as SocialPost)),
+    onError,
+  );
+}
+
+export async function setSocialPost(post: SocialPost): Promise<void> {
+  await setDoc(doc(socialPostsCol(), post.id), post);
+}
+
+export async function deleteSocialPost(id: string): Promise<void> {
+  await deleteDoc(doc(socialPostsCol(), id));
+}
+
+// Load the marketing team's 2026 calendar (src/data/socialPostsSeed.json,
+// generated from their spreadsheet by scripts/social-calendar-xlsx-to-seed.py)
+// into an empty /socialPosts collection. Same only-when-empty rule as the
+// hubs seed, so deleting an imported post sticks.
+//
+// Two differences from the other seeds. The check goes to the server rather
+// than the local cache: a first boot while offline would see an empty cache,
+// queue 200 writes, and on reconnect overwrite whatever teammates had edited
+// in the meantime — failing (and logging) offline is the safer outcome. And
+// the seed is a dynamic import, so the ~200 KB of post copy only ever
+// downloads on the one visit that actually needs it.
+export async function seedSocialPostsIfMissing(): Promise<number> {
+  const existing = await getDocsFromServer(socialPostsCol());
+  if (!existing.empty) return 0;
+  const { default: seed } = await import("./data/socialPostsSeed.json");
+  const createdAt = new Date().toISOString();
+  // Firestore caps a batch at 500 writes.
+  const CHUNK = 400;
+  for (let i = 0; i < seed.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    seed.slice(i, i + CHUNK).forEach((p) => {
+      const post: SocialPost = {
+        ...(p as Omit<SocialPost, "createdAt" | "source">),
+        createdAt,
+        source: "import",
+      };
+      batch.set(doc(socialPostsCol(), post.id), post);
+    });
+    await batch.commit();
+  }
+  return seed.length;
 }
 
 // Ensures the seed workspaces (Design / Video / Marketing) exist in the
