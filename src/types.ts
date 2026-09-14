@@ -206,6 +206,10 @@ export type SocialPost = {
   // `month` (the month they were written) and normally have no `date`; one
   // that does get scheduled shows on the calendar and stays in the library.
   evergreen: boolean;
+  // The board project this post promotes or was produced under, if any.
+  // The project's detail window lists every post that points at it. Left
+  // dangling if the project is deleted — the editor shows that plainly.
+  projectId?: string;
   // Link to the live post on LinkedIn once it's up. Pasted by whoever posted
   // it — publishing goes through LinkedIn's own composer, so there's no API
   // response to take this from.

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Designer, SocialPost } from "../types";
+import type { Designer, Project, SocialPost, Workspace } from "../types";
 import { SOCIAL_CHANNELS, SOCIAL_POST_STATUSES } from "../constants";
 import { todayIso } from "../dates";
 import { readDraggedSocialPostId } from "../dnd";
@@ -16,6 +16,15 @@ import { SocialPostModal } from "./SocialPostModal";
 type Props = {
   // Only used for owner suggestions in the post editor.
   designers: Designer[];
+  // Board projects a post can link back to, with the teams that name them.
+  projects: Project[];
+  workspaces: Workspace[];
+  // Open a project's detail window (rendered by App, over any view).
+  onOpenProject: (projectId: string) => void;
+  // A post another view asked us to open — the project window's "Social
+  // posts" list hands over here. Consumed once the editor is up.
+  focusPostId?: string | null;
+  onFocusHandled?: () => void;
 };
 
 type Editing =
@@ -92,7 +101,14 @@ function sortPosts(a: SocialPost, b: SocialPost): number {
   return socialPostTitle(a).localeCompare(socialPostTitle(b));
 }
 
-export function SocialCalendar({ designers }: Props) {
+export function SocialCalendar({
+  designers,
+  projects,
+  workspaces,
+  onOpenProject,
+  focusPostId,
+  onFocusHandled,
+}: Props) {
   // null until the first snapshot lands, so the empty state can't flash
   // before the import has been read.
   const [posts, setPosts] = useState<SocialPost[] | null>(null);
@@ -122,9 +138,44 @@ export function SocialCalendar({ designers }: Props) {
     );
   }, []);
 
+  // Honour a hand-off from the project window once the posts have loaded:
+  // show the post's month behind the editor, then open it. Deferred a tick
+  // so the calendar paints first and the editor opens over it, rather than
+  // both appearing in one frame.
+  useEffect(() => {
+    if (!focusPostId || posts === null) return;
+    const timer = window.setTimeout(() => {
+      const post = posts.find((p) => p.id === focusPostId);
+      if (post) {
+        setTab(post.evergreen && !post.date ? "library" : "calendar");
+        if (post.date) setMonth(post.date.slice(0, 7));
+        else if (post.month) setMonth(post.month);
+        setEditing({ mode: "edit", post });
+      } else {
+        setError("That post no longer exists — it may have been deleted.");
+      }
+      onFocusHandled?.();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [focusPostId, posts, onFocusHandled]);
+
   function writeError(err: unknown) {
     console.error("Social post write failed", err);
     setError(describeError("Save failed", err));
+  }
+
+  const projectTitleById = useMemo(() => {
+    const map = new Map<string, string>();
+    projects.forEach((p) => map.set(p.id, p.title));
+    return map;
+  }, [projects]);
+
+  const projectTitleFor = (post: SocialPost) =>
+    post.projectId ? projectTitleById.get(post.projectId) : undefined;
+
+  function openProject(projectId: string) {
+    setEditing(null);
+    onOpenProject(projectId);
   }
 
   function importSpreadsheet() {
@@ -434,6 +485,7 @@ export function SocialCalendar({ designers }: Props) {
                   <SocialPostCard
                     post={p}
                     detailed
+                    projectTitle={projectTitleFor(p)}
                     onClick={() => setEditing({ mode: "edit", post: p })}
                   />
                   <div className="soc-library-actions">
@@ -515,6 +567,7 @@ export function SocialCalendar({ designers }: Props) {
                       <SocialPostCard
                         key={p.id}
                         post={p}
+                        projectTitle={projectTitleFor(p)}
                         onClick={() => setEditing({ mode: "edit", post: p })}
                       />
                     ))}
@@ -546,6 +599,7 @@ export function SocialCalendar({ designers }: Props) {
                     key={p.id}
                     post={p}
                     detailed
+                    projectTitle={projectTitleFor(p)}
                     onClick={() => setEditing({ mode: "edit", post: p })}
                   />
                 ))}
@@ -561,8 +615,11 @@ export function SocialCalendar({ designers }: Props) {
           initial={editing.initial}
           channels={channels}
           owners={owners}
+          projects={projects}
+          workspaces={workspaces}
           onCancel={() => setEditing(null)}
           onSave={savePost}
+          onOpenProject={openProject}
         />
       )}
       {editing && editing.mode === "edit" && (
@@ -572,9 +629,12 @@ export function SocialCalendar({ designers }: Props) {
           initial={editing.post}
           channels={channels}
           owners={owners}
+          projects={projects}
+          workspaces={workspaces}
           onCancel={() => setEditing(null)}
           onSave={savePost}
           onDelete={() => removePost(editing.post.id)}
+          onOpenProject={openProject}
         />
       )}
     </section>
