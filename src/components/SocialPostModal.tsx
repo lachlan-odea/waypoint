@@ -8,6 +8,7 @@ import {
   linkedInPostText,
 } from "../socialPosts";
 import { LinkedInGlyph } from "./LinkedInGlyph";
+import { AssetPreview } from "./AssetPreview";
 
 type Props = {
   // Everything known about the post so far. For a new post this is whatever
@@ -240,42 +241,30 @@ export function SocialPostModal({
           </label>
 
           <div className="modal-grid">
-            <label className="field">
-              <span>Asset</span>
-              <input
-                value={asset}
-                onChange={(e) => setAsset(e.target.value)}
-                placeholder="Link to the image, video or PDF"
-              />
-              {isUrl(asset) && (
-                <a
-                  className="brief-link"
-                  href={asset.trim()}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open asset ↗
-                </a>
-              )}
-            </label>
-            <label className="field">
-              <span>Screenshot</span>
-              <input
-                value={screenshot}
-                onChange={(e) => setScreenshot(e.target.value)}
-                placeholder="Link to a preview of the post"
-              />
-              {isUrl(screenshot) && (
-                <a
-                  className="brief-link"
-                  href={screenshot.trim()}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open screenshot ↗
-                </a>
-              )}
-            </label>
+            <div className="asset-field">
+              <label className="field">
+                <span>Asset</span>
+                <textarea
+                  value={asset}
+                  onChange={(e) => setAsset(e.target.value)}
+                  placeholder="Link to the image, video or PDF — one per line"
+                  rows={2}
+                />
+              </label>
+              <AssetPreview text={asset} />
+            </div>
+            <div className="asset-field">
+              <label className="field">
+                <span>Screenshot</span>
+                <textarea
+                  value={screenshot}
+                  onChange={(e) => setScreenshot(e.target.value)}
+                  placeholder="Link to a preview of the post"
+                  rows={2}
+                />
+              </label>
+              <AssetPreview text={screenshot} />
+            </div>
             <label className="field" style={{ gridColumn: "1 / -1" }}>
               <span>CTA link</span>
               <input
