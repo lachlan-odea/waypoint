@@ -46,6 +46,11 @@ export const SEED_WORKSPACES = [
   { id: "design", name: "Design" },
   { id: "video", name: "Video" },
   { id: "marketing", name: "Marketing" },
+  // Added Sept 2026. seedWorkspacesIfMissing creates any id listed here that
+  // isn't in /workspaces yet, so a new team is a one-line addition — plus a
+  // colour + glyph in WORKSPACE_VISUALS (Sidebar.tsx) and, for the Teams
+  // ingest, ALLOWED_WORKSPACE_IDS in functions/src/index.ts.
+  { id: "comms", name: "Comms" },
 ] as const;
 
 export const DEFAULT_WORKSPACE_ID = SEED_WORKSPACES[0].id;

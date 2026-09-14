@@ -14,7 +14,8 @@ const INGEST_SECRET = defineSecret("WAYPOINT_INGEST_SECRET");
 const ALLOWED_PRIORITIES = ["Urgent", "High", "Normal", "Low"] as const;
 type Priority = (typeof ALLOWED_PRIORITIES)[number];
 
-const ALLOWED_WORKSPACE_IDS = ["design", "video", "marketing"];
+// Keep in step with SEED_WORKSPACES in src/constants.ts.
+const ALLOWED_WORKSPACE_IDS = ["design", "video", "marketing", "comms"];
 const DEFAULT_WORKSPACE_ID = "design";
 
 type IncomingBody = {
