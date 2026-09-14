@@ -486,6 +486,9 @@ export function SocialCalendar({
                     post={p}
                     detailed
                     projectTitle={projectTitleFor(p)}
+                    onOpenProject={
+                      p.projectId ? () => openProject(p.projectId!) : undefined
+                    }
                     onClick={() => setEditing({ mode: "edit", post: p })}
                   />
                   <div className="soc-library-actions">
@@ -568,6 +571,11 @@ export function SocialCalendar({
                         key={p.id}
                         post={p}
                         projectTitle={projectTitleFor(p)}
+                        onOpenProject={
+                          p.projectId
+                            ? () => openProject(p.projectId!)
+                            : undefined
+                        }
                         onClick={() => setEditing({ mode: "edit", post: p })}
                       />
                     ))}
@@ -600,6 +608,9 @@ export function SocialCalendar({
                     post={p}
                     detailed
                     projectTitle={projectTitleFor(p)}
+                    onOpenProject={
+                      p.projectId ? () => openProject(p.projectId!) : undefined
+                    }
                     onClick={() => setEditing({ mode: "edit", post: p })}
                   />
                 ))}

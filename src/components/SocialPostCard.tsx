@@ -15,6 +15,9 @@ type Props = {
   detailed?: boolean;
   // Title of the board project this post is linked to, when it has one.
   projectTitle?: string;
+  // Open that project's detail window. Clicking the project on the card
+  // goes here instead of opening the post.
+  onOpenProject?: () => void;
 };
 
 // "Jess R." → "JR", "Maddie" → "M", "AM" → "AM". Owners are free text, not
@@ -72,7 +75,13 @@ function ProjectGlyph() {
   );
 }
 
-export function SocialPostCard({ post, onClick, detailed, projectTitle }: Props) {
+export function SocialPostCard({
+  post,
+  onClick,
+  detailed,
+  projectTitle,
+  onOpenProject,
+}: Props) {
   const [dragging, setDragging] = useState(false);
   // Detailed cards (tray, library) show a thumbnail when the asset is a
   // direct image. A link that turns out not to be one just disappears —
@@ -84,14 +93,46 @@ export function SocialPostCard({ post, onClick, detailed, projectTitle }: Props)
   const copyLine = detailed ? excerpt(post.copy) : "";
   const thumb = detailed && !thumbFailed ? firstEmbeddableImage(post.asset) : null;
 
-  return (
+  // The project link is a real button inside the card, and a button can't
+  // nest inside a button, so the card itself is a keyboard-operable div.
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  }
+
+  const projectLink = projectTitle && (
     <button
       type="button"
+      className={`soc-card-project ${detailed ? "" : "compact"}`}
+      title={`Open project: ${projectTitle}`}
+      aria-label={`Open project ${projectTitle}`}
+      disabled={!onOpenProject}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpenProject?.();
+      }}
+      // Don't let a click here start a card drag or bubble as a card click.
+      onMouseDown={(e) => e.stopPropagation()}
+      draggable={false}
+    >
+      <ProjectGlyph />
+      {detailed && <span>{projectTitle}</span>}
+    </button>
+  );
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
       className={`soc-card ${detailed ? "detailed" : ""} ${
         post.status === "cancelled" ? "cancelled" : ""
       } ${dragging ? "dragging" : ""}`}
       style={{ borderLeftColor: channelColor }}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       draggable
       onDragStart={(e) => {
         writeDraggedSocialPostId(e, post.id);
@@ -120,12 +161,7 @@ export function SocialPostCard({ post, onClick, detailed, projectTitle }: Props)
         />
       )}
       {copyLine && <p className="soc-card-copy">{copyLine}</p>}
-      {detailed && projectTitle && (
-        <p className="soc-card-project" title={`Linked project: ${projectTitle}`}>
-          <ProjectGlyph />
-          <span>{projectTitle}</span>
-        </p>
-      )}
+      {detailed && projectLink}
       <div className="soc-card-foot">
         {detailed && (
           <span className="soc-card-date">
@@ -143,11 +179,7 @@ export function SocialPostCard({ post, onClick, detailed, projectTitle }: Props)
               <LinkGlyph />
             </span>
           )}
-          {!detailed && projectTitle && (
-            <span title={`Linked project: ${projectTitle}`}>
-              <ProjectGlyph />
-            </span>
-          )}
+          {!detailed && projectLink}
           {post.postUrl && (
             <span className="soc-card-live" title="Live on LinkedIn">
               <LinkedInGlyph size={11} />
@@ -160,6 +192,6 @@ export function SocialPostCard({ post, onClick, detailed, projectTitle }: Props)
           </span>
         )}
       </div>
-    </button>
+    </div>
   );
 }
