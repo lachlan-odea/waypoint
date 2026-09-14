@@ -4461,3 +4461,110 @@ textarea {
   border: 1px solid var(--border);
   background: var(--surface-2);
 }
+
+/* ── Post ↔ project links ───────────────────────────────────────────────── */
+.project-tag {
+  max-width: 100%;
+}
+.project-tag .assignee-tag-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+.project-tag-team {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  padding-left: 4px;
+}
+.project-tag.dangling .assignee-tag-name {
+  color: var(--danger);
+}
+.project-suggestion {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+.project-suggestion-title {
+  font-weight: 600;
+}
+.project-suggestion-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+.soc-project-hint {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  align-items: baseline;
+}
+.soc-open-project {
+  color: var(--primary);
+  padding: 0;
+  font-size: 11px;
+  cursor: pointer;
+}
+.soc-open-project:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+.soc-card-project {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 0;
+}
+.soc-card-project span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linked-posts-intro {
+  margin: 0 0 8px;
+}
+.linked-posts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.linked-post {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.linked-post:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+.linked-post-title {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.linked-post-date {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}

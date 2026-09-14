@@ -87,6 +87,11 @@ export default function App() {
   // currently-selected team, since the Archive spans all of them.
   const [archiveTeamFilter, setArchiveTeamFilter] =
     useState<string>(ARCHIVE_ALL_TEAMS);
+  // A social post the project window asked to open. Handed to the Social
+  // calendar, which clears it once the editor is up.
+  const [focusSocialPostId, setFocusSocialPostId] = useState<string | null>(
+    null,
+  );
   const [pausedExpanded, setPausedExpanded] = useState(true);
   const [completedExpanded, setCompletedExpanded] = useState(true);
   const [darkMode, setDarkMode] = useState(() =>
@@ -919,7 +924,14 @@ export default function App() {
             onOpenProject={setOpenProjectId}
           />
         ) : view === "socialCalendar" ? (
-          <SocialCalendar designers={workspace.designers} />
+          <SocialCalendar
+            designers={workspace.designers}
+            projects={workspace.projects}
+            workspaces={availableWorkspaces}
+            onOpenProject={setOpenProjectId}
+            focusPostId={focusSocialPostId}
+            onFocusHandled={() => setFocusSocialPostId(null)}
+          />
         ) : view === "board" ? (
           <>
             <section
@@ -1196,6 +1208,11 @@ export default function App() {
           onMoveToWorkspace={(workspaceId) =>
             moveProjectToWorkspace(openProject.id, workspaceId)
           }
+          onOpenSocialPost={(postId) => {
+            setOpenProjectId(null);
+            setFocusSocialPostId(postId);
+            setView("socialCalendar");
+          }}
         />
       )}
 

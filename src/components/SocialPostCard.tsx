@@ -13,6 +13,8 @@ type Props = {
   // Library and tray cards have room to show a line of the copy and the
   // post's date (or lack of one); calendar cells don't.
   detailed?: boolean;
+  // Title of the board project this post is linked to, when it has one.
+  projectTitle?: string;
 };
 
 // "Jess R." → "JR", "Maddie" → "M", "AM" → "AM". Owners are free text, not
@@ -62,7 +64,15 @@ function LinkGlyph() {
   );
 }
 
-export function SocialPostCard({ post, onClick, detailed }: Props) {
+function ProjectGlyph() {
+  return (
+    <svg {...glyph}>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+export function SocialPostCard({ post, onClick, detailed, projectTitle }: Props) {
   const [dragging, setDragging] = useState(false);
   // Detailed cards (tray, library) show a thumbnail when the asset is a
   // direct image. A link that turns out not to be one just disappears —
@@ -110,6 +120,12 @@ export function SocialPostCard({ post, onClick, detailed }: Props) {
         />
       )}
       {copyLine && <p className="soc-card-copy">{copyLine}</p>}
+      {detailed && projectTitle && (
+        <p className="soc-card-project" title={`Linked project: ${projectTitle}`}>
+          <ProjectGlyph />
+          <span>{projectTitle}</span>
+        </p>
+      )}
       <div className="soc-card-foot">
         {detailed && (
           <span className="soc-card-date">
@@ -125,6 +141,11 @@ export function SocialPostCard({ post, onClick, detailed }: Props) {
           {post.ctaLink && (
             <span title="Has a CTA link">
               <LinkGlyph />
+            </span>
+          )}
+          {!detailed && projectTitle && (
+            <span title={`Linked project: ${projectTitle}`}>
+              <ProjectGlyph />
             </span>
           )}
           {post.postUrl && (
