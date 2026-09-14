@@ -949,12 +949,11 @@ export function ProjectDetailModal({
                         <span className="linked-post-date">
                           {p.date ? formatShort(p.date) : "Unscheduled"}
                         </span>
-                        <span className="soc-status" style={{ color: status.color }}>
-                          <span
-                            className="soc-status-dot"
-                            style={{ background: status.color }}
-                          />
-                          {status.label}
+                        <span
+                          className="soc-status"
+                          style={{ background: status.color }}
+                        >
+                          <span className="soc-status-label">{status.label}</span>
                         </span>
                       </button>
                     </li>

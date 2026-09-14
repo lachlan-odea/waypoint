@@ -83,7 +83,7 @@ export const SOCIAL_POST_STATUSES: {
   label: string;
   color: string;
 }[] = [
-  { value: "draft", label: "Draft", color: "#94a3b8" },
+  { value: "draft", label: "Draft", color: "#6b7280" },
   { value: "pending", label: "Pending", color: "#c2417f" },
   { value: "scheduled", label: "Scheduled", color: "#d97706" },
   { value: "published", label: "Published", color: "#16a34a" },

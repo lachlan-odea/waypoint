@@ -130,7 +130,13 @@ export function SocialPostCard({
       className={`soc-card ${detailed ? "detailed" : ""} ${
         post.status === "cancelled" ? "cancelled" : ""
       } ${dragging ? "dragging" : ""}`}
-      style={{ borderLeftColor: channelColor }}
+      // The left edge is the channel; the status colour also washes the
+      // card background (via --status in the CSS) so a month reads at a
+      // glance — green done, pink waiting, grey draft.
+      style={{
+        borderLeftColor: channelColor,
+        ["--status" as string]: status.color,
+      } as React.CSSProperties}
       onClick={onClick}
       onKeyDown={handleKeyDown}
       draggable
@@ -145,9 +151,12 @@ export function SocialPostCard({
         <span className="soc-chip" style={{ background: channelColor }}>
           {post.channel || "No channel"}
         </span>
-        <span className="soc-status" style={{ color: status.color }}>
-          <span className="soc-status-dot" style={{ background: status.color }} />
-          {status.label}
+        <span
+          className="soc-status"
+          style={{ background: status.color }}
+          title={`Status: ${status.label}`}
+        >
+          <span className="soc-status-label">{status.label}</span>
         </span>
       </div>
       <div className="soc-card-title">{title}</div>

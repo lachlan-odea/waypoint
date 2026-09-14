@@ -518,11 +518,9 @@ export function SocialCalendar({
               {SOCIAL_POST_STATUSES.filter((s) => s.value !== "backlog").map(
                 (s) => (
                   <span key={s.value} className="soc-legend-item">
-                    <span
-                      className="soc-status-dot"
-                      style={{ background: s.color }}
-                    />
-                    {s.label}
+                    <span className="soc-status" style={{ background: s.color }}>
+                      <span className="soc-status-label">{s.label}</span>
+                    </span>
                     {statusCounts.get(s.value) ? (
                       <span className="soc-legend-count">
                         {statusCounts.get(s.value)}
