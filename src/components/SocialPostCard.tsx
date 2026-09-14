@@ -5,6 +5,7 @@ import { formatShort } from "../dates";
 import { writeDraggedSocialPostId } from "../dnd";
 import { socialPostTitle } from "../socialPosts";
 import { LinkedInGlyph } from "./LinkedInGlyph";
+import { firstEmbeddableImage } from "../assetLinks";
 
 type Props = {
   post: SocialPost;
@@ -63,10 +64,15 @@ function LinkGlyph() {
 
 export function SocialPostCard({ post, onClick, detailed }: Props) {
   const [dragging, setDragging] = useState(false);
+  // Detailed cards (tray, library) show a thumbnail when the asset is a
+  // direct image. A link that turns out not to be one just disappears —
+  // the card is still complete without it.
+  const [thumbFailed, setThumbFailed] = useState(false);
   const channelColor = socialChannelColor(post.channel);
   const status = socialStatusMeta(post.status);
   const title = socialPostTitle(post);
   const copyLine = detailed ? excerpt(post.copy) : "";
+  const thumb = detailed && !thumbFailed ? firstEmbeddableImage(post.asset) : null;
 
   return (
     <button
@@ -94,6 +100,15 @@ export function SocialPostCard({ post, onClick, detailed }: Props) {
         </span>
       </div>
       <div className="soc-card-title">{title}</div>
+      {thumb && (
+        <img
+          className="soc-card-thumb"
+          src={thumb.previewUrl ?? thumb.url}
+          alt=""
+          loading="lazy"
+          onError={() => setThumbFailed(true)}
+        />
+      )}
       {copyLine && <p className="soc-card-copy">{copyLine}</p>}
       <div className="soc-card-foot">
         {detailed && (
