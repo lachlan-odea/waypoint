@@ -5,9 +5,18 @@ import type {
   Project,
   Priority,
   ProjectStatus,
+  SocialPost,
   Workspace,
 } from "../types";
-import { BRANDS, PROJECT_STATUSES } from "../constants";
+import {
+  BRANDS,
+  PROJECT_STATUSES,
+  socialChannelColor,
+  socialStatusMeta,
+} from "../constants";
+import { subscribeSocialPostsForProject } from "../firestore";
+import { socialPostTitle } from "../socialPosts";
+import { formatShort } from "../dates";
 import { ContentTypeField } from "./ContentTypeField";
 import { LinkifiedText } from "./LinkifiedText";
 import { findMentionedDesigners, findNewMentions } from "../mentions";
@@ -42,6 +51,9 @@ type Props = {
   // Move this project to another workspace. Routed through App.tsx so the
   // toast / undo path is shared with the sidebar-drop flow.
   onMoveToWorkspace: (workspaceId: string) => void;
+  // Jump to a social post linked to this project. App closes this window,
+  // switches to the Social calendar and opens the post's editor.
+  onOpenSocialPost: (postId: string) => void;
 };
 
 const priorities: Priority[] = ["Urgent", "High", "Normal", "Low"];
@@ -84,7 +96,24 @@ export function ProjectDetailModal({
   onDelete,
   onNotify,
   onMoveToWorkspace,
+  onOpenSocialPost,
 }: Props) {
+  // Social posts that point back at this project. Their own small query
+  // rather than a slice of the whole calendar, so opening a project doesn't
+  // download every post's copy. Sorted newest date first, undated last.
+  const [linkedPosts, setLinkedPosts] = useState<SocialPost[]>([]);
+  useEffect(() => {
+    return subscribeSocialPostsForProject(
+      project.id,
+      (posts) =>
+        setLinkedPosts(
+          posts
+            .slice()
+            .sort((a, b) => (b.date || "0000").localeCompare(a.date || "0000")),
+        ),
+      (err) => console.warn("Couldn't load linked social posts", err),
+    );
+  }, [project.id]);
   const [newComment, setNewComment] = useState("");
   const [newMilestone, setNewMilestone] = useState("");
   const [editingOverview, setEditingOverview] = useState(false);
@@ -887,6 +916,53 @@ export function ProjectDetailModal({
               <button onClick={addMilestone}>Add</button>
             </div>
           </section>
+
+          {linkedPosts.length > 0 && (
+            <section className="modal-section">
+              <h3>Social posts</h3>
+              <p className="muted small linked-posts-intro">
+                {linkedPosts.length === 1
+                  ? "One post on the Social calendar is linked to this project."
+                  : `${linkedPosts.length} posts on the Social calendar are linked to this project.`}{" "}
+                Open one to edit it or post it.
+              </p>
+              <ul className="linked-posts">
+                {linkedPosts.map((p) => {
+                  const status = socialStatusMeta(p.status);
+                  return (
+                    <li key={p.id}>
+                      <button
+                        type="button"
+                        className="linked-post"
+                        onClick={() => onOpenSocialPost(p.id)}
+                        title="Open on the Social calendar"
+                      >
+                        <span
+                          className="soc-chip"
+                          style={{ background: socialChannelColor(p.channel) }}
+                        >
+                          {p.channel || "No channel"}
+                        </span>
+                        <span className="linked-post-title">
+                          {socialPostTitle(p)}
+                        </span>
+                        <span className="linked-post-date">
+                          {p.date ? formatShort(p.date) : "Unscheduled"}
+                        </span>
+                        <span className="soc-status" style={{ color: status.color }}>
+                          <span
+                            className="soc-status-dot"
+                            style={{ background: status.color }}
+                          />
+                          {status.label}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
 
           <section className="modal-section">
             <h3>Comments</h3>

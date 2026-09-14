@@ -479,6 +479,21 @@ export function subscribeSocialPosts(
   );
 }
 
+// Just the posts linked to one project, for the project's detail window.
+// A separate query rather than a filter over the full calendar so opening
+// a project doesn't pull every post's copy down with it.
+export function subscribeSocialPostsForProject(
+  projectId: string,
+  onChange: (posts: SocialPost[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    query(socialPostsCol(), where("projectId", "==", projectId)),
+    (snap) => onChange(snap.docs.map((d) => d.data() as SocialPost)),
+    onError,
+  );
+}
+
 export async function setSocialPost(post: SocialPost): Promise<void> {
   await setDoc(doc(socialPostsCol(), post.id), post);
 }

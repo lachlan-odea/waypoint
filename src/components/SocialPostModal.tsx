@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import type { SocialPost, SocialPostStatus } from "../types";
+import type {
+  Project,
+  SocialPost,
+  SocialPostStatus,
+  Workspace,
+} from "../types";
 import { SOCIAL_POST_STATUSES } from "../constants";
 import { todayIso } from "../dates";
 import {
@@ -9,6 +14,7 @@ import {
 } from "../socialPosts";
 import { LinkedInGlyph } from "./LinkedInGlyph";
 import { AssetPreview } from "./AssetPreview";
+import { ProjectPicker } from "./ProjectPicker";
 
 type Props = {
   // Everything known about the post so far. For a new post this is whatever
@@ -19,9 +25,15 @@ type Props = {
   // Suggestions for the free-text fields, built from what's already in use.
   channels: string[];
   owners: string[];
+  // Board projects a post can be linked back to, and the teams that name
+  // them in the picker.
+  projects: Project[];
+  workspaces: Workspace[];
   onCancel: () => void;
   onSave: (post: SocialPost) => void;
   onDelete?: () => void;
+  // Jump to the linked project's detail window. Closes this editor first.
+  onOpenProject?: (projectId: string) => void;
 };
 
 const isUrl = isHttpUrl;
@@ -35,9 +47,12 @@ export function SocialPostModal({
   mode,
   channels,
   owners,
+  projects,
+  workspaces,
   onCancel,
   onSave,
   onDelete,
+  onOpenProject,
 }: Props) {
   const [topic, setTopic] = useState(initial.topic ?? "");
   const [channel, setChannel] = useState(initial.channel ?? channels[0] ?? "");
@@ -53,6 +68,7 @@ export function SocialPostModal({
   const [notes, setNotes] = useState(initial.notes ?? "");
   const [evergreen, setEvergreen] = useState(initial.evergreen ?? false);
   const [postUrl, setPostUrl] = useState(initial.postUrl ?? "");
+  const [projectId, setProjectId] = useState(initial.projectId ?? "");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   // Feedback after handing off to LinkedIn — whether the copy made it onto
   // the clipboard, mostly.
@@ -95,6 +111,7 @@ export function SocialPostModal({
       // Firestore is configured to drop undefined fields, so clearing the
       // link removes it from the document rather than storing "".
       postUrl: trimmedUrl || undefined,
+      projectId: projectId || undefined,
       publishedAt: initial.publishedAt,
       createdAt: initial.createdAt ?? new Date().toISOString(),
       source: initial.source ?? "manual",
@@ -294,6 +311,34 @@ export function SocialPostModal({
               placeholder="Timing, tags, anything the poster needs to know"
             />
           </label>
+
+          <div className="asset-field">
+            <label className="field">
+              <span>Linked project</span>
+            </label>
+            <ProjectPicker
+              projects={projects}
+              workspaces={workspaces}
+              value={projectId}
+              onChange={setProjectId}
+            />
+            <span className="field-hint soc-project-hint">
+              The board project this post promotes. The project's window lists
+              every post linked to it.
+              {projectId && projects.some((p) => p.id === projectId) && onOpenProject && (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    className="link-btn soc-open-project"
+                    onClick={() => onOpenProject(projectId)}
+                  >
+                    Open project ↗
+                  </button>
+                </>
+              )}
+            </span>
+          </div>
 
           <label className="soc-check">
             <input
