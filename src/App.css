@@ -4226,3 +4226,33 @@ textarea {
     display: none;
   }
 }
+
+/* Empty state + import feedback for the social calendar */
+.soc-empty {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  max-width: 560px;
+  margin: 8px auto 24px;
+  text-align: center;
+}
+.soc-empty h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.soc-empty p {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.soc-empty-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+.soc-import-note {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
+}

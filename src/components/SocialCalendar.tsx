@@ -5,6 +5,7 @@ import { todayIso } from "../dates";
 import { readDraggedSocialPostId } from "../dnd";
 import {
   deleteSocialPost,
+  seedSocialPostsIfMissing,
   setSocialPost,
   subscribeSocialPosts,
 } from "../firestore";
@@ -27,6 +28,22 @@ const UNSCHEDULED = "__unscheduled__";
 // Stable stand-in for "no posts yet" so the memos below don't see a fresh
 // array (and recompute) on every render before the first snapshot.
 const NO_POSTS: SocialPost[] = [];
+
+// The one failure a teammate can't do anything about from inside the app:
+// the /socialPosts rules haven't been deployed yet, so Firestore refuses
+// every read and write. Say that plainly rather than echoing the SDK.
+function isPermissionDenied(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code ?? "";
+  const message = err instanceof Error ? err.message : String(err);
+  return code === "permission-denied" || /insufficient permissions/i.test(message);
+}
+
+function describeError(prefix: string, err: unknown): string {
+  if (isPermissionDenied(err)) {
+    return `${prefix}: Firestore is refusing access to the social calendar. The rules in firestore.rules (which add the socialPosts collection) need deploying to the wtg-waypoint project — Firebase console → Firestore → Rules, or “firebase deploy --only firestore:rules”.`;
+  }
+  return `${prefix}: ${err instanceof Error ? err.message : String(err)}`;
+}
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -87,6 +104,10 @@ export function SocialCalendar({ designers }: Props) {
   const [tab, setTab] = useState<"calendar" | "library">("calendar");
   const [editing, setEditing] = useState<Editing | null>(null);
   const [dropOver, setDropOver] = useState<string | null>(null);
+  // The in-view import. App runs the same seed on sign-in, but silently;
+  // this is the retry you can see, for when that first attempt was refused.
+  const [importing, setImporting] = useState(false);
+  const [importNote, setImportNote] = useState<string | null>(null);
 
   useEffect(() => {
     return subscribeSocialPosts(
@@ -96,16 +117,32 @@ export function SocialCalendar({ designers }: Props) {
       },
       (err) => {
         console.error(err);
-        setError(`Couldn't load the social calendar: ${err.message}`);
+        setError(describeError("Couldn't load the social calendar", err));
       },
     );
   }, []);
 
   function writeError(err: unknown) {
     console.error("Social post write failed", err);
-    setError(
-      `Save failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    setError(describeError("Save failed", err));
+  }
+
+  function importSpreadsheet() {
+    setImporting(true);
+    setImportNote(null);
+    seedSocialPostsIfMissing()
+      .then((n) => {
+        setImportNote(
+          n === 0
+            ? "Nothing imported — the calendar already has posts."
+            : `Imported ${n} posts from the 2026 spreadsheet.`,
+        );
+      })
+      .catch((err) => {
+        console.error("Social calendar import failed", err);
+        setError(describeError("Import failed", err));
+      })
+      .finally(() => setImporting(false));
   }
 
   const all = posts ?? NO_POSTS;
@@ -352,9 +389,32 @@ export function SocialCalendar({ designers }: Props) {
       </div>
 
       {error && <div className="banner">{error}</div>}
+      {importNote && <div className="banner soc-import-note">{importNote}</div>}
 
-      {posts === null ? (
+      {posts === null && !error ? (
         <p className="muted">Loading the calendar…</p>
+      ) : all.length === 0 ? (
+        <div className="soc-empty">
+          <h3>No posts yet</h3>
+          <p className="muted">
+            The 2026 social media calendar spreadsheet is bundled with the app
+            and loads itself the first time someone signs in. If that didn't
+            happen — usually because Firestore refused the write — import it
+            here, or start from scratch with + New post.
+          </p>
+          <div className="soc-empty-actions">
+            <button
+              className="primary"
+              onClick={importSpreadsheet}
+              disabled={importing}
+            >
+              {importing ? "Importing…" : "Import the 2026 spreadsheet"}
+            </button>
+            <button className="btn-mini" onClick={() => openCreate({})}>
+              + New post
+            </button>
+          </div>
+        </div>
       ) : tab === "library" ? (
         <>
           <p className="muted small soc-summary">
