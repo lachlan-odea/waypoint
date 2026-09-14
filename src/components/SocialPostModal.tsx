@@ -322,22 +322,24 @@ export function SocialPostModal({
               value={projectId}
               onChange={setProjectId}
             />
-            <span className="field-hint soc-project-hint">
-              The board project this post promotes. The project's window lists
-              every post linked to it.
-              {projectId && projects.some((p) => p.id === projectId) && onOpenProject && (
-                <>
-                  {" "}
+            <div className="soc-project-row">
+              <span className="field-hint">
+                The board project this post promotes. The project's window
+                lists every post linked to it.
+              </span>
+              {projectId &&
+                projects.some((p) => p.id === projectId) &&
+                onOpenProject && (
                   <button
                     type="button"
-                    className="link-btn soc-open-project"
+                    className="btn-mini"
                     onClick={() => onOpenProject(projectId)}
+                    title="Close this post and open the project"
                   >
                     Open project ↗
                   </button>
-                </>
-              )}
-            </span>
+                )}
+            </div>
           </div>
 
           <label className="soc-check">

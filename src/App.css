@@ -4097,13 +4097,43 @@ textarea {
   text-overflow: ellipsis;
   max-width: 100%;
 }
+/* Status pill: solid fill in the status colour with white text, so it reads
+   from across the room rather than as a dot. The card behind it takes a
+   light wash of the same colour (see .soc-card below). */
 .soc-status {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  font-size: 10px;
-  font-weight: 600;
+  min-height: 16px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: white;
   white-space: nowrap;
+  flex: 0 0 auto;
+}
+.soc-card {
+  --status: var(--border-strong);
+  background: color-mix(in srgb, var(--status) 9%, var(--surface));
+}
+.soc-card:hover {
+  background: color-mix(in srgb, var(--status) 14%, var(--surface));
+}
+:root.dark-mode .soc-card {
+  background: color-mix(in srgb, var(--status) 18%, var(--surface));
+}
+:root.dark-mode .soc-card:hover {
+  background: color-mix(in srgb, var(--status) 26%, var(--surface));
+}
+/* Cancelled and draft shouldn't glow — keep those cards quiet. */
+.soc-card.cancelled,
+.soc-card.cancelled:hover {
+  background: var(--surface);
+  opacity: 0.75;
 }
 .soc-card-title {
   font-size: 12px;
@@ -4222,7 +4252,15 @@ textarea {
   .soc-cell {
     min-height: 90px;
   }
+  /* Not enough room for the word; the pill shrinks to a solid dot that
+     still carries the colour (and the status in its tooltip). */
   .soc-status {
+    min-height: 0;
+    width: 10px;
+    height: 10px;
+    padding: 0;
+  }
+  .soc-status-label {
     display: none;
   }
 }
@@ -4494,35 +4532,68 @@ textarea {
   font-size: 11px;
   color: var(--muted);
 }
-.soc-project-hint {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 2px 4px;
-  align-items: baseline;
+.soc-project-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
-.soc-open-project {
-  color: var(--primary);
-  padding: 0;
-  font-size: 11px;
-  cursor: pointer;
+.soc-project-row .field-hint {
+  margin: 0;
 }
-.soc-open-project:hover {
-  color: var(--primary-hover);
-  text-decoration: underline;
+.soc-project-row .btn-mini {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  font-size: 12px;
 }
+/* The project link on a card is a real button (so it can open the project
+   without opening the post) styled as a quiet line of text. */
 .soc-card-project {
   margin: 0;
   display: flex;
   align-items: center;
   gap: 5px;
+  font: inherit;
   font-size: 11px;
   color: var(--muted);
   min-width: 0;
+  max-width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin-left: -4px;
+  cursor: pointer;
+  text-align: left;
 }
 .soc-card-project span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.soc-card-project:hover:not(:disabled) {
+  color: var(--primary);
+  background: var(--surface-2);
+  border-color: var(--border);
+  text-decoration: underline;
+}
+.soc-card-project:disabled {
+  cursor: default;
+}
+.soc-card-project.compact {
+  margin-left: 0;
+  padding: 0;
+  border: none;
+  display: inline-grid;
+  place-items: center;
+}
+.soc-card-project.compact:hover:not(:disabled) {
+  background: transparent;
+  text-decoration: none;
+}
+.soc-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
 }
 
 .linked-posts-intro {
