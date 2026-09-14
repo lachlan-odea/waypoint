@@ -112,6 +112,15 @@ function MegaphoneGlyph() {
   );
 }
 
+function SpeechGlyph() {
+  return (
+    <svg {...navGlyphProps}>
+      <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.6-.8L3 21l1.9-4.6A8.3 8.3 0 0 1 3 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 9 8.4z" />
+      <path d="M8 11h8M8 14h5" />
+    </svg>
+  );
+}
+
 const WORKSPACE_VISUALS: Record<
   string,
   { color: string; Glyph: () => React.ReactElement }
@@ -119,6 +128,7 @@ const WORKSPACE_VISUALS: Record<
   design: { color: "#4f46e5", Glyph: BrushGlyph },
   video: { color: "#ef4444", Glyph: VideoGlyph },
   marketing: { color: "#10b981", Glyph: MegaphoneGlyph },
+  comms: { color: "#f59e0b", Glyph: SpeechGlyph },
 };
 
 function AnalyticsGlyph() {
