@@ -157,6 +157,59 @@ export type DeskItem = {
   createdAt: string;
 };
 
+// Where a social post is in its life. Mirrors the colour code the marketing
+// team used in the original spreadsheet: green cells were published, pink
+// pending, red pulled. "backlog" is reserved for the evergreen library —
+// reusable copy that isn't tied to any date until someone schedules it.
+export type SocialPostStatus =
+  | "backlog"
+  | "draft"
+  | "pending"
+  | "scheduled"
+  | "published"
+  | "cancelled";
+
+// One entry on the shared Social calendar: a LinkedIn post going out on a
+// brand channel (CargoWise, WiseTech). Shared by everyone, not scoped to a
+// workspace — the calendar is the marketing team's single plan, and the
+// designers producing the assets need to see the same view.
+//
+// Imported from "Social Media Calendar 2026.xlsx" by
+// scripts/social-calendar-xlsx-to-seed.py; the field names follow that
+// sheet's columns so the two stay easy to reconcile.
+export type SocialPost = {
+  id: string;
+  // YYYY-MM the post is planned for. Always set, even while `date` is empty,
+  // so an unscheduled post still lands in the right month's tray instead of
+  // disappearing.
+  month: string;
+  // YYYY-MM-DD publish date, local. Empty while the post is unscheduled.
+  date: string;
+  // Brand account it goes out on. Free text with suggestions rather than an
+  // enum: the sheet had "CargoWise" and "WiseTech", but a new channel
+  // shouldn't need a deploy.
+  channel: string;
+  topic: string;
+  // Full post copy, newlines preserved.
+  copy: string;
+  // Links (or occasionally bare file names) as they appeared in the sheet.
+  // Not validated as URLs — an asset can legitimately be "Video when ready".
+  screenshot: string;
+  asset: string;
+  ctaLink: string;
+  status: SocialPostStatus;
+  notes: string;
+  // Who's driving the post. Free text ("Maddie", "Jess R.") because the
+  // marketing team isn't necessarily on Waypoint as designers.
+  owner: string;
+  // True for reusable posts in the evergreen library. They keep their
+  // `month` (the month they were written) and normally have no `date`; one
+  // that does get scheduled shows on the calendar and stays in the library.
+  evergreen: boolean;
+  createdAt: string;
+  source?: "import" | "manual";
+};
+
 // The in-memory snapshot of everything App.tsx needs to render. Loaded
 // progressively via the Firestore subscriptions in firestore.ts.
 export type WorkspaceData = {
