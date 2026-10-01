@@ -222,7 +222,7 @@ export function SocialCalendar({
       all.filter((p) => {
         if (channelFilter && p.channel.trim() !== channelFilter) return false;
         if (!q) return true;
-        return [p.topic, p.copy, p.owner, p.notes, p.channel]
+        return [p.topic, p.copy, p.owner, p.notes, p.channel, p.category ?? ""]
           .join(" ")
           .toLowerCase()
           .includes(q);

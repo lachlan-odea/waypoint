@@ -1,6 +1,10 @@
 import { useState } from "react";
 import type { SocialPost } from "../types";
-import { socialChannelColor, socialStatusMeta } from "../constants";
+import {
+  socialCategoryMeta,
+  socialChannelColor,
+  socialStatusMeta,
+} from "../constants";
 import { formatShort } from "../dates";
 import { writeDraggedSocialPostId } from "../dnd";
 import { socialPostTitle } from "../socialPosts";
@@ -89,6 +93,7 @@ export function SocialPostCard({
   const [thumbFailed, setThumbFailed] = useState(false);
   const channelColor = socialChannelColor(post.channel);
   const status = socialStatusMeta(post.status);
+  const category = socialCategoryMeta(post.category);
   const title = socialPostTitle(post);
   const copyLine = detailed ? excerpt(post.copy) : "";
   const thumb = detailed && !thumbFailed ? firstEmbeddableImage(post.asset) : null;
@@ -160,6 +165,19 @@ export function SocialPostCard({
         </span>
       </div>
       <div className="soc-card-title">{title}</div>
+      {category && (
+        <span
+          className="soc-category"
+          style={{
+            color: category.color,
+            borderColor: category.color,
+            ["--category" as string]: category.color,
+          } as React.CSSProperties}
+          title={`Category: ${category.label}`}
+        >
+          {detailed ? category.label : category.short}
+        </span>
+      )}
       {thumb && (
         <img
           className="soc-card-thumb"

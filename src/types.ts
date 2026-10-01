@@ -189,6 +189,11 @@ export type SocialPost = {
   // enum: the sheet had "CargoWise" and "WiseTech", but a new channel
   // shouldn't need a deploy.
   channel: string;
+  // What kind of post this is — "Product - CargoWise", "Thought
+  // Leadership", "Event"… One of SOCIAL_CATEGORIES in constants.ts, which
+  // also gives each its pill colour. Optional: the imported 2026 posts have
+  // none until someone sets it.
+  category?: string;
   topic: string;
   // Full post copy, newlines preserved.
   copy: string;
