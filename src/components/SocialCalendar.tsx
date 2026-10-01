@@ -245,32 +245,40 @@ export function SocialCalendar({
 
   const q = query.trim().toLowerCase();
 
-  // Channel pill and search box: the filters every count below respects.
-  const searched = useMemo(
-    () =>
-      all.filter((p) => {
-        if (channelFilter && p.channel.trim() !== channelFilter) return false;
-        if (!q) return true;
-        return [p.topic, p.copy, p.owner, p.notes, p.channel, p.category ?? ""]
-          .join(" ")
-          .toLowerCase()
-          .includes(q);
-      }),
-    [all, channelFilter, q],
-  );
-
+  const matchesChannel = (p: SocialPost) =>
+    !channelFilter || p.channel.trim() === channelFilter;
   const matchesCategory = (p: SocialPost) =>
     categoryFilter.size === 0 ||
     categoryFilter.has(p.category || NO_CATEGORY);
   const matchesStatus = (p: SocialPost) =>
     statusFilter.size === 0 || statusFilter.has(p.status);
+  // Search is the one filter that doesn't hide anything. Non-matching posts
+  // stay on the calendar greyed out, so a hit is seen in the context of the
+  // week around it rather than floating in an otherwise empty month.
+  const matchesSearch = (p: SocialPost) =>
+    !q ||
+    [p.topic, p.copy, p.owner, p.notes, p.channel, p.category ?? ""]
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
 
-  // What the grid / library actually show: everything above plus the type
-  // and status toggles.
-  const filtered = useMemo(
-    () => searched.filter((p) => matchesCategory(p) && matchesStatus(p)),
+  // Channel + search: what the filter-pill counts are taken over, so they
+  // tell you where your search actually hit.
+  const searched = useMemo(
+    () => all.filter((p) => matchesChannel(p) && matchesSearch(p)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [searched, categoryFilter, statusFilter],
+    [all, channelFilter, q],
+  );
+
+  // What the grid / library actually show: the pill filters, which hide, but
+  // not the search, which only dims.
+  const filtered = useMemo(
+    () =>
+      all.filter(
+        (p) => matchesChannel(p) && matchesCategory(p) && matchesStatus(p),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [all, channelFilter, categoryFilter, statusFilter],
   );
 
   // Does this post belong to the month in view? Dated posts by their date,
@@ -611,6 +619,16 @@ export function SocialCalendar({
             Reusable posts with an enduring message and an asset ready to go.
             Open one to edit it, or use it to start a new post with the same copy.
           </p>
+          {q && library.length > 0 && (
+            <p className="muted small soc-match-note">
+              {(() => {
+                const n = library.filter(matchesSearch).length;
+                return n === 0
+                  ? `Nothing in the library matches “${query.trim()}” — everything is greyed out.`
+                  : `${n} of ${library.length} match “${query.trim()}” · the rest are greyed out`;
+              })()}
+            </p>
+          )}
           {library.length === 0 ? (
             <p className="muted">
               {anyFilter
@@ -624,6 +642,7 @@ export function SocialCalendar({
                   <SocialPostCard
                     post={p}
                     detailed
+                    dimmed={!matchesSearch(p)}
                     projectTitle={projectTitleFor(p)}
                     onOpenProject={
                       p.projectId ? () => openProject(p.projectId!) : undefined
@@ -656,8 +675,14 @@ export function SocialCalendar({
               {statusFilter.size > 0
                 ? ` · ${statusFilter.size} status${statusFilter.size === 1 ? "" : "es"}`
                 : ""}
-              {q ? ` matching “${query.trim()}”` : ""}
-              {" · drag a card to another day to reschedule it"}
+              {q
+                ? (() => {
+                    const n = monthPosts.filter(matchesSearch).length;
+                    return n === 0
+                      ? ` · nothing matches “${query.trim()}” this month`
+                      : ` · ${n} match${n === 1 ? "es" : ""} “${query.trim()}”, the rest greyed out`;
+                  })()
+                : " · drag a card to another day to reschedule it"}
             </span>
             {/* The legend doubles as the status filter: click a status to
                 show only those posts, click again to drop it. */}
@@ -735,6 +760,7 @@ export function SocialCalendar({
                       <SocialPostCard
                         key={p.id}
                         post={p}
+                        dimmed={!matchesSearch(p)}
                         projectTitle={projectTitleFor(p)}
                         onOpenProject={
                           p.projectId
@@ -772,6 +798,7 @@ export function SocialCalendar({
                     key={p.id}
                     post={p}
                     detailed
+                    dimmed={!matchesSearch(p)}
                     projectTitle={projectTitleFor(p)}
                     onOpenProject={
                       p.projectId ? () => openProject(p.projectId!) : undefined

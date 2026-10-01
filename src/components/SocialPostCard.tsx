@@ -17,6 +17,9 @@ type Props = {
   // Library and tray cards have room to show a line of the copy and the
   // post's date (or lack of one); calendar cells don't.
   detailed?: boolean;
+  // True when a search is active and this post isn't a hit. The card stays
+  // in place, greyed out, so the month keeps its shape around the matches.
+  dimmed?: boolean;
   // Title of the board project this post is linked to, when it has one.
   projectTitle?: string;
   // Open that project's detail window. Clicking the project on the card
@@ -83,6 +86,7 @@ export function SocialPostCard({
   post,
   onClick,
   detailed,
+  dimmed,
   projectTitle,
   onOpenProject,
 }: Props) {
@@ -134,7 +138,7 @@ export function SocialPostCard({
       tabIndex={0}
       className={`soc-card ${detailed ? "detailed" : ""} ${
         post.status === "cancelled" ? "cancelled" : ""
-      } ${dragging ? "dragging" : ""}`}
+      } ${dragging ? "dragging" : ""} ${dimmed ? "dimmed" : ""}`}
       // The left edge is the channel; the status colour also washes the
       // card background (via --status in the CSS) so a month reads at a
       // glance — green done, pink waiting, grey draft.

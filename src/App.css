@@ -4765,3 +4765,20 @@ textarea {
 .soc-legend.filtering .soc-legend-item:not(.active):hover {
   opacity: 1;
 }
+
+/* Search dims rather than hides: a non-matching card drops to grey and
+   fades back, but stays where it is so the month keeps its shape. Hovering
+   brings it most of the way back so it's still readable and clickable. */
+.soc-card.dimmed {
+  opacity: 0.38;
+  filter: grayscale(1);
+  box-shadow: none;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+.soc-card.dimmed:hover {
+  opacity: 0.85;
+  filter: grayscale(0.4);
+}
+.soc-match-note {
+  margin: -6px 0 0;
+}
