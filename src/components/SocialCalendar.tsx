@@ -2,15 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   Designer,
   Project,
+  SocialConfig,
   SocialPost,
   SocialPostStatus,
   Workspace,
 } from "../types";
-import {
-  SOCIAL_CATEGORIES,
-  SOCIAL_CHANNELS,
-  SOCIAL_POST_STATUSES,
-} from "../constants";
+import { SOCIAL_CHANNELS, SOCIAL_POST_STATUSES } from "../constants";
 import { todayIso } from "../dates";
 import { readDraggedSocialPostId } from "../dnd";
 import {
@@ -26,6 +23,8 @@ import { SocialPostModal } from "./SocialPostModal";
 type Props = {
   // Only used for owner suggestions in the post editor.
   designers: Designer[];
+  // Categories + company hashtags, managed from Settings → Social calendar.
+  config: SocialConfig;
   // Board projects a post can link back to, with the teams that name them.
   projects: Project[];
   workspaces: Workspace[];
@@ -124,6 +123,7 @@ function sortPosts(a: SocialPost, b: SocialPost): number {
 
 export function SocialCalendar({
   designers,
+  config,
   projects,
   workspaces,
   onOpenProject,
@@ -137,6 +137,7 @@ export function SocialCalendar({
   const [month, setMonth] = useState(() => todayIso().slice(0, 7));
   // "" means every channel.
   const [channelFilter, setChannelFilter] = useState("");
+  const { categories, hashtags } = config;
   // Multi-select: an empty set means "everything". Categories use the full
   // label as the key, or NO_CATEGORY for posts without one.
   const [categoryFilter, setCategoryFilter] = useState<Set<string>>(
@@ -535,12 +536,12 @@ export function SocialCalendar({
             >
               All types
             </button>
-            {SOCIAL_CATEGORIES.map((c) => {
+            {categories.map((c) => {
               const active = categoryFilter.has(c.label);
               const count = categoryCounts.get(c.label) ?? 0;
               return (
                 <button
-                  key={c.label}
+                  key={c.id}
                   className={`soc-type-pill ${active ? "active" : ""} ${
                     count === 0 ? "empty" : ""
                   }`}
@@ -641,6 +642,7 @@ export function SocialCalendar({
                 <div key={p.id} className="soc-library-item">
                   <SocialPostCard
                     post={p}
+                    categories={categories}
                     detailed
                     dimmed={!matchesSearch(p)}
                     projectTitle={projectTitleFor(p)}
@@ -760,6 +762,7 @@ export function SocialCalendar({
                       <SocialPostCard
                         key={p.id}
                         post={p}
+                        categories={categories}
                         dimmed={!matchesSearch(p)}
                         projectTitle={projectTitleFor(p)}
                         onOpenProject={
@@ -797,6 +800,7 @@ export function SocialCalendar({
                   <SocialPostCard
                     key={p.id}
                     post={p}
+                    categories={categories}
                     detailed
                     dimmed={!matchesSearch(p)}
                     projectTitle={projectTitleFor(p)}
@@ -818,6 +822,8 @@ export function SocialCalendar({
           initial={editing.initial}
           channels={channels}
           owners={owners}
+          categories={categories}
+          hashtags={hashtags}
           projects={projects}
           workspaces={workspaces}
           onCancel={() => setEditing(null)}
@@ -832,6 +838,8 @@ export function SocialCalendar({
           initial={editing.post}
           channels={channels}
           owners={owners}
+          categories={categories}
+          hashtags={hashtags}
           projects={projects}
           workspaces={workspaces}
           onCancel={() => setEditing(null)}

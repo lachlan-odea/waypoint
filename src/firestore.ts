@@ -19,6 +19,7 @@ import type {
   Hub,
   Notification,
   Project,
+  SocialConfig,
   SocialPost,
   Workspace,
   WorkspaceData,
@@ -31,6 +32,7 @@ const notificationsCol = () => collection(db, "notifications");
 const deskItemsCol = () => collection(db, "deskItems");
 const hubsCol = () => collection(db, "hubs");
 const socialPostsCol = () => collection(db, "socialPosts");
+const socialConfigDoc = () => doc(collection(db, "socialConfig"), "default");
 
 // Backfill missing workspaceId on legacy docs that predate the multi-
 // workspace feature. They all belonged to the original Design workspace.
@@ -500,6 +502,48 @@ export async function setSocialPost(post: SocialPost): Promise<void> {
 
 export async function deleteSocialPost(id: string): Promise<void> {
   await deleteDoc(doc(socialPostsCol(), id));
+}
+
+// ── Social calendar configuration ──────────────────────────────────────
+// Categories and company hashtags, one document. `null` from the
+// subscription means the document hasn't been written yet and the caller
+// should use DEFAULT_SOCIAL_CONFIG.
+
+export function subscribeSocialConfig(
+  onChange: (config: SocialConfig | null) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    socialConfigDoc(),
+    (snap) => onChange(snap.exists() ? (snap.data() as SocialConfig) : null),
+    onError,
+  );
+}
+
+export async function setSocialConfig(config: SocialConfig): Promise<void> {
+  await setDoc(socialConfigDoc(), config);
+}
+
+// Posts store a category's label, so renaming one has to visit every post
+// that uses the old label. Batched, so a rename is all-or-nothing.
+export async function relabelSocialPostCategory(
+  oldLabel: string,
+  newLabel: string,
+): Promise<number> {
+  if (oldLabel === newLabel) return 0;
+  const snap = await getDocs(
+    query(socialPostsCol(), where("category", "==", oldLabel)),
+  );
+  if (snap.empty) return 0;
+  const CHUNK = 400;
+  for (let i = 0; i < snap.docs.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    snap.docs
+      .slice(i, i + CHUNK)
+      .forEach((d) => batch.update(d.ref, { category: newLabel }));
+    await batch.commit();
+  }
+  return snap.size;
 }
 
 // Load the marketing team's 2026 calendar (src/data/socialPostsSeed.json,

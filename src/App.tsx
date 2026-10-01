@@ -3,6 +3,8 @@ import type {
   Notification,
   Project,
   ProjectStatus,
+  SocialConfig,
+  SocialPost,
   WorkspaceData,
 } from "./types";
 import { auth, observeAuth, signOut as fbSignOut } from "./firebase";
@@ -24,6 +26,10 @@ import {
   setNotification as firestoreSetNotification,
   setProject as firestoreSetProject,
   setWorkspaceMembers as firestoreSetWorkspaceMembers,
+  relabelSocialPostCategory as firestoreRelabelSocialPostCategory,
+  setSocialConfig as firestoreSetSocialConfig,
+  subscribeSocialConfig,
+  subscribeSocialPosts,
   subscribeWorkspace,
 } from "./firestore";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
@@ -42,6 +48,7 @@ import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
 import { contentTypesSearchText } from "./contentTypes";
 import {
+  DEFAULT_SOCIAL_CONFIG,
   DEFAULT_WORKSPACE_ID,
   SUPER_USER_EMAILS,
 } from "./constants";
@@ -187,6 +194,40 @@ export default function App() {
     );
     return unsubscribe;
   }, [sessionDesignerId]);
+
+  // Social calendar configuration: categories + company hashtags. Falls back
+  // to the built-in defaults until a super user has saved the document.
+  const [socialConfigDoc, setSocialConfigDoc] = useState<SocialConfig | null>(
+    null,
+  );
+  // No reset on sign-out: the Login screen replaces everything below, and
+  // the next sign-in's snapshot overwrites whatever was here.
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeSocialConfig(setSocialConfigDoc, (err) => {
+      console.warn("Couldn't load social calendar settings", err);
+    });
+  }, [sessionDesignerId]);
+  const socialConfig = socialConfigDoc ?? DEFAULT_SOCIAL_CONFIG;
+
+  // How many posts carry each category label, for the Settings editor's
+  // "N posts" hints and delete warnings. Cheap enough to keep live.
+  const [socialPostsForUsage, setSocialPostsForUsage] = useState<SocialPost[]>(
+    [],
+  );
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeSocialPosts(setSocialPostsForUsage, (err) => {
+      console.warn("Couldn't load social posts for settings", err);
+    });
+  }, [sessionDesignerId]);
+  const socialCategoryUsage = useMemo(() => {
+    const counts = new Map<string, number>();
+    socialPostsForUsage.forEach((p) => {
+      if (p.category) counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+    });
+    return counts;
+  }, [socialPostsForUsage]);
 
   // If the workspace loads and the signed-in user has no Designer doc, give
   // signup a short grace period to finish writing the doc (race window
@@ -926,6 +967,7 @@ export default function App() {
         ) : view === "socialCalendar" ? (
           <SocialCalendar
             designers={workspace.designers}
+            config={socialConfig}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
             onOpenProject={setOpenProjectId}
@@ -1240,6 +1282,10 @@ export default function App() {
           reviewers={reviewers}
           workspaces={availableWorkspaces}
           hubs={workspace.hubs}
+          socialConfig={socialConfig}
+          socialCategoryUsage={socialCategoryUsage}
+          onSaveSocialConfig={firestoreSetSocialConfig}
+          onRelabelSocialCategory={firestoreRelabelSocialPostCategory}
           darkMode={darkMode}
           onDarkModeChange={setDarkMode}
           textSize={textSize}

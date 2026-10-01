@@ -169,6 +169,34 @@ export type SocialPostStatus =
   | "published"
   | "cancelled";
 
+// A kind of social post ("Product - CargoWise", "Thought Leadership"…).
+// Posts store the `label`, not the id, so a renamed category has to relabel
+// its posts (see relabelSocialPostCategory). `short` is the pill text that
+// fits a calendar cell; `color` is a hex the pill and filter take.
+export type SocialCategory = {
+  id: string;
+  label: string;
+  short: string;
+  color: string;
+};
+
+// A hashtag the company wants used consistently. `tag` includes the '#'.
+export type SocialHashtag = {
+  id: string;
+  tag: string;
+  // When to use it, e.g. "Every CargoWise product post".
+  note?: string;
+};
+
+// Team-managed configuration for the Social calendar, kept as a single
+// Firestore document (/socialConfig/default) so one subscription brings
+// the lot. Edited by super users from Settings → Social calendar. When the
+// document doesn't exist yet the app runs on the defaults in constants.ts.
+export type SocialConfig = {
+  categories: SocialCategory[];
+  hashtags: SocialHashtag[];
+};
+
 // One entry on the shared Social calendar: a LinkedIn post going out on a
 // brand channel (CargoWise, WiseTech). Shared by everyone, not scoped to a
 // workspace — the calendar is the marketing team's single plan, and the
@@ -190,9 +218,9 @@ export type SocialPost = {
   // shouldn't need a deploy.
   channel: string;
   // What kind of post this is — "Product - CargoWise", "Thought
-  // Leadership", "Event"… One of SOCIAL_CATEGORIES in constants.ts, which
-  // also gives each its pill colour. Optional: the imported 2026 posts have
-  // none until someone sets it.
+  // Leadership", "Event"… The `label` of a SocialCategory from SocialConfig
+  // (defaults in constants.ts), which also gives each its pill colour.
+  // Optional: the imported 2026 posts have none until someone sets it.
   category?: string;
   topic: string;
   // Full post copy, newlines preserved.
