@@ -31,6 +31,12 @@ service cloud.firestore {
     match /socialPosts/{postId} {
       allow read, write: if request.auth != null;
     }
+    // Social calendar configuration (categories, company hashtags). A single
+    // document, read by everyone; writes are gated to super users by the
+    // Settings UI, like hubs.
+    match /socialConfig/{docId} {
+      allow read, write: if request.auth != null;
+    }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any
     // signed-in user. Reads are constrained by the ownerId == uid filter the

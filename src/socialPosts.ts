@@ -14,6 +14,14 @@ export function socialPostTitle(post: SocialPost): string {
   return firstLine ?? "Untitled post";
 }
 
+// "#CargoWise" from " cargowise ", "# Cargo Wise" or "#CargoWise,". One
+// token, leading '#', no internal whitespace or punctuation LinkedIn would
+// break the tag on.
+export function normaliseHashtag(raw: string): string {
+  const body = raw.replace(/^[\s#]+/, "").replace(/[^\p{L}\p{N}_]+/gu, "");
+  return body ? `#${body}` : "";
+}
+
 export function isHttpUrl(s: string): boolean {
   return /^https?:\/\//i.test(s.trim());
 }

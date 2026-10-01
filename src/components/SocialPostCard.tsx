@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { SocialPost } from "../types";
+import type { SocialCategory, SocialPost } from "../types";
 import {
   socialCategoryMeta,
   socialChannelColor,
@@ -13,6 +13,8 @@ import { firstEmbeddableImage } from "../assetLinks";
 
 type Props = {
   post: SocialPost;
+  // The live category list, for the pill's text and colour.
+  categories: SocialCategory[];
   onClick: () => void;
   // Library and tray cards have room to show a line of the copy and the
   // post's date (or lack of one); calendar cells don't.
@@ -84,6 +86,7 @@ function ProjectGlyph() {
 
 export function SocialPostCard({
   post,
+  categories,
   onClick,
   detailed,
   dimmed,
@@ -97,7 +100,7 @@ export function SocialPostCard({
   const [thumbFailed, setThumbFailed] = useState(false);
   const channelColor = socialChannelColor(post.channel);
   const status = socialStatusMeta(post.status);
-  const category = socialCategoryMeta(post.category);
+  const category = socialCategoryMeta(post.category, categories);
   const title = socialPostTitle(post);
   const copyLine = detailed ? excerpt(post.copy) : "";
   const thumb = detailed && !thumbFailed ? firstEmbeddableImage(post.asset) : null;

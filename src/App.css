@@ -4782,3 +4782,143 @@ textarea {
 .soc-match-note {
   margin: -6px 0 0;
 }
+
+/* ── Settings → Social calendar (categories + company hashtags) ────────── */
+.social-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 4px;
+}
+.social-summary-tags {
+  flex-basis: 100%;
+  white-space: pre-wrap;
+}
+.manage-social-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.manage-social-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1.4fr) minmax(0, 1fr) 70px auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.manage-social-row.hashtag {
+  grid-template-columns: 200px minmax(0, 1fr) auto;
+}
+.manage-social-row input[type="text"],
+.manage-social-row input:not([type]) {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+}
+.manage-social-row input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.manage-social-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  cursor: pointer;
+}
+.manage-social-color input[type="color"] {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.manage-social-preview {
+  min-width: 0;
+}
+.manage-social-tag {
+  font-weight: 600;
+}
+.manage-social-usage {
+  white-space: nowrap;
+  text-align: right;
+}
+.manage-social-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.manage-social-actions .icon-btn {
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+}
+.manage-social-actions .icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.manage-social-actions .link-btn {
+  margin-left: 6px;
+  cursor: pointer;
+}
+.manage-social-saved {
+  margin: 0;
+  font-size: 13px;
+  color: #15803d;
+}
+@media (max-width: 760px) {
+  .manage-social-row,
+  .manage-social-row.hashtag {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Company hashtag chips under the copy in the post editor */
+.soc-hashtags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: -8px;
+}
+.soc-hashtags-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.soc-hashtag-chip {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--primary);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.soc-hashtag-chip:hover {
+  border-color: var(--primary);
+  background: var(--surface-2);
+}
+.soc-hashtag-chip.on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
