@@ -1,4 +1,10 @@
-import type { ProjectStatus, SocialPostStatus } from "./types";
+import type {
+  ProjectStatus,
+  SocialCategory,
+  SocialConfig,
+  SocialHashtag,
+  SocialPostStatus,
+} from "./types";
 
 // The status picker's options, in lifecycle order. Single source of truth for
 // both the dropdown and every label rendered elsewhere — see the note on
@@ -107,27 +113,42 @@ export function socialStatusMeta(status: SocialPostStatus | undefined) {
 // fits a calendar cell; the full `label` is the picker option and the
 // tooltip. Colours are deliberately distinct from the status palette
 // (greens / pinks / amber) so the two pills never read as the same thing.
-export const SOCIAL_CATEGORIES: {
-  label: string;
-  short: string;
-  color: string;
-}[] = [
-  { label: "Product - CargoWise", short: "Product · CW", color: "#2563eb" },
-  { label: "Product - Other", short: "Product · Other", color: "#7c3aed" },
-  { label: "Thought Leadership", short: "Thought leadership", color: "#0f766e" },
-  { label: "People", short: "People", color: "#db2777" },
-  { label: "Event", short: "Event", color: "#ea580c" },
-  { label: "Digital Event", short: "Digital event", color: "#c026d3" },
-  { label: "Industry", short: "Industry", color: "#4d7c0f" },
-  { label: "WiseTech Academy", short: "Academy", color: "#b45309" },
+//
+// These are the starting set. Super users edit the live list from
+// Settings → Social calendar, which writes /socialConfig/default; until
+// that document exists the app runs on these.
+export const DEFAULT_SOCIAL_CATEGORIES: SocialCategory[] = [
+  { id: "product-cargowise", label: "Product - CargoWise", short: "Product · CW", color: "#2563eb" },
+  { id: "product-other", label: "Product - Other", short: "Product · Other", color: "#7c3aed" },
+  { id: "thought-leadership", label: "Thought Leadership", short: "Thought leadership", color: "#0f766e" },
+  { id: "people", label: "People", short: "People", color: "#db2777" },
+  { id: "event", label: "Event", short: "Event", color: "#ea580c" },
+  { id: "digital-event", label: "Digital Event", short: "Digital event", color: "#c026d3" },
+  { id: "industry", label: "Industry", short: "Industry", color: "#4d7c0f" },
+  { id: "wisetech-academy", label: "WiseTech Academy", short: "Academy", color: "#b45309" },
 ];
 
+// Company hashtags to start with — the two brand tags. Edited in the same
+// Settings window as the categories.
+export const DEFAULT_SOCIAL_HASHTAGS: SocialHashtag[] = [
+  { id: "cargowise", tag: "#CargoWise", note: "Every CargoWise channel post" },
+  { id: "wisetechglobal", tag: "#WiseTechGlobal", note: "Every WiseTech channel post" },
+];
+
+export const DEFAULT_SOCIAL_CONFIG: SocialConfig = {
+  categories: DEFAULT_SOCIAL_CATEGORIES,
+  hashtags: DEFAULT_SOCIAL_HASHTAGS,
+};
+
 // Pill text + colour for a stored category. A value that isn't in the list
-// (renamed later, say) still renders, in neutral slate, rather than vanishing.
-export function socialCategoryMeta(category: string | undefined) {
+// (deleted later, say) still renders, in neutral slate, rather than vanishing.
+export function socialCategoryMeta(
+  category: string | undefined,
+  categories: SocialCategory[] = DEFAULT_SOCIAL_CATEGORIES,
+): Pick<SocialCategory, "label" | "short" | "color"> | null {
   if (!category) return null;
   return (
-    SOCIAL_CATEGORIES.find((c) => c.label === category) ?? {
+    categories.find((c) => c.label === category) ?? {
       label: category,
       short: category,
       color: "#64748b",

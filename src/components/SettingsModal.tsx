@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Designer, Hub, Workspace } from "../types";
+import type { Designer, Hub, SocialConfig, Workspace } from "../types";
 import { changePassword } from "../firebase";
 import { Avatar } from "./Avatar";
+import { ManageSocialModal } from "./ManageSocialModal";
 import {
   DEFAULT_WORK_END_HOUR,
   DEFAULT_WORK_START_HOUR,
@@ -30,6 +31,12 @@ type Props = {
   // Configured office locations. Everyone reads them; only super users can
   // change them.
   hubs: Hub[];
+  // Social calendar categories + company hashtags, and how many posts carry
+  // each category label. Super users edit them from here.
+  socialConfig: SocialConfig;
+  socialCategoryUsage: Map<string, number>;
+  onSaveSocialConfig: (config: SocialConfig) => Promise<void>;
+  onRelabelSocialCategory: (oldLabel: string, newLabel: string) => Promise<number>;
   darkMode: boolean;
   onDarkModeChange: (enabled: boolean) => void;
   textSize: "small" | "default" | "large";
@@ -79,6 +86,10 @@ export function SettingsModal({
   reviewers,
   workspaces,
   hubs,
+  socialConfig,
+  socialCategoryUsage,
+  onSaveSocialConfig,
+  onRelabelSocialCategory,
   darkMode,
   onDarkModeChange,
   textSize,
@@ -102,17 +113,18 @@ export function SettingsModal({
   const [busy, setBusy] = useState(false);
   const [manageUsersOpen, setManageUsersOpen] = useState(false);
   const [manageHubsOpen, setManageHubsOpen] = useState(false);
+  const [manageSocialOpen, setManageSocialOpen] = useState(false);
 
   useEffect(() => {
     // Suspend the Settings Escape handler while a sub-modal is up — that
     // modal owns Escape until it's closed.
-    if (manageUsersOpen || manageHubsOpen) return;
+    if (manageUsersOpen || manageHubsOpen || manageSocialOpen) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, manageUsersOpen, manageHubsOpen]);
+  }, [onClose, manageUsersOpen, manageHubsOpen, manageSocialOpen]);
 
   const myHub = hubs.find((h) => h.id === currentDesigner.hubId);
 
@@ -169,6 +181,46 @@ export function SettingsModal({
                   onClick={() => setManageUsersOpen(true)}
                 >
                   Manage users →
+                </button>
+              </div>
+            </section>
+          )}
+
+          {isSuperUser && (
+            <section className="modal-section">
+              <h3>Social calendar</h3>
+              <p className="muted small">
+                The categories posts can be tagged with, and the company
+                hashtags offered in the post editor. Shared by everyone who
+                uses the calendar. Opens in a dedicated window.
+              </p>
+              <div className="social-summary">
+                {socialConfig.categories.map((c) => (
+                  <span
+                    key={c.id}
+                    className="soc-category"
+                    style={{
+                      color: c.color,
+                      borderColor: c.color,
+                      ["--category" as string]: c.color,
+                    } as React.CSSProperties}
+                    title={c.label}
+                  >
+                    {c.short}
+                  </span>
+                ))}
+                {socialConfig.hashtags.length > 0 && (
+                  <span className="muted small social-summary-tags">
+                    {socialConfig.hashtags.map((h) => h.tag).join("  ")}
+                  </span>
+                )}
+              </div>
+              <div className="section-actions">
+                <button
+                  className="primary"
+                  onClick={() => setManageSocialOpen(true)}
+                >
+                  Manage social calendar →
                 </button>
               </div>
             </section>
@@ -356,6 +408,16 @@ export function SettingsModal({
           onSaveHub={onSaveHub}
           onDeleteHub={onDeleteHub}
           onClose={() => setManageHubsOpen(false)}
+        />
+      )}
+
+      {manageSocialOpen && (
+        <ManageSocialModal
+          config={socialConfig}
+          categoryUsage={socialCategoryUsage}
+          onSave={onSaveSocialConfig}
+          onRelabelCategory={onRelabelSocialCategory}
+          onClose={() => setManageSocialOpen(false)}
         />
       )}
     </div>

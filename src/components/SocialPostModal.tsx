@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import type {
   Project,
+  SocialCategory,
+  SocialHashtag,
   SocialPost,
   SocialPostStatus,
   Workspace,
 } from "../types";
-import { SOCIAL_CATEGORIES, SOCIAL_POST_STATUSES } from "../constants";
+import { SOCIAL_POST_STATUSES } from "../constants";
 import { todayIso } from "../dates";
 import {
   isHttpUrl,
@@ -25,6 +27,10 @@ type Props = {
   // Suggestions for the free-text fields, built from what's already in use.
   channels: string[];
   owners: string[];
+  // Team-managed category list and company hashtags (Settings → Social
+  // calendar).
+  categories: SocialCategory[];
+  hashtags: SocialHashtag[];
   // Board projects a post can be linked back to, and the teams that name
   // them in the picker.
   projects: Project[];
@@ -47,6 +53,8 @@ export function SocialPostModal({
   mode,
   channels,
   owners,
+  categories,
+  hashtags,
   projects,
   workspaces,
   onCancel,
@@ -90,6 +98,31 @@ export function SocialPostModal({
   }, [onCancel]);
 
   const canSave = topic.trim().length > 0 || copy.trim().length > 0;
+
+  // Company hashtag chips. A tag counts as present when it appears as a
+  // whole token in the copy; clicking a present chip removes it, clicking an
+  // absent one appends it — onto the existing hashtag line if the copy ends
+  // with one, otherwise on a fresh line.
+  const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  function hasTag(tag: string): boolean {
+    return new RegExp(`(^|\\s)${escapeRe(tag)}(?=\\s|$)`, "i").test(copy);
+  }
+  function toggleTag(tag: string) {
+    if (hasTag(tag)) {
+      setCopy(
+        copy.replace(new RegExp(`[ \\t]*${escapeRe(tag)}(?=\\s|$)`, "gi"), "").trimEnd(),
+      );
+      return;
+    }
+    const base = copy.trimEnd();
+    if (!base) {
+      setCopy(tag);
+      return;
+    }
+    const lastLine = base.slice(base.lastIndexOf("\n") + 1).trim();
+    const endsWithTags = /^#\S+(\s+#\S+)*$/.test(lastLine);
+    setCopy(endsWithTags ? `${base} ${tag}` : `${base}\n\n${tag}`);
+  }
 
   // The post as the form currently describes it. `overrides` lets "Mark as
   // published" flip a couple of fields on the way out without a render in
@@ -237,13 +270,13 @@ export function SocialPostModal({
                 onChange={(e) => setCategory(e.target.value)}
               >
                 <option value="">No category</option>
-                {SOCIAL_CATEGORIES.map((c) => (
-                  <option key={c.label} value={c.label}>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.label}>
                     {c.label}
                   </option>
                 ))}
-                {category && !SOCIAL_CATEGORIES.some((c) => c.label === category) && (
-                  <option value={category}>{category}</option>
+                {category && !categories.some((c) => c.label === category) && (
+                  <option value={category}>{category} (no longer in the list)</option>
                 )}
               </select>
             </label>
@@ -297,6 +330,29 @@ export function SocialPostModal({
               placeholder="The post text, as it will be published"
             />
           </label>
+          {hashtags.length > 0 && (
+            <div className="soc-hashtags" role="group" aria-label="Company hashtags">
+              <span className="soc-hashtags-label">Company hashtags</span>
+              {hashtags.map((h) => {
+                const on = hasTag(h.tag);
+                return (
+                  <button
+                    key={h.id}
+                    type="button"
+                    className={`soc-hashtag-chip ${on ? "on" : ""}`}
+                    onClick={() => toggleTag(h.tag)}
+                    aria-pressed={on}
+                    title={
+                      (h.note ? `${h.note} · ` : "") +
+                      (on ? "In the copy — click to remove" : "Click to add to the copy")
+                    }
+                  >
+                    {h.tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div className="modal-grid">
             <div className="asset-field">
