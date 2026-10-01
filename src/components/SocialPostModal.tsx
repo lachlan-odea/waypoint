@@ -5,7 +5,7 @@ import type {
   SocialPostStatus,
   Workspace,
 } from "../types";
-import { SOCIAL_POST_STATUSES } from "../constants";
+import { SOCIAL_CATEGORIES, SOCIAL_POST_STATUSES } from "../constants";
 import { todayIso } from "../dates";
 import {
   isHttpUrl,
@@ -56,6 +56,13 @@ export function SocialPostModal({
 }: Props) {
   const [topic, setTopic] = useState(initial.topic ?? "");
   const [channel, setChannel] = useState(initial.channel ?? channels[0] ?? "");
+  // The channel picker is a <select> over the known channels with an
+  // "Other…" option that swaps in a free-text box. A post whose channel
+  // isn't in the list (typed in earlier) opens straight in that mode.
+  const [channelIsCustom, setChannelIsCustom] = useState(
+    () => !!initial.channel && !channels.includes(initial.channel),
+  );
+  const [category, setCategory] = useState(initial.category ?? "");
   const [owner, setOwner] = useState(initial.owner ?? "");
   const [date, setDate] = useState(initial.date ?? "");
   const [status, setStatus] = useState<SocialPostStatus>(
@@ -99,6 +106,7 @@ export function SocialPostModal({
         : initial.month || todayIso().slice(0, 7),
       date: finalDate,
       channel: channel.trim(),
+      category: category || undefined,
       topic: topic.trim(),
       copy: copy.trimEnd(),
       screenshot: screenshot.trim(),
@@ -194,17 +202,50 @@ export function SocialPostModal({
           <div className="modal-grid">
             <label className="field">
               <span>Channel</span>
-              <input
-                list="soc-channel-options"
-                value={channel}
-                onChange={(e) => setChannel(e.target.value)}
-                placeholder="CargoWise"
-              />
-              <datalist id="soc-channel-options">
+              <select
+                value={channelIsCustom ? "__other__" : channel}
+                onChange={(e) => {
+                  if (e.target.value === "__other__") {
+                    setChannelIsCustom(true);
+                    setChannel("");
+                  } else {
+                    setChannelIsCustom(false);
+                    setChannel(e.target.value);
+                  }
+                }}
+              >
                 {channels.map((c) => (
-                  <option key={c} value={c} />
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
-              </datalist>
+                <option value="__other__">Other…</option>
+              </select>
+              {channelIsCustom && (
+                <input
+                  value={channel}
+                  onChange={(e) => setChannel(e.target.value)}
+                  placeholder="Channel name"
+                  autoFocus
+                />
+              )}
+            </label>
+            <label className="field">
+              <span>Category</span>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="">No category</option>
+                {SOCIAL_CATEGORIES.map((c) => (
+                  <option key={c.label} value={c.label}>
+                    {c.label}
+                  </option>
+                ))}
+                {category && !SOCIAL_CATEGORIES.some((c) => c.label === category) && (
+                  <option value={category}>{category}</option>
+                )}
+              </select>
             </label>
             <label className="field">
               <span>Owner</span>

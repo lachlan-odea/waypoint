@@ -103,6 +103,38 @@ export function socialStatusMeta(status: SocialPostStatus | undefined) {
   );
 }
 
+// What a social post is about. The pill on each card uses `short` so it
+// fits a calendar cell; the full `label` is the picker option and the
+// tooltip. Colours are deliberately distinct from the status palette
+// (greens / pinks / amber) so the two pills never read as the same thing.
+export const SOCIAL_CATEGORIES: {
+  label: string;
+  short: string;
+  color: string;
+}[] = [
+  { label: "Product - CargoWise", short: "Product · CW", color: "#2563eb" },
+  { label: "Product - Other", short: "Product · Other", color: "#7c3aed" },
+  { label: "Thought Leadership", short: "Thought leadership", color: "#0f766e" },
+  { label: "People", short: "People", color: "#db2777" },
+  { label: "Event", short: "Event", color: "#ea580c" },
+  { label: "Digital Event", short: "Digital event", color: "#c026d3" },
+  { label: "Industry", short: "Industry", color: "#4d7c0f" },
+  { label: "WiseTech Academy", short: "Academy", color: "#b45309" },
+];
+
+// Pill text + colour for a stored category. A value that isn't in the list
+// (renamed later, say) still renders, in neutral slate, rather than vanishing.
+export function socialCategoryMeta(category: string | undefined) {
+  if (!category) return null;
+  return (
+    SOCIAL_CATEGORIES.find((c) => c.label === category) ?? {
+      label: category,
+      short: category,
+      color: "#64748b",
+    }
+  );
+}
+
 // Brand channels a post can go out on. Suggestions, not a closed list: the
 // channel field accepts any text, and the calendar's filter pills are built
 // from whatever channels are actually in use plus these.

@@ -1,6 +1,10 @@
 import { useState } from "react";
 import type { SocialPost } from "../types";
-import { socialChannelColor, socialStatusMeta } from "../constants";
+import {
+  socialCategoryMeta,
+  socialChannelColor,
+  socialStatusMeta,
+} from "../constants";
 import { formatShort } from "../dates";
 import { writeDraggedSocialPostId } from "../dnd";
 import { socialPostTitle } from "../socialPosts";
@@ -13,6 +17,9 @@ type Props = {
   // Library and tray cards have room to show a line of the copy and the
   // post's date (or lack of one); calendar cells don't.
   detailed?: boolean;
+  // True when a search is active and this post isn't a hit. The card stays
+  // in place, greyed out, so the month keeps its shape around the matches.
+  dimmed?: boolean;
   // Title of the board project this post is linked to, when it has one.
   projectTitle?: string;
   // Open that project's detail window. Clicking the project on the card
@@ -79,6 +86,7 @@ export function SocialPostCard({
   post,
   onClick,
   detailed,
+  dimmed,
   projectTitle,
   onOpenProject,
 }: Props) {
@@ -89,6 +97,7 @@ export function SocialPostCard({
   const [thumbFailed, setThumbFailed] = useState(false);
   const channelColor = socialChannelColor(post.channel);
   const status = socialStatusMeta(post.status);
+  const category = socialCategoryMeta(post.category);
   const title = socialPostTitle(post);
   const copyLine = detailed ? excerpt(post.copy) : "";
   const thumb = detailed && !thumbFailed ? firstEmbeddableImage(post.asset) : null;
@@ -129,7 +138,7 @@ export function SocialPostCard({
       tabIndex={0}
       className={`soc-card ${detailed ? "detailed" : ""} ${
         post.status === "cancelled" ? "cancelled" : ""
-      } ${dragging ? "dragging" : ""}`}
+      } ${dragging ? "dragging" : ""} ${dimmed ? "dimmed" : ""}`}
       // The left edge is the channel; the status colour also washes the
       // card background (via --status in the CSS) so a month reads at a
       // glance — green done, pink waiting, grey draft.
@@ -160,6 +169,19 @@ export function SocialPostCard({
         </span>
       </div>
       <div className="soc-card-title">{title}</div>
+      {category && (
+        <span
+          className="soc-category"
+          style={{
+            color: category.color,
+            borderColor: category.color,
+            ["--category" as string]: category.color,
+          } as React.CSSProperties}
+          title={`Category: ${category.label}`}
+        >
+          {detailed ? category.label : category.short}
+        </span>
+      )}
       {thumb && (
         <img
           className="soc-card-thumb"
