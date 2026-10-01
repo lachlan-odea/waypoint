@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Designer, Project, SocialPost, Workspace } from "../types";
-import { SOCIAL_CHANNELS, SOCIAL_POST_STATUSES } from "../constants";
+import type {
+  Designer,
+  Project,
+  SocialPost,
+  SocialPostStatus,
+  Workspace,
+} from "../types";
+import {
+  SOCIAL_CATEGORIES,
+  SOCIAL_CHANNELS,
+  SOCIAL_POST_STATUSES,
+} from "../constants";
 import { todayIso } from "../dates";
 import { readDraggedSocialPostId } from "../dnd";
 import {
@@ -33,6 +43,17 @@ type Editing =
 
 // Drop-target id for the Unscheduled tray. Not a date.
 const UNSCHEDULED = "__unscheduled__";
+
+// Category-filter value meaning "posts with no category set". The imported
+// 2026 posts all start out this way, so it's the pill that finds them.
+const NO_CATEGORY = "__none__";
+
+function toggleIn<T>(set: Set<T>, value: T): Set<T> {
+  const next = new Set(set);
+  if (next.has(value)) next.delete(value);
+  else next.add(value);
+  return next;
+}
 
 // Stable stand-in for "no posts yet" so the memos below don't see a fresh
 // array (and recompute) on every render before the first snapshot.
@@ -116,6 +137,14 @@ export function SocialCalendar({
   const [month, setMonth] = useState(() => todayIso().slice(0, 7));
   // "" means every channel.
   const [channelFilter, setChannelFilter] = useState("");
+  // Multi-select: an empty set means "everything". Categories use the full
+  // label as the key, or NO_CATEGORY for posts without one.
+  const [categoryFilter, setCategoryFilter] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [statusFilter, setStatusFilter] = useState<Set<SocialPostStatus>>(
+    () => new Set(),
+  );
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"calendar" | "library">("calendar");
   const [editing, setEditing] = useState<Editing | null>(null);
@@ -216,8 +245,8 @@ export function SocialCalendar({
 
   const q = query.trim().toLowerCase();
 
-  // The channel pill and search box apply to both tabs.
-  const filtered = useMemo(
+  // Channel pill and search box: the filters every count below respects.
+  const searched = useMemo(
     () =>
       all.filter((p) => {
         if (channelFilter && p.channel.trim() !== channelFilter) return false;
@@ -230,17 +259,64 @@ export function SocialCalendar({
     [all, channelFilter, q],
   );
 
-  // Everything that belongs to the month in view: dated posts by their date,
+  const matchesCategory = (p: SocialPost) =>
+    categoryFilter.size === 0 ||
+    categoryFilter.has(p.category || NO_CATEGORY);
+  const matchesStatus = (p: SocialPost) =>
+    statusFilter.size === 0 || statusFilter.has(p.status);
+
+  // What the grid / library actually show: everything above plus the type
+  // and status toggles.
+  const filtered = useMemo(
+    () => searched.filter((p) => matchesCategory(p) && matchesStatus(p)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [searched, categoryFilter, statusFilter],
+  );
+
+  // Does this post belong to the month in view? Dated posts by their date,
   // undated ones by the month they were filed under. Undated evergreen posts
   // are the library's, not the month's.
+  const inMonth = (p: SocialPost) =>
+    p.date ? p.date.slice(0, 7) === month : !p.evergreen && p.month === month;
+
   const monthPosts = useMemo(
-    () =>
-      filtered.filter((p) => {
-        if (p.date) return p.date.slice(0, 7) === month;
-        return !p.evergreen && p.month === month;
-      }),
+    () => filtered.filter(inMonth),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [filtered, month],
   );
+
+  // Posts the filter pills count over: the current tab's scope, with the
+  // channel + search applied but ignoring the pill's own dimension — so the
+  // counts don't collapse to zero the moment you pick one (same trick as the
+  // Archive's team pills).
+  const countScope = useMemo(
+    () => searched.filter((p) => (tab === "library" ? p.evergreen : inMonth(p))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [searched, tab, month],
+  );
+
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    countScope.filter(matchesStatus).forEach((p) => {
+      const key = p.category || NO_CATEGORY;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    return counts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countScope, statusFilter]);
+
+  const anyFilter =
+    channelFilter !== "" ||
+    q !== "" ||
+    categoryFilter.size > 0 ||
+    statusFilter.size > 0;
+
+  function clearFilters() {
+    setChannelFilter("");
+    setQuery("");
+    setCategoryFilter(new Set());
+    setStatusFilter(new Set());
+  }
 
   const byDate = useMemo(() => {
     const map = new Map<string, SocialPost[]>();
@@ -268,13 +344,15 @@ export function SocialCalendar({
     [filtered],
   );
 
+  // Legend counts ignore the status toggles themselves (see countScope).
   const statusCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    monthPosts.forEach((p) =>
+    countScope.filter(matchesCategory).forEach((p) =>
       counts.set(p.status, (counts.get(p.status) ?? 0) + 1),
     );
     return counts;
-  }, [monthPosts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countScope, categoryFilter]);
 
   const cells = useMemo(() => monthGrid(month), [month]);
   const today = todayIso();
@@ -439,6 +517,67 @@ export function SocialCalendar({
         </div>
       </div>
 
+      {posts !== null && all.length > 0 && (
+        <div className="soc-filters" role="group" aria-label="Filter by type">
+          <span className="soc-filters-label">Type</span>
+          <div className="filter-quick soc-types">
+            <button
+              className={categoryFilter.size === 0 ? "active" : ""}
+              onClick={() => setCategoryFilter(new Set())}
+            >
+              All types
+            </button>
+            {SOCIAL_CATEGORIES.map((c) => {
+              const active = categoryFilter.has(c.label);
+              const count = categoryCounts.get(c.label) ?? 0;
+              return (
+                <button
+                  key={c.label}
+                  className={`soc-type-pill ${active ? "active" : ""} ${
+                    count === 0 ? "empty" : ""
+                  }`}
+                  style={{ ["--category" as string]: c.color } as React.CSSProperties}
+                  onClick={() =>
+                    setCategoryFilter((cur) => toggleIn(cur, c.label))
+                  }
+                  aria-pressed={active}
+                  title={
+                    active
+                      ? `Showing ${c.label} — click to remove`
+                      : `Show ${c.label} posts`
+                  }
+                >
+                  {c.short}
+                  {count > 0 && <span className="soc-type-count">{count}</span>}
+                </button>
+              );
+            })}
+            <button
+              className={`soc-type-pill none ${
+                categoryFilter.has(NO_CATEGORY) ? "active" : ""
+              } ${(categoryCounts.get(NO_CATEGORY) ?? 0) === 0 ? "empty" : ""}`}
+              onClick={() =>
+                setCategoryFilter((cur) => toggleIn(cur, NO_CATEGORY))
+              }
+              aria-pressed={categoryFilter.has(NO_CATEGORY)}
+              title="Posts with no type set yet"
+            >
+              No type
+              {(categoryCounts.get(NO_CATEGORY) ?? 0) > 0 && (
+                <span className="soc-type-count">
+                  {categoryCounts.get(NO_CATEGORY)}
+                </span>
+              )}
+            </button>
+          </div>
+          {anyFilter && (
+            <button className="link-btn soc-clear-filters" onClick={clearFilters}>
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
       {error && <div className="banner">{error}</div>}
       {importNote && <div className="banner soc-import-note">{importNote}</div>}
 
@@ -474,8 +613,8 @@ export function SocialCalendar({
           </p>
           {library.length === 0 ? (
             <p className="muted">
-              {q || channelFilter
-                ? "No evergreen posts match that filter."
+              {anyFilter
+                ? "No evergreen posts match those filters."
                 : "The library is empty. Tick “Keep in the evergreen library” on a post to file it here."}
             </p>
           ) : (
@@ -511,23 +650,51 @@ export function SocialCalendar({
               {monthPosts.length} post{monthPosts.length === 1 ? "" : "s"} in{" "}
               {monthLabel}
               {channelFilter ? ` on ${channelFilter}` : ""}
+              {categoryFilter.size > 0
+                ? ` · ${categoryFilter.size} type${categoryFilter.size === 1 ? "" : "s"}`
+                : ""}
+              {statusFilter.size > 0
+                ? ` · ${statusFilter.size} status${statusFilter.size === 1 ? "" : "es"}`
+                : ""}
               {q ? ` matching “${query.trim()}”` : ""}
               {" · drag a card to another day to reschedule it"}
             </span>
-            <span className="soc-legend">
+            {/* The legend doubles as the status filter: click a status to
+                show only those posts, click again to drop it. */}
+            <span
+              className={`soc-legend ${statusFilter.size > 0 ? "filtering" : ""}`}
+              role="group"
+              aria-label="Filter by status"
+            >
               {SOCIAL_POST_STATUSES.filter((s) => s.value !== "backlog").map(
-                (s) => (
-                  <span key={s.value} className="soc-legend-item">
-                    <span className="soc-status" style={{ background: s.color }}>
-                      <span className="soc-status-label">{s.label}</span>
-                    </span>
-                    {statusCounts.get(s.value) ? (
-                      <span className="soc-legend-count">
-                        {statusCounts.get(s.value)}
+                (s) => {
+                  const active = statusFilter.has(s.value);
+                  return (
+                    <button
+                      key={s.value}
+                      type="button"
+                      className={`soc-legend-item ${active ? "active" : ""}`}
+                      onClick={() =>
+                        setStatusFilter((cur) => toggleIn(cur, s.value))
+                      }
+                      aria-pressed={active}
+                      title={
+                        active
+                          ? `Showing ${s.label} — click to remove`
+                          : `Show only ${s.label} posts`
+                      }
+                    >
+                      <span className="soc-status" style={{ background: s.color }}>
+                        <span className="soc-status-label">{s.label}</span>
                       </span>
-                    ) : null}
-                  </span>
-                ),
+                      {statusCounts.get(s.value) ? (
+                        <span className="soc-legend-count">
+                          {statusCounts.get(s.value)}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                },
               )}
             </span>
           </div>

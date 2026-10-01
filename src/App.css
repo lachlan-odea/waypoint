@@ -4665,3 +4665,103 @@ textarea {
 .soc-card.detailed .soc-category {
   font-size: 10px;
 }
+
+/* ── Type + status filters on the social calendar ──────────────────────── */
+.soc-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: -4px;
+}
+.soc-filters-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.soc-types button {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+/* A type pill takes its category colour: outlined when idle, filled when
+   it's part of the active filter — the same shape as the pill on the card. */
+.soc-type-pill {
+  --category: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-color: color-mix(in srgb, var(--category) 55%, var(--border)) !important;
+  color: var(--category) !important;
+  background: color-mix(in srgb, var(--category) 8%, var(--surface)) !important;
+  font-weight: 600;
+}
+.soc-type-pill:hover {
+  background: color-mix(in srgb, var(--category) 16%, var(--surface)) !important;
+}
+.soc-type-pill.active,
+.soc-type-pill.active:hover {
+  background: var(--category) !important;
+  border-color: var(--category) !important;
+  color: white !important;
+}
+.soc-type-pill.none {
+  --category: #64748b;
+}
+.soc-type-pill.empty:not(.active) {
+  opacity: 0.55;
+}
+.soc-type-count {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--category) 18%, var(--surface));
+  color: var(--text);
+}
+.soc-type-pill.active .soc-type-count {
+  background: rgba(255, 255, 255, 0.28);
+  color: white;
+}
+:root.dark-mode .soc-type-pill:not(.active) {
+  filter: brightness(1.2);
+}
+.soc-clear-filters {
+  color: var(--primary);
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: auto;
+}
+.soc-clear-filters:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* Legend items are now buttons that toggle a status filter. */
+.soc-legend-item {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 2px 6px 2px 2px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: opacity 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+.soc-legend-item:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+.soc-legend-item.active {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.soc-legend.filtering .soc-legend-item:not(.active) {
+  opacity: 0.45;
+}
+.soc-legend.filtering .soc-legend-item:not(.active):hover {
+  opacity: 1;
+}
