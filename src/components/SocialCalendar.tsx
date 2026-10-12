@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
+  Campaign,
   Designer,
   Project,
   SocialConfig,
@@ -11,11 +12,17 @@ import { SOCIAL_CHANNELS, SOCIAL_POST_STATUSES } from "../constants";
 import { todayIso } from "../dates";
 import { readDraggedSocialPostId } from "../dnd";
 import {
+  deleteCampaign as firestoreDeleteCampaign,
   deleteSocialPost,
   seedSocialPostsIfMissing,
+  setCampaign as firestoreSetCampaign,
   setSocialPost,
+  subscribeCampaigns,
   subscribeSocialPosts,
 } from "../firestore";
+import { campaignOverlaps, campaignsOn, milestonesOn, monthBounds } from "../campaigns";
+import { CampaignStrip } from "./CampaignStrip";
+import { CampaignModal } from "./CampaignModal";
 import { socialPostTitle } from "../socialPosts";
 import { SocialPostCard } from "./SocialPostCard";
 import { SocialPostModal } from "./SocialPostModal";
@@ -39,6 +46,23 @@ type Props = {
 type Editing =
   | { mode: "create"; initial: Partial<SocialPost> }
   | { mode: "edit"; post: SocialPost };
+
+type CampaignEditing =
+  | { mode: "create"; initial: Partial<Campaign> }
+  | { mode: "edit"; campaign: Campaign };
+
+// Per-browser view preferences for the campaign strip.
+const OVERLAY_KEY = "waypoint.social.campaignOverlay";
+const STRIP_KEY = "waypoint.social.campaignStripCollapsed";
+
+function readFlag(key: string, fallback: boolean): boolean {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : v === "true";
+  } catch {
+    return fallback;
+  }
+}
 
 // Drop-target id for the Unscheduled tray. Not a date.
 const UNSCHEDULED = "__unscheduled__";
@@ -108,6 +132,15 @@ function monthGrid(month: string): (string | null)[] {
   return cells;
 }
 
+function formatShortRange(from: string, to: string): string {
+  const fmt = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+    });
+  return `${fmt(from)} – ${fmt(to)}`;
+}
+
 function isWeekend(iso: string): boolean {
   const day = new Date(`${iso}T00:00:00`).getDay();
   return day === 0 || day === 6;
@@ -155,6 +188,31 @@ export function SocialCalendar({
   const [importing, setImporting] = useState(false);
   const [importNote, setImportNote] = useState<string | null>(null);
 
+  // Marketing campaigns: drawn as bars in the strip above the grid and,
+  // when the overlay is on, inside the day cells too.
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaignEditing, setCampaignEditing] = useState<CampaignEditing | null>(null);
+  const [overlay, setOverlayState] = useState(() => readFlag(OVERLAY_KEY, true));
+  const [stripCollapsed, setStripCollapsedState] = useState(() =>
+    readFlag(STRIP_KEY, false),
+  );
+  function setOverlay(on: boolean) {
+    setOverlayState(on);
+    try {
+      localStorage.setItem(OVERLAY_KEY, String(on));
+    } catch {
+      // Storage unavailable — the toggle still works for this page load.
+    }
+  }
+  function setStripCollapsed(collapsed: boolean) {
+    setStripCollapsedState(collapsed);
+    try {
+      localStorage.setItem(STRIP_KEY, String(collapsed));
+    } catch {
+      // As above.
+    }
+  }
+
   useEffect(() => {
     return subscribeSocialPosts(
       (next) => {
@@ -166,6 +224,13 @@ export function SocialCalendar({
         setError(describeError("Couldn't load the social calendar", err));
       },
     );
+  }, []);
+
+  useEffect(() => {
+    return subscribeCampaigns(setCampaigns, (err) => {
+      console.error(err);
+      setError(describeError("Couldn't load campaigns", err));
+    });
   }, []);
 
   // Honour a hand-off from the project window once the posts have loaded:
@@ -192,6 +257,53 @@ export function SocialCalendar({
   function writeError(err: unknown) {
     console.error("Social post write failed", err);
     setError(describeError("Save failed", err));
+  }
+
+  // ── campaigns ────────────────────────────────────────────────────────
+
+  // Campaigns touching the month in view, narrowed by the channel pill (the
+  // type / status / search filters are about posts and leave campaigns be).
+  const monthCampaigns = useMemo(() => {
+    const { from, to } = monthBounds(month);
+    return campaigns
+      .filter((c) => campaignOverlaps(c, from, to))
+      .filter((c) => !channelFilter || c.channel.trim() === channelFilter);
+  }, [campaigns, month, channelFilter]);
+
+  function saveCampaign(campaign: Campaign) {
+    firestoreSetCampaign(campaign).catch(writeError);
+    setCampaignEditing(null);
+    // Follow a campaign saved into another month, as with posts.
+    const { from, to } = monthBounds(month);
+    if (!campaignOverlaps(campaign, from, to)) {
+      setMonth(campaign.startDate.slice(0, 7));
+    }
+  }
+
+  function removeCampaign(id: string) {
+    firestoreDeleteCampaign(id).catch(writeError);
+    setCampaignEditing(null);
+  }
+
+  // Flip one milestone's done flag straight from the bar — the common
+  // "EDM 2 went out this morning" gesture shouldn't need the editor.
+  function toggleMilestone(campaign: Campaign, milestoneId: string) {
+    firestoreSetCampaign({
+      ...campaign,
+      milestones: campaign.milestones.map((m) =>
+        m.id === milestoneId ? { ...m, done: !m.done } : m,
+      ),
+    }).catch(writeError);
+  }
+
+  function openCampaignCreate(startDate?: string) {
+    setCampaignEditing({
+      mode: "create",
+      initial: {
+        startDate: startDate ?? `${month}-01`,
+        channel: channelFilter || undefined,
+      },
+    });
   }
 
   const projectTitleById = useMemo(() => {
@@ -726,6 +838,60 @@ export function SocialCalendar({
             </span>
           </div>
 
+          <div className="camp-section">
+            <div className="camp-head">
+              <div className="section-head-title">
+                <button
+                  className="collapse-toggle"
+                  onClick={() => setStripCollapsed(!stripCollapsed)}
+                  title={stripCollapsed ? "Show campaigns" : "Hide campaigns"}
+                  aria-expanded={!stripCollapsed}
+                >
+                  <span className={`collapse-icon ${stripCollapsed ? "" : "expanded"}`}>
+                    ▶
+                  </span>
+                </button>
+                <h3>Campaigns</h3>
+                <span className="muted small">
+                  {monthCampaigns.length === 0
+                    ? `none touch ${monthLabel}`
+                    : `${monthCampaigns.length} in ${monthLabel}${
+                        channelFilter ? ` on ${channelFilter}` : ""
+                      } · click a bar to edit, a diamond to flag a milestone, a day to start one`}
+                </span>
+              </div>
+              <div className="camp-head-actions">
+                <label className="camp-overlay-toggle" title="Draw campaigns and milestones inside the day cells below">
+                  <input
+                    type="checkbox"
+                    checked={overlay}
+                    onChange={(e) => setOverlay(e.target.checked)}
+                  />
+                  Show on the post calendar
+                </label>
+                <button className="btn-mini" onClick={() => openCampaignCreate()}>
+                  + New campaign
+                </button>
+              </div>
+            </div>
+            {!stripCollapsed &&
+              (monthCampaigns.length === 0 ? (
+                <p className="camp-empty muted small">
+                  Nothing running this month. Add a campaign to see it as a bar
+                  here — and, with the overlay on, in the day cells below.
+                </p>
+              ) : (
+                <CampaignStrip
+                  campaigns={monthCampaigns}
+                  cells={cells}
+                  today={today}
+                  onOpen={(c) => setCampaignEditing({ mode: "edit", campaign: c })}
+                  onCreate={openCampaignCreate}
+                  onToggleMilestone={toggleMilestone}
+                />
+              ))}
+          </div>
+
           <div className="soc-grid" role="grid" aria-label={monthLabel}>
             {WEEKDAYS.map((d) => (
               <div key={d} className="soc-weekday" role="columnheader">
@@ -757,6 +923,59 @@ export function SocialCalendar({
                       +
                     </button>
                   </div>
+                  {overlay &&
+                    (() => {
+                      const running = campaignsOn(monthCampaigns, iso);
+                      const marks = milestonesOn(monthCampaigns, iso);
+                      if (running.length === 0 && marks.length === 0) return null;
+                      const weekStart = new Date(`${iso}T00:00:00`).getDay() === 1;
+                      return (
+                        <div className="soc-cell-camps">
+                          {running.map((c) => {
+                            // Name on the day it starts and at the start of
+                            // each week; a bare colour bar in between keeps
+                            // the cells readable.
+                            const showName = c.startDate === iso || weekStart;
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                className={`soc-cell-camp ${showName ? "named" : ""} ${
+                                  c.startDate === iso ? "starts" : ""
+                                } ${c.endDate === iso ? "ends" : ""}`}
+                                style={{ background: c.color }}
+                                onClick={() =>
+                                  setCampaignEditing({ mode: "edit", campaign: c })
+                                }
+                                title={`${c.name} · ${formatShortRange(c.startDate, c.endDate)}`}
+                              >
+                                {showName ? c.name : ""}
+                              </button>
+                            );
+                          })}
+                          {marks.map(({ campaign: c, milestone: m }) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              className={`soc-cell-ms ${m.done ? "done" : ""}`}
+                              style={{
+                                color: c.color,
+                                borderColor: c.color,
+                                ["--camp" as string]: c.color,
+                              } as React.CSSProperties}
+                              onClick={() => toggleMilestone(c, m.id)}
+                              title={`${c.name}: ${m.label} · ${
+                                m.done ? "done — click to unflag" : "click to flag as done"
+                              }`}
+                              aria-pressed={m.done}
+                            >
+                              <span className="camp-ms-diamond" aria-hidden />
+                              <span className="soc-cell-ms-label">{m.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   <div className="soc-cell-posts">
                     {(byDate.get(iso) ?? []).map((p) => (
                       <SocialPostCard
@@ -846,6 +1065,31 @@ export function SocialCalendar({
           onSave={savePost}
           onDelete={() => removePost(editing.post.id)}
           onOpenProject={openProject}
+        />
+      )}
+
+      {campaignEditing && campaignEditing.mode === "create" && (
+        <CampaignModal
+          mode="create"
+          initial={campaignEditing.initial}
+          channels={channels}
+          owners={owners}
+          campaignCount={campaigns.length}
+          onCancel={() => setCampaignEditing(null)}
+          onSave={saveCampaign}
+        />
+      )}
+      {campaignEditing && campaignEditing.mode === "edit" && (
+        <CampaignModal
+          key={campaignEditing.campaign.id}
+          mode="edit"
+          initial={campaignEditing.campaign}
+          channels={channels}
+          owners={owners}
+          campaignCount={campaigns.length}
+          onCancel={() => setCampaignEditing(null)}
+          onSave={saveCampaign}
+          onDelete={() => removeCampaign(campaignEditing.campaign.id)}
         />
       )}
     </section>

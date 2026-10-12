@@ -156,6 +156,14 @@ export function socialCategoryMeta(
   );
 }
 
+// Bar colours offered for a campaign, cycled in order as campaigns are
+// created. Mid-tone so white text reads on them and they still differ from
+// the status greens / pinks on the post cards underneath.
+export const CAMPAIGN_COLORS = [
+  "#4f46e5", "#0e7490", "#b45309", "#be185d", "#15803d",
+  "#7c3aed", "#c2410c", "#0f766e", "#9f1239", "#1d4ed8",
+] as const;
+
 // Brand channels a post can go out on. Suggestions, not a closed list: the
 // channel field accepts any text, and the calendar's filter pills are built
 // from whatever channels are actually in use plus these.

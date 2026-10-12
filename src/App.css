@@ -4922,3 +4922,327 @@ textarea {
   border-color: var(--primary);
   color: white;
 }
+
+/* ── Marketing campaigns: strip above the post calendar + cell overlay ── */
+.camp-section {
+  --camp-lane: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.camp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.camp-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+.camp-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.camp-overlay-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.camp-empty {
+  margin: 0;
+  padding: 6px 2px 0;
+}
+
+/* One grid per week; the seven columns use the same gap as .soc-grid so the
+   bars line up with the day cells underneath. */
+.camp-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.camp-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  column-gap: 6px;
+  row-gap: 3px;
+  position: relative;
+}
+.camp-daybg {
+  border: none;
+  border-radius: 6px;
+  background: var(--surface);
+  opacity: 0.55;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+.camp-daybg:hover:not(:disabled) {
+  opacity: 1;
+}
+.camp-daybg.pad {
+  background: transparent;
+  cursor: default;
+}
+.camp-daybg.today {
+  box-shadow: inset 0 0 0 1px var(--primary);
+  opacity: 0.9;
+}
+.camp-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: calc(var(--camp-lane) - 3px);
+  margin: 1px 0;
+  border-radius: 6px;
+  color: white;
+  z-index: 1;
+  min-width: 0;
+}
+.camp-bar.cont-before {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.camp-bar.cont-after {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.camp-bar.finished {
+  opacity: 0.6;
+}
+.camp-bar.upcoming {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14) 0 6px,
+    transparent 6px 12px
+  );
+}
+.camp-bar-main {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 0 8px;
+  cursor: pointer;
+  border-radius: inherit;
+}
+.camp-bar-main:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.camp-bar-name {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Milestone diamond, absolutely placed at its day's centre on the bar. */
+.camp-ms {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+.camp-ms-diamond {
+  display: block;
+  width: 9px;
+  height: 9px;
+  transform: rotate(45deg);
+  border: 2px solid white;
+  border-radius: 1px;
+  background: transparent;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+.camp-ms.done .camp-ms-diamond {
+  background: white;
+}
+.camp-ms:hover .camp-ms-diamond {
+  transform: rotate(45deg) scale(1.25);
+}
+
+/* Inside a day cell when the overlay is on */
+.soc-cell-camps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: -2px 0 2px;
+}
+.soc-cell-camp {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 5px;
+  border: none;
+  border-radius: 2px;
+  padding: 0;
+  color: white;
+  font: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.soc-cell-camp.named {
+  height: auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.4;
+}
+.soc-cell-camp.starts {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+.soc-cell-camp.ends {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+.soc-cell-camp:hover {
+  opacity: 1;
+}
+.soc-cell-ms {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 1px 6px 1px 4px;
+  border: 1px dashed;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--camp) 10%, var(--surface));
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.soc-cell-ms .camp-ms-diamond {
+  width: 7px;
+  height: 7px;
+  border-width: 1.5px;
+  border-color: currentColor;
+  box-shadow: none;
+  flex: 0 0 auto;
+}
+.soc-cell-ms.done {
+  border-style: solid;
+}
+.soc-cell-ms.done .camp-ms-diamond {
+  background: currentColor;
+}
+.soc-cell-ms-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Campaign editor */
+.camp-colors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.camp-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease;
+}
+.camp-color:hover {
+  transform: scale(1.1);
+}
+.camp-color.active {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.camp-color-custom input[type="color"] {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px dashed var(--border-strong);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.camp-milestones {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.camp-ms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.camp-ms-row {
+  display: grid;
+  grid-template-columns: auto 150px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.camp-ms-row input[type="date"],
+.camp-ms-row input:not([type]) {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 9px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+}
+.camp-ms-row input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.camp-ms-row.outside input[type="date"] {
+  border-color: #f59e0b;
+}
+.camp-ms-done {
+  display: inline-grid;
+  place-items: center;
+}
+.camp-ms-row .link-btn {
+  cursor: pointer;
+}
+.field-hint.warn {
+  color: #b45309;
+}
+@media (max-width: 1100px) {
+  .soc-cell-ms-label {
+    display: none;
+  }
+}

@@ -14,6 +14,7 @@ import {
 import { db } from "./firebase";
 import { DEFAULT_WORKSPACE_ID, SEED_HUBS, SEED_WORKSPACES } from "./constants";
 import type {
+  Campaign,
   DeskItem,
   Designer,
   Hub,
@@ -33,6 +34,7 @@ const deskItemsCol = () => collection(db, "deskItems");
 const hubsCol = () => collection(db, "hubs");
 const socialPostsCol = () => collection(db, "socialPosts");
 const socialConfigDoc = () => doc(collection(db, "socialConfig"), "default");
+const campaignsCol = () => collection(db, "campaigns");
 
 // Backfill missing workspaceId on legacy docs that predate the multi-
 // workspace feature. They all belonged to the original Design workspace.
@@ -502,6 +504,29 @@ export async function setSocialPost(post: SocialPost): Promise<void> {
 
 export async function deleteSocialPost(id: string): Promise<void> {
   await deleteDoc(doc(socialPostsCol(), id));
+}
+
+// ── Marketing campaigns ────────────────────────────────────────────────
+// Subscribed by the Social calendar view alongside the posts. Small
+// collection (a few dozen a year), so the whole thing comes down at once.
+
+export function subscribeCampaigns(
+  onChange: (campaigns: Campaign[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    campaignsCol(),
+    (snap) => onChange(snap.docs.map((d) => d.data() as Campaign)),
+    onError,
+  );
+}
+
+export async function setCampaign(campaign: Campaign): Promise<void> {
+  await setDoc(doc(campaignsCol(), campaign.id), campaign);
+}
+
+export async function deleteCampaign(id: string): Promise<void> {
+  await deleteDoc(doc(campaignsCol(), id));
 }
 
 // ── Social calendar configuration ──────────────────────────────────────
