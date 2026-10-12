@@ -203,8 +203,8 @@ export function SocialPostModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+      <div className="modal">
         <header className="modal-head">
           <div>
             <h2 className="modal-title-static">

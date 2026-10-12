@@ -101,8 +101,8 @@ export function CreateProjectModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+      <div className="modal">
         <header className="modal-head">
           <h2 className="modal-title-static">New project</h2>
           <button className="icon-btn" onClick={onCancel} aria-label="Close">

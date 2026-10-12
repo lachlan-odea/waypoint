@@ -155,11 +155,8 @@ export function SettingsModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div
-        className={`modal ${isSuperUser ? "" : "modal-narrow"}`}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="modal-overlay">
+      <div className={`modal ${isSuperUser ? "" : "modal-narrow"}`}>
         <header className="modal-head">
           <h2 className="modal-title-static">Settings</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
@@ -668,8 +665,8 @@ function ManageHubsModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+      <div className="modal">
         <header className="modal-head">
           <h2 className="modal-title-static">Locations &amp; time zones</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
@@ -978,8 +975,8 @@ function ManageUsersModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+      <div className="modal">
         <header className="modal-head">
           <h2 className="modal-title-static">Manage users</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Close">

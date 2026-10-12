@@ -186,8 +186,8 @@ export function ManageSocialModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+      <div className="modal">
         <header className="modal-head">
           <div>
             <h2 className="modal-title-static">Social calendar</h2>
