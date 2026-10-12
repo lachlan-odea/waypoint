@@ -4,20 +4,25 @@ import type { Project, Workspace } from "../types";
 type Props = {
   projects: Project[];
   workspaces: Workspace[];
-  // Selected project id, or "" for none.
-  value: string;
-  onChange: (projectId: string) => void;
+  // Selected project ids, in order. Single-select callers pass at most one
+  // and set `single`.
+  value: string[];
+  onChange: (projectIds: string[]) => void;
+  // One project only: picking replaces the selection and the search box
+  // hides while something is chosen.
+  single?: boolean;
   placeholder?: string;
 };
 
-// Single-select, type-to-search project picker, built on the same chip +
-// suggestions styling as AssigneePicker. Archived projects are still
-// offered (a post often promotes finished work) but say so.
+// Type-to-search project picker, built on the same chip + suggestions
+// styling as AssigneePicker. Archived projects are still offered (a post or
+// campaign often involves finished work) but say so.
 export function ProjectPicker({
   projects,
   workspaces,
   value,
   onChange,
+  single,
   placeholder = "Search projects by title, client or brand…",
 }: Props) {
   const [query, setQuery] = useState("");
@@ -27,7 +32,16 @@ export function ProjectPicker({
   const blurTimer = useRef<number | null>(null);
 
   const selected = useMemo(
-    () => projects.find((p) => p.id === value) ?? null,
+    () =>
+      value
+        .map((id) => projects.find((p) => p.id === id))
+        .filter((p): p is Project => !!p),
+    [projects, value],
+  );
+  // Stored ids whose project has since been deleted: shown so they can be
+  // cleared, rather than silently dropped.
+  const dangling = useMemo(
+    () => value.filter((id) => !projects.some((p) => p.id === id)),
     [projects, value],
   );
 
@@ -36,8 +50,9 @@ export function ProjectPicker({
 
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const chosen = new Set(value);
     return projects
-      .filter((p) => p.id !== value)
+      .filter((p) => !chosen.has(p.id))
       .filter((p) =>
         q
           ? [p.title, p.client, p.brand].join(" ").toLowerCase().includes(q)
@@ -52,10 +67,15 @@ export function ProjectPicker({
   }, [projects, value, query]);
 
   function pick(id: string) {
-    onChange(id);
+    onChange(single ? [id] : [...value, id]);
     setQuery("");
     setHighlight(0);
-    setOpen(false);
+    if (single) setOpen(false);
+    else inputRef.current?.focus();
+  }
+
+  function remove(id: string) {
+    onChange(value.filter((x) => x !== id));
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -76,14 +96,12 @@ export function ProjectPicker({
       e.preventDefault();
       e.stopPropagation();
       setOpen(false);
-    } else if (e.key === "Backspace" && query === "" && selected) {
-      onChange("");
+    } else if (e.key === "Backspace" && query === "" && value.length > 0) {
+      remove(value[value.length - 1]);
     }
   }
 
-  // A stored id whose project has since been deleted: show that rather
-  // than silently rendering an empty picker.
-  const dangling = value && !selected;
+  const showInput = !single || value.length === 0;
 
   return (
     <div className="assignee-tag-picker project-picker">
@@ -91,33 +109,33 @@ export function ProjectPicker({
         className="assignee-tag-input"
         onClick={() => inputRef.current?.focus()}
       >
-        {selected && (
-          <span className="assignee-tag project-tag" title={selected.title}>
-            <span className="assignee-tag-name">{selected.title}</span>
-            <span className="project-tag-team">{teamName(selected.workspaceId)}</span>
+        {selected.map((p) => (
+          <span key={p.id} className="assignee-tag project-tag" title={p.title}>
+            <span className="assignee-tag-name">{p.title}</span>
+            <span className="project-tag-team">{teamName(p.workspaceId)}</span>
             <button
               type="button"
               className="assignee-tag-remove"
               onClick={(e) => {
                 e.stopPropagation();
-                onChange("");
+                remove(p.id);
               }}
-              aria-label="Unlink project"
+              aria-label={`Unlink ${p.title}`}
               tabIndex={-1}
             >
               ×
             </button>
           </span>
-        )}
-        {dangling && (
-          <span className="assignee-tag project-tag dangling">
+        ))}
+        {dangling.map((id) => (
+          <span key={id} className="assignee-tag project-tag dangling">
             <span className="assignee-tag-name">Project no longer exists</span>
             <button
               type="button"
               className="assignee-tag-remove"
               onClick={(e) => {
                 e.stopPropagation();
-                onChange("");
+                remove(id);
               }}
               aria-label="Clear"
               tabIndex={-1}
@@ -125,14 +143,14 @@ export function ProjectPicker({
               ×
             </button>
           </span>
-        )}
-        {!selected && (
+        ))}
+        {showInput && (
           <input
             ref={inputRef}
             className="assignee-tag-text"
             type="text"
             value={query}
-            placeholder={dangling ? "" : placeholder}
+            placeholder={value.length === 0 ? placeholder : single ? "" : "Add another…"}
             onChange={(e) => {
               setQuery(e.target.value);
               setHighlight(0);
@@ -152,7 +170,7 @@ export function ProjectPicker({
           />
         )}
       </div>
-      {open && !selected && suggestions.length > 0 && (
+      {open && showInput && suggestions.length > 0 && (
         <ul className="assignee-suggestions" role="listbox">
           {suggestions.map((p, i) => (
             <li

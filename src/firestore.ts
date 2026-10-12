@@ -521,6 +521,20 @@ export function subscribeCampaigns(
   );
 }
 
+// Campaigns a project contributes to, for the project's detail window.
+// array-contains on a single field needs no composite index.
+export function subscribeCampaignsForProject(
+  projectId: string,
+  onChange: (campaigns: Campaign[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    query(campaignsCol(), where("projectIds", "array-contains", projectId)),
+    (snap) => onChange(snap.docs.map((d) => d.data() as Campaign)),
+    onError,
+  );
+}
+
 export async function setCampaign(campaign: Campaign): Promise<void> {
   await setDoc(doc(campaignsCol(), campaign.id), campaign);
 }

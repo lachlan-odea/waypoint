@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type {
+  Campaign,
   Designer,
   Notification,
   Project,
@@ -11,10 +12,14 @@ import type {
 import {
   BRANDS,
   PROJECT_STATUSES,
+  brandColor,
   socialChannelColor,
   socialStatusMeta,
 } from "../constants";
-import { subscribeSocialPostsForProject } from "../firestore";
+import {
+  subscribeCampaignsForProject,
+  subscribeSocialPostsForProject,
+} from "../firestore";
 import { socialPostTitle } from "../socialPosts";
 import { formatShort } from "../dates";
 import { ContentTypeField } from "./ContentTypeField";
@@ -54,6 +59,9 @@ type Props = {
   // Jump to a social post linked to this project. App closes this window,
   // switches to the Social calendar and opens the post's editor.
   onOpenSocialPost: (postId: string) => void;
+  // Jump to a campaign this project contributes to. App closes this window,
+  // switches to the Campaigns page and opens that campaign's editor.
+  onOpenCampaign: (campaignId: string) => void;
 };
 
 const priorities: Priority[] = ["Urgent", "High", "Normal", "Low"];
@@ -97,7 +105,21 @@ export function ProjectDetailModal({
   onNotify,
   onMoveToWorkspace,
   onOpenSocialPost,
+  onOpenCampaign,
 }: Props) {
+  // Campaigns this project is doing work for. Same shape as the linked
+  // posts below: its own small query, soonest start first.
+  const [linkedCampaigns, setLinkedCampaigns] = useState<Campaign[]>([]);
+  useEffect(() => {
+    return subscribeCampaignsForProject(
+      project.id,
+      (cs) =>
+        setLinkedCampaigns(
+          cs.slice().sort((a, b) => a.startDate.localeCompare(b.startDate)),
+        ),
+      (err) => console.warn("Couldn't load linked campaigns", err),
+    );
+  }, [project.id]);
   // Social posts that point back at this project. Their own small query
   // rather than a slice of the whole calendar, so opening a project doesn't
   // download every post's copy. Sorted newest date first, undated last.
@@ -916,6 +938,49 @@ export function ProjectDetailModal({
               <button onClick={addMilestone}>Add</button>
             </div>
           </section>
+
+          {linkedCampaigns.length > 0 && (
+            <section className="modal-section">
+              <h3>Campaigns</h3>
+              <p className="muted small linked-posts-intro">
+                {linkedCampaigns.length === 1
+                  ? "This project contributes to one marketing campaign."
+                  : `This project contributes to ${linkedCampaigns.length} marketing campaigns.`}{" "}
+                Open one to see its timeline and milestones.
+              </p>
+              <ul className="linked-posts">
+                {linkedCampaigns.map((c) => {
+                  const done = c.milestones.filter((m) => m.done).length;
+                  return (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        className="linked-post"
+                        onClick={() => onOpenCampaign(c.id)}
+                        title="Open on the Campaigns page"
+                      >
+                        <span
+                          className="soc-chip"
+                          style={{ background: brandColor(c.brand || "No brand") }}
+                        >
+                          {c.brand || "No brand"}
+                        </span>
+                        <span className="linked-post-title">{c.name}</span>
+                        <span className="linked-post-date">
+                          {formatShort(c.startDate)} – {formatShort(c.endDate)}
+                        </span>
+                        <span className="muted small" style={{ whiteSpace: "nowrap" }}>
+                          {c.milestones.length
+                            ? `${done}/${c.milestones.length} milestones`
+                            : "no milestones"}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
 
           {linkedPosts.length > 0 && (
             <section className="modal-section">

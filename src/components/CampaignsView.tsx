@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import type { Campaign, Designer } from "../types";
-import { SOCIAL_CHANNELS, socialChannelColor } from "../constants";
+import type { Campaign, Designer, Project, Workspace } from "../types";
+import { SOCIAL_CHANNELS, brandColor } from "../constants";
 import { formatShort, todayIso } from "../dates";
 import {
   campaignOverlaps,
@@ -15,6 +15,10 @@ type Props = {
   campaigns: Campaign[];
   // Owner suggestions in the editor.
   designers: Designer[];
+  // Board projects a campaign can link as contributing to it.
+  projects: Project[];
+  workspaces: Workspace[];
+  onOpenProject: (projectId: string) => void;
   onSave: (campaign: Campaign) => void;
   onDelete: (id: string) => void;
   // A campaign another view asked us to open (the Social calendar's
@@ -69,6 +73,9 @@ function daysFromToday(iso: string, today: string): number {
 export function CampaignsView({
   campaigns,
   designers,
+  projects,
+  workspaces,
+  onOpenProject,
   onSave,
   onDelete,
   focusCampaignId,
@@ -157,6 +164,13 @@ export function CampaignsView({
         m.id === milestoneId ? { ...m, done: !m.done } : m,
       ),
     });
+  }
+
+  const projectTitle = (id: string) => projects.find((p) => p.id === id)?.title;
+
+  function openProject(projectId: string) {
+    setEditing(null);
+    onOpenProject(projectId);
   }
 
   function openCreate(startDate?: string) {
@@ -313,9 +327,10 @@ export function CampaignsView({
                   <div className="camp-card-top">
                     <span
                       className="soc-chip"
-                      style={{ background: socialChannelColor(c.channel) }}
+                      style={{ background: brandColor(c.brand || "No brand") }}
+                      title="Brand"
                     >
-                      {c.channel || "No channel"}
+                      {c.brand || "No brand"}
                     </span>
                     <span className={`camp-phase ${phase}`} title={phaseNote}>
                       {PHASE_LABEL[phase]}
@@ -332,10 +347,43 @@ export function CampaignsView({
                   <p className="camp-card-dates muted small">
                     {formatShort(c.startDate)} – {formatShort(c.endDate)} ·{" "}
                     {spanDays(c)} day{spanDays(c) === 1 ? "" : "s"} · {phaseNote}
+                    {c.channel ? ` · ${c.channel}` : ""}
                     {c.owner ? ` · ${c.owner}` : ""}
                   </p>
                   {c.description && (
                     <p className="camp-card-desc">{c.description}</p>
+                  )}
+                  {(c.projectIds ?? []).length > 0 && (
+                    <div className="camp-card-projects">
+                      {(c.projectIds ?? []).map((id) => {
+                        const title = projectTitle(id);
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            className={`camp-card-project ${title ? "" : "dangling"}`}
+                            onClick={title ? () => openProject(id) : undefined}
+                            disabled={!title}
+                            title={title ? `Open project: ${title}` : "Project no longer exists"}
+                          >
+                            <svg
+                              width="11"
+                              height="11"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden
+                            >
+                              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                            </svg>
+                            {title ?? "Deleted project"}
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
                   {c.milestones.length > 0 ? (
                     <>
@@ -408,6 +456,7 @@ export function CampaignsView({
                   <span className="camps-upcoming-name">{c.name}</span>
                   <span className="muted small">
                     {formatShort(c.startDate)} – {formatShort(c.endDate)}
+                    {c.brand ? ` · ${c.brand}` : ""}
                     {c.channel ? ` · ${c.channel}` : ""}
                   </span>
                 </button>
@@ -423,7 +472,9 @@ export function CampaignsView({
           initial={editing.initial}
           channels={channels}
           owners={owners}
-          campaignCount={campaigns.length}
+          projects={projects}
+          workspaces={workspaces}
+          onOpenProject={openProject}
           onCancel={() => setEditing(null)}
           onSave={save}
         />
@@ -435,7 +486,9 @@ export function CampaignsView({
           initial={editing.campaign}
           channels={channels}
           owners={owners}
-          campaignCount={campaigns.length}
+          projects={projects}
+          workspaces={workspaces}
+          onOpenProject={openProject}
           onCancel={() => setEditing(null)}
           onSave={save}
           onDelete={() => remove(editing.campaign.id)}

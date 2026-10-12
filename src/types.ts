@@ -271,16 +271,25 @@ export type CampaignMilestone = {
 export type Campaign = {
   id: string;
   name: string;
-  // Brand channel it runs on (CargoWise / WiseTech), free text like posts.
+  // Social channel it runs on (CargoWise / WiseTech), free text like posts.
   channel: string;
+  // Which brand the campaign is for — one of BRANDS in constants.ts. Gives
+  // the campaign its colour (brandColor) everywhere it's drawn.
+  brand: string;
   owner: string;
   description: string;
   // Inclusive YYYY-MM-DD range.
   startDate: string;
   endDate: string;
-  // Hex colour for the bar, picked from CAMPAIGN_COLORS by default.
+  // Hex colour for the bar. Derived from `brand` on save and stored so the
+  // calendar can paint without a lookup; campaigns written before brands
+  // existed keep whatever colour they had.
   color: string;
   milestones: CampaignMilestone[];
+  // Board projects contributing to this campaign — the EDM, the landing
+  // page, the social assets. Each project's window lists the campaigns it
+  // belongs to.
+  projectIds: string[];
   createdAt: string;
 };
 

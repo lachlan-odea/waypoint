@@ -1015,6 +1015,9 @@ export default function App() {
           <CampaignsView
             campaigns={campaigns}
             designers={workspace.designers}
+            projects={workspace.projects}
+            workspaces={availableWorkspaces}
+            onOpenProject={setOpenProjectId}
             onSave={saveCampaign}
             onDelete={deleteCampaign}
             focusCampaignId={focusCampaignId}
@@ -1300,6 +1303,11 @@ export default function App() {
             setOpenProjectId(null);
             setFocusSocialPostId(postId);
             setView("socialCalendar");
+          }}
+          onOpenCampaign={(campaignId) => {
+            setOpenProjectId(null);
+            setFocusCampaignId(campaignId);
+            setView("campaigns");
           }}
         />
       )}

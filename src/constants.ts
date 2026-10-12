@@ -156,13 +156,32 @@ export function socialCategoryMeta(
   );
 }
 
-// Bar colours offered for a campaign, cycled in order as campaigns are
-// created. Mid-tone so white text reads on them and they still differ from
-// the status greens / pinks on the post cards underneath.
-export const CAMPAIGN_COLORS = [
-  "#4f46e5", "#0e7490", "#b45309", "#be185d", "#15803d",
-  "#7c3aed", "#c2410c", "#0f766e", "#9f1239", "#1d4ed8",
-] as const;
+// One colour per brand, used wherever a campaign is drawn (timeline bars,
+// day-cell strips, card edges). Mid-tone so white text reads on them and
+// they stay apart from the status greens / pinks on the post cards.
+const BRAND_COLORS: Record<string, string> = {
+  CargoWise: "#2563eb",
+  "CargoWise Landside": "#0e7490",
+  "WiseTech Global": "#0f766e",
+  "WiseTech Academy": "#b45309",
+  e2open: "#7c3aed",
+  Blume: "#be185d",
+  BorderWise: "#c2410c",
+  "No brand": "#64748b",
+};
+
+export function brandColor(brand: string): string {
+  return BRAND_COLORS[brand] ?? BRAND_COLORS["No brand"];
+}
+
+// Best-guess brand for a campaign that only has a social channel set — the
+// default the editor offers, nothing more.
+export function brandForChannel(channel: string): string {
+  const c = channel.trim().toLowerCase();
+  if (c === "cargowise") return "CargoWise";
+  if (c === "wisetech") return "WiseTech Global";
+  return "No brand";
+}
 
 // Brand channels a post can go out on. Suggestions, not a closed list: the
 // channel field accepts any text, and the calendar's filter pills are built

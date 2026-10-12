@@ -5512,3 +5512,67 @@ textarea {
 .soc-toolbar-right .camp-overlay-toggle .soc-legend-count {
   color: var(--text);
 }
+
+/* Campaign brand + linked projects */
+.camp-brand-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.camp-brand-field select {
+  flex: 1;
+}
+.camp-brand-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  vertical-align: -2px;
+  margin-right: 2px;
+}
+.camp-linked-open {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.camp-linked-open .btn-mini {
+  padding: 4px 9px;
+  font-size: 12px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.camp-card-projects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.camp-card-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.camp-card-project:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.camp-card-project.dangling {
+  color: var(--muted);
+  cursor: default;
+  text-decoration: line-through;
+}

@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
-import type { Campaign, CampaignMilestone } from "../types";
-import { CAMPAIGN_COLORS } from "../constants";
+import type { Campaign, CampaignMilestone, Project, Workspace } from "../types";
+import { BRANDS, brandColor, brandForChannel } from "../constants";
 import { formatShort, shiftIso, todayIso } from "../dates";
+import { ProjectPicker } from "./ProjectPicker";
 
 type Props = {
   initial: Partial<Campaign>;
   mode: "create" | "edit";
   channels: string[];
   owners: string[];
-  // How many campaigns exist, to pick the next palette colour for a new one.
-  campaignCount: number;
+  // Board projects that can be linked as contributing to the campaign.
+  projects: Project[];
+  workspaces: Workspace[];
   onCancel: () => void;
   onSave: (campaign: Campaign) => void;
   onDelete?: () => void;
+  // Jump to a linked project's window. Closes this editor first.
+  onOpenProject?: (projectId: string) => void;
 };
 
 function newId(prefix: string): string {
@@ -24,25 +28,30 @@ export function CampaignModal({
   mode,
   channels,
   owners,
-  campaignCount,
+  projects,
+  workspaces,
   onCancel,
   onSave,
   onDelete,
+  onOpenProject,
 }: Props) {
   const [name, setName] = useState(initial.name ?? "");
   const [channel, setChannel] = useState(initial.channel ?? channels[0] ?? "");
   const [channelIsCustom, setChannelIsCustom] = useState(
     () => !!initial.channel && !channels.includes(initial.channel),
   );
+  // Brand drives the colour. A campaign saved before brands existed opens
+  // with the brand its channel implies.
+  const [brand, setBrand] = useState(
+    initial.brand || brandForChannel(initial.channel ?? channels[0] ?? ""),
+  );
   const [owner, setOwner] = useState(initial.owner ?? "");
   const [startDate, setStartDate] = useState(initial.startDate ?? todayIso());
   const [endDate, setEndDate] = useState(
     initial.endDate ?? shiftIso(initial.startDate ?? todayIso(), 13),
   );
-  const [color, setColor] = useState(
-    initial.color ?? CAMPAIGN_COLORS[campaignCount % CAMPAIGN_COLORS.length],
-  );
   const [description, setDescription] = useState(initial.description ?? "");
+  const [projectIds, setProjectIds] = useState<string[]>(initial.projectIds ?? []);
   const [milestones, setMilestones] = useState<CampaignMilestone[]>(() =>
     (initial.milestones ?? []).map((m) => ({ ...m })),
   );
@@ -59,6 +68,7 @@ export function CampaignModal({
 
   const datesValid = !!startDate && !!endDate && endDate >= startDate;
   const canSave = name.trim().length > 0 && datesValid;
+  const color = brandColor(brand);
 
   // ── milestones ───────────────────────────────────────────────────────
 
@@ -97,12 +107,14 @@ export function CampaignModal({
       id: initial.id ?? newId("camp"),
       name: name.trim(),
       channel: channel.trim(),
+      brand,
       owner: owner.trim(),
       description: description.trimEnd(),
       startDate,
       endDate,
       color,
       milestones: cleanMilestones,
+      projectIds,
       createdAt: initial.createdAt ?? new Date().toISOString(),
     };
     onSave(campaign);
@@ -111,6 +123,10 @@ export function CampaignModal({
   const outside = milestones.filter(
     (m) => m.date && (m.date < startDate || m.date > endDate),
   ).length;
+
+  const linkedProjects = projectIds
+    .map((id) => projects.find((p) => p.id === id))
+    .filter((p): p is Project => !!p);
 
   return (
     <div className="modal-overlay">
@@ -122,7 +138,8 @@ export function CampaignModal({
             </h2>
             {datesValid && (
               <div className="modal-sub">
-                {formatShort(startDate)} – {formatShort(endDate)}
+                <span className="camp-brand-dot" style={{ background: color }} />
+                {brand} · {formatShort(startDate)} – {formatShort(endDate)}
               </div>
             )}
           </div>
@@ -168,6 +185,25 @@ export function CampaignModal({
               )}
             </label>
             <label className="field">
+              <span>Brand</span>
+              <div className="camp-brand-field">
+                <span className="camp-brand-dot" style={{ background: color }} aria-hidden />
+                <select value={brand} onChange={(e) => setBrand(e.target.value)}>
+                  {BRANDS.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                  {brand && !(BRANDS as readonly string[]).includes(brand) && (
+                    <option value={brand}>{brand}</option>
+                  )}
+                </select>
+              </div>
+              <span className="field-hint">
+                Sets the campaign's colour on the timeline and the post calendar.
+              </span>
+            </label>
+            <label className="field">
               <span>Channel</span>
               <select
                 value={channelIsCustom ? "__other__" : channel}
@@ -197,7 +233,7 @@ export function CampaignModal({
                 />
               )}
             </label>
-            <label className="field">
+            <label className="field" style={{ gridColumn: "1 / -1" }}>
               <span>Owner</span>
               <input
                 list="camp-owner-options"
@@ -213,30 +249,6 @@ export function CampaignModal({
             </label>
           </div>
 
-          <div className="field">
-            <span>Colour</span>
-            <div className="camp-colors">
-              {CAMPAIGN_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`camp-color ${color === c ? "active" : ""}`}
-                  style={{ background: c }}
-                  onClick={() => setColor(c)}
-                  aria-label={`Colour ${c}`}
-                  aria-pressed={color === c}
-                />
-              ))}
-              <label className="camp-color-custom" title="Custom colour">
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                />
-              </label>
-            </div>
-          </div>
-
           <label className="field">
             <span>Description</span>
             <textarea
@@ -246,6 +258,41 @@ export function CampaignModal({
               placeholder="What the campaign is, who it's for, where it lands"
             />
           </label>
+
+          <div className="asset-field">
+            <label className="field">
+              <span>Contributing projects</span>
+            </label>
+            <ProjectPicker
+              projects={projects}
+              workspaces={workspaces}
+              value={projectIds}
+              onChange={setProjectIds}
+              placeholder="Search projects to link — the EDM, the landing page, the social assets…"
+            />
+            <div className="soc-project-row">
+              <span className="field-hint">
+                Every board project doing work for this campaign. Each project's
+                window lists the campaigns it belongs to.
+              </span>
+            </div>
+            {onOpenProject && linkedProjects.length > 0 && (
+              <div className="camp-linked-open">
+                <span className="muted small">Open:</span>
+                {linkedProjects.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="btn-mini"
+                    onClick={() => onOpenProject(p.id)}
+                    title="Close this campaign and open the project"
+                  >
+                    {p.title} ↗
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="modal-section camp-milestones">
             <h3>Milestones</h3>
