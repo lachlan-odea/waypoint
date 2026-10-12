@@ -28,10 +28,10 @@ type Props = {
   // Categories + company hashtags, managed from Settings → Social calendar.
   config: SocialConfig;
   // Marketing campaigns, owned by the Campaigns view; here they're drawn
-  // inside the day cells when the overlay is on. Saving is for flagging a
-  // milestone from a cell; anything more opens the Campaigns view.
+  // inside the day cells when the overlay is on, read-only. Clicking a
+  // campaign or milestone opens the Campaigns view — milestones are flagged
+  // there, not from the post calendar.
   campaigns: Campaign[];
-  onSaveCampaign: (campaign: Campaign) => void;
   onOpenCampaign: (campaignId: string) => void;
   // Board projects a post can link back to, with the teams that name them.
   projects: Project[];
@@ -154,7 +154,6 @@ export function SocialCalendar({
   designers,
   config,
   campaigns,
-  onSaveCampaign,
   onOpenCampaign,
   projects,
   workspaces,
@@ -247,17 +246,6 @@ export function SocialCalendar({
       .filter((c) => campaignOverlaps(c, from, to))
       .filter((c) => !channelFilter || c.channel.trim() === channelFilter);
   }, [campaigns, month, channelFilter]);
-
-  // Flip one milestone's done flag straight from the cell — the common
-  // "EDM 2 went out this morning" gesture shouldn't need a page change.
-  function toggleMilestone(campaign: Campaign, milestoneId: string) {
-    onSaveCampaign({
-      ...campaign,
-      milestones: campaign.milestones.map((m) =>
-        m.id === milestoneId ? { ...m, done: !m.done } : m,
-      ),
-    });
-  }
 
   const projectTitleById = useMemo(() => {
     const map = new Map<string, string>();
@@ -879,11 +867,10 @@ export function SocialCalendar({
                                 borderColor: c.color,
                                 ["--camp" as string]: c.color,
                               } as React.CSSProperties}
-                              onClick={() => toggleMilestone(c, m.id)}
-                              title={`${c.name}: ${m.label} · ${
-                                m.done ? "done — click to unflag" : "click to flag as done"
-                              }`}
-                              aria-pressed={m.done}
+                              onClick={() => onOpenCampaign(c.id)}
+                              title={`${c.name}: ${m.label}${
+                                m.done ? " · done" : ""
+                              } · open on the Campaigns page`}
                             >
                               <span className="camp-ms-diamond" aria-hidden />
                               <span className="soc-cell-ms-label">{m.label}</span>

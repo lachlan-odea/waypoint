@@ -1024,7 +1024,6 @@ export default function App() {
             designers={workspace.designers}
             config={socialConfig}
             campaigns={campaigns}
-            onSaveCampaign={saveCampaign}
             onOpenCampaign={openCampaign}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
