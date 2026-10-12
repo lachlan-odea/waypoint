@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
+  Campaign,
   Notification,
   Project,
   ProjectStatus,
@@ -28,6 +29,9 @@ import {
   setWorkspaceMembers as firestoreSetWorkspaceMembers,
   relabelSocialPostCategory as firestoreRelabelSocialPostCategory,
   setSocialConfig as firestoreSetSocialConfig,
+  setCampaign as firestoreSetCampaign,
+  deleteCampaign as firestoreDeleteCampaign,
+  subscribeCampaigns,
   subscribeSocialConfig,
   subscribeSocialPosts,
   subscribeWorkspace,
@@ -42,6 +46,8 @@ import { Analytics } from "./components/Analytics";
 import { Dashboard } from "./components/Dashboard";
 import { MyDesk } from "./components/MyDesk";
 import { SocialCalendar } from "./components/SocialCalendar";
+import { CampaignsView } from "./components/CampaignsView";
+import { CampaignsPanel } from "./components/CampaignsPanel";
 import { Login } from "./components/Login";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Avatar } from "./components/Avatar";
@@ -209,6 +215,20 @@ export default function App() {
     });
   }, [sessionDesignerId]);
   const socialConfig = socialConfigDoc ?? DEFAULT_SOCIAL_CONFIG;
+
+  // Marketing campaigns. Shared by the Campaigns view (its own page) and
+  // the Social calendar (overlay on the post grid), so they live here.
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeCampaigns(setCampaigns, (err) => {
+      console.warn("Couldn't load campaigns", err);
+      setStatus(`Sync error: ${err.message}`);
+    });
+  }, [sessionDesignerId]);
+  // A campaign the Social calendar's overlay asked to open on the
+  // Campaigns view.
+  const [focusCampaignId, setFocusCampaignId] = useState<string | null>(null);
 
   // How many posts carry each category label, for the Settings editor's
   // "N posts" hints and delete warnings. Cheap enough to keep live.
@@ -649,6 +669,35 @@ export default function App() {
     firestoreSetProject(updated).catch(writeError);
   }
 
+  function saveCampaign(campaign: Campaign) {
+    firestoreSetCampaign(campaign).catch(writeError);
+  }
+
+  // Jump to the Campaigns page with one campaign's editor open. Closes any
+  // project window first so the page isn't hidden behind it.
+  function openCampaign(campaignId: string) {
+    setOpenProjectId(null);
+    setFocusCampaignId(campaignId);
+    setView("campaigns");
+  }
+
+  // Which campaigns each project contributes to, for the flag on its card.
+  const campaignsByProject = useMemo(() => {
+    const map = new Map<string, Campaign[]>();
+    campaigns.forEach((c) =>
+      (c.projectIds ?? []).forEach((id) => {
+        const list = map.get(id) ?? [];
+        list.push(c);
+        map.set(id, list);
+      }),
+    );
+    return map;
+  }, [campaigns]);
+
+  function deleteCampaign(id: string) {
+    firestoreDeleteCampaign(id).catch(writeError);
+  }
+
   function addNotifications(notifs: Notification[]) {
     if (notifs.length === 0) return;
     notifs.forEach((n) => firestoreSetNotification(n).catch(writeError));
@@ -824,6 +873,8 @@ export default function App() {
                 "Executive Dashboard"
               ) : view === "socialCalendar" ? (
                 "Social calendar"
+              ) : view === "campaigns" ? (
+                "Campaigns"
               ) : (
                 <>
                   {currentDesigner.name}
@@ -851,7 +902,9 @@ export default function App() {
                       ? "View all projects, deadlines, and recent activity"
                       : view === "socialCalendar"
                         ? "Plan and track posts across the CargoWise and WiseTech channels"
-                        : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned · ${currentWorkspaceName}`}
+                        : view === "campaigns"
+                          ? "Marketing campaigns and their milestones, month by month"
+                          : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned · ${currentWorkspaceName}`}
               {" · live"}
             </p>
           </div>
@@ -930,6 +983,7 @@ export default function App() {
                     key={p.id}
                     project={p}
                     designers={workspace.designers}
+                    campaigns={campaignsByProject.get(p.id)}
                     onClick={() => setOpenProjectId(p.id)}
                     // Only worth labelling when teams are mixed together —
                     // redundant once you've filtered to one.
@@ -957,6 +1011,8 @@ export default function App() {
               setOpenProjectId(projectId);
             }}
             onClearNotifications={clearAllNotifications}
+            campaigns={campaigns}
+            onOpenCampaign={openCampaign}
           />
         ) : view === "executiveDashboard" ? (
           <Dashboard
@@ -968,14 +1024,40 @@ export default function App() {
           <SocialCalendar
             designers={workspace.designers}
             config={socialConfig}
+            campaigns={campaigns}
+            onSaveCampaign={saveCampaign}
+            onOpenCampaign={openCampaign}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
             onOpenProject={setOpenProjectId}
             focusPostId={focusSocialPostId}
             onFocusHandled={() => setFocusSocialPostId(null)}
           />
+        ) : view === "campaigns" ? (
+          <CampaignsView
+            campaigns={campaigns}
+            designers={workspace.designers}
+            projects={workspace.projects}
+            workspaces={availableWorkspaces}
+            onOpenProject={setOpenProjectId}
+            onSave={saveCampaign}
+            onDelete={deleteCampaign}
+            focusCampaignId={focusCampaignId}
+            onFocusHandled={() => setFocusCampaignId(null)}
+          />
         ) : view === "board" ? (
           <>
+            {/* Campaigns any of this team's live projects are feeding. */}
+            <CampaignsPanel
+              campaigns={campaigns}
+              projects={nonArchived}
+              title={`${currentWorkspaceName} campaigns`}
+              subject="this team"
+              onOpenCampaign={openCampaign}
+              onOpenProject={setOpenProjectId}
+              storageKey={`waypoint.board.${currentWorkspaceId}.campaignsCollapsed`}
+            />
+
             <section
               className={`workspace-section drop-target ${
                 dropOverColumn === sessionDesignerId ? "drop-over" : ""
@@ -1000,6 +1082,7 @@ export default function App() {
                       key={p.id}
                       project={p}
                       designers={workspace.designers}
+                      campaigns={campaignsByProject.get(p.id)}
                       onClick={() => setOpenProjectId(p.id)}
                       teamBadge={
                         p.workspaceId !== currentWorkspaceId
@@ -1029,6 +1112,7 @@ export default function App() {
                       key={p.id}
                       project={p}
                       designers={workspace.designers}
+                      campaigns={campaignsByProject.get(p.id)}
                       onClick={() => setOpenProjectId(p.id)}
                       teamBadge={
                         p.workspaceId !== currentWorkspaceId
@@ -1080,6 +1164,7 @@ export default function App() {
                             key={p.id}
                             project={p}
                             designers={workspace.designers}
+                            campaigns={campaignsByProject.get(p.id)}
                             onClick={() => setOpenProjectId(p.id)}
                             compact
                           />
@@ -1114,6 +1199,7 @@ export default function App() {
                         key={p.id}
                         project={p}
                         designers={workspace.designers}
+                        campaigns={campaignsByProject.get(p.id)}
                         onClick={() => setOpenProjectId(p.id)}
                         compact
                       />
@@ -1149,6 +1235,7 @@ export default function App() {
                         key={p.id}
                         project={p}
                         designers={workspace.designers}
+                        campaigns={campaignsByProject.get(p.id)}
                         onClick={() => setOpenProjectId(p.id)}
                       />
                     ))}
@@ -1183,6 +1270,7 @@ export default function App() {
                         key={p.id}
                         project={p}
                         designers={workspace.designers}
+                        campaigns={campaignsByProject.get(p.id)}
                         onClick={() => setOpenProjectId(p.id)}
                       />
                     ))}
@@ -1216,6 +1304,7 @@ export default function App() {
                         key={p.id}
                         project={p}
                         designers={workspace.designers}
+                        campaigns={campaignsByProject.get(p.id)}
                         onClick={() => setOpenProjectId(p.id)}
                       />
                     ))}
@@ -1255,6 +1344,7 @@ export default function App() {
             setFocusSocialPostId(postId);
             setView("socialCalendar");
           }}
+          onOpenCampaign={openCampaign}
         />
       )}
 

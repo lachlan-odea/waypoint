@@ -253,6 +253,46 @@ export type SocialPost = {
   source?: "import" | "manual";
 };
 
+// A dated moment inside a campaign — "EDM 1 sent", "Landing page live",
+// "Webinar". `done` is the flag the team flips once it has happened.
+export type CampaignMilestone = {
+  id: string;
+  // YYYY-MM-DD, local. Normally inside the campaign's date range, but not
+  // enforced — a teaser can go out before launch.
+  date: string;
+  label: string;
+  done: boolean;
+};
+
+// A marketing campaign: a named span of dates with milestones inside it.
+// Drawn as a bar across the campaign strip above the Social calendar, and
+// optionally overlaid on the post calendar so posts can be scheduled around
+// it. Stored in /campaigns, shared by everyone.
+export type Campaign = {
+  id: string;
+  name: string;
+  // Social channel it runs on (CargoWise / WiseTech), free text like posts.
+  channel: string;
+  // Which brand the campaign is for — one of BRANDS in constants.ts. Gives
+  // the campaign its colour (brandColor) everywhere it's drawn.
+  brand: string;
+  owner: string;
+  description: string;
+  // Inclusive YYYY-MM-DD range.
+  startDate: string;
+  endDate: string;
+  // Hex colour for the bar. Derived from `brand` on save and stored so the
+  // calendar can paint without a lookup; campaigns written before brands
+  // existed keep whatever colour they had.
+  color: string;
+  milestones: CampaignMilestone[];
+  // Board projects contributing to this campaign — the EDM, the landing
+  // page, the social assets. Each project's window lists the campaigns it
+  // belongs to.
+  projectIds: string[];
+  createdAt: string;
+};
+
 // The in-memory snapshot of everything App.tsx needs to render. Loaded
 // progressively via the Firestore subscriptions in firestore.ts.
 export type WorkspaceData = {

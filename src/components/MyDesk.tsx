@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { DeskItem, Notification, Project, WorkspaceData } from "../types";
+import type {
+  Campaign,
+  DeskItem,
+  Notification,
+  Project,
+  WorkspaceData,
+} from "../types";
 import { Avatar } from "./Avatar";
+import { CampaignsPanel } from "./CampaignsPanel";
 import {
   describeNotification,
   notificationTag,
@@ -37,6 +44,10 @@ interface MyDeskProps {
   // panel does — a notification you've acted on shouldn't linger.
   onOpenNotification: (projectId: string, notificationId: string) => void;
   onClearNotifications: () => void;
+  // Marketing campaigns, for the "Your campaigns" panel: the ones any of
+  // your projects contribute to.
+  campaigns: Campaign[];
+  onOpenCampaign: (campaignId: string) => void;
 }
 
 const PRIORITY_ORDER: Record<string, number> = {
@@ -74,6 +85,8 @@ export function MyDesk({
   reviewProjects,
   onOpenNotification,
   onClearNotifications,
+  campaigns,
+  onOpenCampaign,
 }: MyDeskProps) {
   const [deskItems, setDeskItems] = useState<DeskItem[]>([]);
   const [deskError, setDeskError] = useState<string | null>(null);
@@ -411,6 +424,21 @@ export function MyDesk({
             </section>
           )}
       </div>
+
+      {/* Campaigns that any project you're assigned to is feeding — the
+          wider thing your work is part of. Renders nothing when there are
+          none, so people outside marketing never see an empty panel. */}
+      <CampaignsPanel
+        campaigns={campaigns}
+        projects={workspace.projects.filter(
+          (p) => p.assigneeIds.includes(currentDesignerId) && !p.archived,
+        )}
+        title="Your campaigns"
+        subject="you"
+        onOpenCampaign={onOpenCampaign}
+        onOpenProject={onOpenProject}
+        storageKey="waypoint.mydesk.campaignsCollapsed"
+      />
 
       {/* Things other people have directed at you, as distinct from the cards
           above, which are derived from your own projects' dates. */}

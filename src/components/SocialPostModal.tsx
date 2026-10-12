@@ -416,8 +416,9 @@ export function SocialPostModal({
             <ProjectPicker
               projects={projects}
               workspaces={workspaces}
-              value={projectId}
-              onChange={setProjectId}
+              value={projectId ? [projectId] : []}
+              onChange={(ids) => setProjectId(ids[0] ?? "")}
+              single
             />
             <div className="soc-project-row">
               <span className="field-hint">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
+  Campaign,
   Designer,
   Project,
   SocialConfig,
@@ -16,6 +17,7 @@ import {
   setSocialPost,
   subscribeSocialPosts,
 } from "../firestore";
+import { campaignOverlaps, campaignsOn, milestonesOn, monthBounds } from "../campaigns";
 import { socialPostTitle } from "../socialPosts";
 import { SocialPostCard } from "./SocialPostCard";
 import { SocialPostModal } from "./SocialPostModal";
@@ -25,6 +27,12 @@ type Props = {
   designers: Designer[];
   // Categories + company hashtags, managed from Settings → Social calendar.
   config: SocialConfig;
+  // Marketing campaigns, owned by the Campaigns view; here they're drawn
+  // inside the day cells when the overlay is on. Saving is for flagging a
+  // milestone from a cell; anything more opens the Campaigns view.
+  campaigns: Campaign[];
+  onSaveCampaign: (campaign: Campaign) => void;
+  onOpenCampaign: (campaignId: string) => void;
   // Board projects a post can link back to, with the teams that name them.
   projects: Project[];
   workspaces: Workspace[];
@@ -39,6 +47,18 @@ type Props = {
 type Editing =
   | { mode: "create"; initial: Partial<SocialPost> }
   | { mode: "edit"; post: SocialPost };
+
+// Per-browser preference: draw campaigns inside the day cells.
+const OVERLAY_KEY = "waypoint.social.campaignOverlay";
+
+function readFlag(key: string, fallback: boolean): boolean {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : v === "true";
+  } catch {
+    return fallback;
+  }
+}
 
 // Drop-target id for the Unscheduled tray. Not a date.
 const UNSCHEDULED = "__unscheduled__";
@@ -108,6 +128,15 @@ function monthGrid(month: string): (string | null)[] {
   return cells;
 }
 
+function formatShortRange(from: string, to: string): string {
+  const fmt = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+    });
+  return `${fmt(from)} – ${fmt(to)}`;
+}
+
 function isWeekend(iso: string): boolean {
   const day = new Date(`${iso}T00:00:00`).getDay();
   return day === 0 || day === 6;
@@ -124,6 +153,9 @@ function sortPosts(a: SocialPost, b: SocialPost): number {
 export function SocialCalendar({
   designers,
   config,
+  campaigns,
+  onSaveCampaign,
+  onOpenCampaign,
   projects,
   workspaces,
   onOpenProject,
@@ -154,6 +186,17 @@ export function SocialCalendar({
   // this is the retry you can see, for when that first attempt was refused.
   const [importing, setImporting] = useState(false);
   const [importNote, setImportNote] = useState<string | null>(null);
+
+  // Draw campaigns inside the day cells, so posts can be placed around them.
+  const [overlay, setOverlayState] = useState(() => readFlag(OVERLAY_KEY, true));
+  function setOverlay(on: boolean) {
+    setOverlayState(on);
+    try {
+      localStorage.setItem(OVERLAY_KEY, String(on));
+    } catch {
+      // Storage unavailable — the toggle still works for this page load.
+    }
+  }
 
   useEffect(() => {
     return subscribeSocialPosts(
@@ -192,6 +235,28 @@ export function SocialCalendar({
   function writeError(err: unknown) {
     console.error("Social post write failed", err);
     setError(describeError("Save failed", err));
+  }
+
+  // ── campaigns ────────────────────────────────────────────────────────
+
+  // Campaigns touching the month in view, narrowed by the channel pill (the
+  // type / status / search filters are about posts and leave campaigns be).
+  const monthCampaigns = useMemo(() => {
+    const { from, to } = monthBounds(month);
+    return campaigns
+      .filter((c) => campaignOverlaps(c, from, to))
+      .filter((c) => !channelFilter || c.channel.trim() === channelFilter);
+  }, [campaigns, month, channelFilter]);
+
+  // Flip one milestone's done flag straight from the cell — the common
+  // "EDM 2 went out this morning" gesture shouldn't need a page change.
+  function toggleMilestone(campaign: Campaign, milestoneId: string) {
+    onSaveCampaign({
+      ...campaign,
+      milestones: campaign.milestones.map((m) =>
+        m.id === milestoneId ? { ...m, done: !m.done } : m,
+      ),
+    });
   }
 
   const projectTitleById = useMemo(() => {
@@ -493,6 +558,22 @@ export function SocialCalendar({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          {tab === "calendar" && (
+            <label
+              className="camp-overlay-toggle"
+              title="Draw campaigns and their milestones inside the day cells, so posts can be scheduled around them"
+            >
+              <input
+                type="checkbox"
+                checked={overlay}
+                onChange={(e) => setOverlay(e.target.checked)}
+              />
+              Campaigns
+              {monthCampaigns.length > 0 && (
+                <span className="soc-legend-count">{monthCampaigns.length}</span>
+              )}
+            </label>
+          )}
           <div className="soc-tabs" role="tablist">
             <button
               role="tab"
@@ -757,6 +838,60 @@ export function SocialCalendar({
                       +
                     </button>
                   </div>
+                  {overlay &&
+                    (() => {
+                      const running = campaignsOn(monthCampaigns, iso);
+                      const marks = milestonesOn(monthCampaigns, iso);
+                      if (running.length === 0 && marks.length === 0) return null;
+                      const weekStart = new Date(`${iso}T00:00:00`).getDay() === 1;
+                      return (
+                        <div className="soc-cell-camps">
+                          {running.map((c) => {
+                            // Name on the day it starts and at the start of
+                            // each week; a bare colour bar in between keeps
+                            // the cells readable.
+                            const showName = c.startDate === iso || weekStart;
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                className={`soc-cell-camp ${showName ? "named" : ""} ${
+                                  c.startDate === iso ? "starts" : ""
+                                } ${c.endDate === iso ? "ends" : ""}`}
+                                style={{ background: c.color }}
+                                onClick={() => onOpenCampaign(c.id)}
+                                title={`${c.name} · ${formatShortRange(
+                                  c.startDate,
+                                  c.endDate,
+                                )} · open on the Campaigns page`}
+                              >
+                                {showName ? c.name : ""}
+                              </button>
+                            );
+                          })}
+                          {marks.map(({ campaign: c, milestone: m }) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              className={`soc-cell-ms ${m.done ? "done" : ""}`}
+                              style={{
+                                color: c.color,
+                                borderColor: c.color,
+                                ["--camp" as string]: c.color,
+                              } as React.CSSProperties}
+                              onClick={() => toggleMilestone(c, m.id)}
+                              title={`${c.name}: ${m.label} · ${
+                                m.done ? "done — click to unflag" : "click to flag as done"
+                              }`}
+                              aria-pressed={m.done}
+                            >
+                              <span className="camp-ms-diamond" aria-hidden />
+                              <span className="soc-cell-ms-label">{m.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   <div className="soc-cell-posts">
                     {(byDate.get(iso) ?? []).map((p) => (
                       <SocialPostCard
@@ -848,6 +983,7 @@ export function SocialCalendar({
           onOpenProject={openProject}
         />
       )}
+
     </section>
   );
 }
