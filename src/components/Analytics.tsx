@@ -23,13 +23,10 @@ type Props = {
   // on its own workspace selector — the sidebar's currently-active workspace
   // only sets the initial selection.
   allProjects: Project[];
-  // Full designer list, used as the source for the By-designer chart. When
-  // a single workspace is selected, the chart is narrowed to that
-  // workspace's memberIds (if any).
+  // Full designer list, used to resolve assignee names in the CSV export.
   allDesigners: Designer[];
   // All known workspaces, used to populate the workspace selector.
   workspaces: Workspace[];
-  canViewByDesigner: boolean;
 };
 
 const ALL_WORKSPACES = "__all__";
@@ -164,7 +161,6 @@ export function Analytics({
   allProjects,
   allDesigners,
   workspaces,
-  canViewByDesigner,
 }: Props) {
   const chartTheme = useChartTheme();
   const [from, setFrom] = useState("");
@@ -180,18 +176,6 @@ export function Analytics({
     if (selectedWorkspaceId === ALL_WORKSPACES) return allProjects;
     return allProjects.filter((p) => p.workspaceId === selectedWorkspaceId);
   }, [allProjects, selectedWorkspaceId]);
-
-  // Designers shown in the By-designer chart. For a specific workspace, use
-  // the workspace's memberIds when set; an empty memberIds list is "open"
-  // (everyone). For "All workspaces", show the full designer list.
-  const designers = useMemo(() => {
-    if (selectedWorkspaceId === ALL_WORKSPACES) return allDesigners;
-    const ws = workspaces.find((w) => w.id === selectedWorkspaceId);
-    const members = ws?.memberIds ?? [];
-    if (members.length === 0) return allDesigners;
-    const memberSet = new Set(members);
-    return allDesigners.filter((d) => memberSet.has(d.id));
-  }, [allDesigners, workspaces, selectedWorkspaceId]);
 
   const filtered = useMemo(() => {
     if (!from && !to) return workspaceProjects;
@@ -211,17 +195,6 @@ export function Analytics({
       count: filtered.filter((x) => x.priority === p).length,
       color: PRIORITY_COLORS[p],
     }));
-    const byDesigner = designers
-      .map((d) => ({
-        label: d.name,
-        color: d.color,
-        count: filtered.filter((p) => p.assigneeIds.includes(d.id)).length,
-      }))
-      .sort((a, b) => b.count - a.count);
-    const unassigned = filtered.filter((p) => p.assigneeIds.length === 0).length;
-    if (unassigned > 0) {
-      byDesigner.push({ label: "Unassigned", color: "#94a3b8", count: unassigned });
-    }
     const brands = new Map<string, number>();
     filtered.forEach((p) => {
       const key = p.brand || "—";
@@ -288,14 +261,13 @@ export function Analytics({
       activeCount: live.length,
       archivedCount,
       byPriority,
-      byDesigner,
       byBrand,
       byContentType,
       totalMilestones,
       doneMilestones,
       completionPct,
     };
-  }, [filtered, designers]);
+  }, [filtered]);
 
   function applyQuickRange(kind: QuickRange) {
     const today = todayISO();
@@ -466,21 +438,6 @@ export function Analytics({
         </div>
       </div>
 
-      {canViewByDesigner && (
-        <div className="panel">
-          <h3>By designer</h3>
-          {stats.byDesigner.length === 0 ? (
-            <p className="muted small">No data.</p>
-          ) : (
-            <CategoryBars
-              data={stats.byDesigner}
-              colored
-              height={Math.max(220, stats.byDesigner.length * 36)}
-            />
-          )}
-        </div>
-      )}
-
       <div className="panel">
         <h3>By content type</h3>
         {stats.byContentType.length === 0 ? (
@@ -495,7 +452,7 @@ export function Analytics({
           onClick={() =>
             download(
               `waypoint-projects-${todayISO()}.csv`,
-              toCsv(filtered, designers),
+              toCsv(filtered, allDesigners),
               "text/csv;charset=utf-8",
             )
           }
@@ -592,18 +549,10 @@ function CompletionKpi({
   );
 }
 
-type CategoryRow = { label: string; count: number; color?: string };
+type CategoryRow = { label: string; count: number };
 
-function CategoryBars({
-  data,
-  colored,
-  height,
-}: {
-  data: CategoryRow[];
-  colored?: boolean;
-  height?: number;
-}) {
-  const chartHeight = height ?? Math.max(180, data.length * 32);
+function CategoryBars({ data }: { data: CategoryRow[] }) {
+  const chartHeight = Math.max(180, data.length * 32);
   const theme = useChartTheme();
   return (
     <div className="chart-wrap" style={{ height: chartHeight }}>
@@ -636,11 +585,8 @@ function CategoryBars({
             itemStyle={theme.tooltipItemStyle}
           />
           <Bar dataKey="count" radius={[0, 6, 6, 0]}>
-            {data.map((row, i) => (
-              <Cell
-                key={i}
-                fill={colored && row.color ? row.color : NEUTRAL_BAR}
-              />
+            {data.map((_, i) => (
+              <Cell key={i} fill={NEUTRAL_BAR} />
             ))}
           </Bar>
         </BarChart>
