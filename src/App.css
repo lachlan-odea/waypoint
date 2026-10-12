@@ -4923,36 +4923,9 @@ textarea {
   color: white;
 }
 
-/* ── Marketing campaigns: strip above the post calendar + cell overlay ── */
-.camp-section {
+/* ── Marketing campaigns: timeline strip + cell overlay ────────────────── */
+.camp-strip {
   --camp-lane: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-2);
-}
-.camp-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
-}
-.camp-head h3 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text);
-}
-.camp-head-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 .camp-overlay-toggle {
   display: inline-flex;
@@ -4963,11 +4936,6 @@ textarea {
   cursor: pointer;
   user-select: none;
 }
-.camp-empty {
-  margin: 0;
-  padding: 6px 2px 0;
-}
-
 /* One grid per week; the seven columns use the same gap as .soc-grid so the
    bars line up with the day cells underneath. */
 .camp-strip {
@@ -5245,4 +5213,302 @@ textarea {
   .soc-cell-ms-label {
     display: none;
   }
+}
+
+/* ── Campaigns view ─────────────────────────────────────────────────────── */
+.camps .camp-strip {
+  --camp-lane: 28px;
+}
+.camps-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.camps-weekdays {
+  margin-bottom: -2px;
+}
+.camp-strip.dated .camp-week {
+  padding-bottom: 2px;
+}
+.camp-strip.dated .camp-daybg {
+  opacity: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  min-height: 72px;
+}
+.camp-strip.dated .camp-daybg:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+.camp-strip.dated .camp-daybg.pad {
+  background: transparent;
+  border-color: transparent;
+}
+.camp-strip.dated .camp-daybg.today {
+  border-color: var(--primary);
+}
+.camp-date {
+  z-index: 1;
+  align-self: start;
+  justify-self: start;
+  margin: 4px 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  pointer-events: none;
+}
+.camp-date.today {
+  color: white;
+  background: var(--primary);
+  border-radius: 999px;
+  min-width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 5px;
+  margin-top: 2px;
+}
+.camp-strip.dated .camp-bar {
+  margin: 1px 4px;
+}
+
+.camps-legend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.camps-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.camps-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 8px;
+  border-radius: 3px;
+  background: #4f46e5;
+}
+.camps-swatch.upcoming {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4) 0 3px,
+    transparent 3px 6px
+  );
+}
+.camps-swatch.finished {
+  opacity: 0.5;
+}
+.camp-ms-diamond.legend {
+  border-color: var(--muted);
+  box-shadow: none;
+  margin: 0 3px;
+}
+
+.camps-list-head {
+  margin-top: 8px;
+}
+.camps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+.camp-card {
+  --camp: var(--primary);
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.camp-card.finished {
+  opacity: 0.8;
+}
+.camp-card-bar {
+  flex: 0 0 6px;
+  background: var(--camp);
+}
+.camp-card.upcoming .camp-card-bar {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.35) 0 4px,
+    transparent 4px 8px
+  );
+}
+.camp-card-body {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.camp-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.camp-phase {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface-2);
+}
+.camp-phase.live {
+  color: #15803d;
+  border-color: #86efac;
+  background: #dcfce7;
+}
+:root.dark-mode .camp-phase.live {
+  background: rgba(22, 163, 74, 0.2);
+  color: #bbf7d0;
+  border-color: rgba(22, 163, 74, 0.4);
+}
+.camp-card-title {
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.camp-card-title:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.camp-card-dates {
+  margin: 0;
+}
+.camp-card-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.camp-card-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-top: 2px;
+}
+.camp-card-progress-bar {
+  height: 100%;
+  background: var(--camp);
+  transition: width 0.2s ease;
+}
+.camp-card-ms {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.camp-card-ms-row {
+  display: grid;
+  grid-template-columns: auto 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.camp-card-ms-row:hover {
+  background: var(--surface-2);
+}
+.camp-card-ms-row input {
+  margin: 0;
+  accent-color: var(--camp);
+}
+.camp-card-ms-date {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.camp-card-ms-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.camp-card-ms-row.done .camp-card-ms-label {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.camp-card-ms-row.overdue .camp-card-ms-date {
+  color: #b45309;
+  font-weight: 700;
+}
+.camp-card-more {
+  align-self: flex-start;
+  padding: 0;
+  cursor: pointer;
+  color: var(--primary);
+}
+.camp-card-more:hover {
+  color: var(--primary-hover);
+}
+
+.camps-upcoming .section-head {
+  margin-bottom: 8px;
+}
+.camps-upcoming-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.camps-upcoming-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.camps-upcoming-row:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+.camps-upcoming-name {
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The overlay toggle now lives in the Social calendar toolbar. */
+.soc-toolbar-right .camp-overlay-toggle {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.soc-toolbar-right .camp-overlay-toggle .soc-legend-count {
+  color: var(--text);
 }

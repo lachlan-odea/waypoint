@@ -8,6 +8,9 @@ type Props = {
   // The month grid's cells, nulls for padding, as the post calendar uses.
   cells: (string | null)[];
   today: string;
+  // Print the day number above each week's bars. On the Campaigns view the
+  // strip is the whole calendar, so it needs its own dates.
+  showDates?: boolean;
   onOpen: (campaign: Campaign) => void;
   // Start a new campaign on this day.
   onCreate: (startDate: string) => void;
@@ -24,13 +27,16 @@ export function CampaignStrip({
   campaigns,
   cells,
   today,
+  showDates,
   onOpen,
   onCreate,
   onToggleMilestone,
 }: Props) {
   const weeks = weeksOf(cells);
+  // With a date row, bars start on grid row 2.
+  const firstLaneRow = showDates ? 2 : 1;
   return (
-    <div className="camp-strip" role="list" aria-label="Campaigns">
+    <div className={`camp-strip ${showDates ? "dated" : ""}`} role="list" aria-label="Campaigns">
       {weeks.map((week, wi) => {
         const segments = layoutWeek(campaigns, week);
         const lanes = Math.max(1, ...segments.map((s) => s.lane + 1));
@@ -38,8 +44,22 @@ export function CampaignStrip({
           <div
             key={wi}
             className="camp-week"
-            style={{ gridTemplateRows: `repeat(${lanes}, var(--camp-lane))` }}
+            style={{
+              gridTemplateRows: `${showDates ? "20px " : ""}repeat(${lanes}, var(--camp-lane))`,
+            }}
           >
+            {showDates &&
+              week.map((iso, ci) => (
+                <span
+                  key={`d-${ci}`}
+                  className={`camp-date ${iso === today ? "today" : ""} ${
+                    iso === null ? "pad" : ""
+                  }`}
+                  style={{ gridColumn: ci + 1, gridRow: 1 }}
+                >
+                  {iso ? Number(iso.slice(8)) : ""}
+                </span>
+              ))}
             {week.map((iso, ci) => (
               <button
                 key={ci}
@@ -47,7 +67,10 @@ export function CampaignStrip({
                 className={`camp-daybg ${iso === null ? "pad" : ""} ${
                   iso === today ? "today" : ""
                 }`}
-                style={{ gridColumn: ci + 1, gridRow: `1 / span ${lanes}` }}
+                style={{
+                  gridColumn: ci + 1,
+                  gridRow: `${showDates ? 1 : 1} / span ${lanes + (showDates ? 1 : 0)}`,
+                }}
                 onClick={iso ? () => onCreate(iso) : undefined}
                 disabled={iso === null}
                 tabIndex={-1}
@@ -69,7 +92,7 @@ export function CampaignStrip({
                   } ${seg.continuesAfter ? "cont-after" : ""}`}
                   style={{
                     gridColumn: `${seg.startCol + 1} / ${seg.endCol + 2}`,
-                    gridRow: seg.lane + 1,
+                    gridRow: seg.lane + firstLaneRow,
                     background: c.color,
                   }}
                 >

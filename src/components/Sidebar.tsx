@@ -8,6 +8,7 @@ export type SidebarView =
   | "myDesk"
   | "executiveDashboard"
   | "board"
+  | "campaigns"
   | "socialCalendar"
   | "analytics"
   | "archived";
@@ -159,6 +160,14 @@ function DashboardGlyph() {
       <rect x="14" y="3" width="7" height="7" />
       <rect x="14" y="14" width="7" height="7" />
       <rect x="3" y="14" width="7" height="7" />
+    </svg>
+  );
+}
+
+function FlagGlyph() {
+  return (
+    <svg {...navGlyphProps}>
+      <path d="M4 22V4a1 1 0 0 1 1-1h12l-2 4 2 4H5" />
     </svg>
   );
 }
@@ -345,6 +354,18 @@ export function Sidebar({
                 <DashboardGlyph />
               </span>
               {!collapsed && <span className="designer-name">Executive Dashboard</span>}
+            </button>
+          </li>
+          <li>
+            <button
+              className={`designer-btn ${view === "campaigns" ? "active" : ""}`}
+              onClick={() => onSelectView("campaigns")}
+              title="Campaigns"
+            >
+              <span className="dot-avatar" style={{ background: "#0e7490" }}>
+                <FlagGlyph />
+              </span>
+              {!collapsed && <span className="designer-name">Campaigns</span>}
             </button>
           </li>
           <li>
