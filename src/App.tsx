@@ -47,6 +47,7 @@ import { Dashboard } from "./components/Dashboard";
 import { MyDesk } from "./components/MyDesk";
 import { SocialCalendar } from "./components/SocialCalendar";
 import { CampaignsView } from "./components/CampaignsView";
+import { CampaignsPanel } from "./components/CampaignsPanel";
 import { Login } from "./components/Login";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Avatar } from "./components/Avatar";
@@ -672,6 +673,27 @@ export default function App() {
     firestoreSetCampaign(campaign).catch(writeError);
   }
 
+  // Jump to the Campaigns page with one campaign's editor open. Closes any
+  // project window first so the page isn't hidden behind it.
+  function openCampaign(campaignId: string) {
+    setOpenProjectId(null);
+    setFocusCampaignId(campaignId);
+    setView("campaigns");
+  }
+
+  // Which campaigns each project contributes to, for the flag on its card.
+  const campaignsByProject = useMemo(() => {
+    const map = new Map<string, Campaign[]>();
+    campaigns.forEach((c) =>
+      (c.projectIds ?? []).forEach((id) => {
+        const list = map.get(id) ?? [];
+        list.push(c);
+        map.set(id, list);
+      }),
+    );
+    return map;
+  }, [campaigns]);
+
   function deleteCampaign(id: string) {
     firestoreDeleteCampaign(id).catch(writeError);
   }
@@ -961,6 +983,7 @@ export default function App() {
                     key={p.id}
                     project={p}
                     designers={workspace.designers}
+                    campaigns={campaignsByProject.get(p.id)}
                     onClick={() => setOpenProjectId(p.id)}
                     // Only worth labelling when teams are mixed together —
                     // redundant once you've filtered to one.
@@ -988,6 +1011,8 @@ export default function App() {
               setOpenProjectId(projectId);
             }}
             onClearNotifications={clearAllNotifications}
+            campaigns={campaigns}
+            onOpenCampaign={openCampaign}
           />
         ) : view === "executiveDashboard" ? (
           <Dashboard
@@ -1001,10 +1026,7 @@ export default function App() {
             config={socialConfig}
             campaigns={campaigns}
             onSaveCampaign={saveCampaign}
-            onOpenCampaign={(id) => {
-              setFocusCampaignId(id);
-              setView("campaigns");
-            }}
+            onOpenCampaign={openCampaign}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
             onOpenProject={setOpenProjectId}
@@ -1025,6 +1047,17 @@ export default function App() {
           />
         ) : view === "board" ? (
           <>
+            {/* Campaigns any of this team's live projects are feeding. */}
+            <CampaignsPanel
+              campaigns={campaigns}
+              projects={nonArchived}
+              title={`${currentWorkspaceName} campaigns`}
+              subject="this team"
+              onOpenCampaign={openCampaign}
+              onOpenProject={setOpenProjectId}
+              storageKey={`waypoint.board.${currentWorkspaceId}.campaignsCollapsed`}
+            />
+
             <section
               className={`workspace-section drop-target ${
                 dropOverColumn === sessionDesignerId ? "drop-over" : ""
@@ -1049,6 +1082,7 @@ export default function App() {
                       key={p.id}
                       project={p}
                       designers={workspace.designers}
+                      campaigns={campaignsByProject.get(p.id)}
                       onClick={() => setOpenProjectId(p.id)}
                       teamBadge={
                         p.workspaceId !== currentWorkspaceId
@@ -1078,6 +1112,7 @@ export default function App() {
                       key={p.id}
                       project={p}
                       designers={workspace.designers}
+                      campaigns={campaignsByProject.get(p.id)}
                       onClick={() => setOpenProjectId(p.id)}
                       teamBadge={
                         p.workspaceId !== currentWorkspaceId
@@ -1129,6 +1164,7 @@ export default function App() {
                             key={p.id}
                             project={p}
                             designers={workspace.designers}
+                            campaigns={campaignsByProject.get(p.id)}
                             onClick={() => setOpenProjectId(p.id)}
                             compact
                           />
@@ -1163,6 +1199,7 @@ export default function App() {
                         key={p.id}
                         project={p}
                         designers={workspace.designers}
+                        campaigns={campaignsByProject.get(p.id)}
                         onClick={() => setOpenProjectId(p.id)}
                         compact
                       />
@@ -1198,6 +1235,7 @@ export default function App() {
                         key={p.id}
                         project={p}
                         designers={workspace.designers}
+                        campaigns={campaignsByProject.get(p.id)}
                         onClick={() => setOpenProjectId(p.id)}
                       />
                     ))}
@@ -1232,6 +1270,7 @@ export default function App() {
                         key={p.id}
                         project={p}
                         designers={workspace.designers}
+                        campaigns={campaignsByProject.get(p.id)}
                         onClick={() => setOpenProjectId(p.id)}
                       />
                     ))}
@@ -1265,6 +1304,7 @@ export default function App() {
                         key={p.id}
                         project={p}
                         designers={workspace.designers}
+                        campaigns={campaignsByProject.get(p.id)}
                         onClick={() => setOpenProjectId(p.id)}
                       />
                     ))}
@@ -1304,11 +1344,7 @@ export default function App() {
             setFocusSocialPostId(postId);
             setView("socialCalendar");
           }}
-          onOpenCampaign={(campaignId) => {
-            setOpenProjectId(null);
-            setFocusCampaignId(campaignId);
-            setView("campaigns");
-          }}
+          onOpenCampaign={openCampaign}
         />
       )}
 

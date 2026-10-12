@@ -5576,3 +5576,123 @@ textarea {
   cursor: default;
   text-decoration: line-through;
 }
+
+/* ── Campaign panels on My Desk and the team boards ─────────────────────── */
+.camps-panel {
+  padding: 16px 20px;
+}
+.camps-panel .section-head {
+  margin-bottom: 12px;
+}
+.camps-panel-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.camp-mini {
+  --camp: var(--primary);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--camp);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.camp-mini.finished {
+  opacity: 0.75;
+}
+.camp-mini-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.camp-mini-name {
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.camp-mini-name:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.camp-mini-when {
+  line-height: 1.4;
+}
+.camp-mini-time {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.camp-mini-time-bar {
+  height: 100%;
+  background: var(--camp);
+  transition: width 0.2s ease;
+}
+.camp-mini-ms {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.camp-mini-ms-count {
+  font-weight: 600;
+  color: var(--text);
+}
+.camp-mini-overdue {
+  color: #b45309;
+  font-weight: 700;
+}
+.camp-mini-next {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.camp-mini-projects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+/* Campaign flag on a project card */
+.card-campaigns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 2px;
+}
+.card-campaign {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-campaign svg {
+  flex: 0 0 auto;
+}
+.card-campaign.more {
+  color: var(--muted);
+}
+.project-card.compact .card-campaign {
+  font-size: 10px;
+}

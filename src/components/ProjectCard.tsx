@@ -1,7 +1,8 @@
 import { useState } from "react";
-import type { Designer, Project } from "../types";
+import type { Campaign, Designer, Project } from "../types";
 import { Avatar } from "./Avatar";
 import { writeDraggedProjectId } from "../dnd";
+import { brandColor } from "../constants";
 
 type Props = {
   project: Project;
@@ -13,6 +14,9 @@ type Props = {
   // than the one currently being viewed, so the cross-team origin is
   // visible at a glance.
   teamBadge?: string;
+  // Marketing campaigns this project contributes to, shown as a small
+  // flag line so the wider effort is visible from the board.
+  campaigns?: Campaign[];
 };
 
 const priorityClass: Record<string, string> = {
@@ -48,6 +52,7 @@ export function ProjectCard({
   onClick,
   compact,
   teamBadge,
+  campaigns,
 }: Props) {
   const assignees = project.assigneeIds
     .map((id) => designers.find((d) => d.id === id))
@@ -89,6 +94,39 @@ export function ProjectCard({
       {teamBadge && (
         <span className="card-team-badge" title={`Team: ${teamBadge}`}>
           {teamBadge}
+        </span>
+      )}
+      {campaigns && campaigns.length > 0 && (
+        <span
+          className="card-campaigns"
+          title={`Campaign${campaigns.length === 1 ? "" : "s"}: ${campaigns
+            .map((c) => c.name)
+            .join(", ")}`}
+        >
+          {campaigns.slice(0, 2).map((c) => (
+            <span
+              key={c.id}
+              className="card-campaign"
+              style={{ color: c.color || brandColor(c.brand || "No brand") }}
+            >
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M4 22V4a1 1 0 0 1 1-1h12l-2 4 2 4H5" />
+              </svg>
+              {c.name}
+            </span>
+          ))}
+          {campaigns.length > 2 && (
+            <span className="card-campaign more">+{campaigns.length - 2}</span>
+          )}
         </span>
       )}
       {nextMilestone && (
