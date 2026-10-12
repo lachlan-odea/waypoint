@@ -936,7 +936,6 @@ export default function App() {
             allProjects={workspace.projects}
             allDesigners={workspace.designers}
             workspaces={availableWorkspaces}
-            canViewByDesigner={isSuperUser}
           />
         ) : view === "archived" ? (
           <section className="workspace-section archived-section">
