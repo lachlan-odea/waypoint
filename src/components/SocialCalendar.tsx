@@ -18,6 +18,7 @@ import {
   subscribeSocialPosts,
 } from "../firestore";
 import { campaignOverlaps, campaignsOn, milestonesOn, monthBounds } from "../campaigns";
+import { CampaignBand } from "./CampaignBand";
 import { socialPostTitle } from "../socialPosts";
 import { SocialPostCard } from "./SocialPostCard";
 import { SocialPostModal } from "./SocialPostModal";
@@ -126,15 +127,6 @@ function monthGrid(month: string): (string | null)[] {
   }
   while (cells.length % 7 !== 0) cells.push(null);
   return cells;
-}
-
-function formatShortRange(from: string, to: string): string {
-  const fmt = (iso: string) =>
-    new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
-      day: "numeric",
-      month: "short",
-    });
-  return `${fmt(from)} – ${fmt(to)}`;
 }
 
 function isWeekend(iso: string): boolean {
@@ -834,29 +826,20 @@ export function SocialCalendar({
                       const weekStart = new Date(`${iso}T00:00:00`).getDay() === 1;
                       return (
                         <div className="soc-cell-camps">
-                          {running.map((c) => {
-                            // Name on the day it starts and at the start of
-                            // each week; a bare colour bar in between keeps
-                            // the cells readable.
-                            const showName = c.startDate === iso || weekStart;
-                            return (
-                              <button
-                                key={c.id}
-                                type="button"
-                                className={`soc-cell-camp ${showName ? "named" : ""} ${
-                                  c.startDate === iso ? "starts" : ""
-                                } ${c.endDate === iso ? "ends" : ""}`}
-                                style={{ background: c.color }}
-                                onClick={() => onOpenCampaign(c.id)}
-                                title={`${c.name} · ${formatShortRange(
-                                  c.startDate,
-                                  c.endDate,
-                                )} · open on the Campaigns page`}
-                              >
-                                {showName ? c.name : ""}
-                              </button>
-                            );
-                          })}
+                          {running.map((c) => (
+                            // Name (and phase) on the day it starts and at
+                            // the start of each week; a bare colour bar in
+                            // between keeps the cells readable.
+                            <CampaignBand
+                              key={c.id}
+                              campaign={c}
+                              iso={iso}
+                              today={today}
+                              showName={c.startDate === iso || weekStart}
+                              compact
+                              onClick={() => onOpenCampaign(c.id)}
+                            />
+                          ))}
                           {marks.map(({ campaign: c, milestone: m }) => (
                             <button
                               key={m.id}
