@@ -76,7 +76,6 @@ export function ProfileSetup({ uid, email }: Props) {
     <div className="login">
       <div className="login-card">
         <img src={heroImage} alt="Waypoint" className="login-hero" />
-        <div className="login-brand">Waypoint</div>
         <h1 className="login-title">Finish setting up your profile</h1>
         <p className="muted">
           You're signed in as <strong>{email}</strong>. Pick the designer

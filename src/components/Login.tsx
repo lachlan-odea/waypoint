@@ -154,7 +154,6 @@ export function Login({ onSignedIn }: Props) {
     <div className="login">
       <div className="login-card">
         <img src={heroImage} alt="Waypoint" className="login-hero" />
-        <div className="login-brand">Waypoint</div>
 
         <div className="auth-tabs" role="tablist">
           <button

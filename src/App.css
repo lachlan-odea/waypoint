@@ -802,19 +802,6 @@ textarea {
   height: 6px;
   background: var(--brand-highlighter);
 }
-/* The pill from the brand banners, here carrying the product name. */
-.login-brand {
-  align-self: center;
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: 11px;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: var(--brand-navy);
-  background: var(--brand-highlighter);
-  padding: 5px 14px 5px calc(14px + 0.28em);
-  border-radius: 999px;
-}
 .login-title {
   margin: 0;
   font-size: 22px;
@@ -889,6 +876,14 @@ textarea {
 .login-submit {
   padding: 12px 14px;
   font-size: 15px;
+}
+/* Navy, matching the page behind the card and the selected tab. */
+.primary.login-submit {
+  background: var(--brand-navy);
+}
+.primary.login-submit:hover {
+  background: #2a2290;
+  box-shadow: 0 4px 12px rgba(29, 23, 101, 0.3);
 }
 .login-foot {
   margin: 6px 0 0;
