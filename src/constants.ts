@@ -87,21 +87,22 @@ export const SEED_HUBS = [
 // Social calendar statuses in lifecycle order, with the colour each renders
 // in. The greens and pinks deliberately echo the cell fills the marketing
 // team used in their spreadsheet so the calendar reads the same way it did
-// there. Single source of truth for the status picker, the card pills and
+// there, taken from the brand palette: Cherry for pink, the Mint/Pine
+// family for green, Peach for amber. Single source of truth for the status picker, the card pills and
 // the legend.
 export const SOCIAL_POST_STATUSES: {
   value: SocialPostStatus;
   label: string;
   color: string;
 }[] = [
-  { value: "draft", label: "Draft", color: "#6b7280" },
+  { value: "draft", label: "Draft", color: "#6b6d88" },
   // Stored as "pending" — see the note on SocialPostStatus.
-  { value: "pending", label: "Ready to publish", color: "#c2417f" },
-  { value: "scheduled", label: "Scheduled", color: "#d97706" },
-  { value: "onHold", label: "On hold", color: "#4f46e5" },
-  { value: "published", label: "Published", color: "#16a34a" },
-  { value: "cancelled", label: "Cancelled", color: "#dc2626" },
-  { value: "backlog", label: "Backlog", color: "#64748b" },
+  { value: "pending", label: "Ready to publish", color: "#c2335f" },
+  { value: "scheduled", label: "Scheduled", color: "#b4501f" },
+  { value: "onHold", label: "On hold", color: "#371ee1" },
+  { value: "published", label: "Published", color: "#1f7a4d" },
+  { value: "cancelled", label: "Cancelled", color: "#651d32" },
+  { value: "backlog", label: "Backlog", color: "#3b4a66" },
 ];
 
 export function socialStatusMeta(status: SocialPostStatus | undefined) {
@@ -113,21 +114,23 @@ export function socialStatusMeta(status: SocialPostStatus | undefined) {
 
 // What a social post is about. The pill on each card uses `short` so it
 // fits a calendar cell; the full `label` is the picker option and the
-// tooltip. Colours are deliberately distinct from the status palette
-// (greens / pinks / amber) so the two pills never read as the same thing.
+// tooltip. Colours come from the same brand-derived set as everything else,
+// every one dark enough for white text. The brand has fewer hues than there
+// are categories and statuses, so some share a hue family with a status;
+// the text on each pill is what tells them apart.
 //
 // These are the starting set. Super users edit the live list from
 // Settings → Social calendar, which writes /socialConfig/default; until
 // that document exists the app runs on these.
 export const DEFAULT_SOCIAL_CATEGORIES: SocialCategory[] = [
-  { id: "product-cargowise", label: "Product - CargoWise", short: "Product · CW", color: "#2563eb" },
-  { id: "product-other", label: "Product - Other", short: "Product · Other", color: "#7c3aed" },
-  { id: "thought-leadership", label: "Thought Leadership", short: "Thought leadership", color: "#0f766e" },
-  { id: "people", label: "People", short: "People", color: "#db2777" },
-  { id: "event", label: "Event", short: "Event", color: "#ea580c" },
-  { id: "digital-event", label: "Digital Event", short: "Digital event", color: "#c026d3" },
-  { id: "industry", label: "Industry", short: "Industry", color: "#4d7c0f" },
-  { id: "wisetech-academy", label: "WiseTech Academy", short: "Academy", color: "#b45309" },
+  { id: "product-cargowise", label: "Product - CargoWise", short: "Product · CW", color: "#371ee1" },
+  { id: "product-other", label: "Product - Other", short: "Product · Other", color: "#6a5cd8" },
+  { id: "thought-leadership", label: "Thought Leadership", short: "Thought leadership", color: "#244349" },
+  { id: "people", label: "People", short: "People", color: "#a3294d" },
+  { id: "event", label: "Event", short: "Event", color: "#b4501f" },
+  { id: "digital-event", label: "Digital Event", short: "Digital event", color: "#2f6fb0" },
+  { id: "industry", label: "Industry", short: "Industry", color: "#1f7a4d" },
+  { id: "wisetech-academy", label: "WiseTech Academy", short: "Academy", color: "#1d1765" },
 ];
 
 // Company hashtags to start with — the two brand tags. Edited in the same
@@ -162,7 +165,7 @@ export function resolveSocialConfig(
 }
 
 // Pill text + colour for a stored category. A value that isn't in the list
-// (deleted later, say) still renders, in neutral slate, rather than vanishing.
+// (deleted later, say) still renders, in a neutral grey, rather than vanishing.
 export function socialCategoryMeta(
   category: string | undefined,
   categories: SocialCategory[] = DEFAULT_SOCIAL_CATEGORIES,
@@ -172,23 +175,23 @@ export function socialCategoryMeta(
     categories.find((c) => c.label === category) ?? {
       label: category,
       short: category,
-      color: "#64748b",
+      color: "#6b6d88",
     }
   );
 }
 
 // One colour per brand, used wherever a campaign is drawn (timeline bars,
-// day-cell strips, card edges). Mid-tone so white text reads on them and
-// they stay apart from the status greens / pinks on the post cards.
+// day-cell strips, card edges). Brand palette steps dark enough for white
+// text; CargoWise and WiseTech Global wear their own Blue and Navy.
 const BRAND_COLORS: Record<string, string> = {
-  CargoWise: "#2563eb",
-  "CargoWise Landside": "#0e7490",
-  "WiseTech Global": "#0f766e",
-  "WiseTech Academy": "#b45309",
-  e2open: "#7c3aed",
-  Blume: "#be185d",
-  BorderWise: "#c2410c",
-  "No brand": "#64748b",
+  CargoWise: "#371ee1",
+  "CargoWise Landside": "#2f6fb0",
+  "WiseTech Global": "#1d1765",
+  "WiseTech Academy": "#b4501f",
+  e2open: "#6a5cd8",
+  Blume: "#a3294d",
+  BorderWise: "#244349",
+  "No brand": "#6b6d88",
 };
 
 export function brandColor(brand: string): string {
@@ -210,14 +213,14 @@ export function brandForChannel(channel: string): string {
 export const SOCIAL_CHANNELS = ["CargoWise", "WiseTech"] as const;
 
 const SOCIAL_CHANNEL_COLORS: Record<string, string> = {
-  cargowise: "#2563eb",
-  wisetech: "#0f766e",
+  cargowise: "#371ee1",
+  wisetech: "#1d1765",
 };
 
-// Colour for a channel chip. Unknown channels fall back to a neutral slate
+// Colour for a channel chip. Unknown channels fall back to a neutral grey
 // so a new channel is legible before anyone has picked it a colour.
 export function socialChannelColor(channel: string): string {
-  return SOCIAL_CHANNEL_COLORS[channel.trim().toLowerCase()] ?? "#64748b";
+  return SOCIAL_CHANNEL_COLORS[channel.trim().toLowerCase()] ?? "#6b6d88";
 }
 
 export const CONTENT_TYPES = [

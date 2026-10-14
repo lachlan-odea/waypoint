@@ -1185,7 +1185,7 @@ export default function App() {
                   {...dropHandlers(null)}
                 >
                   <header className="team-col-head">
-                    <span className="dot-avatar" style={{ background: "#94a3b8" }}>
+                    <span className="dot-avatar" style={{ background: "#a3a6c2" }}>
                       ??
                     </span>
                     <div>

@@ -160,9 +160,10 @@ export async function loadDesigner(id: string): Promise<Designer | null> {
 // Create a brand-new Designer document for a freshly signed-up user.
 // `id` is the Firebase Auth UID; we pick a friendly color from a palette
 // based on the index of the existing designer count.
+// Steps of the CargoWise palette, each dark enough to carry white text.
 const COLOR_PALETTE = [
-  "#7c5cff", "#ff7a59", "#22b8a6", "#f2c94c", "#3b82f6",
-  "#ec4899", "#10b981", "#f97316", "#8b5cf6", "#06b6d4",
+  "#371ee1", "#6a5cd8", "#244349", "#a3294d", "#b4501f",
+  "#2f6fb0", "#1f7a4d", "#1d1765", "#6b7a12", "#c2335f",
 ];
 
 export async function createDesignerProfile(

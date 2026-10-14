@@ -18,9 +18,10 @@ function newId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+// Steps of the CargoWise palette, each dark enough to carry white text.
 const PALETTE = [
-  "#2563eb", "#7c3aed", "#0f766e", "#db2777", "#ea580c",
-  "#c026d3", "#4d7c0f", "#b45309", "#0891b2", "#be123c",
+  "#371ee1", "#6a5cd8", "#244349", "#a3294d", "#b4501f",
+  "#2f6fb0", "#1f7a4d", "#1d1765", "#6b7a12", "#c2335f",
 ];
 
 // Super-user editor for the Social calendar's shared configuration: the

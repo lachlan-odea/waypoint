@@ -1,11 +1,11 @@
 :root {
-  --bg: #f8f9fb;
+  --bg: #f6f6fb;
   --surface: #ffffff;
-  --surface-2: #f3f4f7;
-  --border: #e1e4e8;
-  --border-strong: #d1d5db;
-  --text: #1f2937;
-  --muted: #6b7280;
+  --surface-2: #f0f0f7;
+  --border: #e2e1ee;
+  --border-strong: #cfcde0;
+  --text: #141e30;
+  --muted: #5f6079;
   /* CargoWise brand palette. Primary is CargoWise Blue; the rest are the
      secondary and tertiary swatches, used as accents rather than surfaces. */
   --brand-navy: #1d1765;
@@ -20,11 +20,11 @@
   --brand-peach: #ffbe98;
   --primary: #371ee1;
   --primary-hover: #2a15b8;
-  --danger: #ef4444;
-  --urgent: #ef4444;
-  --high: #f97316;
-  --normal: #3b82f6;
-  --low: #8b5cf6;
+  --danger: #c2335f;
+  --urgent: #c2335f;
+  --high: #f0844f;
+  --normal: #371ee1;
+  --low: #8a84ff;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
   --radius: 12px;
   --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
@@ -53,13 +53,13 @@ body,
 
 /* Dark mode */
 :root.dark-mode {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --surface-2: #334155;
-  --border: #475569;
-  --border-strong: #64748b;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
+  --bg: #141e30;
+  --surface: #1c2a42;
+  --surface-2: #2a3854;
+  --border: #3b4a66;
+  --border-strong: #6b6d88;
+  --text: #f0f0f7;
+  --muted: #a3a6c2;
   /* CargoWise Blue is too dark to read against the slate surfaces. */
   --primary: #5b45f0;
   --primary-hover: #6e5bff;
@@ -80,40 +80,40 @@ body,
 }
 
 :root.dark-mode .flag-indicator {
-  background: #5f3422;
-  border-color: #ea580c;
-  color: #fed7aa;
+  background: #4d2a1a;
+  border-color: #d9682f;
+  color: #ffd9c2;
 }
 
 :root.dark-mode .flag-btn {
-  border-color: #475569;
+  border-color: #3b4a66;
 }
 
 :root.dark-mode .flag-btn:hover {
-  color: #fbbf24;
-  border-color: #fbbf24;
+  color: #ffbe98;
+  border-color: #ffbe98;
 }
 
 :root.dark-mode .flag-btn.flagged {
-  background: #5f3422;
-  border-color: #ea580c;
-  color: #fed7aa;
+  background: #4d2a1a;
+  border-color: #d9682f;
+  color: #ffd9c2;
 }
 
 :root.dark-mode .review-section {
-  border-color: #7c2d12;
-  background: #431407;
+  border-color: #7a3415;
+  background: #3a1d10;
 }
 
 :root.dark-mode .planning-section {
-  border-color: #3730a3;
-  background: #171a3a;
+  border-color: #2a15b8;
+  background: #17143f;
 }
 
 :root.dark-mode .status-select.status-planning {
-  background-color: #312e81;
-  border-color: #4f46e5;
-  color: #c7d2fe;
+  background-color: #241a7a;
+  border-color: #371ee1;
+  color: #d6d4ff;
 }
 
 :root.dark-mode .kpi.urgent .kpi-value,
@@ -134,18 +134,18 @@ body,
 }
 
 :root.dark-mode .paused-section {
-  border-color: #1e293b;
-  background: #0f172a;
+  border-color: #1c2a42;
+  background: #141e30;
 }
 
 :root.dark-mode .completed-section {
-  border-color: #065f46;
-  background: #0f2818;
+  border-color: #1e4a3a;
+  background: #0f2a20;
 }
 
 :root.dark-mode .dashboard-section.dashboard-overdue {
-  border-color: #7f1d1d;
-  background: #2f0e0e;
+  border-color: #4f1628;
+  background: #2a0d17;
 }
 
 :root.dark-mode .dashboard-task-item {
@@ -181,17 +181,17 @@ body,
 }
 
 :root.dark-mode .notification-card.overdue {
-  border-left-color: #dc2626;
-  background: rgba(220, 38, 38, 0.1);
+  border-left-color: #a3294d;
+  background: rgba(163, 41, 77, 0.1);
 }
 
 :root.dark-mode .notification-card.due-soon {
-  border-left-color: #ea580c;
-  background: rgba(234, 88, 12, 0.1);
+  border-left-color: #d9682f;
+  background: rgba(217, 104, 47, 0.1);
 }
 
 :root.dark-mode .notification-card.high-priority {
-  border-left-color: #dc2626;
+  border-left-color: #a3294d;
 }
 
 :root.dark-mode .notification-item {
@@ -242,9 +242,9 @@ body,
 /* The desk checklist is built on the theme variables, so only the two
    hard-coded light-mode colours need a dark counterpart. */
 :root.dark-mode .desk-banner.error {
-  background: rgba(239, 68, 68, 0.14);
-  border-color: #7f1d1d;
-  color: #fca5a5;
+  background: rgba(194, 51, 95, 0.14);
+  border-color: #4f1628;
+  color: #eaa5b9;
 }
 
 :root.dark-mode .desk-row:hover {
@@ -253,12 +253,12 @@ body,
 
 /* The one hard-coded colour in the notification rows. */
 :root.dark-mode .notify-tag.review {
-  background: rgba(249, 115, 22, 0.2);
-  color: #fdba74;
+  background: rgba(240, 132, 79, 0.2);
+  color: #ffbe98;
 }
 
 /* Analytics KPI figures. The light-mode values for these three are slate
-   greys picked against a white card — #475569 is *identical* to --border in
+   greys picked against a white card — #3b4a66 is *identical* to --border in
    dark mode, so "Paused" was rendering at roughly 1.7:1 against the card and
    read as blank. Lifted to the 300/400 end of each ramp. */
 :root.dark-mode .kpi.completed .kpi-value {
@@ -266,11 +266,11 @@ body,
 }
 
 :root.dark-mode .kpi.paused .kpi-value {
-  color: #cbd5e1;
+  color: #cfcde0;
 }
 
 :root.dark-mode .kpi.archived .kpi-value {
-  color: #94a3b8;
+  color: #a3a6c2;
 }
 
 /* Chart colours live in src/chartTheme.ts, not here. Recharts takes axis
@@ -315,15 +315,15 @@ body,
 }
 
 :root.dark-mode .card-title {
-  color: #f1f5f9;
+  color: #f0f0f7;
 }
 
 :root.dark-mode .card-client {
-  color: #cbd5e1;
+  color: #cfcde0;
 }
 
 :root.dark-mode .card-overdue-chip {
-  background: #dc2626;
+  background: #a3294d;
   color: white;
 }
 
@@ -348,7 +348,7 @@ body,
 }
 
 :root.dark-mode .modal-foot button:hover {
-  background: #1e293b;
+  background: #1c2a42;
 }
 
 :root.dark-mode .modal-section h3 {
@@ -888,7 +888,7 @@ textarea {
 .auth-tab.active {
   background: var(--brand-navy);
   color: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(20, 30, 48, 0.05);
 }
 .auth-form {
   display: flex;
@@ -977,9 +977,9 @@ textarea {
 }
 
 .banner {
-  background: #fef3c7;
-  border: 1px solid #fbd38d;
-  color: #7c2d12;
+  background: #fff1e6;
+  border: 1px solid #ffcfae;
+  color: #7a3415;
   padding: 8px 12px;
   border-radius: 10px;
   margin-bottom: 14px;
@@ -1135,16 +1135,16 @@ textarea {
   color: white;
 }
 .card-priority.urgent {
-  background: #ef4444;
+  background: #c2335f;
 }
 .card-priority.high {
-  background: #f97316;
+  background: #f0844f;
 }
 .card-priority.normal {
-  background: #3b82f6;
+  background: #5b45f0;
 }
 .card-priority.low {
-  background: #8b5cf6;
+  background: #8a84ff;
 }
 .card-due {
   font-size: 11px;
@@ -1318,7 +1318,7 @@ textarea {
   border-radius: 999px;
 }
 .assignee-tag-remove:hover {
-  background: rgba(15, 23, 42, 0.08);
+  background: rgba(20, 30, 48, 0.08);
   color: var(--text);
 }
 .assignee-tag-text {
@@ -1339,7 +1339,7 @@ textarea {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 24px rgba(20, 30, 48, 0.08);
   list-style: none;
   padding: 4px;
   margin: 0;
@@ -1466,21 +1466,21 @@ textarea {
   border-color: var(--primary);
 }
 .flag-btn.flagged {
-  background: #fff7ed;
-  border-color: #fdba74;
-  color: #c2410c;
+  background: #fff4ec;
+  border-color: #ffbe98;
+  color: #b4501f;
 }
 .flag-btn.flagged:hover {
-  border-color: #fb923c;
+  border-color: #f59a6a;
 }
 .flag-indicator {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   align-self: flex-start;
-  background: #fff7ed;
-  border: 1px solid #fdba74;
-  color: #c2410c;
+  background: #fff4ec;
+  border: 1px solid #ffbe98;
+  color: #b4501f;
   border-radius: 999px;
   padding: 2px 10px 2px 8px;
   font-size: 11px;
@@ -1524,9 +1524,9 @@ textarea {
   background: var(--surface);
 }
 .flag-picker-btn.active {
-  background: #fff7ed;
-  border-color: #fdba74;
-  color: #c2410c;
+  background: #fff4ec;
+  border-color: #ffbe98;
+  color: #b4501f;
 }
 .flag-picker-btn.clear {
   padding: 2px 8px;
@@ -1550,24 +1550,24 @@ textarea {
 }
 
 .review-section {
-  border-color: #fdba74;
-  background: #fffbf5;
+  border-color: #ffbe98;
+  background: #fffaf6;
 }
 .planning-section {
-  border-color: #c7d2fe;
+  border-color: #d6d4ff;
   background: #f5f6ff;
 }
 .paused-section {
-  border-color: #cbd5e1;
-  background: #f8fafc;
+  border-color: #cfcde0;
+  background: #f7f7fc;
 }
 .completed-section {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
+  border-color: #c6ffd1;
+  background: #f1fff4;
 }
 .archived-section {
-  border-color: #cbd5e1;
-  background: #f1f5f9;
+  border-color: #cfcde0;
+  background: #f0f0f7;
 }
 /* Team filter pills in the Archive. Reuses .filter-quick's pill styling from
    the Analytics filter bar; this only adds the spacing. */
@@ -1605,19 +1605,19 @@ textarea {
   color: var(--muted);
 }
 .status-select.status-completed {
-  background-color: #dcfce7;
-  border-color: #86efac;
-  color: #166534;
+  background-color: #e3fbe9;
+  border-color: #9fe8b5;
+  color: #1a6040;
 }
 .status-select.status-paused {
-  background-color: #e2e8f0;
-  border-color: #94a3b8;
-  color: #475569;
+  background-color: #e2e1ee;
+  border-color: #a3a6c2;
+  color: #3b4a66;
 }
 .status-select.status-planning {
-  background-color: #e0e7ff;
-  border-color: #a5b4fc;
-  color: #3730a3;
+  background-color: #ebeaff;
+  border-color: #b7b3ff;
+  color: #2a15b8;
 }
 
 /* "Copy link" in the project detail header. Sized to match the status pill
@@ -1700,7 +1700,7 @@ textarea {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(20, 30, 48, 0.45);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -1714,7 +1714,7 @@ textarea {
   max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 20px 60px rgba(20, 30, 48, 0.2);
   overflow: hidden;
 }
 .modal-narrow {
@@ -1801,10 +1801,10 @@ textarea {
 }
 .modal-foot .danger {
   color: var(--danger);
-  border-color: #fecaca;
+  border-color: #f4cbd7;
 }
 .modal-foot .danger:hover {
-  background: #fef2f2;
+  background: #fbeff3;
 }
 .delete-confirm-prompt {
   margin-right: auto;
@@ -2128,7 +2128,7 @@ textarea {
 .size-btn.on {
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 1px 2px rgba(21, 26, 33, 0.04), 0 1px 3px rgba(21, 26, 33, 0.03);
+  box-shadow: 0 1px 2px rgba(20, 30, 48, 0.04), 0 1px 3px rgba(20, 30, 48, 0.03);
 }
 
 .size-btn {
@@ -2234,10 +2234,10 @@ textarea {
   line-height: 1.45;
 }
 .field span.field-hint.warn {
-  color: #b45309;
+  color: #b4501f;
 }
 :root.dark-mode .field span.field-hint.warn {
-  color: #fbbf24;
+  color: #ffbe98;
 }
 
 .milestones {
@@ -2400,10 +2400,10 @@ textarea {
   gap: 4px;
 }
 .comment-action-btn.like-btn.liked {
-  color: #e11d48;
+  color: #c2335f;
 }
 .comment-action-btn.like-btn:hover {
-  color: #e11d48;
+  color: #c2335f;
 }
 .comment-thread {
   display: flex;
@@ -2543,17 +2543,17 @@ textarea {
 }
 
 .notification-card.high-priority {
-  border-left: 4px solid #ef4444;
+  border-left: 4px solid #c2335f;
 }
 
 .notification-card.overdue {
-  border-left: 4px solid #ef4444;
-  background: rgba(239, 68, 68, 0.05);
+  border-left: 4px solid #c2335f;
+  background: rgba(194, 51, 95, 0.05);
 }
 
 .notification-card.due-soon {
-  border-left: 4px solid #f97316;
-  background: rgba(249, 115, 22, 0.05);
+  border-left: 4px solid #f0844f;
+  background: rgba(240, 132, 79, 0.05);
 }
 
 .notification-card.empty {
@@ -2708,11 +2708,11 @@ textarea {
 
 .project-due {
   font-weight: 600;
-  color: #3b82f6;
+  color: #5b45f0;
 }
 
 .project-due.overdue {
-  color: #ef4444;
+  color: #c2335f;
 }
 
 .deadline-list {
@@ -3069,8 +3069,8 @@ textarea {
 /* Review requests are the one item here that blocks somebody else, so they
    get the warmer colour. */
 .notify-tag.review {
-  background: rgba(249, 115, 22, 0.14);
-  color: #c2410c;
+  background: rgba(240, 132, 79, 0.14);
+  color: #b4501f;
 }
 
 .notify-body {
@@ -3116,9 +3116,9 @@ textarea {
 }
 
 .desk-banner.error {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: #fca5a5;
-  color: #b91c1c;
+  background: rgba(194, 51, 95, 0.08);
+  border-color: #eaa5b9;
+  color: #8a2242;
 }
 
 .desk-panels {
@@ -3265,8 +3265,8 @@ textarea {
 }
 
 .desk-tickbox:hover {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.12);
+  border-color: #3aa86a;
+  background: rgba(58, 168, 106, 0.12);
 }
 
 .desk-tickdone {
@@ -3274,8 +3274,8 @@ textarea {
   height: 19px;
   flex: 0 0 19px;
   border-radius: 5px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #059669;
+  background: rgba(58, 168, 106, 0.15);
+  color: #2e9e68;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3345,7 +3345,7 @@ textarea {
 }
 
 .desk-link.danger {
-  color: #ef4444;
+  color: #c2335f;
 }
 
 .desk-select {
@@ -3540,10 +3540,10 @@ textarea {
   color: #1f7a4d;
 }
 .kpi.paused .kpi-value {
-  color: #475569;
+  color: #3b4a66;
 }
 .kpi.archived .kpi-value {
-  color: #64748b;
+  color: #6b6d88;
 }
 .kpi-sub {
   font-size: 14px;
@@ -3808,11 +3808,11 @@ textarea {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: #1f2937;
+  background: #141e30;
   color: white;
   padding: 10px 12px 10px 16px;
   border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 12px 32px rgba(20, 30, 48, 0.25);
   font-size: 13px;
   z-index: 200;
   animation: toast-in 0.18s ease-out;
@@ -3824,7 +3824,7 @@ textarea {
 }
 .toast-undo {
   background: transparent;
-  color: #93c5fd;
+  color: #a7cff8;
   border: none;
   padding: 4px 8px;
   font-weight: 600;
@@ -3832,7 +3832,7 @@ textarea {
   cursor: pointer;
 }
 .toast-undo:hover {
-  background: rgba(147, 197, 253, 0.12);
+  background: rgba(167, 207, 248, 0.12);
 }
 .toast-close {
   background: transparent;
@@ -3923,8 +3923,8 @@ textarea {
 }
 
 .dashboard-section.dashboard-overdue {
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color: #f4cbd7;
+  background: #fbeff3;
 }
 
 .dashboard-section.dashboard-full-width {
@@ -4012,19 +4012,19 @@ textarea {
 }
 
 .priority-badge.urgent {
-  background: #ef4444;
+  background: #c2335f;
 }
 
 .priority-badge.high {
-  background: #f97316;
+  background: #f0844f;
 }
 
 .priority-badge.normal {
-  background: #3b82f6;
+  background: #5b45f0;
 }
 
 .priority-badge.low {
-  background: #8b5cf6;
+  background: #8a84ff;
 }
 
 .dashboard-deadline-list {
@@ -4160,19 +4160,19 @@ textarea {
 }
 
 .priority-dot.urgent {
-  background: #ef4444;
+  background: #c2335f;
 }
 
 .priority-dot.high {
-  background: #f97316;
+  background: #f0844f;
 }
 
 .priority-dot.normal {
-  background: #3b82f6;
+  background: #5b45f0;
 }
 
 .priority-dot.low {
-  background: #8b5cf6;
+  background: #8a84ff;
 }
 
 .activity-col-client,
@@ -4446,7 +4446,7 @@ textarea {
 }
 .soc-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 4px 12px rgba(20, 30, 48, 0.12);
   border-color: var(--border-strong);
 }
 .soc-card.dragging {
@@ -4674,9 +4674,9 @@ textarea {
   gap: 10px;
 }
 .soc-import-note {
-  background: #dcfce7;
-  border-color: #86efac;
-  color: #14532d;
+  background: #e3fbe9;
+  border-color: #9fe8b5;
+  color: #174a35;
 }
 
 /* Publish hand-off in the post editor */
@@ -4718,14 +4718,14 @@ textarea {
   font-size: 12px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: #dcfce7;
-  color: #14532d;
+  background: #e3fbe9;
+  color: #174a35;
 }
 :root.dark-mode .soc-publish-note,
 :root.dark-mode .soc-import-note {
-  background: rgba(22, 163, 74, 0.2);
-  color: #bbf7d0;
-  border-color: rgba(22, 163, 74, 0.4);
+  background: rgba(46, 158, 104, 0.2);
+  color: #c6ffd1;
+  border-color: rgba(46, 158, 104, 0.4);
 }
 .soc-publish-steps {
   margin: 0;
@@ -4845,10 +4845,10 @@ textarea {
   background: var(--surface-2);
   color: var(--muted);
 }
-.asset-card-icon.kind-image { color: #2563eb; background: rgba(37, 99, 235, 0.1); }
-.asset-card-icon.kind-video { color: #dc2626; background: rgba(220, 38, 38, 0.1); }
-.asset-card-icon.kind-pdf { color: #b91c1c; background: rgba(185, 28, 28, 0.1); }
-.asset-card-icon.kind-document { color: #0f766e; background: rgba(15, 118, 110, 0.1); }
+.asset-card-icon.kind-image { color: #371ee1; background: rgba(55, 30, 225, 0.1); }
+.asset-card-icon.kind-video { color: #a3294d; background: rgba(163, 41, 77, 0.1); }
+.asset-card-icon.kind-pdf { color: #8a2242; background: rgba(138, 34, 66, 0.1); }
+.asset-card-icon.kind-document { color: #244349; background: rgba(36, 67, 73, 0.1); }
 .asset-card-body {
   flex: 1;
   min-width: 0;
@@ -5091,7 +5091,7 @@ textarea {
   color: white !important;
 }
 .soc-type-pill.none {
-  --category: #64748b;
+  --category: #6b6d88;
 }
 .soc-type-pill.empty:not(.active) {
   opacity: 0.55;
@@ -5261,7 +5261,7 @@ textarea {
 .manage-social-saved {
   margin: 0;
   font-size: 13px;
-  color: #15803d;
+  color: #1f7a4d;
 }
 @media (max-width: 760px) {
   .manage-social-row,
@@ -5437,7 +5437,7 @@ textarea {
   border-color: var(--primary);
 }
 .camp-ms-row.outside input[type="date"] {
-  border-color: #f59e0b;
+  border-color: #f0844f;
 }
 .camp-ms-done {
   display: inline-grid;
@@ -5447,7 +5447,7 @@ textarea {
   cursor: pointer;
 }
 .field-hint.warn {
-  color: #b45309;
+  color: #b4501f;
 }
 @media (max-width: 1100px) {
   .soc-cell-ms-label {
@@ -5514,14 +5514,14 @@ textarea {
   background: var(--surface-2);
 }
 .camp-phase.live {
-  color: #15803d;
-  border-color: #86efac;
-  background: #dcfce7;
+  color: #1f7a4d;
+  border-color: #9fe8b5;
+  background: #e3fbe9;
 }
 :root.dark-mode .camp-phase.live {
-  background: rgba(22, 163, 74, 0.2);
-  color: #bbf7d0;
-  border-color: rgba(22, 163, 74, 0.4);
+  background: rgba(46, 158, 104, 0.2);
+  color: #c6ffd1;
+  border-color: rgba(46, 158, 104, 0.4);
 }
 .camp-card-title {
   background: transparent;
@@ -5604,7 +5604,7 @@ textarea {
   color: var(--muted);
 }
 .camp-card-ms-row.overdue .camp-card-ms-date {
-  color: #b45309;
+  color: #b4501f;
   font-weight: 700;
 }
 .camp-card-more {
@@ -5806,7 +5806,7 @@ textarea {
   color: var(--text);
 }
 .camp-mini-overdue {
-  color: #b45309;
+  color: #b4501f;
   font-weight: 700;
 }
 .camp-mini-next {
@@ -6006,11 +6006,11 @@ textarea {
   box-shadow: none;
 }
 .camp-ms-card.overdue {
-  border-color: #f59e0b;
-  background: #fffbeb;
+  border-color: #f0844f;
+  background: #fff8f2;
 }
 :root.dark-mode .camp-ms-card.overdue {
-  background: rgba(245, 158, 11, 0.12);
+  background: rgba(240, 132, 79, 0.12);
 }
 .camp-ms-tick {
   flex: 0 0 30px;
@@ -6068,7 +6068,7 @@ textarea {
   white-space: nowrap;
 }
 .camp-ms-card.overdue .camp-ms-card-camp {
-  color: #b45309;
+  color: #b4501f;
   font-weight: 700;
 }
 .camp-ms-card.sample {
