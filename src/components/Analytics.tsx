@@ -323,9 +323,13 @@ export function Analytics({
   const social = useMemo(() => {
     const count = (s: SocialPostStatus) =>
       posts.filter((p) => p.status === s).length;
-    // Still to go out: not published, not pulled.
+    // Still to go out: not published, not pulled, and not parked on hold —
+    // an on-hold post missing a date or asset isn't something to chase yet.
     const open = posts.filter(
-      (p) => p.status !== "published" && p.status !== "cancelled",
+      (p) =>
+        p.status !== "published" &&
+        p.status !== "cancelled" &&
+        p.status !== "onHold",
     );
 
     const categories = new Map<string, number>();
@@ -375,7 +379,9 @@ export function Analytics({
       total: posts.length,
       published: count("published"),
       scheduled: count("scheduled"),
-      inProgress: count("draft") + count("pending"),
+      draft: count("draft"),
+      ready: count("pending"),
+      onHold: count("onHold"),
       unscheduled: open.filter((p) => !p.date).length,
       needsAsset: open.filter((p) => !p.asset.trim()).length,
       byCategory,
@@ -596,10 +602,11 @@ export function Analytics({
         </div>
 
         <div className="kpi-row">
-          <Kpi label="Posts" value={social.total} />
           <Kpi label="Published" value={social.published} variant="completed" />
           <Kpi label="Scheduled" value={social.scheduled} variant="duesoon" />
-          <Kpi label="Draft / pending" value={social.inProgress} variant="planning" />
+          <Kpi label="Ready to publish" value={social.ready} />
+          <Kpi label="Draft" value={social.draft} />
+          <Kpi label="On hold" value={social.onHold} variant="planning" />
           <Kpi label="No date yet" value={social.unscheduled} variant="paused" />
           <Kpi label="No asset yet" value={social.needsAsset} variant="overdue" />
         </div>

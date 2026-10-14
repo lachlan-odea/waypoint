@@ -161,11 +161,18 @@ export type DeskItem = {
 // team used in the original spreadsheet: green cells were published, pink
 // pending, red pulled. "backlog" is reserved for the evergreen library —
 // reusable copy that isn't tied to any date until someone schedules it.
+//
+// The stored value "pending" is displayed as "Ready to publish". It's already
+// on live post docs, and renaming it would need a migration where a missed
+// doc would fall through socialStatusMeta's default and show as Draft. Always
+// render through socialStatusMeta() in constants.ts, never the raw value.
+// "onHold" is a post that's parked: not cancelled, but not going out yet.
 export type SocialPostStatus =
   | "backlog"
   | "draft"
   | "pending"
   | "scheduled"
+  | "onHold"
   | "published"
   | "cancelled";
 
