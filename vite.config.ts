@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.png', 'hero.png', 'app-icon.png'],
       manifest: {
         // Stable identity for the installed app. Without it the browser keys
