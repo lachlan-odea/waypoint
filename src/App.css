@@ -3546,6 +3546,10 @@ textarea {
   animation: toast-in 0.18s ease-out;
   max-width: calc(100% - 40px);
 }
+/* The new-version toast sits above the move/undo toast so both can show. */
+.toast-update {
+  bottom: 72px;
+}
 .toast-undo {
   background: transparent;
   color: #93c5fd;
