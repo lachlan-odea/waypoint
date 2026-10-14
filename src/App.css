@@ -1706,15 +1706,106 @@ textarea {
   cursor: not-allowed;
 }
 
+.manage-users-search {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--surface);
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+  color: inherit;
+}
+.manage-users-search:focus {
+  border-color: var(--primary);
+}
+.manage-users-count {
+  margin: 0;
+}
+.manage-users {
+  gap: 6px;
+}
+/* Collapsed: a one-line summary of what's assigned. Open: the summary plus
+   the full role / location / team toggles underneath. */
 .manage-user-row {
-  display: grid;
-  grid-template-columns: 300px 1fr auto;
-  gap: 16px;
-  align-items: center;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 10px 12px;
   background: var(--surface);
+  overflow: hidden;
+}
+.manage-user-row.open {
+  border-color: var(--primary);
+}
+.manage-user-summary {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) 1fr auto;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.manage-user-summary:hover {
+  background: var(--surface-2);
+}
+.manage-user-summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.manage-user-identity > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.manage-user-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+.manage-user-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.manage-user-tag.role {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: transparent;
+  font-weight: 600;
+}
+.manage-user-tag .muted {
+  font-size: 11px;
+}
+.manage-user-caret {
+  color: var(--muted);
+  font-size: 12px;
+  transition: transform 0.15s ease;
+}
+.manage-user-row.open .manage-user-caret {
+  transform: rotate(180deg);
+}
+.manage-user-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 12px 12px;
+  border-top: 1px solid var(--border);
+}
+.manage-user-editor .manage-user-delete {
+  align-self: flex-end;
 }
 .manage-user-delete {
   background: transparent;
@@ -1757,11 +1848,12 @@ textarea {
   font-size: 11px;
 }
 @media (max-width: 720px) {
-  .manage-user-row {
-    grid-template-columns: 1fr;
+  .manage-user-summary {
+    grid-template-columns: 1fr auto;
   }
-  .manage-user-delete {
-    justify-self: end;
+  .manage-user-tags {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 }
 .manage-user-chips {
