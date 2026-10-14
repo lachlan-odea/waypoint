@@ -53,7 +53,9 @@ MEANINGFUL_FILLS = {FILL_PUBLISHED, FILL_PENDING, FILL_CANCELLED}
 STATUS_MAP = {
     "published": "published",
     "pending": "pending",
+    "ready to publish": "pending",
     "scheduled": "scheduled",
+    "on hold": "onHold",
     "backlog": "backlog",
     "draft": "draft",
     "cancelled": "cancelled",

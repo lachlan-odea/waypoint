@@ -95,8 +95,10 @@ export const SOCIAL_POST_STATUSES: {
   color: string;
 }[] = [
   { value: "draft", label: "Draft", color: "#6b7280" },
-  { value: "pending", label: "Pending", color: "#c2417f" },
+  // Stored as "pending" — see the note on SocialPostStatus.
+  { value: "pending", label: "Ready to publish", color: "#c2417f" },
   { value: "scheduled", label: "Scheduled", color: "#d97706" },
+  { value: "onHold", label: "On hold", color: "#4f46e5" },
   { value: "published", label: "Published", color: "#16a34a" },
   { value: "cancelled", label: "Cancelled", color: "#dc2626" },
   { value: "backlog", label: "Backlog", color: "#64748b" },
