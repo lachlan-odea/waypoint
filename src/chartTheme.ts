@@ -39,6 +39,10 @@ export type ChartTheme = {
   legendStyle: React.CSSProperties;
   // Unfilled remainder of the completion gauge.
   gaugeTrack: string;
+  // Filled part of the completion gauge.
+  gaugeFill: string;
+  // Single-series bars (projects per designer, per content type).
+  bar: string;
 };
 
 // Values mirror the CSS custom properties in App.css so charts and chrome
@@ -59,6 +63,8 @@ const LIGHT: ChartTheme = {
   tooltipItemStyle: { color: "#4b5563" },
   legendStyle: { fontSize: 12, color: "#1f2937" },
   gaugeTrack: "#e5e7eb",
+  gaugeFill: "#2e9e68",
+  bar: "#371ee1",
 };
 
 const DARK: ChartTheme = {
@@ -74,11 +80,13 @@ const DARK: ChartTheme = {
     fontSize: 12,
   },
   tooltipLabelStyle: { color: "#f1f5f9", fontWeight: 600, marginBottom: 2 },
-  // Not the series colour: an indigo bar's own fill is close to unreadable
+  // Not the series colour: a blue bar's own fill is close to unreadable
   // against the dark tooltip panel.
   tooltipItemStyle: { color: "#cbd5e1" },
   legendStyle: { fontSize: 12, color: "#f1f5f9" },
   gaugeTrack: "#334155",
+  gaugeFill: "#3aa86a",
+  bar: "#8a7dff",
 };
 
 export function useChartTheme(): ChartTheme {

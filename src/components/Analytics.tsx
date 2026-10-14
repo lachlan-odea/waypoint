@@ -67,15 +67,17 @@ function isLiveWork(p: Project): boolean {
   return (p.status ?? "active") === "active";
 }
 
-// Same hues as the status KPIs these bars replaced.
+// Brand steps (CargoWise Blue, Sky, a navy grey, Mint/Pine green), kept
+// mid-tone so the same bars read on the white and the dark-mode panel.
 const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
-  planning: "#4f46e5",
-  active: "#0891b2",
-  paused: "#64748b",
-  completed: "#16a34a",
+  planning: "#5b45f0",
+  active: "#2f7fc0",
+  paused: "#8486a3",
+  completed: "#2e9e68",
 };
 
-const NEUTRAL_BAR = "#4f46e5";
+// CargoWise Blue, lifted a step so it holds up on the dark panel too.
+const NEUTRAL_BAR = "#5b45f0";
 
 // How far ahead the campaign watch list looks for milestones still to do.
 const WATCH_DAYS = 14;
@@ -346,7 +348,7 @@ export function Analytics({
         count: n,
         color:
           label === "Uncategorised"
-            ? "#94a3b8"
+            ? "#a3a6c2"
             : (socialCategoryMeta(label, socialCategories)?.color ?? NEUTRAL_BAR),
       }))
       .sort((a, b) => b.count - a.count);
@@ -796,7 +798,7 @@ function CompletionKpi({
           <RadialBarChart
             innerRadius="70%"
             outerRadius="100%"
-            data={[{ value: pct, fill: "#10b981" }]}
+            data={[{ value: pct, fill: theme.gaugeFill }]}
             startAngle={90}
             endAngle={-270}
           >
@@ -904,7 +906,7 @@ function CategoryBars({ data, unit }: { data: CategoryRow[]; unit: string }) {
           />
           <Bar dataKey="count" radius={[0, 6, 6, 0]}>
             {data.map((row, i) => (
-              <Cell key={i} fill={row.color ?? NEUTRAL_BAR} />
+              <Cell key={i} fill={row.color ?? theme.bar} />
             ))}
           </Bar>
         </BarChart>
