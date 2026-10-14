@@ -7,6 +7,7 @@ import {
   loadDesignerProfiles,
 } from "../firestore";
 import { resetPassword, signIn, signUp } from "../firebase";
+import { LoginPattern } from "./LoginPattern";
 
 const heroImage = `${import.meta.env.BASE_URL}hero.png`;
 
@@ -152,6 +153,7 @@ export function Login({ onSignedIn }: Props) {
 
   return (
     <div className="login">
+      <LoginPattern />
       <div className="login-card">
         <img src={heroImage} alt="Waypoint" className="login-hero" />
 

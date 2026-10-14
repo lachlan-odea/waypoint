@@ -6,6 +6,7 @@ import {
   loadDesignerProfiles,
 } from "../firestore";
 import { signOut } from "../firebase";
+import { LoginPattern } from "./LoginPattern";
 
 const heroImage = `${import.meta.env.BASE_URL}hero.png`;
 
@@ -74,6 +75,7 @@ export function ProfileSetup({ uid, email }: Props) {
 
   return (
     <div className="login">
+      <LoginPattern />
       <div className="login-card">
         <img src={heroImage} alt="Waypoint" className="login-hero" />
         <h1 className="login-title">Finish setting up your profile</h1>
