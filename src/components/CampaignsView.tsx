@@ -1,6 +1,12 @@
 import { useMemo, useState } from "react";
-import type { Campaign, Designer, Project, Workspace } from "../types";
-import { SOCIAL_CHANNELS, brandColor } from "../constants";
+import type {
+  Campaign,
+  Designer,
+  Project,
+  SocialCategory,
+  Workspace,
+} from "../types";
+import { brandColor, socialCategoryMeta } from "../constants";
 import { formatShort, todayIso } from "../dates";
 import {
   PHASE_LABEL,
@@ -19,6 +25,9 @@ import { CampaignModal } from "./CampaignModal";
 
 type Props = {
   campaigns: Campaign[];
+  // The Social calendar's category list (Settings → Category types & social
+  // tags). Campaigns use the same types as posts.
+  categories: SocialCategory[];
   // Owner suggestions in the editor.
   designers: Designer[];
   // Board projects a campaign can link as contributing to it.
@@ -38,6 +47,9 @@ type Editing =
   | { mode: "edit"; campaign: Campaign };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+// Type-filter value for campaigns with no category set.
+const NO_TYPE = "__none__";
 
 function shiftMonth(month: string, delta: number): string {
   const [y, m] = month.split("-").map(Number);
@@ -76,6 +88,7 @@ function daysFromToday(iso: string, today: string): number {
 
 export function CampaignsView({
   campaigns,
+  categories,
   designers,
   projects,
   workspaces,
@@ -87,7 +100,8 @@ export function CampaignsView({
 }: Props) {
   const today = todayIso();
   const [month, setMonth] = useState(() => today.slice(0, 7));
-  const [channelFilter, setChannelFilter] = useState("");
+  // "" shows every type; NO_TYPE shows campaigns without one.
+  const [typeFilter, setTypeFilter] = useState("");
   const [editing, setEditing] = useState<Editing | null>(null);
   // Which campaign card has its milestone list expanded.
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
@@ -107,13 +121,8 @@ export function CampaignsView({
     queueMicrotask(() => onFocusHandled?.());
   }
 
-  const channels = useMemo(() => {
-    const seen = new Set<string>(SOCIAL_CHANNELS);
-    const extra = campaigns
-      .map((c) => c.channel.trim())
-      .filter((c) => c && !seen.has(c));
-    return [...SOCIAL_CHANNELS, ...Array.from(new Set(extra)).sort()];
-  }, [campaigns]);
+  const matchesType = (c: Campaign) =>
+    !typeFilter || (c.category || NO_TYPE) === typeFilter;
 
   const owners = useMemo(() => {
     const names = new Set<string>();
@@ -126,16 +135,32 @@ export function CampaignsView({
   const weeks = useMemo(() => weeksOf(cells), [cells]);
   const monthLabel = monthTitle(month);
 
-  const monthCampaigns = useMemo(() => {
+  // Everything touching the month, before the type filter — what the type
+  // pills count over so the counts don't collapse once you pick one.
+  const monthAll = useMemo(() => {
     const { from, to } = monthBounds(month);
     return campaigns
       .filter((c) => campaignOverlaps(c, from, to))
-      .filter((c) => !channelFilter || c.channel.trim() === channelFilter)
       .sort(
         (a, b) =>
           a.startDate.localeCompare(b.startDate) || a.name.localeCompare(b.name),
       );
-  }, [campaigns, month, channelFilter]);
+  }, [campaigns, month]);
+
+  const monthCampaigns = useMemo(
+    () => monthAll.filter(matchesType),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [monthAll, typeFilter],
+  );
+
+  const typeCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    monthAll.forEach((c) => {
+      const key = c.category || NO_TYPE;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    return counts;
+  }, [monthAll]);
 
   // A fixed row per campaign for the month, so its band stays level across
   // the grid.
@@ -147,10 +172,11 @@ export function CampaignsView({
     const { to } = monthBounds(month);
     return campaigns
       .filter((c) => c.startDate > to)
-      .filter((c) => !channelFilter || c.channel.trim() === channelFilter)
+      .filter(matchesType)
       .sort((a, b) => a.startDate.localeCompare(b.startDate))
       .slice(0, 5);
-  }, [campaigns, month, channelFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaigns, month, typeFilter]);
 
   function save(campaign: Campaign) {
     onSave(campaign);
@@ -187,7 +213,7 @@ export function CampaignsView({
       mode: "create",
       initial: {
         startDate: startDate ?? `${month}-01`,
-        channel: channelFilter || undefined,
+        category: typeFilter && typeFilter !== NO_TYPE ? typeFilter : undefined,
       },
     });
   }
@@ -227,22 +253,45 @@ export function CampaignsView({
           )}
         </div>
 
-        <div className="filter-quick soc-channels">
+        <div className="filter-quick soc-types" role="group" aria-label="Filter by type">
           <button
-            className={channelFilter === "" ? "active" : ""}
-            onClick={() => setChannelFilter("")}
+            className={typeFilter === "" ? "active" : ""}
+            onClick={() => setTypeFilter("")}
           >
-            All channels
+            All types
           </button>
-          {channels.map((c) => (
-            <button
-              key={c}
-              className={channelFilter === c ? "active" : ""}
-              onClick={() => setChannelFilter(c)}
-            >
-              {c}
-            </button>
-          ))}
+          {categories.map((cat) => {
+            const count = typeCounts.get(cat.label) ?? 0;
+            const active = typeFilter === cat.label;
+            return (
+              <button
+                key={cat.id}
+                className={`soc-type-pill ${active ? "active" : ""} ${
+                  count === 0 ? "empty" : ""
+                }`}
+                style={{ ["--category" as string]: cat.color } as React.CSSProperties}
+                onClick={() => setTypeFilter(active ? "" : cat.label)}
+                aria-pressed={active}
+                title={cat.label}
+              >
+                {cat.short}
+                {count > 0 && <span className="soc-type-count">{count}</span>}
+              </button>
+            );
+          })}
+          <button
+            className={`soc-type-pill none ${typeFilter === NO_TYPE ? "active" : ""} ${
+              (typeCounts.get(NO_TYPE) ?? 0) === 0 ? "empty" : ""
+            }`}
+            onClick={() => setTypeFilter(typeFilter === NO_TYPE ? "" : NO_TYPE)}
+            aria-pressed={typeFilter === NO_TYPE}
+            title="Campaigns with no type set yet"
+          >
+            No type
+            {(typeCounts.get(NO_TYPE) ?? 0) > 0 && (
+              <span className="soc-type-count">{typeCounts.get(NO_TYPE)}</span>
+            )}
+          </button>
         </div>
 
         <div className="soc-toolbar-right">
@@ -259,7 +308,11 @@ export function CampaignsView({
             : `${monthCampaigns.length} campaign${
                 monthCampaigns.length === 1 ? "" : "s"
               } in ${monthLabel}`}
-          {channelFilter ? ` on ${channelFilter}` : ""}
+          {typeFilter
+            ? typeFilter === NO_TYPE
+              ? " with no type"
+              : ` of type ${typeFilter}`
+            : ""}
           {" · click a campaign bar to edit it, tick a milestone when it's happened, use + on a day to start a campaign there"}
         </span>
       </div>
@@ -453,9 +506,24 @@ export function CampaignsView({
                   <p className="camp-card-dates muted small">
                     {formatShort(c.startDate)} – {formatShort(c.endDate)} ·{" "}
                     {spanDays(c)} day{spanDays(c) === 1 ? "" : "s"} · {phaseNote}
-                    {c.channel ? ` · ${c.channel}` : ""}
                     {c.owner ? ` · ${c.owner}` : ""}
                   </p>
+                  {(() => {
+                    const cat = socialCategoryMeta(c.category, categories);
+                    return cat ? (
+                      <span
+                        className="soc-category camp-card-type"
+                        style={{
+                          color: cat.color,
+                          borderColor: cat.color,
+                          ["--category" as string]: cat.color,
+                        } as React.CSSProperties}
+                        title={`Type: ${cat.label}`}
+                      >
+                        {cat.label}
+                      </span>
+                    ) : null;
+                  })()}
                   {c.description && (
                     <p className="camp-card-desc">{c.description}</p>
                   )}
@@ -563,7 +631,7 @@ export function CampaignsView({
                   <span className="muted small">
                     {formatShort(c.startDate)} – {formatShort(c.endDate)}
                     {c.brand ? ` · ${c.brand}` : ""}
-                    {c.channel ? ` · ${c.channel}` : ""}
+                    {c.category ? ` · ${c.category}` : ""}
                   </span>
                 </button>
               </li>
@@ -576,7 +644,7 @@ export function CampaignsView({
         <CampaignModal
           mode="create"
           initial={editing.initial}
-          channels={channels}
+          categories={categories}
           owners={owners}
           projects={projects}
           workspaces={workspaces}
@@ -590,7 +658,7 @@ export function CampaignsView({
           key={editing.campaign.id}
           mode="edit"
           initial={editing.campaign}
-          channels={channels}
+          categories={categories}
           owners={owners}
           projects={projects}
           workspaces={workspaces}

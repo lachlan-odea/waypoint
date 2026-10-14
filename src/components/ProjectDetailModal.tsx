@@ -62,6 +62,8 @@ type Props = {
   // Jump to a campaign this project contributes to. App closes this window,
   // switches to the Campaigns page and opens that campaign's editor.
   onOpenCampaign: (campaignId: string) => void;
+  // Content types on offer, from Settings → Category types & social tags.
+  contentTypeOptions: readonly string[];
 };
 
 const priorities: Priority[] = ["Urgent", "High", "Normal", "Low"];
@@ -106,6 +108,7 @@ export function ProjectDetailModal({
   onMoveToWorkspace,
   onOpenSocialPost,
   onOpenCampaign,
+  contentTypeOptions,
 }: Props) {
   // Campaigns this project is doing work for. Same shape as the linked
   // posts below: its own small query, soonest start first.
@@ -713,6 +716,7 @@ export function ProjectDetailModal({
                 onChange={(next) =>
                   onChange((p) => ({ ...p, contentTypes: next }))
                 }
+                options={contentTypeOptions}
               />
             </Field>
             <Field label="Assignees">

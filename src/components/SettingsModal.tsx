@@ -185,11 +185,12 @@ export function SettingsModal({
 
           {isSuperUser && (
             <section className="modal-section">
-              <h3>Social calendar</h3>
+              <h3>Category types &amp; social tags</h3>
               <p className="muted small">
-                The categories posts can be tagged with, and the company
-                hashtags offered in the post editor. Shared by everyone who
-                uses the calendar. Opens in a dedicated window.
+                The types that social posts and campaigns are tagged with, the
+                company hashtags offered in the post editor, and the content
+                types projects can carry. Shared by everyone. Opens in a
+                dedicated window.
               </p>
               <div className="social-summary">
                 {socialConfig.categories.map((c) => (
@@ -211,13 +212,18 @@ export function SettingsModal({
                     {socialConfig.hashtags.map((h) => h.tag).join("  ")}
                   </span>
                 )}
+                {(socialConfig.contentTypes ?? []).length > 0 && (
+                  <span className="muted small social-summary-tags">
+                    Content types: {(socialConfig.contentTypes ?? []).join(" · ")}
+                  </span>
+                )}
               </div>
               <div className="section-actions">
                 <button
                   className="primary"
                   onClick={() => setManageSocialOpen(true)}
                 >
-                  Manage social calendar →
+                  Manage category types &amp; social tags →
                 </button>
               </div>
             </section>

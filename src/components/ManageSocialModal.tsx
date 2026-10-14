@@ -40,6 +40,10 @@ export function ManageSocialModal({
   const [hashtags, setHashtags] = useState<SocialHashtag[]>(() =>
     config.hashtags.map((h) => ({ ...h })),
   );
+  // Project content types are plain strings; rows are keyed by position.
+  const [contentTypes, setContentTypes] = useState<string[]>(() => [
+    ...(config.contentTypes ?? []),
+  ]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -59,10 +63,38 @@ export function ManageSocialModal({
 
   const dirty = useMemo(
     () =>
-      JSON.stringify({ categories, hashtags }) !==
-      JSON.stringify({ categories: config.categories, hashtags: config.hashtags }),
-    [categories, hashtags, config],
+      JSON.stringify({ categories, hashtags, contentTypes }) !==
+      JSON.stringify({
+        categories: config.categories,
+        hashtags: config.hashtags,
+        contentTypes: config.contentTypes ?? [],
+      }),
+    [categories, hashtags, contentTypes, config],
   );
+
+  // ── content types ────────────────────────────────────────────────────
+
+  function patchContentType(index: number, value: string) {
+    setContentTypes((cur) => cur.map((t, i) => (i === index ? value : t)));
+  }
+
+  function moveContentType(index: number, delta: -1 | 1) {
+    setContentTypes((cur) => {
+      const j = index + delta;
+      if (j < 0 || j >= cur.length) return cur;
+      const next = cur.slice();
+      [next[index], next[j]] = [next[j], next[index]];
+      return next;
+    });
+  }
+
+  function addContentType() {
+    setContentTypes((cur) => [...cur, ""]);
+  }
+
+  function removeContentType(index: number) {
+    setContentTypes((cur) => cur.filter((_, i) => i !== index));
+  }
 
   // ── categories ───────────────────────────────────────────────────────
 
@@ -147,7 +179,23 @@ export function ManageSocialModal({
     if (dupTag) {
       return { error: `${dupTag} is listed twice.` };
     }
-    return { config: { categories: cleanCategories, hashtags: cleanHashtags } };
+    const cleanContentTypes = contentTypes.map((t) => t.trim());
+    if (cleanContentTypes.some((t) => !t)) {
+      return { error: "Every content type needs a name — remove any blank rows." };
+    }
+    const lowerTypes = cleanContentTypes.map((t) => t.toLowerCase());
+    const dupType = lowerTypes.find((t, i) => lowerTypes.indexOf(t) !== i);
+    if (dupType) {
+      return { error: `“${dupType}” is listed twice under content types.` };
+    }
+
+    return {
+      config: {
+        categories: cleanCategories,
+        hashtags: cleanHashtags,
+        contentTypes: cleanContentTypes,
+      },
+    };
   }
 
   async function save() {
@@ -177,6 +225,7 @@ export function ManageSocialModal({
       // Reflect the tidied values (trimmed labels, normalised tags).
       setCategories(result.config.categories);
       setHashtags(result.config.hashtags);
+      setContentTypes(result.config.contentTypes ?? []);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : String(err));
@@ -190,9 +239,10 @@ export function ManageSocialModal({
       <div className="modal">
         <header className="modal-head">
           <div>
-            <h2 className="modal-title-static">Social calendar</h2>
+            <h2 className="modal-title-static">Category types &amp; social tags</h2>
             <div className="modal-sub">
-              Categories and company hashtags, shared by everyone who uses the calendar
+              Types for posts and campaigns, company hashtags, and project content
+              types — shared by everyone
             </div>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
@@ -202,12 +252,13 @@ export function ManageSocialModal({
 
         <div className="modal-body">
           <section className="modal-section">
-            <h3>Categories</h3>
+            <h3>Category types</h3>
             <p className="muted small" style={{ marginTop: 0 }}>
-              Each post can carry one category. The <strong>pill text</strong>{" "}
-              is what fits on a calendar card, so keep it short; the full name
-              is the picker option and the tooltip. Order here is the order of
-              the picker and the filter row.
+              Each social post and each campaign can carry one type. The{" "}
+              <strong>pill text</strong> is what fits on a calendar card, so
+              keep it short; the full name is the picker option and the
+              tooltip. Order here is the order of the pickers and the filter
+              rows.
             </p>
             <div className="manage-social-list">
               {categories.map((c, i) => (
@@ -332,6 +383,71 @@ export function ManageSocialModal({
             <div className="section-actions" style={{ justifyContent: "flex-start" }}>
               <button className="btn-mini" onClick={addHashtag} disabled={busy}>
                 + Add hashtag
+              </button>
+            </div>
+          </section>
+
+          <section className="modal-section">
+            <h3>Project content types</h3>
+            <p className="muted small" style={{ marginTop: 0 }}>
+              The chips offered under <strong>Content type</strong> when
+              creating or editing a project (Web, Email, Video…). A project
+              can carry several. Removing one here leaves it on projects that
+              already have it — they keep showing it as a custom chip.
+            </p>
+            <div className="manage-social-list">
+              {contentTypes.map((t, i) => (
+                <div key={i} className="manage-social-row contenttype">
+                  <input
+                    value={t}
+                    placeholder="Content type"
+                    onChange={(e) => patchContentType(i, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addContentType();
+                      }
+                    }}
+                    disabled={busy}
+                  />
+                  <span className="manage-social-actions">
+                    <button
+                      className="icon-btn"
+                      onClick={() => moveContentType(i, -1)}
+                      disabled={busy || i === 0}
+                      aria-label="Move up"
+                      title="Move up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      className="icon-btn"
+                      onClick={() => moveContentType(i, 1)}
+                      disabled={busy || i === contentTypes.length - 1}
+                      aria-label="Move down"
+                      title="Move down"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      className="link-btn"
+                      onClick={() => removeContentType(i)}
+                      disabled={busy}
+                    >
+                      Remove
+                    </button>
+                  </span>
+                </div>
+              ))}
+              {contentTypes.length === 0 && (
+                <p className="muted small">
+                  No content types — the project editor will only offer “Other…”.
+                </p>
+              )}
+            </div>
+            <div className="section-actions" style={{ justifyContent: "flex-start" }}>
+              <button className="btn-mini" onClick={addContentType} disabled={busy}>
+                + Add content type
               </button>
             </div>
           </section>

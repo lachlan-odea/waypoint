@@ -54,7 +54,7 @@ import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
 import { contentTypesSearchText } from "./contentTypes";
 import {
-  DEFAULT_SOCIAL_CONFIG,
+  resolveSocialConfig,
   DEFAULT_WORKSPACE_ID,
   SUPER_USER_EMAILS,
 } from "./constants";
@@ -214,7 +214,10 @@ export default function App() {
       console.warn("Couldn't load social calendar settings", err);
     });
   }, [sessionDesignerId]);
-  const socialConfig = socialConfigDoc ?? DEFAULT_SOCIAL_CONFIG;
+  const socialConfig = useMemo(
+    () => resolveSocialConfig(socialConfigDoc),
+    [socialConfigDoc],
+  );
 
   // Marketing campaigns. Shared by the Campaigns view (its own page) and
   // the Social calendar (overlay on the post grid), so they live here.
@@ -1034,6 +1037,7 @@ export default function App() {
         ) : view === "campaigns" ? (
           <CampaignsView
             campaigns={campaigns}
+            categories={socialConfig.categories}
             designers={workspace.designers}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
@@ -1321,6 +1325,7 @@ export default function App() {
           reviewers={reviewers}
           workspaces={availableWorkspaces}
           currentDesignerId={currentDesigner.id}
+          contentTypeOptions={socialConfig.contentTypes}
           currentDesignerName={currentDesigner.name}
           onClose={() => setOpenProjectId(null)}
           onChange={(updater) => updateProject(openProject.id, updater)}
@@ -1351,6 +1356,7 @@ export default function App() {
           designers={workspace.designers}
           workspaces={availableWorkspaces}
           defaultWorkspaceId={currentWorkspaceId}
+          contentTypeOptions={socialConfig.contentTypes}
           defaultAssigneeId={sessionDesignerId}
           initial={createInitial}
           onCancel={() => {

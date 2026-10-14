@@ -1,20 +1,22 @@
 import { useMemo, useState } from "react";
-import { CONTENT_TYPES } from "../constants";
 import { normaliseContentTypes } from "../contentTypes";
 
 type Props = {
   value: string[];
   onChange: (next: string[]) => void;
+  // The chips on offer — the team-managed list from Settings → Category
+  // types & social tags (SocialConfig.contentTypes).
+  options: readonly string[];
 };
 
 // Multi-select content types. Toggle chips rather than a <select multiple>,
 // which is near-unusable with a mouse and gives no indication that
 // ctrl-click is required. No cap — a project can carry as many as apply.
 //
-// The old free-text "Other…" escape hatch is kept: teams coin content types
-// faster than CONTENT_TYPES gets updated, and anything already saved that
-// isn't in the constant still needs to render and stay removable.
-export function ContentTypeField({ value, onChange }: Props) {
+// The free-text "Other…" escape hatch is kept: anything already saved that
+// isn't in the list still needs to render and stay removable, and a one-off
+// shouldn't need a trip to Settings.
+export function ContentTypeField({ value, onChange, options }: Props) {
   const [addingOther, setAddingOther] = useState(false);
   const [draft, setDraft] = useState("");
 
@@ -27,12 +29,9 @@ export function ContentTypeField({ value, onChange }: Props) {
   const customValues = useMemo(
     () =>
       value.filter(
-        (v) =>
-          !(CONTENT_TYPES as readonly string[]).some(
-            (known) => known.toLowerCase() === v.toLowerCase(),
-          ),
+        (v) => !options.some((known) => known.toLowerCase() === v.toLowerCase()),
       ),
-    [value],
+    [value, options],
   );
 
   function toggle(next: string) {
@@ -54,7 +53,7 @@ export function ContentTypeField({ value, onChange }: Props) {
   return (
     <div className="content-type-field">
       <div className="content-type-chips">
-        {CONTENT_TYPES.map((type) => (
+        {options.map((type) => (
           <button
             key={type}
             type="button"
@@ -98,6 +97,7 @@ export function ContentTypeField({ value, onChange }: Props) {
                 commitDraft();
               }
               if (e.key === "Escape") {
+                e.stopPropagation();
                 setDraft("");
                 setAddingOther(false);
               }

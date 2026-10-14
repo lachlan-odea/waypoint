@@ -5719,3 +5719,12 @@ textarea {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* Content-type rows in the Category types & social tags window */
+.manage-social-row.contenttype {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+/* Type pill on a campaign card */
+.camp-card-type {
+  align-self: flex-start;
+}

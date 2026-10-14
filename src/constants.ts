@@ -135,10 +135,29 @@ export const DEFAULT_SOCIAL_HASHTAGS: SocialHashtag[] = [
   { id: "wisetechglobal", tag: "#WiseTechGlobal", note: "Every WiseTech channel post" },
 ];
 
-export const DEFAULT_SOCIAL_CONFIG: SocialConfig = {
-  categories: DEFAULT_SOCIAL_CATEGORIES,
-  hashtags: DEFAULT_SOCIAL_HASHTAGS,
-};
+// CONTENT_TYPES is declared further down; the function form keeps this
+// independent of declaration order.
+export function defaultSocialConfig(): Required<SocialConfig> {
+  return {
+    categories: DEFAULT_SOCIAL_CATEGORIES,
+    hashtags: DEFAULT_SOCIAL_HASHTAGS,
+    contentTypes: [...CONTENT_TYPES],
+  };
+}
+
+// The config as the app uses it: whatever has been saved, with the built-in
+// defaults filling any field the saved document predates.
+export function resolveSocialConfig(
+  doc: SocialConfig | null | undefined,
+): Required<SocialConfig> {
+  const d = defaultSocialConfig();
+  if (!doc) return d;
+  return {
+    categories: doc.categories ?? d.categories,
+    hashtags: doc.hashtags ?? d.hashtags,
+    contentTypes: doc.contentTypes ?? d.contentTypes,
+  };
+}
 
 // Pill text + colour for a stored category. A value that isn't in the list
 // (deleted later, say) still renders, in neutral slate, rather than vanishing.
