@@ -927,6 +927,19 @@ function ManageUsersModal({
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  // Name / email filter, and the one row whose editor is expanded. Rows
+  // collapse to a summary of what's assigned so the list stays scannable.
+  const [query, setQuery] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const q = query.trim().toLowerCase();
+  const visibleDesigners = q
+    ? designers.filter(
+        (d) =>
+          d.name.toLowerCase().includes(q) ||
+          (d.email ?? "").toLowerCase().includes(q),
+      )
+    : designers;
 
   const superUserIds = new Set(superUsers.map((d) => d.id));
   const reviewerIds = new Set(reviewers.map((d) => d.id));
@@ -991,14 +1004,30 @@ function ManageUsersModal({
         </header>
         <div className="modal-body">
           <p className="muted small" style={{ marginTop: 0 }}>
-            One row per designer. Toggle roles (Super user, Reviewer) and
-            team membership independently — anyone can be assigned to a
-            project regardless of team, but only team members appear as
-            columns on that team's board. A team with no members chosen
-            stays open to everyone.
+            Click a user to change their roles, location and teams. Anyone
+            can be assigned to a project regardless of team, but only team
+            members appear as columns on that team's board. A team with no
+            members chosen stays open to everyone.
           </p>
           <div className="manage-users-toolbar">
             {!adding ? (
+              <>
+              <input
+                type="search"
+                className="manage-users-search"
+                placeholder="Search by name or email"
+                aria-label="Search users"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  // Clear the search first; a second Escape closes the modal.
+                  if (e.key === "Escape" && query) {
+                    e.stopPropagation();
+                    e.nativeEvent.stopImmediatePropagation();
+                    setQuery("");
+                  }
+                }}
+              />
               <button
                 className="primary"
                 onClick={() => setAdding(true)}
@@ -1006,6 +1035,7 @@ function ManageUsersModal({
               >
                 + Add user
               </button>
+              </>
             ) : (
               <div className="manage-users-add">
                 <input
@@ -1044,27 +1074,89 @@ function ManageUsersModal({
               </div>
             )}
           </div>
+          {designers.length > 0 && (
+            <p className="muted small manage-users-count">
+              {query.trim()
+                ? `${visibleDesigners.length} of ${designers.length} users match`
+                : `${designers.length} users`}
+            </p>
+          )}
           <div className="manage-users">
-        {designers.map((d) => {
+        {visibleDesigners.length === 0 && (
+          <p className="muted small">No users match “{query.trim()}”.</p>
+        )}
+        {visibleDesigners.map((d) => {
           const isSelf = d.id === currentDesignerId;
           const isSuper = superUserIds.has(d.id);
           const isReviewerActive = reviewerIds.has(d.id);
           const isPlaceholder = d.id.startsWith("placeholder-");
+          const hub = hubs.find((h) => h.id === d.hubId);
+          const teams = workspaces.filter(
+            (w) => workspaceMembership.get(w.id)?.has(d.id) ?? false,
+          );
+          const open = openId === d.id;
+          const editorId = `manage-user-editor-${d.id}`;
           return (
-            <div key={d.id} className="manage-user-row">
-              <div className="manage-user-identity">
-                <Avatar designer={d} />
-                <div>
-                  <div className="manage-user-name">{d.name}</div>
-                  <div className="muted small manage-user-email">
-                    {d.email
-                      ? d.email
-                      : isPlaceholder
-                        ? "Pending sign-in"
-                        : "—"}
-                  </div>
-                </div>
-              </div>
+            <div
+              key={d.id}
+              className={`manage-user-row ${open ? "open" : ""}`}
+            >
+              <button
+                type="button"
+                className="manage-user-summary"
+                onClick={() => setOpenId(open ? null : d.id)}
+                aria-expanded={open}
+                aria-controls={editorId}
+                title={open ? "Close" : `Edit ${d.name}`}
+              >
+                <span className="manage-user-identity">
+                  <Avatar designer={d} />
+                  <span>
+                    <span className="manage-user-name">
+                      {d.name}
+                      {isSelf && <span className="muted"> (you)</span>}
+                    </span>
+                    <span className="muted small manage-user-email">
+                      {d.email
+                        ? d.email
+                        : isPlaceholder
+                          ? "Pending sign-in"
+                          : "—"}
+                    </span>
+                  </span>
+                </span>
+                {/* Only what's assigned. The full set of toggles lives in
+                    the editor below, one click away. */}
+                <span className="manage-user-tags">
+                  {isSuper && <span className="manage-user-tag role">Super user</span>}
+                  {isReviewerActive && (
+                    <span className="manage-user-tag role">Reviewer</span>
+                  )}
+                  {hub && (
+                    <span className="manage-user-tag location">
+                      {hub.name}
+                      <span className="muted">
+                        {" "}
+                        · {hubClock(hub)}
+                        {isWithinWorkHours(hub) ? "" : " · outside hours"}
+                      </span>
+                    </span>
+                  )}
+                  {teams.map((w) => (
+                    <span key={w.id} className="manage-user-tag">
+                      {w.name}
+                    </span>
+                  ))}
+                  {!isSuper && !isReviewerActive && !hub && teams.length === 0 && (
+                    <span className="muted small">No roles, location or teams</span>
+                  )}
+                </span>
+                <span className="manage-user-caret" aria-hidden>
+                  ▾
+                </span>
+              </button>
+              {open && (
+              <div className="manage-user-editor" id={editorId}>
               <div className="manage-user-chips">
                 <div className="manage-user-chip-group">
                   <span className="manage-user-chip-label">Role</span>
@@ -1184,8 +1276,10 @@ function ManageUsersModal({
                     : `Delete ${d.name}`
                 }
               >
-                {busyKey === `delete:${d.id}` ? "Deleting…" : "Delete"}
+                {busyKey === `delete:${d.id}` ? "Deleting…" : "Delete user"}
               </button>
+              </div>
+              )}
             </div>
           );
         })}
