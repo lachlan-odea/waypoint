@@ -70,7 +70,7 @@ const LIGHT: ChartTheme = {
 const DARK: ChartTheme = {
   axisLabel: "#f0f0f7",
   axisTick: "#a3a6c2",
-  cursorFill: "rgba(148, 163, 184, 0.14)",
+  cursorFill: "rgba(163, 166, 194, 0.14)",
   tooltipContentStyle: {
     background: "#1c2a42",
     border: "1px solid #3b4a66",
