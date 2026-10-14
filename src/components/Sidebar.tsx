@@ -126,10 +126,10 @@ const WORKSPACE_VISUALS: Record<
   string,
   { color: string; Glyph: () => React.ReactElement }
 > = {
-  design: { color: "#4f46e5", Glyph: BrushGlyph },
-  video: { color: "#ef4444", Glyph: VideoGlyph },
-  marketing: { color: "#10b981", Glyph: MegaphoneGlyph },
-  comms: { color: "#f59e0b", Glyph: SpeechGlyph },
+  design: { color: "var(--brand-sky)", Glyph: BrushGlyph },
+  video: { color: "var(--brand-peach)", Glyph: VideoGlyph },
+  marketing: { color: "var(--brand-mint)", Glyph: MegaphoneGlyph },
+  comms: { color: "var(--brand-highlighter)", Glyph: SpeechGlyph },
 };
 
 function AnalyticsGlyph() {
@@ -283,7 +283,7 @@ export function Sidebar({
               onClick={() => onSelectView("myDesk")}
               title="My Desk"
             >
-              <span className="dot-avatar" style={{ background: "#6366f1" }}>
+              <span className="dot-avatar nav-tile" style={{ background: "var(--brand-highlighter)" }}>
                 <DashboardGlyph />
               </span>
               {!collapsed && <span className="designer-name">My Desk</span>}
@@ -295,7 +295,7 @@ export function Sidebar({
         <ul className="designer-list">
           {workspaces.map((w) => {
             const v = WORKSPACE_VISUALS[w.id] ?? {
-              color: "#64748b",
+              color: "var(--brand-violet)",
               Glyph: WorkspaceGlyph,
             };
             const active = view === "board" && currentWorkspaceId === w.id;
@@ -332,7 +332,7 @@ export function Sidebar({
                   }}
                   title={w.name}
                 >
-                  <span className="dot-avatar" style={{ background: v.color }}>
+                  <span className="dot-avatar nav-tile" style={{ background: v.color }}>
                     <v.Glyph />
                   </span>
                   {!collapsed && <span className="designer-name">{w.name}</span>}
@@ -350,7 +350,7 @@ export function Sidebar({
               onClick={() => onSelectView("executiveDashboard")}
               title="Executive Dashboard"
             >
-              <span className="dot-avatar" style={{ background: "#8b5cf6" }}>
+              <span className="dot-avatar nav-tile" style={{ background: "var(--brand-violet)" }}>
                 <DashboardGlyph />
               </span>
               {!collapsed && <span className="designer-name">Executive Dashboard</span>}
@@ -362,7 +362,7 @@ export function Sidebar({
               onClick={() => onSelectView("campaigns")}
               title="Campaigns"
             >
-              <span className="dot-avatar" style={{ background: "#0e7490" }}>
+              <span className="dot-avatar nav-tile" style={{ background: "var(--brand-mint)" }}>
                 <FlagGlyph />
               </span>
               {!collapsed && <span className="designer-name">Campaigns</span>}
@@ -374,7 +374,7 @@ export function Sidebar({
               onClick={() => onSelectView("socialCalendar")}
               title="Social calendar"
             >
-              <span className="dot-avatar" style={{ background: "#ec4899" }}>
+              <span className="dot-avatar nav-tile" style={{ background: "var(--brand-peach)" }}>
                 <CalendarGlyph />
               </span>
               {!collapsed && <span className="designer-name">Social calendar</span>}
@@ -386,7 +386,7 @@ export function Sidebar({
               onClick={() => onSelectView("analytics")}
               title="Analytics"
             >
-              <span className="dot-avatar" style={{ background: "#0ea5e9" }}>
+              <span className="dot-avatar nav-tile" style={{ background: "var(--brand-sky)" }}>
                 <AnalyticsGlyph />
               </span>
               {!collapsed && <span className="designer-name">Analytics</span>}
@@ -398,7 +398,7 @@ export function Sidebar({
               onClick={() => onSelectView("archived")}
               title="Archived projects"
             >
-              <span className="dot-avatar" style={{ background: "#64748b" }}>
+              <span className="dot-avatar nav-tile" style={{ background: "rgba(255, 255, 255, 0.16)", color: "#ffffff" }}>
                 <ArchiveGlyph />
               </span>
               {!collapsed && <span className="designer-name">Archived</span>}

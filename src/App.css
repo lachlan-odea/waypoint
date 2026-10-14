@@ -6,8 +6,20 @@
   --border-strong: #d1d5db;
   --text: #1f2937;
   --muted: #6b7280;
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
+  /* CargoWise brand palette. Primary is CargoWise Blue; the rest are the
+     secondary and tertiary swatches, used as accents rather than surfaces. */
+  --brand-navy: #1d1765;
+  --brand-blue: #371ee1;
+  --brand-midnight: #141e30;
+  --brand-violet: #b7b3ff;
+  --brand-sky: #a7cff8;
+  --brand-pine: #244349;
+  --brand-mint: #c6ffd1;
+  --brand-highlighter: #eafc88;
+  --brand-cherry: #651d32;
+  --brand-peach: #ffbe98;
+  --primary: #371ee1;
+  --primary-hover: #2a15b8;
   --danger: #ef4444;
   --urgent: #ef4444;
   --high: #f97316;
@@ -15,8 +27,10 @@
   --low: #8b5cf6;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
   --radius: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  --font-mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-family: var(--font-sans);
 }
 
 * {
@@ -46,6 +60,9 @@ body,
   --border-strong: #64748b;
   --text: #f1f5f9;
   --muted: #94a3b8;
+  /* CargoWise Blue is too dark to read against the slate surfaces. */
+  --primary: #5b45f0;
+  --primary-hover: #6e5bff;
   /* The single most important line for dark mode: the parts of a form
      control the browser paints itself — a <select>'s drop-down list, the
      number spinner arrows, the calendar and clock pickers on date/time
@@ -489,7 +506,7 @@ textarea {
   background: var(--surface-2);
 }
 .designer-btn.active {
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(55, 30, 225, 0.08);
   color: var(--primary);
 }
 .dot-avatar {
@@ -575,6 +592,124 @@ textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Sidebar in CargoWise navy, the same in light and dark mode. It carries
+   its own text colours so nothing inside it reads the page's --text/--muted,
+   which are tuned for white or slate surfaces. Highlighter is the accent:
+   the call to action and the bar marking where you are, as on the brand's
+   own banners. */
+.sidebar {
+  --side-text: #ffffff;
+  --side-muted: rgba(183, 179, 255, 0.72);
+  --side-line: rgba(255, 255, 255, 0.1);
+  --side-hover: rgba(255, 255, 255, 0.07);
+  background: var(--brand-navy);
+  border-right-color: var(--brand-navy);
+  color: var(--side-text);
+}
+.sidebar-head,
+.sidebar-user,
+.sidebar-foot {
+  border-color: var(--side-line);
+}
+.brand-mark {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brand-highlighter);
+}
+.sidebar .icon-btn {
+  color: var(--side-muted);
+}
+.sidebar .icon-btn:hover {
+  background: var(--side-hover);
+  color: var(--brand-highlighter);
+}
+.sidebar .muted {
+  color: var(--side-muted);
+}
+.sidebar .nav-primary {
+  background: var(--brand-highlighter);
+  color: var(--brand-navy);
+}
+.sidebar .nav-primary:hover {
+  background: #f3ffb0;
+}
+.sidebar .nav-section {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: var(--side-muted);
+}
+.sidebar .designer-btn {
+  position: relative;
+  color: var(--side-text);
+  opacity: 0.86;
+}
+.sidebar .designer-btn:hover {
+  background: var(--side-hover);
+  opacity: 1;
+}
+.sidebar .designer-btn.active {
+  background: rgba(255, 255, 255, 0.11);
+  color: var(--side-text);
+  opacity: 1;
+  font-weight: 600;
+}
+.sidebar .designer-btn.active::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 7px;
+  bottom: 7px;
+  width: 4px;
+  border-radius: 0 3px 3px 0;
+  background: var(--brand-highlighter);
+}
+.sidebar .designer-btn.drop-over {
+  outline-color: var(--brand-highlighter);
+  background: rgba(234, 252, 136, 0.12);
+}
+/* Nav tiles are filled with the light brand swatches, so the glyph on them
+   is navy rather than white. */
+.sidebar .nav-tile {
+  color: var(--brand-navy);
+}
+.sidebar .hub-tag {
+  color: var(--brand-navy);
+  background: var(--brand-violet);
+}
+.sidebar .hub-clock {
+  border-color: var(--side-line);
+  background: rgba(255, 255, 255, 0.04);
+}
+.sidebar .hub-clock.me {
+  border-color: rgba(234, 252, 136, 0.55);
+  background: rgba(234, 252, 136, 0.08);
+}
+.sidebar .hub-clock-name {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--side-muted);
+}
+.sidebar .hub-clock-time {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--side-text);
+}
+.sidebar .hub-clock.me .hub-clock-time {
+  color: var(--brand-highlighter);
+}
+.sidebar .hub-clock.off-hours .hub-clock-time,
+.sidebar .hub-clock-gap {
+  color: var(--side-muted);
+}
+.sidebar .notif-badge {
+  box-shadow: 0 0 0 2px var(--brand-navy);
 }
 
 /* Login screen */
@@ -673,7 +808,7 @@ textarea {
   border-radius: 12px;
   background: var(--surface);
   outline: none;
-  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
 }
 .pin-input:focus {
   border-color: var(--primary);
@@ -779,7 +914,7 @@ textarea {
 .search:focus {
   border-color: var(--primary);
   background: var(--surface);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(55, 30, 225, 0.1);
 }
 .primary {
   background: var(--primary);
@@ -793,7 +928,7 @@ textarea {
 }
 .primary:hover {
   background: var(--primary-hover);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 12px rgba(55, 30, 225, 0.2);
 }
 .primary:disabled {
   opacity: 0.6;
@@ -931,7 +1066,7 @@ textarea {
 }
 .project-card:hover {
   border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 4px 12px rgba(55, 30, 225, 0.15);
   transform: translateY(-2px);
 }
 .project-card.compact {
@@ -1206,7 +1341,7 @@ textarea {
   border-color: var(--border-strong);
 }
 .assignee-chip.active {
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(55, 30, 225, 0.08);
   border-color: var(--primary);
   color: var(--primary);
 }
@@ -1464,7 +1599,7 @@ textarea {
 }
 
 .mention {
-  background: rgba(79, 70, 229, 0.1);
+  background: rgba(55, 30, 225, 0.1);
   color: var(--primary);
   border-radius: 4px;
   padding: 0 4px;
@@ -1489,8 +1624,8 @@ textarea {
   overflow: hidden;
 }
 .notif.unread {
-  background: rgba(79, 70, 229, 0.06);
-  border-color: rgba(79, 70, 229, 0.3);
+  background: rgba(55, 30, 225, 0.06);
+  border-color: rgba(55, 30, 225, 0.3);
 }
 .notif-btn {
   width: 100%;
@@ -2640,7 +2775,7 @@ textarea {
 
 .hub-clock.me {
   border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(55, 30, 225, 0.08);
 }
 
 /* Greyed rather than hidden — you still want to know what time it is there,
@@ -2712,7 +2847,7 @@ textarea {
   font-size: 11px;
   font-weight: 500;
   color: var(--primary);
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(55, 30, 225, 0.1);
   padding: 2px 8px;
   border-radius: 20px;
 }
@@ -2885,7 +3020,7 @@ textarea {
   letter-spacing: 0.04em;
   padding: 3px 7px;
   border-radius: 5px;
-  background: rgba(99, 102, 241, 0.12);
+  background: rgba(55, 30, 225, 0.12);
   color: var(--primary);
   margin-top: 1px;
 }
@@ -3226,7 +3361,7 @@ textarea {
 .desk-mtab.active {
   border-color: var(--primary);
   color: var(--primary);
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(55, 30, 225, 0.08);
 }
 
 .desk-moverow {
@@ -3278,7 +3413,7 @@ textarea {
   border-style: solid;
   border-color: var(--primary);
   color: var(--primary);
-  background: rgba(99, 102, 241, 0.06);
+  background: rgba(55, 30, 225, 0.06);
 }
 
 @media (max-width: 720px) {
@@ -3298,12 +3433,12 @@ textarea {
 }
 .drop-target.drop-over {
   outline-color: var(--primary);
-  background: rgba(79, 70, 229, 0.06);
+  background: rgba(55, 30, 225, 0.06);
 }
 .designer-btn.drop-over {
   outline: 2px dashed var(--primary);
   outline-offset: -2px;
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(55, 30, 225, 0.08);
 }
 
 /* Analytics */
@@ -3791,7 +3926,7 @@ textarea {
 
 .dashboard-task-item:hover {
   border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 2px 8px rgba(55, 30, 225, 0.1);
   background: var(--surface);
 }
 
@@ -3866,7 +4001,7 @@ textarea {
 
 .dashboard-deadline-item:hover {
   border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 2px 8px rgba(55, 30, 225, 0.1);
   background: var(--surface);
 }
 
@@ -4194,7 +4329,7 @@ textarea {
 .soc-cell.drop-over,
 .soc-tray.drop-over {
   border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(55, 30, 225, 0.08);
 }
 .soc-cell-head {
   display: flex;
@@ -4449,7 +4584,7 @@ textarea {
 }
 :root.dark-mode .soc-cell.drop-over,
 :root.dark-mode .soc-tray.drop-over {
-  background: rgba(99, 102, 241, 0.18);
+  background: rgba(55, 30, 225, 0.18);
 }
 
 @media (max-width: 1100px) {
