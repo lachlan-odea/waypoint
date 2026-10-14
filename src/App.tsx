@@ -233,8 +233,8 @@ export default function App() {
   // Campaigns view.
   const [focusCampaignId, setFocusCampaignId] = useState<string | null>(null);
 
-  // How many posts carry each category label, for the Settings editor's
-  // "N posts" hints and delete warnings. Cheap enough to keep live.
+  // Every social post, for Analytics and for the Settings editor's "N posts"
+  // hints and delete warnings. Cheap enough to keep live.
   const [socialPostsForUsage, setSocialPostsForUsage] = useState<SocialPost[]>(
     [],
   );
@@ -890,7 +890,7 @@ export default function App() {
             </h1>
             <p className="muted small">
               {view === "analytics"
-                ? "Filter by team, date range, and export — see the filter row below"
+                ? "Projects, the Social calendar and campaigns — filter by team and date range below"
                 : view === "archived"
                   ? `${archivedProjects.length} archived project${archivedProjects.length === 1 ? "" : "s"} · ${
                       archiveTeamFilter === ARCHIVE_ALL_TEAMS
@@ -939,6 +939,9 @@ export default function App() {
             allProjects={workspace.projects}
             allDesigners={workspace.designers}
             workspaces={availableWorkspaces}
+            socialPosts={socialPostsForUsage}
+            socialCategories={socialConfig.categories}
+            campaigns={campaigns}
           />
         ) : view === "archived" ? (
           <section className="workspace-section archived-section">

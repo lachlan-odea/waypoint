@@ -4,8 +4,6 @@ import {
   BarChart,
   Cell,
   Legend,
-  Pie,
-  PieChart,
   PolarAngleAxis,
   RadialBar,
   RadialBarChart,
@@ -14,9 +12,34 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { Designer, Priority, Project, Workspace } from "../types";
+import type {
+  Campaign,
+  CampaignMilestone,
+  Designer,
+  Project,
+  ProjectStatus,
+  SocialCategory,
+  SocialPost,
+  SocialPostStatus,
+  Workspace,
+} from "../types";
 import { useChartTheme } from "../chartTheme";
 import { contentTypesLabel, projectContentTypes } from "../contentTypes";
+import {
+  PROJECT_STATUSES,
+  SOCIAL_POST_STATUSES,
+  brandColor,
+  socialCategoryMeta,
+  socialChannelColor,
+} from "../constants";
+import {
+  PHASE_LABEL,
+  campaignOverlaps,
+  campaignPhase,
+  monthBounds,
+  type CampaignPhase,
+} from "../campaigns";
+import { formatShort, shiftIso, todayIso } from "../dates";
 
 type Props = {
   // Every project across every workspace. Analytics filters this down based
@@ -27,41 +50,76 @@ type Props = {
   allDesigners: Designer[];
   // All known workspaces, used to populate the workspace selector.
   workspaces: Workspace[];
+  // The Social calendar and campaigns are shared by every team, so the team
+  // selector doesn't narrow them — only the date range does.
+  socialPosts: SocialPost[];
+  socialCategories: SocialCategory[];
+  campaigns: Campaign[];
 };
 
 const ALL_WORKSPACES = "__all__";
 
 // A project counts toward the "needs attention" KPIs (Urgent / Due in 7
-// days / Overdue) only if it's live work — active status and not archived.
-// Matches the predicate used by the Overdue chip on project cards.
+// days / Overdue / In review) only if it's live work — active status and not
+// archived. Matches the predicate used by the Overdue chip on project cards.
 function isLiveWork(p: Project): boolean {
   if (p.archived) return false;
   return (p.status ?? "active") === "active";
 }
 
-const PRIORITIES: Priority[] = ["Urgent", "High", "Normal", "Low"];
-
-const PRIORITY_COLORS: Record<Priority, string> = {
-  Urgent: "#dc2626",
-  High: "#ea580c",
-  Normal: "#2563eb",
-  Low: "#6b7280",
+// Same hues as the status KPIs these bars replaced.
+const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
+  planning: "#4f46e5",
+  active: "#0891b2",
+  paused: "#64748b",
+  completed: "#16a34a",
 };
 
 const NEUTRAL_BAR = "#4f46e5";
 
-function daysFromNow(iso: string): number | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.round((d.getTime() - today.getTime()) / 86400000);
-}
+// How far ahead the campaign watch list looks for milestones still to do.
+const WATCH_DAYS = 14;
 
 function commencedDate(p: Project): string {
   return (p.createdAt || "").slice(0, 10);
 }
+
+function inRange(iso: string, from: string, to: string): boolean {
+  if (!iso) return false;
+  if (from && iso < from) return false;
+  if (to && iso > to) return false;
+  return true;
+}
+
+// A post is placed by its publish date; one still waiting for a date is
+// placed by the month it's planned for, so it counts toward any range that
+// touches that month.
+function postInRange(p: SocialPost, from: string, to: string): boolean {
+  if (!from && !to) return true;
+  if (p.date) return inRange(p.date, from, to);
+  if (!p.month) return false;
+  const m = monthBounds(p.month);
+  return (!to || m.from <= to) && (!from || m.to >= from);
+}
+
+function postMonth(p: SocialPost): string {
+  return p.date ? p.date.slice(0, 7) : p.month;
+}
+
+function monthLabel(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, {
+    month: "short",
+    year: "2-digit",
+  });
+}
+
+// "Live" campaigns first, then what's coming, then what's done.
+const PHASE_ORDER: Record<CampaignPhase, number> = {
+  live: 0,
+  upcoming: 1,
+  finished: 2,
+};
 
 function toCsv(projects: Project[], designers: Designer[]): string {
   const designerNames = (ids: string[]) =>
@@ -125,16 +183,6 @@ function download(filename: string, content: string, mime: string) {
   URL.revokeObjectURL(url);
 }
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function shiftDays(base: string, days: number): string {
-  const d = new Date(`${base}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 function startOfMonth(base: string): string {
   return `${base.slice(0, 7)}-01`;
 }
@@ -148,27 +196,36 @@ type QuickRange = "7" | "30" | "90" | "month" | "all";
 function detectActiveQuickRange(from: string, to: string): QuickRange | null {
   if (!from && !to) return "all";
   if (!from || !to) return null;
-  const today = todayISO();
+  const today = todayIso();
   if (to !== today) return null;
   if (from === startOfMonth(today)) return "month";
-  if (from === shiftDays(today, -6)) return "7";
-  if (from === shiftDays(today, -29)) return "30";
-  if (from === shiftDays(today, -89)) return "90";
+  if (from === shiftIso(today, -6)) return "7";
+  if (from === shiftIso(today, -29)) return "30";
+  if (from === shiftIso(today, -89)) return "90";
   return null;
 }
+
+type WatchItem = {
+  campaign: Campaign;
+  milestone: CampaignMilestone;
+  overdue: boolean;
+};
 
 export function Analytics({
   allProjects,
   allDesigners,
   workspaces,
+  socialPosts,
+  socialCategories,
+  campaigns,
 }: Props) {
-  const chartTheme = useChartTheme();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   // Default to All workspaces so the page opens on the broadest view; users
   // narrow to a specific workspace via the dropdown.
   const [selectedWorkspaceId, setSelectedWorkspaceId] =
     useState<string>(ALL_WORKSPACES);
+  const today = todayIso();
 
   // Projects narrowed to the selected workspace (or all of them when
   // ALL_WORKSPACES is picked).
@@ -179,29 +236,17 @@ export function Analytics({
 
   const filtered = useMemo(() => {
     if (!from && !to) return workspaceProjects;
-    return workspaceProjects.filter((p) => {
-      const c = commencedDate(p);
-      if (!c) return false;
-      if (from && c < from) return false;
-      if (to && c > to) return false;
-      return true;
-    });
+    return workspaceProjects.filter((p) => inRange(commencedDate(p), from, to));
   }, [workspaceProjects, from, to]);
 
   const stats = useMemo(() => {
-    const total = filtered.length;
-    const byPriority = PRIORITIES.map((p) => ({
-      label: p,
-      count: filtered.filter((x) => x.priority === p).length,
-      color: PRIORITY_COLORS[p],
-    }));
     const brands = new Map<string, number>();
     filtered.forEach((p) => {
       const key = p.brand || "—";
       brands.set(key, (brands.get(key) ?? 0) + 1);
     });
     const byBrand = [...brands.entries()]
-      .map(([label, count]) => ({ label, count }))
+      .map(([label, count]) => ({ label, count, color: brandColor(label) }))
       .sort((a, b) => b.count - a.count);
     // A project with several content types counts once against each, so
     // these bars intentionally sum to more than the project total — that's
@@ -218,59 +263,173 @@ export function Analytics({
       .map(([label, count]) => ({ label, count }))
       .sort((a, b) => b.count - a.count);
 
+    // Archived projects are out of the status bars: they're filed away, not
+    // a stage of the work.
+    const current = filtered.filter((p) => !p.archived);
+    const byStatus = PROJECT_STATUSES.map((s) => ({
+      label: s.label,
+      count: current.filter((p) => (p.status ?? "active") === s.value).length,
+      color: PROJECT_STATUS_COLORS[s.value],
+    }));
+
     // "Needs attention" KPIs are scoped to live work only — completed,
     // paused, and archived projects don't count as overdue / due-soon /
     // urgent even if their due date or priority would otherwise qualify.
     const live = filtered.filter(isLiveWork);
-
-    let overdue = 0;
-    let dueThisWeek = 0;
-    live.forEach((p) => {
-      const d = daysFromNow(p.dueDate);
-      if (d === null) return;
-      if (d < 0) overdue++;
-      else if (d <= 7) dueThisWeek++;
-    });
-
+    const dueSoonLimit = shiftIso(today, 7);
+    const overdue = live.filter((p) => p.dueDate && p.dueDate < today).length;
+    const dueThisWeek = live.filter(
+      (p) => p.dueDate && p.dueDate >= today && p.dueDate <= dueSoonLimit,
+    ).length;
     const urgentCount = live.filter((p) => p.priority === "Urgent").length;
-    const completedCount = filtered.filter((p) => p.status === "completed").length;
-    const pausedCount = filtered.filter((p) => p.status === "paused").length;
-    const planningCount = filtered.filter((p) => p.status === "planning").length;
-    const archivedCount = filtered.filter((p) => p.archived).length;
+    const inReview = live.filter((p) => (p.reviewerIds ?? []).length > 0).length;
 
     let totalMilestones = 0;
     let doneMilestones = 0;
-    filtered.forEach((p) => {
+    live.forEach((p) => {
       totalMilestones += p.milestones.length;
       doneMilestones += p.milestones.filter((m) => m.done).length;
     });
-
     const completionPct =
       totalMilestones === 0
         ? 0
         : Math.round((doneMilestones / totalMilestones) * 100);
 
     return {
-      total,
+      activeCount: live.length,
       urgentCount,
       overdue,
       dueThisWeek,
-      completedCount,
-      pausedCount,
-      planningCount,
-      activeCount: live.length,
-      archivedCount,
-      byPriority,
+      inReview,
+      byStatus,
       byBrand,
       byContentType,
       totalMilestones,
       doneMilestones,
       completionPct,
     };
-  }, [filtered]);
+  }, [filtered, today]);
+
+  // Evergreen library posts that nobody has scheduled are reusable copy,
+  // not part of the plan, so they stay out of the calendar numbers.
+  const posts = useMemo(
+    () =>
+      socialPosts.filter(
+        (p) => !(p.evergreen && !p.date) && postInRange(p, from, to),
+      ),
+    [socialPosts, from, to],
+  );
+
+  const social = useMemo(() => {
+    const count = (s: SocialPostStatus) =>
+      posts.filter((p) => p.status === s).length;
+    // Still to go out: not published, not pulled.
+    const open = posts.filter(
+      (p) => p.status !== "published" && p.status !== "cancelled",
+    );
+
+    const categories = new Map<string, number>();
+    const channels = new Map<string, number>();
+    posts.forEach((p) => {
+      const cat = p.category || "Uncategorised";
+      categories.set(cat, (categories.get(cat) ?? 0) + 1);
+      const ch = p.channel.trim() || "—";
+      channels.set(ch, (channels.get(ch) ?? 0) + 1);
+    });
+    const byCategory = [...categories.entries()]
+      .map(([label, n]) => ({
+        label,
+        count: n,
+        color:
+          label === "Uncategorised"
+            ? "#94a3b8"
+            : (socialCategoryMeta(label, socialCategories)?.color ?? NEUTRAL_BAR),
+      }))
+      .sort((a, b) => b.count - a.count);
+    const byChannel = [...channels.entries()]
+      .map(([label, n]) => ({
+        label,
+        count: n,
+        color: socialChannelColor(label),
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    // Posts per month, stacked by status. Only statuses that actually occur
+    // get a series, so the legend doesn't list empty ones.
+    const months = new Map<string, Record<string, number>>();
+    posts.forEach((p) => {
+      const m = postMonth(p);
+      if (!m) return;
+      const row = months.get(m) ?? {};
+      row[p.status] = (row[p.status] ?? 0) + 1;
+      months.set(m, row);
+    });
+    const byMonth = [...months.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([m, row]) => ({ month: monthLabel(m), ...row }));
+    const monthStatuses = SOCIAL_POST_STATUSES.filter((s) =>
+      posts.some((p) => p.status === s.value),
+    );
+
+    return {
+      total: posts.length,
+      published: count("published"),
+      scheduled: count("scheduled"),
+      inProgress: count("draft") + count("pending"),
+      unscheduled: open.filter((p) => !p.date).length,
+      needsAsset: open.filter((p) => !p.asset.trim()).length,
+      byCategory,
+      byChannel,
+      byMonth,
+      monthStatuses,
+    };
+  }, [posts, socialCategories]);
+
+  const rangeCampaigns = useMemo(
+    () =>
+      campaigns
+        .filter((c) => campaignOverlaps(c, from || "0000-01-01", to || "9999-12-31"))
+        .map((c) => ({ campaign: c, phase: campaignPhase(c, today) }))
+        .sort(
+          (a, b) =>
+            PHASE_ORDER[a.phase] - PHASE_ORDER[b.phase] ||
+            a.campaign.startDate.localeCompare(b.campaign.startDate),
+        ),
+    [campaigns, from, to, today],
+  );
+
+  const campaignStats = useMemo(() => {
+    const phaseCount = (ph: CampaignPhase) =>
+      rangeCampaigns.filter((c) => c.phase === ph).length;
+    let total = 0;
+    let done = 0;
+    const watch: WatchItem[] = [];
+    const watchLimit = shiftIso(today, WATCH_DAYS);
+    rangeCampaigns.forEach(({ campaign }) => {
+      campaign.milestones.forEach((m) => {
+        total++;
+        if (m.done) {
+          done++;
+          return;
+        }
+        if (!m.date || m.date > watchLimit) return;
+        watch.push({ campaign, milestone: m, overdue: m.date < today });
+      });
+    });
+    watch.sort((a, b) => a.milestone.date.localeCompare(b.milestone.date));
+    return {
+      live: phaseCount("live"),
+      upcoming: phaseCount("upcoming"),
+      finished: phaseCount("finished"),
+      milestonesTotal: total,
+      milestonesDone: done,
+      milestonesPct: total === 0 ? 0 : Math.round((done / total) * 100),
+      overdueMilestones: watch.filter((w) => w.overdue).length,
+      watch,
+    };
+  }, [rangeCampaigns, today]);
 
   function applyQuickRange(kind: QuickRange) {
-    const today = todayISO();
     if (kind === "all") {
       setFrom("");
       setTo("");
@@ -281,14 +440,16 @@ export function Analytics({
       setTo(today);
       return;
     }
-    setFrom(shiftDays(today, -Number(kind) + 1));
+    setFrom(shiftIso(today, -Number(kind) + 1));
     setTo(today);
   }
 
   const activeQuickRange = detectActiveQuickRange(from, to);
   const rangeLabel = from || to ? `${from || "…"} → ${to || "…"}` : "All time";
-
-  const priorityChartData = stats.byPriority.filter((p) => p.count > 0);
+  const teamName =
+    selectedWorkspaceId === ALL_WORKSPACES
+      ? "all teams"
+      : (workspaces.find((w) => w.id === selectedWorkspaceId)?.name ?? "");
 
   return (
     <div className="analytics">
@@ -347,132 +508,232 @@ export function Analytics({
           ))}
         </div>
       </div>
-      <p className="muted small filter-summary">
-        Showing {filtered.length} of {workspaceProjects.length}{" "}
-        {selectedWorkspaceId === ALL_WORKSPACES
-          ? "projects across all teams"
-          : `${workspaces.find((w) => w.id === selectedWorkspaceId)?.name ?? ""} projects`}
-        {", "}commenced {rangeLabel}
-      </p>
 
-      <div className="kpi-row">
-        <Kpi label="Projects" value={stats.total} />
-        <Kpi label="Urgent" value={stats.urgentCount} variant="urgent" />
-        <Kpi label="Due in 7 days" value={stats.dueThisWeek} variant="duesoon" />
-        <Kpi label="Overdue" value={stats.overdue} variant="overdue" />
-        <CompletionKpi
-          done={stats.doneMilestones}
-          total={stats.totalMilestones}
-          pct={stats.completionPct}
-        />
-      </div>
+      <section className="analytics-section">
+        <div className="section-head">
+          <h2>Projects</h2>
+          <span className="muted small">
+            {filtered.length} of {workspaceProjects.length} for {teamName},
+            commenced {rangeLabel}
+          </span>
+        </div>
 
-      <div className="kpi-row kpi-row-status">
-        <Kpi
-          label="Planning"
-          value={stats.planningCount}
-          variant="planning"
-        />
-        <Kpi label="On hold" value={stats.pausedCount} variant="paused" />
-        <Kpi label="Active" value={stats.activeCount} variant="live" />
-        <Kpi
-          label="Completed"
-          value={stats.completedCount}
-          variant="completed"
-        />
-        <Kpi
-          label="Archived"
-          value={stats.archivedCount}
-          variant="archived"
-        />
-      </div>
+        <div className="kpi-row">
+          <Kpi label="Active" value={stats.activeCount} variant="live" />
+          <Kpi label="Overdue" value={stats.overdue} variant="overdue" />
+          <Kpi label="Due in 7 days" value={stats.dueThisWeek} variant="duesoon" />
+          <Kpi label="Urgent" value={stats.urgentCount} variant="urgent" />
+          <Kpi label="In review" value={stats.inReview} variant="planning" />
+          <CompletionKpi
+            label="Active tasks"
+            done={stats.doneMilestones}
+            total={stats.totalMilestones}
+            pct={stats.completionPct}
+          />
+        </div>
 
-      <div className="panel-grid">
-        <div className="panel">
-          <h3>By priority</h3>
-          {priorityChartData.length === 0 ? (
-            <p className="muted small">No data.</p>
-          ) : (
-            <div className="chart-wrap" style={{ height: 240 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={priorityChartData}
-                    dataKey="count"
-                    nameKey="label"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    stroke="none"
-                  >
-                    {priorityChartData.map((entry) => (
-                      <Cell key={entry.label} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => [value, "projects"]}
-                    contentStyle={chartTheme.tooltipContentStyle}
-                    labelStyle={chartTheme.tooltipLabelStyle}
-                    itemStyle={chartTheme.tooltipItemStyle}
-                  />
-                  <Legend
-                    verticalAlign="middle"
-                    align="right"
-                    layout="vertical"
-                    iconType="circle"
-                    wrapperStyle={chartTheme.legendStyle}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+        <div className="panel-grid">
+          <div className="panel">
+            <h3>By status</h3>
+            {stats.byStatus.every((s) => s.count === 0) ? (
+              <p className="muted small">No data.</p>
+            ) : (
+              <CategoryBars data={stats.byStatus} unit="projects" />
+            )}
+          </div>
+          <div className="panel">
+            <h3>By brand</h3>
+            {stats.byBrand.length === 0 ? (
+              <p className="muted small">No data.</p>
+            ) : (
+              <CategoryBars data={stats.byBrand} unit="projects" />
+            )}
+          </div>
         </div>
 
         <div className="panel">
-          <h3>By brand</h3>
-          {stats.byBrand.length === 0 ? (
+          <h3>By content type</h3>
+          {stats.byContentType.length === 0 ? (
             <p className="muted small">No data.</p>
           ) : (
-            <CategoryBars data={stats.byBrand} />
+            <CategoryBars data={stats.byContentType} unit="projects" />
           )}
         </div>
-      </div>
 
-      <div className="panel">
-        <h3>By content type</h3>
-        {stats.byContentType.length === 0 ? (
-          <p className="muted small">No data.</p>
-        ) : (
-          <CategoryBars data={stats.byContentType} />
-        )}
-      </div>
+        <div className="export-row">
+          <button
+            onClick={() =>
+              download(
+                `waypoint-projects-${today}.csv`,
+                toCsv(filtered, allDesigners),
+                "text/csv;charset=utf-8",
+              )
+            }
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() =>
+              download(
+                `waypoint-projects-${today}.json`,
+                JSON.stringify(filtered, null, 2),
+                "application/json",
+              )
+            }
+          >
+            Export JSON
+          </button>
+        </div>
+      </section>
 
-      <div className="export-row">
-        <button
-          onClick={() =>
-            download(
-              `waypoint-projects-${todayISO()}.csv`,
-              toCsv(filtered, allDesigners),
-              "text/csv;charset=utf-8",
-            )
-          }
-        >
-          Export CSV
-        </button>
-        <button
-          onClick={() =>
-            download(
-              `waypoint-projects-${todayISO()}.json`,
-              JSON.stringify(filtered, null, 2),
-              "application/json",
-            )
-          }
-        >
-          Export JSON
-        </button>
-      </div>
+      <section className="analytics-section">
+        <div className="section-head">
+          <h2>Social calendar</h2>
+          <span className="muted small">
+            {social.total} posts planned {rangeLabel === "All time" ? "in total" : rangeLabel}
+            , all teams
+          </span>
+        </div>
+
+        <div className="kpi-row">
+          <Kpi label="Posts" value={social.total} />
+          <Kpi label="Published" value={social.published} variant="completed" />
+          <Kpi label="Scheduled" value={social.scheduled} variant="duesoon" />
+          <Kpi label="Draft / pending" value={social.inProgress} variant="planning" />
+          <Kpi label="No date yet" value={social.unscheduled} variant="paused" />
+          <Kpi label="No asset yet" value={social.needsAsset} variant="overdue" />
+        </div>
+
+        <div className="panel">
+          <h3>Posts per month</h3>
+          {social.byMonth.length === 0 ? (
+            <p className="muted small">No posts in this range.</p>
+          ) : (
+            <MonthlyPosts data={social.byMonth} statuses={social.monthStatuses} />
+          )}
+        </div>
+
+        <div className="panel-grid">
+          <div className="panel">
+            <h3>By category</h3>
+            {social.byCategory.length === 0 ? (
+              <p className="muted small">No data.</p>
+            ) : (
+              <CategoryBars data={social.byCategory} unit="posts" />
+            )}
+          </div>
+          <div className="panel">
+            <h3>By channel</h3>
+            {social.byChannel.length === 0 ? (
+              <p className="muted small">No data.</p>
+            ) : (
+              <CategoryBars data={social.byChannel} unit="posts" />
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="analytics-section">
+        <div className="section-head">
+          <h2>Campaigns</h2>
+          <span className="muted small">
+            {rangeCampaigns.length} running {rangeLabel === "All time" ? "in total" : rangeLabel}
+            , all teams
+          </span>
+        </div>
+
+        <div className="kpi-row">
+          <Kpi label="Live" value={campaignStats.live} variant="live" />
+          <Kpi label="Upcoming" value={campaignStats.upcoming} variant="planning" />
+          <Kpi label="Finished" value={campaignStats.finished} variant="completed" />
+          <Kpi
+            label="Overdue milestones"
+            value={campaignStats.overdueMilestones}
+            variant="overdue"
+          />
+          <CompletionKpi
+            label="Milestones"
+            done={campaignStats.milestonesDone}
+            total={campaignStats.milestonesTotal}
+            pct={campaignStats.milestonesPct}
+          />
+        </div>
+
+        <div className="panel-grid">
+          <div className="panel">
+            <h3>Milestones to watch</h3>
+            {campaignStats.watch.length === 0 ? (
+              <p className="muted small">
+                Nothing overdue or due in the next {WATCH_DAYS} days.
+              </p>
+            ) : (
+              <ul className="watch-list">
+                {campaignStats.watch.map(({ campaign, milestone, overdue }) => (
+                  <li key={`${campaign.id}-${milestone.id}`}>
+                    <span
+                      className={`watch-date${overdue ? " overdue" : ""}`}
+                    >
+                      {formatShort(milestone.date)}
+                    </span>
+                    <span className="watch-label">
+                      {milestone.label}
+                      <span className="muted small">
+                        <BrandDot color={campaign.color || brandColor(campaign.brand)} />
+                        {campaign.name}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="panel">
+            <h3>Campaign progress</h3>
+            {rangeCampaigns.length === 0 ? (
+              <p className="muted small">No campaigns in this range.</p>
+            ) : (
+              <table className="campaign-table">
+                <thead>
+                  <tr>
+                    <th>Campaign</th>
+                    <th>Dates</th>
+                    <th>Milestones</th>
+                    <th>Projects</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rangeCampaigns.map(({ campaign: c, phase }) => (
+                    <tr key={c.id}>
+                      <td>
+                        <BrandDot color={c.color || brandColor(c.brand)} />
+                        {c.name}
+                        <span className={`phase-tag phase-${phase}`}>
+                          {PHASE_LABEL[phase]}
+                        </span>
+                      </td>
+                      <td className="muted">
+                        {formatShort(c.startDate)} – {formatShort(c.endDate)}
+                      </td>
+                      <td>
+                        {c.milestones.filter((m) => m.done).length} /{" "}
+                        {c.milestones.length}
+                      </td>
+                      <td>{c.projectIds.length}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   );
+}
+
+function BrandDot({ color }: { color: string }) {
+  return <span className="brand-dot" style={{ background: color }} aria-hidden />;
 }
 
 function Kpi({
@@ -491,8 +752,7 @@ function Kpi({
     // .active is the app's ubiquitous selected-state class.
     | "live"
     | "completed"
-    | "paused"
-    | "archived";
+    | "paused";
 }) {
   return (
     <div className={`kpi ${variant ?? ""}`}>
@@ -503,10 +763,12 @@ function Kpi({
 }
 
 function CompletionKpi({
+  label,
   done,
   total,
   pct,
 }: {
+  label: string;
   done: number;
   total: number;
   pct: number;
@@ -515,7 +777,7 @@ function CompletionKpi({
   return (
     <div className="kpi kpi-gauge">
       <div>
-        <p className="kpi-label">Tasks</p>
+        <p className="kpi-label">{label}</p>
         <p className="kpi-value">
           {done}
           <span className="kpi-sub"> / {total}</span>
@@ -549,9 +811,58 @@ function CompletionKpi({
   );
 }
 
-type CategoryRow = { label: string; count: number };
+type MonthRow = { month: string } & Record<string, number | string>;
 
-function CategoryBars({ data }: { data: CategoryRow[] }) {
+function MonthlyPosts({
+  data,
+  statuses,
+}: {
+  data: MonthRow[];
+  statuses: typeof SOCIAL_POST_STATUSES;
+}) {
+  const theme = useChartTheme();
+  return (
+    <div className="chart-wrap" style={{ height: 260 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: -16 }}>
+          <XAxis
+            dataKey="month"
+            tick={{ fontSize: 11, fill: theme.axisLabel }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            allowDecimals={false}
+            tick={{ fontSize: 11, fill: theme.axisTick }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip
+            cursor={{ fill: theme.cursorFill }}
+            contentStyle={theme.tooltipContentStyle}
+            labelStyle={theme.tooltipLabelStyle}
+            itemStyle={theme.tooltipItemStyle}
+          />
+          <Legend iconType="circle" wrapperStyle={theme.legendStyle} />
+          {statuses.map((s, i) => (
+            <Bar
+              key={s.value}
+              dataKey={s.value}
+              name={s.label}
+              stackId="posts"
+              fill={s.color}
+              radius={i === statuses.length - 1 ? [4, 4, 0, 0] : 0}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+type CategoryRow = { label: string; count: number; color?: string };
+
+function CategoryBars({ data, unit }: { data: CategoryRow[]; unit: string }) {
   const chartHeight = Math.max(180, data.length * 32);
   const theme = useChartTheme();
   return (
@@ -575,18 +886,18 @@ function CategoryBars({ data }: { data: CategoryRow[] }) {
             tick={{ fontSize: 12, fill: theme.axisLabel }}
             axisLine={false}
             tickLine={false}
-            width={120}
+            width={140}
           />
           <Tooltip
             cursor={{ fill: theme.cursorFill }}
-            formatter={(value) => [value, "projects"]}
+            formatter={(value) => [value, unit]}
             contentStyle={theme.tooltipContentStyle}
             labelStyle={theme.tooltipLabelStyle}
             itemStyle={theme.tooltipItemStyle}
           />
           <Bar dataKey="count" radius={[0, 6, 6, 0]}>
-            {data.map((_, i) => (
-              <Cell key={i} fill={NEUTRAL_BAR} />
+            {data.map((row, i) => (
+              <Cell key={i} fill={row.color ?? NEUTRAL_BAR} />
             ))}
           </Bar>
         </BarChart>
