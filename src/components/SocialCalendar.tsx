@@ -232,12 +232,18 @@ export function SocialCalendar({
 
   // Campaigns touching the month in view, narrowed by the channel pill (the
   // type / status / search filters are about posts and leave campaigns be).
+  // Campaigns share the posts' category list, so the Type pills narrow them
+  // too; the channel pill is about social accounts and leaves them alone.
   const monthCampaigns = useMemo(() => {
     const { from, to } = monthBounds(month);
     return campaigns
       .filter((c) => campaignOverlaps(c, from, to))
-      .filter((c) => !channelFilter || c.channel.trim() === channelFilter);
-  }, [campaigns, month, channelFilter]);
+      .filter(
+        (c) =>
+          categoryFilter.size === 0 ||
+          categoryFilter.has(c.category || NO_CATEGORY),
+      );
+  }, [campaigns, month, categoryFilter]);
 
   const projectTitleById = useMemo(() => {
     const map = new Map<string, string>();

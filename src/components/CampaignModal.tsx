@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import type { Campaign, CampaignMilestone, Project, Workspace } from "../types";
+import type {
+  Campaign,
+  CampaignMilestone,
+  Project,
+  SocialCategory,
+  Workspace,
+} from "../types";
 import { BRANDS, brandColor, brandForChannel } from "../constants";
 import { formatShort, shiftIso, todayIso } from "../dates";
 import { ProjectPicker } from "./ProjectPicker";
@@ -7,7 +13,8 @@ import { ProjectPicker } from "./ProjectPicker";
 type Props = {
   initial: Partial<Campaign>;
   mode: "create" | "edit";
-  channels: string[];
+  // The Social calendar's category list; campaigns use the same types.
+  categories: SocialCategory[];
   owners: string[];
   // Board projects that can be linked as contributing to the campaign.
   projects: Project[];
@@ -26,7 +33,7 @@ function newId(prefix: string): string {
 export function CampaignModal({
   initial,
   mode,
-  channels,
+  categories,
   owners,
   projects,
   workspaces,
@@ -36,14 +43,12 @@ export function CampaignModal({
   onOpenProject,
 }: Props) {
   const [name, setName] = useState(initial.name ?? "");
-  const [channel, setChannel] = useState(initial.channel ?? channels[0] ?? "");
-  const [channelIsCustom, setChannelIsCustom] = useState(
-    () => !!initial.channel && !channels.includes(initial.channel),
-  );
+  const [category, setCategory] = useState(initial.category ?? "");
   // Brand drives the colour. A campaign saved before brands existed opens
-  // with the brand its channel implies.
+  // with the brand its old channel implied; a brand-new one starts on the
+  // first brand in the list.
   const [brand, setBrand] = useState(
-    initial.brand || brandForChannel(initial.channel ?? channels[0] ?? ""),
+    initial.brand || (initial.channel ? brandForChannel(initial.channel) : BRANDS[0]),
   );
   const [owner, setOwner] = useState(initial.owner ?? "");
   const [startDate, setStartDate] = useState(initial.startDate ?? todayIso());
@@ -106,7 +111,9 @@ export function CampaignModal({
     const campaign: Campaign = {
       id: initial.id ?? newId("camp"),
       name: name.trim(),
-      channel: channel.trim(),
+      // Legacy field, carried through untouched if it was ever set.
+      channel: initial.channel,
+      category: category || undefined,
       brand,
       owner: owner.trim(),
       description: description.trimEnd(),
@@ -204,34 +211,22 @@ export function CampaignModal({
               </span>
             </label>
             <label className="field">
-              <span>Channel</span>
-              <select
-                value={channelIsCustom ? "__other__" : channel}
-                onChange={(e) => {
-                  if (e.target.value === "__other__") {
-                    setChannelIsCustom(true);
-                    setChannel("");
-                  } else {
-                    setChannelIsCustom(false);
-                    setChannel(e.target.value);
-                  }
-                }}
-              >
-                {channels.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+              <span>Type</span>
+              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option value="">No type</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.label}>
+                    {c.label}
                   </option>
                 ))}
-                <option value="__other__">Other…</option>
+                {category && !categories.some((c) => c.label === category) && (
+                  <option value={category}>{category} (no longer in the list)</option>
+                )}
               </select>
-              {channelIsCustom && (
-                <input
-                  value={channel}
-                  onChange={(e) => setChannel(e.target.value)}
-                  placeholder="Channel name"
-                  autoFocus
-                />
-              )}
+              <span className="field-hint">
+                The same types the Social calendar's posts use, so a campaign
+                and its posts filter together.
+              </span>
             </label>
             <label className="field" style={{ gridColumn: "1 / -1" }}>
               <span>Owner</span>

@@ -195,6 +195,11 @@ export type SocialHashtag = {
 export type SocialConfig = {
   categories: SocialCategory[];
   hashtags: SocialHashtag[];
+  // Content types a project can be tagged with (Web, Email, Video…), as
+  // chips in the project editor. Optional on the stored document because it
+  // was added after the first version; App fills in CONTENT_TYPES when it's
+  // missing.
+  contentTypes?: string[];
 };
 
 // One entry on the shared Social calendar: a LinkedIn post going out on a
@@ -271,8 +276,13 @@ export type CampaignMilestone = {
 export type Campaign = {
   id: string;
   name: string;
-  // Social channel it runs on (CargoWise / WiseTech), free text like posts.
-  channel: string;
+  // Legacy: the social channel early campaigns were filed under. No longer
+  // shown or written; `category` replaced it.
+  channel?: string;
+  // What kind of campaign — the same category list the Social calendar's
+  // posts use (SocialConfig.categories, by label), so a Product - CargoWise
+  // campaign and its Product - CargoWise posts filter together.
+  category?: string;
   // Which brand the campaign is for — one of BRANDS in constants.ts. Gives
   // the campaign its colour (brandColor) everywhere it's drawn.
   brand: string;
