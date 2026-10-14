@@ -728,10 +728,10 @@ textarea {
 }
 
 /* Login screen */
-/* The page is CargoWise navy in both themes, dressed like the brand's own
-   banners: a Highlighter bar running in from the left edge and a scatter
-   of translucent blocks on the right. Both are painted as background
-   layers so they need no markup and can never be clicked. */
+/* The page is CargoWise navy in both themes, dressed like the brand banners:
+   a Highlighter bar running in from the left edge, and the WiseTech Global
+   bar mark, faint, in the top right. Both are background layers so they
+   need no markup and can never be clicked. */
 .login {
   min-height: 100%;
   display: grid;
@@ -740,34 +740,19 @@ textarea {
   background-color: var(--brand-navy);
   background-image:
     linear-gradient(var(--brand-highlighter), var(--brand-highlighter)),
-    linear-gradient(rgba(183, 179, 255, 0.16), rgba(183, 179, 255, 0.16)),
-    linear-gradient(rgba(183, 179, 255, 0.16), rgba(183, 179, 255, 0.16)),
-    linear-gradient(rgba(183, 179, 255, 0.16), rgba(183, 179, 255, 0.16)),
-    linear-gradient(rgba(183, 179, 255, 0.16), rgba(183, 179, 255, 0.16)),
-    linear-gradient(rgba(183, 179, 255, 0.16), rgba(183, 179, 255, 0.16)),
-    linear-gradient(rgba(183, 179, 255, 0.16), rgba(183, 179, 255, 0.16));
+    url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 61 60%27 fill=%27%23b7b3ff%27 fill-opacity=%270.16%27%3E%3Crect width=%276%27 height=%2727%27/%3E%3Crect x=%2711%27 width=%276%27 height=%2727%27/%3E%3Crect x=%2722%27 width=%276%27 height=%2727%27/%3E%3Crect x=%2744%27 width=%276%27 height=%2727%27/%3E%3Crect y=%2733%27 width=%276%27 height=%2716%27/%3E%3Crect x=%2722%27 y=%2743%27 width=%276%27 height=%2717%27/%3E%3Crect x=%2733%27 y=%2733%27 width=%276%27 height=%2727%27/%3E%3Crect x=%2755%27 y=%2733%27 width=%276%27 height=%2716%27/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-size:
     72px 10px,
-    116px 38px,
-    192px 38px,
-    192px 40px,
-    116px 40px,
-    194px 40px,
-    116px 40px;
+    244px 240px;
   background-position:
     0 56px,
-    right 268px top 46px,
-    right 40px top 46px,
-    right 40px top 122px,
-    right 346px top 198px,
-    right 40px top 198px,
-    right 268px top 274px;
+    right 48px top 46px;
 }
-/* Below this the blocks would run in behind the card; keep just the bar. */
+/* Below this the mark would run in behind the card; keep just the bar. */
 @media (max-width: 1280px) {
   .login {
-    background-size: 56px 8px, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+    background-size: 56px 8px, 0 0;
     background-position: 0 32px;
   }
 }
