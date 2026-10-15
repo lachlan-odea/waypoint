@@ -22,6 +22,13 @@ import { CampaignBand } from "./CampaignBand";
 import { socialPostTitle } from "../socialPosts";
 import { SocialPostCard } from "./SocialPostCard";
 import { SocialPostModal } from "./SocialPostModal";
+import { ExportCsvModal } from "./ExportCsvModal";
+import {
+  csvFileName,
+  downloadCsv,
+  socialPostsCsv,
+  socialPostsInRange,
+} from "../csvExport";
 
 type Props = {
   // Only used for owner suggestions in the post editor.
@@ -177,6 +184,9 @@ export function SocialCalendar({
   // this is the retry you can see, for when that first attempt was refused.
   const [importing, setImporting] = useState(false);
   const [importNote, setImportNote] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  // Bring the months' unscheduled posts along with the dated ones.
+  const [exportUnscheduled, setExportUnscheduled] = useState(true);
 
   // Draw campaigns inside the day cells, so posts can be placed around them.
   const [overlay, setOverlayState] = useState(() => readFlag(OVERLAY_KEY, true));
@@ -257,6 +267,17 @@ export function SocialCalendar({
   function openProject(projectId: string) {
     setEditing(null);
     onOpenProject(projectId);
+  }
+
+  // Every post in the range, whatever the filters on screen: an export is
+  // for the plan as a whole.
+  function exportCsv(from: string, to: string) {
+    const rows = socialPostsInRange(all, from, to, exportUnscheduled);
+    downloadCsv(
+      csvFileName("social-calendar", from, to),
+      socialPostsCsv(rows, (id) => projectTitleById.get(id)),
+    );
+    setExporting(false);
   }
 
   function importSpreadsheet() {
@@ -578,6 +599,14 @@ export function SocialCalendar({
               Evergreen{libraryCount > 0 ? ` (${libraryCount})` : ""}
             </button>
           </div>
+          <button
+            className="btn-mini"
+            onClick={() => setExporting(true)}
+            disabled={all.length === 0}
+            title="Download the posts in a date range as a CSV file"
+          >
+            Export CSV
+          </button>
           <button
             className="primary"
             onClick={() =>
@@ -960,6 +989,31 @@ export function SocialCalendar({
         />
       )}
 
+      {exporting && (
+        <ExportCsvModal
+          title="Export the Social calendar"
+          month={month}
+          count={(from, to) =>
+            socialPostsInRange(all, from, to, exportUnscheduled).length
+          }
+          noun={(n) => (n === 1 ? "post" : "posts")}
+          onExport={exportCsv}
+          onCancel={() => setExporting(false)}
+        >
+          <label className="csv-option">
+            <input
+              type="checkbox"
+              checked={exportUnscheduled}
+              onChange={(e) => setExportUnscheduled(e.target.checked)}
+            />
+            Include unscheduled posts planned for these months
+          </label>
+          <p className="muted small" style={{ margin: 0 }}>
+            Every post in the range comes along, whatever filters are on.
+            Evergreen posts without a date stay out.
+          </p>
+        </ExportCsvModal>
+      )}
     </section>
   );
 }

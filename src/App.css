@@ -6250,3 +6250,23 @@ a.share-btn {
 .camp-card-type {
   align-self: flex-start;
 }
+
+/* CSV export dialog, shared by the Social and Campaigns calendars. */
+.csv-presets {
+  flex-wrap: wrap;
+}
+.csv-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.csv-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.csv-option input {
+  margin-top: 2px;
+}
