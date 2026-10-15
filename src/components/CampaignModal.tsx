@@ -4,8 +4,11 @@ import type {
   CampaignMilestone,
   Project,
   SocialCategory,
+  SocialPost,
   Workspace,
 } from "../types";
+import { CAMPAIGN_MILESTONE_TYPES, isSocialMilestone } from "../campaigns";
+import { MilestonePostLink } from "./MilestonePostLink";
 import { BRANDS, brandColor, brandForChannel } from "../constants";
 import { formatShort, shiftIso, todayIso } from "../dates";
 import { downloadCampaignPage, newShareToken } from "../campaignExport";
@@ -26,6 +29,9 @@ type Props = {
   onDelete?: () => void;
   // Jump to a linked project's window. Closes this editor first.
   onOpenProject?: (projectId: string) => void;
+  // For the link from each social milestone to the post it created.
+  socialPosts?: SocialPost[];
+  onOpenSocialPost?: (postId: string) => void;
 };
 
 function newId(prefix: string): string {
@@ -43,6 +49,8 @@ export function CampaignModal({
   onSave,
   onDelete,
   onOpenProject,
+  socialPosts,
+  onOpenSocialPost,
 }: Props) {
   const [name, setName] = useState(initial.name ?? "");
   const [category, setCategory] = useState(initial.category ?? "");
@@ -135,7 +143,7 @@ export function CampaignModal({
       .filter((m) => m.label && m.date)
       .sort((a, b) => a.date.localeCompare(b.date));
     if (cleanMilestones.length !== milestones.length) {
-      setError("Every milestone needs a date and a label — remove any blank rows.");
+      setError("Every milestone needs a date and a type — remove any blank rows.");
       return;
     }
     const campaign: Campaign = {
@@ -335,9 +343,9 @@ export function CampaignModal({
           <div className="modal-section camp-milestones">
             <h3>Milestones</h3>
             <p className="muted small" style={{ margin: "0 0 8px" }}>
-              Dated moments inside the campaign — EDM sends, landing page live,
-              webinar day. Each shows as a diamond on the campaign bar; tick it
-              once it has happened.
+              Dated moments inside the campaign. Each shows as a diamond on the
+              campaign bar; tick it once it has happened. A social post milestone
+              also puts a draft post on the Social calendar on its day.
             </p>
             {milestones.length === 0 ? (
               <p className="muted small">No milestones yet.</p>
@@ -362,17 +370,40 @@ export function CampaignModal({
                       value={m.date}
                       onChange={(e) => patchMilestone(m.id, { date: e.target.value })}
                     />
-                    <input
+                    <select
                       value={m.label}
-                      placeholder="e.g. EDM 1 sent"
                       onChange={(e) => patchMilestone(m.id, { label: e.target.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addMilestone();
-                        }
-                      }}
-                    />
+                      aria-label="Milestone type"
+                    >
+                      <option value="" disabled>
+                        Choose a type…
+                      </option>
+                      {CAMPAIGN_MILESTONE_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                      {/* A milestone from before the list keeps its own text. */}
+                      {m.label &&
+                        !(CAMPAIGN_MILESTONE_TYPES as readonly string[]).includes(m.label) && (
+                          <option value={m.label}>{m.label}</option>
+                        )}
+                    </select>
+                    {m.socialPostId ? (
+                      onOpenSocialPost && (
+                        <MilestonePostLink
+                          milestone={m}
+                          socialPosts={socialPosts ?? []}
+                          onOpen={onOpenSocialPost}
+                        />
+                      )
+                    ) : (
+                      isSocialMilestone(m) && (
+                        <span className="field-hint camp-ms-post-hint">
+                          Creates a draft social post on save
+                        </span>
+                      )
+                    )}
                     <button
                       type="button"
                       className="link-btn"

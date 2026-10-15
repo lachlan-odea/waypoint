@@ -272,8 +272,14 @@ export type CampaignMilestone = {
   // YYYY-MM-DD, local. Normally inside the campaign's date range, but not
   // enforced — a teaser can go out before launch.
   date: string;
+  // One of CAMPAIGN_MILESTONE_TYPES in campaigns.ts. Milestones written
+  // before the list existed keep whatever free text they had.
   label: string;
   done: boolean;
+  // The draft post a social milestone created on the Social calendar (see
+  // milestoneSocialPost in campaigns.ts). Set once, on the save that adds
+  // the milestone; left pointing at nothing if the post is deleted.
+  socialPostId?: string;
 };
 
 // A marketing campaign: a named span of dates with milestones inside it.

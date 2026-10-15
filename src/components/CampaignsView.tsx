@@ -4,6 +4,7 @@ import type {
   Designer,
   Project,
   SocialCategory,
+  SocialPost,
   Workspace,
 } from "../types";
 import { brandColor, socialCategoryMeta } from "../constants";
@@ -22,6 +23,7 @@ import {
 } from "../campaigns";
 import { CampaignBand } from "./CampaignBand";
 import { CampaignModal } from "./CampaignModal";
+import { MilestonePostLink } from "./MilestonePostLink";
 
 type Props = {
   campaigns: Campaign[];
@@ -34,6 +36,10 @@ type Props = {
   projects: Project[];
   workspaces: Workspace[];
   onOpenProject: (projectId: string) => void;
+  // Every social post, to show the status of the post each social
+  // milestone created, and the way to open one.
+  socialPosts: SocialPost[];
+  onOpenSocialPost: (postId: string) => void;
   onSave: (campaign: Campaign) => void;
   onDelete: (id: string) => void;
   // A campaign another view asked us to open (the Social calendar's
@@ -93,6 +99,8 @@ export function CampaignsView({
   projects,
   workspaces,
   onOpenProject,
+  socialPosts,
+  onOpenSocialPost,
   onSave,
   onDelete,
   focusCampaignId,
@@ -206,6 +214,11 @@ export function CampaignsView({
   function openProject(projectId: string) {
     setEditing(null);
     onOpenProject(projectId);
+  }
+
+  function openSocialPost(postId: string) {
+    setEditing(null);
+    onOpenSocialPost(postId);
   }
 
   function openCreate(startDate?: string) {
@@ -585,6 +598,11 @@ export function CampaignsView({
                               </span>
                               <span className="camp-card-ms-label">{m.label}</span>
                             </label>
+                            <MilestonePostLink
+                              milestone={m}
+                              socialPosts={socialPosts}
+                              onOpen={openSocialPost}
+                            />
                           </li>
                         ))}
                       </ul>
@@ -649,6 +667,8 @@ export function CampaignsView({
           projects={projects}
           workspaces={workspaces}
           onOpenProject={openProject}
+          socialPosts={socialPosts}
+          onOpenSocialPost={openSocialPost}
           onCancel={() => setEditing(null)}
           onSave={save}
         />
@@ -663,6 +683,8 @@ export function CampaignsView({
           projects={projects}
           workspaces={workspaces}
           onOpenProject={openProject}
+          socialPosts={socialPosts}
+          onOpenSocialPost={openSocialPost}
           onCancel={() => setEditing(null)}
           onSave={save}
           onDelete={() => remove(editing.campaign.id)}
