@@ -10,6 +10,10 @@ import template from "./campaignPage.template.html?raw";
 //
 // SharePoint viewers aren't signed in to Waypoint, so the page can't read
 // Firestore itself. It's keyed by the campaign's shareToken instead.
+//
+// The page is meant to stand alone, so nothing in the template names
+// Waypoint — keep it that way, comments included, since they ship in the
+// downloaded file. Its __CAMPAIGN_*__ markers are filled in below.
 
 // The deployed campaignSummary function. us-central1 like the others in
 // functions/src/index.ts.
@@ -60,14 +64,14 @@ export function campaignPageHtml(campaign: Campaign, shareToken: string): string
   // out is a closing tag, so every "<" is escaped as <.
   const snapshot = JSON.stringify(snapshotOf(campaign)).replace(/</g, "\\u003c");
   const fill: Record<string, string> = {
-    __WAYPOINT_TITLE__: escapeHtml(`${campaign.name} · Campaign`),
-    __WAYPOINT_SNAPSHOT__: snapshot,
-    __WAYPOINT_FEED_URL__: CAMPAIGN_FEED_URL,
-    __WAYPOINT_TOKEN__: shareToken,
+    __CAMPAIGN_TITLE__: escapeHtml(`${campaign.name} · Campaign`),
+    __CAMPAIGN_SNAPSHOT__: snapshot,
+    __CAMPAIGN_FEED_URL__: CAMPAIGN_FEED_URL,
+    __CAMPAIGN_TOKEN__: shareToken,
   };
   // A function replacer, so a "$" in the campaign's text isn't read as a
   // replacement pattern.
-  return template.replace(/__WAYPOINT_[A-Z_]+__/g, (key) => fill[key] ?? key);
+  return template.replace(/__CAMPAIGN_[A-Z_]+__/g, (key) => fill[key] ?? key);
 }
 
 function fileName(name: string): string {
