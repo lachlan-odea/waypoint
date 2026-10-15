@@ -16,6 +16,7 @@ import {
   campaignPageFileName,
   downloadCampaignPage,
   newShareToken,
+  publishCampaignPage,
 } from "../campaignExport";
 import { setCampaignSharePointUrl, setCampaignShareToken } from "../firestore";
 import { SharePointGuideModal } from "./SharePointGuideModal";
@@ -171,7 +172,14 @@ export function CampaignModal({
         setShareToken(undefined);
       });
     }
-    downloadCampaignPage(initial as Campaign, token);
+    // Publish the public copy the page reads. Also brings a campaign shared
+    // before the copy existed up to date.
+    const shared = { ...(initial as Campaign), shareToken: token };
+    publishCampaignPage(shared).catch((err) => {
+      console.warn("Couldn't publish the campaign's SharePoint page", err);
+      setError("Couldn't publish the SharePoint page, so it won't show live details. Try downloading it again.");
+    });
+    downloadCampaignPage(shared, token);
   }
 
   function saveSharePointUrl(url: string) {

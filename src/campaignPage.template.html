@@ -147,8 +147,8 @@
 (function () {
   "use strict";
 
+  // One document holding the campaign as a JSON string in its "json" field.
   var FEED_URL = "__CAMPAIGN_FEED_URL__";
-  var TOKEN = "__CAMPAIGN_TOKEN__";
   var REFRESH_MS = 5 * 60 * 1000;
   var DAY_MS = 86400000;
 
@@ -328,18 +328,19 @@
   var latest = JSON.parse(snapshotEl.textContent);
 
   function asOf() {
-    return "Details as of " + new Date(latest.fetchedAt).toLocaleString();
+    return "Details as of " + new Date(latest.updatedAt).toLocaleString();
   }
 
   render(latest, { kind: "loading", note: asOf() + " · checking for updates…" });
 
   function load() {
-    var url = FEED_URL + "?token=" + encodeURIComponent(TOKEN);
-    fetch(url, { cache: "no-store" })
+    fetch(FEED_URL, { cache: "no-store" })
       .then(function (res) {
         if (res.status === 404) return { gone: true };
         if (!res.ok) throw new Error("HTTP " + res.status);
-        return res.json();
+        return res.json().then(function (doc) {
+          return JSON.parse(doc.fields.json.stringValue);
+        });
       })
       .then(function (data) {
         if (data.gone) {
