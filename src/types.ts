@@ -319,6 +319,9 @@ export type Campaign = {
   // campaignSummary function answers to the token, never the id, so a
   // campaign can't be read from outside by guessing its id.
   shareToken?: string;
+  // Where that page lives on SharePoint, pasted back by whoever uploaded it
+  // (SharePointGuideModal). Linked from the campaign's editor and card.
+  sharePointUrl?: string;
   createdAt: string;
 };
 

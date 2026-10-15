@@ -521,6 +521,16 @@ export function CampaignsView({
                     {spanDays(c)} day{spanDays(c) === 1 ? "" : "s"} · {phaseNote}
                     {c.owner ? ` · ${c.owner}` : ""}
                   </p>
+                  {c.sharePointUrl && (
+                    <a
+                      className="camp-card-sharepoint"
+                      href={c.sharePointUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      SharePoint page ↗
+                    </a>
+                  )}
                   {(() => {
                     const cat = socialCategoryMeta(c.category, categories);
                     return cat ? (

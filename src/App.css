@@ -1638,6 +1638,10 @@ textarea {
   border-color: var(--primary);
   color: var(--primary);
 }
+a.share-btn {
+  display: inline-block;
+  text-decoration: none;
+}
 
 .mention {
   background: rgba(55, 30, 225, 0.1);
@@ -5567,6 +5571,80 @@ textarea {
   background: var(--camp);
   transition: width 0.2s ease;
 }
+.camp-card-sharepoint {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+.camp-card-sharepoint:hover {
+  text-decoration: underline;
+}
+
+/* SharePoint guide, opened over the campaign editor. */
+.sp-guide-overlay {
+  z-index: 110;
+}
+.sp-guide {
+  width: min(600px, 100%);
+}
+.sp-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.sp-step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+}
+.sp-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--surface-2);
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+.sp-step.done .sp-step-num {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+.sp-step-body h3 {
+  margin: 3px 0 2px;
+  font-size: 15px;
+}
+.sp-step-body p {
+  margin: 0 0 8px;
+}
+.sp-step-body code {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.sp-step-link {
+  display: inline-block;
+  text-decoration: none;
+}
+.sp-step-img {
+  display: block;
+  width: min(100%, 340px);
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.sp-step-body .field {
+  margin: 0;
+}
+
 .camp-card-ms {
   list-style: none;
   margin: 0;
