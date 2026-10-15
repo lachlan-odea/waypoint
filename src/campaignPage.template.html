@@ -55,6 +55,7 @@
   .chip.phase-live { background: var(--done-bg); color: var(--done); }
   .chip.phase-upcoming { background: var(--surface-2); color: var(--primary); }
   .chip.phase-finished { background: var(--surface-2); color: var(--muted); }
+  .chip.phase-evergreen { background: rgba(183, 179, 255, 0.3); color: #1d1765; }
   h1 { font-size: 26px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -0.01em; }
   .sub { color: var(--muted); margin: 0; }
   .desc { margin: 14px 0 0; white-space: pre-wrap; }
@@ -151,7 +152,7 @@
   var REFRESH_MS = 5 * 60 * 1000;
   var DAY_MS = 86400000;
 
-  var PHASE_LABEL = { live: "Live", upcoming: "Upcoming", finished: "Finished" };
+  var PHASE_LABEL = { live: "Live", upcoming: "Upcoming", finished: "Finished", evergreen: "Evergreen" };
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -194,6 +195,7 @@
   }
 
   function phaseOf(c, today) {
+    if (c.evergreen) return "evergreen";
     if (c.endDate < today) return "finished";
     if (c.startDate > today) return "upcoming";
     return "live";
@@ -249,32 +251,39 @@
     h.push('<span class="chip phase-' + phase + '">' + PHASE_LABEL[phase] + "</span>");
     h.push("</div>");
     h.push("<h1>" + esc(c.name || "Untitled campaign") + "</h1>");
-    h.push('<p class="sub">' + esc(fmt(c.startDate)) + " – " + esc(fmt(c.endDate)) +
+    h.push('<p class="sub">' +
+      (phase === "evergreen" ? "Always on" : esc(fmt(c.startDate)) + " – " + esc(fmt(c.endDate))) +
       (c.owner ? " · Owner: " + esc(c.owner) : "") + "</p>");
     if (c.description) h.push('<p class="desc">' + esc(c.description) + "</p>");
     h.push("</div></section>");
 
-    // Timings
-    h.push('<section class="card"><div class="card-body"><h2>Timings</h2><dl class="facts">');
-    h.push('<div class="fact"><dt>Starts</dt><dd>' + esc(fmt(c.startDate, true)) + "</dd></div>");
-    h.push('<div class="fact"><dt>Ends</dt><dd>' + esc(fmt(c.endDate, true)) + "</dd></div>");
-    h.push('<div class="fact"><dt>Duration</dt><dd>' + plural(length, "day") + "</dd></div>");
-    h.push('<div class="fact"><dt>Status</dt><dd>' + esc(phaseNote) + "</dd></div>");
-    h.push("</dl>");
-    h.push('<div class="line" aria-hidden="true"><div class="line-track"></div>');
-    h.push('<div class="line-fill" style="width:' +
-      (phase === "upcoming" ? 0 : phase === "finished" ? 100 : pos(today, c)) + '%"></div>');
-    ms.forEach(function (m) {
-      var st = milestoneState(m, today);
-      h.push('<div class="line-ms ' + st.cls + '" style="left:' + pos(m.date, c) + '%" title="' +
-        esc(m.label + " · " + fmt(m.date)) + '"></div>');
-    });
-    if (phase === "live") {
-      h.push('<div class="line-today" style="left:' + pos(today, c) + '%"><span>Today</span></div>');
+    // Timings. An evergreen campaign has no run to lay out.
+    if (phase === "evergreen") {
+      h.push('<section class="card"><div class="card-body"><h2>Timings</h2><dl class="facts">');
+      h.push('<div class="fact"><dt>Status</dt><dd>Always on, with no start or end date</dd></div>');
+      h.push("</dl></div></section>");
+    } else {
+      h.push('<section class="card"><div class="card-body"><h2>Timings</h2><dl class="facts">');
+      h.push('<div class="fact"><dt>Starts</dt><dd>' + esc(fmt(c.startDate, true)) + "</dd></div>");
+      h.push('<div class="fact"><dt>Ends</dt><dd>' + esc(fmt(c.endDate, true)) + "</dd></div>");
+      h.push('<div class="fact"><dt>Duration</dt><dd>' + plural(length, "day") + "</dd></div>");
+      h.push('<div class="fact"><dt>Status</dt><dd>' + esc(phaseNote) + "</dd></div>");
+      h.push("</dl>");
+      h.push('<div class="line" aria-hidden="true"><div class="line-track"></div>');
+      h.push('<div class="line-fill" style="width:' +
+        (phase === "upcoming" ? 0 : phase === "finished" ? 100 : pos(today, c)) + '%"></div>');
+      ms.forEach(function (m) {
+        var st = milestoneState(m, today);
+        h.push('<div class="line-ms ' + st.cls + '" style="left:' + pos(m.date, c) + '%" title="' +
+          esc(m.label + " · " + fmt(m.date)) + '"></div>');
+      });
+      if (phase === "live") {
+        h.push('<div class="line-today" style="left:' + pos(today, c) + '%"><span>Today</span></div>');
     }
     h.push('</div><div class="line-ends"><span>' + esc(fmt(c.startDate)) + "</span><span>" +
       esc(fmt(c.endDate)) + "</span></div>");
     h.push("</div></section>");
+    }
 
     // Milestones
     h.push('<section class="card"><div class="card-body">');

@@ -159,15 +159,21 @@ export function CampaignsView({
   const monthLabel = monthTitle(month);
 
   // Everything touching the month, before the type filter — what the type
-  // pills count over so the counts don't collapse once you pick one.
+  // pills count over so the counts don't collapse once you pick one. Dated
+  // campaigns by start, then every evergreen one, which belongs to every
+  // month (campaignOverlaps never matches those).
   const monthAll = useMemo(() => {
     const { from, to } = monthBounds(month);
-    return campaigns
+    const dated = campaigns
       .filter((c) => campaignOverlaps(c, from, to))
       .sort(
         (a, b) =>
           a.startDate.localeCompare(b.startDate) || a.name.localeCompare(b.name),
       );
+    const evergreen = campaigns
+      .filter((c) => c.evergreen)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return [...dated, ...evergreen];
   }, [campaigns, month]);
 
   const monthCampaigns = useMemo(
@@ -185,16 +191,23 @@ export function CampaignsView({
     return counts;
   }, [monthAll]);
 
+  // What the grid draws: the list without evergreen campaigns, which have
+  // no run for a bar, and whose milestones stay on their card.
+  const calendarCampaigns = useMemo(
+    () => monthCampaigns.filter((c) => !c.evergreen),
+    [monthCampaigns],
+  );
+
   // A fixed row per campaign for the month, so its band stays level across
   // the grid.
-  const lanes = useMemo(() => assignLanes(monthCampaigns), [monthCampaigns]);
+  const lanes = useMemo(() => assignLanes(calendarCampaigns), [calendarCampaigns]);
 
   // What's coming after this month, so the page isn't a dead end at the
   // end of the current plan.
   const upcoming = useMemo(() => {
     const { to } = monthBounds(month);
     return campaigns
-      .filter((c) => c.startDate > to)
+      .filter((c) => !c.evergreen && c.startDate > to)
       .filter(matchesType)
       .sort((a, b) => a.startDate.localeCompare(b.startDate))
       .slice(0, 5);
@@ -205,7 +218,7 @@ export function CampaignsView({
     onSave(campaign, deletePostIds);
     setEditing(null);
     const { from, to } = monthBounds(month);
-    if (!campaignOverlaps(campaign, from, to)) {
+    if (!campaign.evergreen && !campaignOverlaps(campaign, from, to)) {
       setMonth(campaign.startDate.slice(0, 7));
     }
   }
@@ -413,9 +426,9 @@ export function CampaignsView({
             return <div key={`pad-${i}`} className="soc-cell pad" aria-hidden />;
           }
           const week = weeks[Math.floor(i / 7)];
-          const laneCount = weekLaneCount(monthCampaigns, week, lanes);
-          const running = campaignsOn(monthCampaigns, iso);
-          const marks = milestonesOn(monthCampaigns, iso);
+          const laneCount = weekLaneCount(calendarCampaigns, week, lanes);
+          const running = campaignsOn(calendarCampaigns, iso);
+          const marks = milestonesOn(calendarCampaigns, iso);
           const monday = new Date(`${iso}T00:00:00`).getDay() === 1;
           const weekend = [0, 6].includes(new Date(`${iso}T00:00:00`).getDay());
           return (
@@ -519,7 +532,9 @@ export function CampaignsView({
             const open = expanded.has(c.id) || c.milestones.length <= 4;
             const shown = open ? c.milestones : c.milestones.slice(0, 3);
             const phaseNote =
-              phase === "upcoming"
+              phase === "evergreen"
+                ? "always on, not on the calendar"
+                : phase === "upcoming"
                 ? `starts in ${daysFromToday(c.startDate, today)} day${
                     daysFromToday(c.startDate, today) === 1 ? "" : "s"
                   }`
@@ -557,8 +572,14 @@ export function CampaignsView({
                     {c.name}
                   </button>
                   <p className="camp-card-dates muted small">
-                    {formatShort(c.startDate)} – {formatShort(c.endDate)} ·{" "}
-                    {spanDays(c)} day{spanDays(c) === 1 ? "" : "s"} · {phaseNote}
+                    {phase === "evergreen" ? (
+                      "Always on"
+                    ) : (
+                      <>
+                        {formatShort(c.startDate)} – {formatShort(c.endDate)} ·{" "}
+                        {spanDays(c)} day{spanDays(c) === 1 ? "" : "s"} · {phaseNote}
+                      </>
+                    )}
                     {c.owner ? ` · ${c.owner}` : ""}
                   </p>
                   {c.sharePointUrl && (

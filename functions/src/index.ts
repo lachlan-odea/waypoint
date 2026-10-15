@@ -116,6 +116,7 @@ type CampaignDoc = {
   startDate?: string;
   endDate?: string;
   color?: string;
+  evergreen?: boolean;
   milestones?: { id?: string; date?: string; label?: string; done?: boolean }[];
 };
 
@@ -174,6 +175,7 @@ export const campaignSummary = onRequest(
         startDate: c.startDate ?? "",
         endDate: c.endDate ?? "",
         color: c.color ?? "",
+        evergreen: !!c.evergreen,
         milestones: (c.milestones ?? []).map((m) => ({
           id: m.id ?? "",
           date: m.date ?? "",

@@ -59,8 +59,11 @@ export function weeksOf(cells: (string | null)[]): (string | null)[][] {
 }
 
 // Does the campaign touch any day between `from` and `to` inclusive?
+// Never, for an evergreen one: it has no run to fall inside a range.
 export function campaignOverlaps(c: Campaign, from: string, to: string): boolean {
-  return !!c.startDate && !!c.endDate && c.startDate <= to && c.endDate >= from;
+  return (
+    !c.evergreen && !!c.startDate && !!c.endDate && c.startDate <= to && c.endDate >= from
+  );
 }
 
 // First and last day of a YYYY-MM month.
@@ -146,9 +149,10 @@ export function milestonesOn(
   return out;
 }
 
-export type CampaignPhase = "upcoming" | "live" | "finished";
+export type CampaignPhase = "upcoming" | "live" | "finished" | "evergreen";
 
 export function campaignPhase(c: Campaign, today: string): CampaignPhase {
+  if (c.evergreen) return "evergreen";
   if (c.endDate < today) return "finished";
   if (c.startDate > today) return "upcoming";
   return "live";
@@ -158,4 +162,5 @@ export const PHASE_LABEL: Record<CampaignPhase, string> = {
   live: "Live",
   upcoming: "Upcoming",
   finished: "Finished",
+  evergreen: "Evergreen",
 };

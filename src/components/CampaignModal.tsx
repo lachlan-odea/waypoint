@@ -69,6 +69,7 @@ export function CampaignModal({
     initial.brand || (initial.channel ? brandForChannel(initial.channel) : BRANDS[0]),
   );
   const [owner, setOwner] = useState(initial.owner ?? "");
+  const [evergreen, setEvergreen] = useState(!!initial.evergreen);
   const [startDate, setStartDate] = useState(initial.startDate ?? todayIso());
   const [endDate, setEndDate] = useState(
     initial.endDate ?? shiftIso(initial.startDate ?? todayIso(), 13),
@@ -103,7 +104,9 @@ export function CampaignModal({
   }, [onCancel, guideOpen, removing]);
 
   const datesValid = !!startDate && !!endDate && endDate >= startDate;
-  const canSave = name.trim().length > 0 && datesValid;
+  // An evergreen campaign's dates are hidden and unused, so they can't
+  // hold up a save.
+  const canSave = name.trim().length > 0 && (evergreen || datesValid);
   const color = brandColor(brand);
 
   // ── milestones ───────────────────────────────────────────────────────
@@ -206,6 +209,8 @@ export function CampaignModal({
       description: description.trimEnd(),
       startDate,
       endDate,
+      // Left off rather than stored as false, like the other optional fields.
+      evergreen: evergreen || undefined,
       color,
       milestones: cleanMilestones,
       projectIds,
@@ -216,9 +221,10 @@ export function CampaignModal({
     onSave(campaign, deletePostIds);
   }
 
-  const outside = milestones.filter(
-    (m) => m.date && (m.date < startDate || m.date > endDate),
-  ).length;
+  // Only a dated campaign has a range for a milestone to fall outside.
+  const isOutside = (m: CampaignMilestone) =>
+    !evergreen && !!m.date && (m.date < startDate || m.date > endDate);
+  const outside = milestones.filter(isOutside).length;
 
   const linkedProjects = projectIds
     .map((id) => projects.find((p) => p.id === id))
@@ -232,10 +238,13 @@ export function CampaignModal({
             <h2 className="modal-title-static">
               {mode === "create" ? "New campaign" : "Edit campaign"}
             </h2>
-            {datesValid && (
+            {(evergreen || datesValid) && (
               <div className="modal-sub">
                 <span className="camp-brand-dot" style={{ background: color }} />
-                {brand} · {formatShort(startDate)} – {formatShort(endDate)}
+                {brand} ·{" "}
+                {evergreen
+                  ? "Evergreen"
+                  : `${formatShort(startDate)} – ${formatShort(endDate)}`}
               </div>
             )}
           </div>
@@ -280,31 +289,50 @@ export function CampaignModal({
             />
           </label>
 
+          <label className="soc-check">
+            <input
+              type="checkbox"
+              checked={evergreen}
+              onChange={(e) => setEvergreen(e.target.checked)}
+            />
+            <span>
+              Evergreen campaign
+              <span className="soc-check-hint">
+                Always on, with no start or end. Kept off the calendars and listed
+                under every month's campaigns instead.
+              </span>
+            </span>
+          </label>
+
           <div className="modal-grid">
-            <label className="field">
-              <span>Start date</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setStartDate(next);
-                  if (next && endDate && endDate < next) setEndDate(next);
-                }}
-              />
-            </label>
-            <label className="field">
-              <span>End date</span>
-              <input
-                type="date"
-                value={endDate}
-                min={startDate || undefined}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-              {!datesValid && startDate && endDate && (
-                <span className="field-hint warn">End date is before the start.</span>
-              )}
-            </label>
+            {!evergreen && (
+              <>
+                <label className="field">
+                  <span>Start date</span>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setStartDate(next);
+                      if (next && endDate && endDate < next) setEndDate(next);
+                    }}
+                  />
+                </label>
+                <label className="field">
+                  <span>End date</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    min={startDate || undefined}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                  {!datesValid && startDate && endDate && (
+                    <span className="field-hint warn">End date is before the start.</span>
+                  )}
+                </label>
+              </>
+            )}
             <label className="field">
               <span>Brand</span>
               <div className="camp-brand-field">
@@ -417,9 +445,7 @@ export function CampaignModal({
                 {milestones.map((m) => (
                   <div
                     key={m.id}
-                    className={`camp-ms-row ${
-                      m.date && (m.date < startDate || m.date > endDate) ? "outside" : ""
-                    }`}
+                    className={`camp-ms-row ${isOutside(m) ? "outside" : ""}`}
                   >
                     <label className="camp-ms-done" title="Done">
                       <input

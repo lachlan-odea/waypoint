@@ -116,11 +116,13 @@ function monthLabel(month: string): string {
   });
 }
 
-// "Live" campaigns first, then what's coming, then what's done.
+// "Live" campaigns first, then what's coming, then what's done. Evergreen
+// ones never reach the date-range list, but the record needs them.
 const PHASE_ORDER: Record<CampaignPhase, number> = {
   live: 0,
   upcoming: 1,
   finished: 2,
+  evergreen: 3,
 };
 
 function toCsv(projects: Project[], designers: Designer[]): string {
