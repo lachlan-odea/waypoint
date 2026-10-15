@@ -307,6 +307,12 @@ export type Campaign = {
   // page, the social assets. Each project's window lists the campaigns it
   // belongs to.
   projectIds: string[];
+  // Random token behind the campaign's SharePoint page (campaignExport.ts).
+  // Set the first time someone downloads the page and never changed after,
+  // since every copy of the page already hosted holds it. The
+  // campaignSummary function answers to the token, never the id, so a
+  // campaign can't be read from outside by guessing its id.
+  shareToken?: string;
   createdAt: string;
 };
 

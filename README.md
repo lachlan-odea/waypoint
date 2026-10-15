@@ -43,7 +43,7 @@ Dark mode, text size, profile photo, password. Super users also manage users (ro
 | Backend | Firebase Cloud Functions v2 (`functions/`): Teams ingest, reviewer-assigned emails via the Trigger Email extension |
 | Hosting | GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to `main` |
 
-Firestore collections: `designers`, `workspaces`, `projects`, `notifications`, `hubs`, `deskItems` (private per owner), `socialPosts`, `socialConfig`. Types for every document live in `src/types.ts`; every read and write goes through `src/firestore.ts`.
+Firestore collections: `designers`, `workspaces`, `projects`, `notifications`, `hubs`, `deskItems` (private per owner), `socialPosts`, `socialConfig`, `campaigns`. Types for every document live in `src/types.ts`; every read and write goes through `src/firestore.ts`.
 
 ## Running it locally
 
@@ -79,7 +79,13 @@ A new collection is denied until its rule is live, so any PR that adds one says 
 firebase deploy --only functions
 ```
 
-`createProject` reads the `WAYPOINT_INGEST_SECRET` secret (`firebase functions:secrets:set WAYPOINT_INGEST_SECRET`). `notifyReviewerAssigned` writes to a `mail` collection watched by the Trigger Email extension, which is installed and configured in the console.
+`createProject` reads the `WAYPOINT_INGEST_SECRET` secret (`firebase functions:secrets:set WAYPOINT_INGEST_SECRET`). `notifyReviewerAssigned` writes to a `mail` collection watched by the Trigger Email extension, which is installed and configured in the console. `campaignSummary` is the public, read-only feed behind a campaign's SharePoint page (see below).
+
+### Campaign SharePoint pages
+
+**SharePoint page ↓** in a campaign's editor downloads an `.aspx` file to upload to a SharePoint library. It shows the campaign's details, timings and milestones (but not its contributing projects). It opens on a snapshot taken at download, then fetches the campaign from `campaignSummary` every time it's opened and every five minutes while it stays open, so edits in Waypoint carry across without re-uploading. The page is built in `src/campaignExport.ts` from `src/campaignPage.template.html`.
+
+SharePoint viewers aren't signed in to Waypoint, so the feed is public. The first download gives the campaign a random `shareToken`, and the feed answers to that token only (never the campaign id), returning a fixed allow-list of fields. Anyone holding the page can read that one campaign. The site has to allow custom scripts for SharePoint to render an uploaded `.aspx` with its script, rather than offer it as a download.
 
 **Seeding.** On first sign-in the app creates anything missing: the seed teams (`SEED_WORKSPACES`), the seed locations (`SEED_HUBS`), and — only if the collection is completely empty — the 2026 social calendar from `src/data/socialPostsSeed.json`. Edits and deletions after that stick. The social seed is also available from the empty-state Import button on the calendar.
 
