@@ -504,6 +504,13 @@ export async function setSocialPost(post: SocialPost): Promise<void> {
   await setDoc(doc(socialPostsCol(), post.id), post);
 }
 
+// Move a post to another day, touching nothing else on it. Used to keep a
+// campaign milestone's post on the milestone's date. Rejects if the post
+// has been deleted.
+export async function moveSocialPost(id: string, date: string): Promise<void> {
+  await updateDoc(doc(socialPostsCol(), id), { date, month: date.slice(0, 7) });
+}
+
 export async function deleteSocialPost(id: string): Promise<void> {
   await deleteDoc(doc(socialPostsCol(), id));
 }

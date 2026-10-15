@@ -5417,12 +5417,14 @@ textarea {
 }
 .camp-ms-row {
   display: grid;
-  grid-template-columns: auto 150px minmax(0, 1fr) auto;
+  /* done · date · type · social post link (when there is one) · remove */
+  grid-template-columns: auto 150px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
 }
 .camp-ms-row input[type="date"],
-.camp-ms-row input:not([type]) {
+.camp-ms-row input:not([type]),
+.camp-ms-row select {
   width: 100%;
   min-width: 0;
   border: 1px solid var(--border);
@@ -5432,7 +5434,8 @@ textarea {
   font: inherit;
   font-size: 13px;
 }
-.camp-ms-row input:focus {
+.camp-ms-row input:focus,
+.camp-ms-row select:focus {
   outline: none;
   border-color: var(--primary);
 }
@@ -5571,6 +5574,41 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+.camp-card-ms li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.camp-card-ms li > .camp-card-ms-row {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The link from a social milestone to the post it created. */
+.camp-ms-post {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--primary);
+  cursor: pointer;
+}
+.camp-ms-post:hover {
+  border-color: var(--primary);
+}
+.camp-ms-post.dangling {
+  color: var(--muted);
+  cursor: default;
+}
+.camp-ms-post-hint {
+  margin: 0;
+  white-space: nowrap;
 }
 .camp-card-ms-row {
   display: grid;

@@ -31,11 +31,14 @@ import {
   setSocialConfig as firestoreSetSocialConfig,
   setCampaign as firestoreSetCampaign,
   deleteCampaign as firestoreDeleteCampaign,
+  setSocialPost as firestoreSetSocialPost,
+  moveSocialPost as firestoreMoveSocialPost,
   subscribeCampaigns,
   subscribeSocialConfig,
   subscribeSocialPosts,
   subscribeWorkspace,
 } from "./firestore";
+import { isSocialMilestone, milestoneSocialPost } from "./campaigns";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetailModal } from "./components/ProjectDetailModal";
@@ -672,8 +675,36 @@ export default function App() {
     firestoreSetProject(updated).catch(writeError);
   }
 
+  // Every campaign save goes through here, so this is where social
+  // milestones get their Social calendar post: one is created the first
+  // time a milestone is saved as a social type, and moved along when the
+  // milestone's date changes. A post someone has since deleted is left
+  // deleted rather than recreated.
   function saveCampaign(campaign: Campaign) {
-    firestoreSetCampaign(campaign).catch(writeError);
+    const before = campaigns.find((c) => c.id === campaign.id);
+    const milestones = campaign.milestones.map((m) => {
+      if (!m.socialPostId) {
+        if (!isSocialMilestone(m)) return m;
+        const post = milestoneSocialPost(campaign, m);
+        firestoreSetSocialPost(post).catch(writeError);
+        return { ...m, socialPostId: post.id };
+      }
+      const was = before?.milestones.find((x) => x.id === m.id);
+      if (was && was.date !== m.date) {
+        firestoreMoveSocialPost(m.socialPostId, m.date).catch((err) =>
+          console.warn("Couldn't move the milestone's social post", err),
+        );
+      }
+      return m;
+    });
+    firestoreSetCampaign({ ...campaign, milestones }).catch(writeError);
+  }
+
+  // Jump to the Social calendar with one post's editor open.
+  function openSocialPost(postId: string) {
+    setOpenProjectId(null);
+    setFocusSocialPostId(postId);
+    setView("socialCalendar");
   }
 
   // Jump to the Campaigns page with one campaign's editor open. Closes any
@@ -1045,6 +1076,8 @@ export default function App() {
             projects={workspace.projects}
             workspaces={availableWorkspaces}
             onOpenProject={setOpenProjectId}
+            socialPosts={socialPostsForUsage}
+            onOpenSocialPost={openSocialPost}
             onSave={saveCampaign}
             onDelete={deleteCampaign}
             focusCampaignId={focusCampaignId}
@@ -1345,11 +1378,7 @@ export default function App() {
           onMoveToWorkspace={(workspaceId) =>
             moveProjectToWorkspace(openProject.id, workspaceId)
           }
-          onOpenSocialPost={(postId) => {
-            setOpenProjectId(null);
-            setFocusSocialPostId(postId);
-            setView("socialCalendar");
-          }}
+          onOpenSocialPost={openSocialPost}
           onOpenCampaign={openCampaign}
         />
       )}

@@ -1,4 +1,51 @@
-import type { Campaign, CampaignMilestone } from "./types";
+import type { Campaign, CampaignMilestone, SocialPost } from "./types";
+
+// What a milestone can be. The label is stored as this text, so renaming
+// one leaves existing milestones on the old wording (the editor still shows
+// it as an extra option).
+export const CAMPAIGN_MILESTONE_TYPES = [
+  "Organic Social Post",
+  "Sponsored Social Post",
+  "EDM",
+  "Landing Page",
+  "Press Release",
+] as const;
+
+const SOCIAL_MILESTONE_TYPES: readonly string[] = [
+  "Organic Social Post",
+  "Sponsored Social Post",
+];
+
+// Does this milestone get a post on the Social calendar?
+export function isSocialMilestone(m: Pick<CampaignMilestone, "label">): boolean {
+  return SOCIAL_MILESTONE_TYPES.includes(m.label);
+}
+
+// The draft post a social milestone puts on the Social calendar: on the
+// milestone's day, no category, channel "Other", the campaign's name as the
+// topic. Everything else is left for the social team to fill in.
+export function milestoneSocialPost(
+  campaign: Campaign,
+  milestone: CampaignMilestone,
+): SocialPost {
+  return {
+    id: `sp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    month: milestone.date.slice(0, 7),
+    date: milestone.date,
+    channel: "Other",
+    topic: campaign.name,
+    copy: "",
+    screenshot: "",
+    asset: "",
+    ctaLink: "",
+    status: "draft",
+    notes: `${milestone.label} for the ${campaign.name} campaign.`,
+    owner: campaign.owner,
+    evergreen: false,
+    createdAt: new Date().toISOString(),
+    source: "manual",
+  };
+}
 
 // Date maths for drawing campaigns on a Monday-first month grid. Pure
 // functions, no React.
