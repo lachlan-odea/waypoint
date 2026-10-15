@@ -24,6 +24,15 @@ import {
 import { CampaignBand } from "./CampaignBand";
 import { CampaignModal } from "./CampaignModal";
 import { MilestonePostLink } from "./MilestonePostLink";
+import { ExportCsvModal } from "./ExportCsvModal";
+import {
+  campaignsCsv,
+  campaignsInRange,
+  csvFileName,
+  downloadCsv,
+  milestonesCsv,
+  milestonesInRange,
+} from "../csvExport";
 
 type Props = {
   campaigns: Campaign[];
@@ -114,6 +123,11 @@ export function CampaignsView({
   const [editing, setEditing] = useState<Editing | null>(null);
   // Which campaign card has its milestone list expanded.
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [exporting, setExporting] = useState(false);
+  // A row per campaign (its milestones in one cell), or a row per milestone.
+  const [exportRows, setExportRows] = useState<"campaigns" | "milestones">(
+    "campaigns",
+  );
 
   // Open a campaign handed over from another view. Done at render time
   // (setState-during-render is React's sanctioned way to derive state) so
@@ -232,6 +246,23 @@ export function CampaignsView({
     });
   }
 
+  // Every campaign in the range, whatever the type filter on screen.
+  function exportCount(from: string, to: string): number {
+    return exportRows === "campaigns"
+      ? campaignsInRange(campaigns, from, to).length
+      : milestonesInRange(campaigns, from, to).length;
+  }
+
+  function exportCsv(from: string, to: string) {
+    downloadCsv(
+      csvFileName(exportRows === "campaigns" ? "campaigns" : "campaign-milestones", from, to),
+      exportRows === "campaigns"
+        ? campaignsCsv(campaignsInRange(campaigns, from, to), projectTitle)
+        : milestonesCsv(milestonesInRange(campaigns, from, to)),
+    );
+    setExporting(false);
+  }
+
   function toggleExpanded(id: string) {
     setExpanded((cur) => {
       const next = new Set(cur);
@@ -309,6 +340,14 @@ export function CampaignsView({
         </div>
 
         <div className="soc-toolbar-right">
+          <button
+            className="btn-mini"
+            onClick={() => setExporting(true)}
+            disabled={campaigns.length === 0}
+            title="Download the campaigns in a date range as a CSV file"
+          >
+            Export CSV
+          </button>
           <button className="primary" onClick={() => openCreate()}>
             + New campaign
           </button>
@@ -700,6 +739,45 @@ export function CampaignsView({
           onSave={save}
           onDelete={() => remove(editing.campaign.id)}
         />
+      )}
+      {exporting && (
+        <ExportCsvModal
+          title="Export the Campaigns calendar"
+          month={month}
+          count={exportCount}
+          noun={(n) =>
+            exportRows === "campaigns"
+              ? n === 1 ? "campaign" : "campaigns"
+              : n === 1 ? "milestone" : "milestones"
+          }
+          onExport={exportCsv}
+          onCancel={() => setExporting(false)}
+        >
+          <div className="csv-rows" role="radiogroup" aria-label="One row per">
+            <span className="muted small">One row per</span>
+            <label className="csv-option">
+              <input
+                type="radio"
+                name="csv-rows"
+                checked={exportRows === "campaigns"}
+                onChange={() => setExportRows("campaigns")}
+              />
+              Campaign — running at any point in the range, milestones listed in one column
+            </label>
+            <label className="csv-option">
+              <input
+                type="radio"
+                name="csv-rows"
+                checked={exportRows === "milestones"}
+                onChange={() => setExportRows("milestones")}
+              />
+              Milestone — dated inside the range, with its campaign alongside
+            </label>
+          </div>
+          <p className="muted small" style={{ margin: 0 }}>
+            Every campaign comes along, whatever type filter is on.
+          </p>
+        </ExportCsvModal>
       )}
     </section>
   );
