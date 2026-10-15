@@ -70,7 +70,7 @@ export function campaignPageHtml(campaign: Campaign, shareToken: string): string
   return template.replace(/__WAYPOINT_[A-Z_]+__/g, (key) => fill[key] ?? key);
 }
 
-function fileName(name: string): string {
+export function campaignPageFileName(name: string): string {
   const slug = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -86,7 +86,7 @@ export function downloadCampaignPage(campaign: Campaign, shareToken: string): vo
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = fileName(campaign.name);
+  a.download = campaignPageFileName(campaign.name);
   document.body.appendChild(a);
   a.click();
   a.remove();

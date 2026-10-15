@@ -550,6 +550,14 @@ export async function setCampaignShareToken(
   await updateDoc(doc(campaignsCol(), id), { shareToken });
 }
 
+// Same reasoning as the token: written from the open editor, on its own.
+export async function setCampaignSharePointUrl(
+  id: string,
+  sharePointUrl: string,
+): Promise<void> {
+  await updateDoc(doc(campaignsCol(), id), { sharePointUrl });
+}
+
 export async function deleteCampaign(id: string): Promise<void> {
   await deleteDoc(doc(campaignsCol(), id));
 }

@@ -8,8 +8,13 @@ import type {
 } from "../types";
 import { BRANDS, brandColor, brandForChannel } from "../constants";
 import { formatShort, shiftIso, todayIso } from "../dates";
-import { downloadCampaignPage, newShareToken } from "../campaignExport";
-import { setCampaignShareToken } from "../firestore";
+import {
+  campaignPageFileName,
+  downloadCampaignPage,
+  newShareToken,
+} from "../campaignExport";
+import { setCampaignSharePointUrl, setCampaignShareToken } from "../firestore";
+import { SharePointGuideModal } from "./SharePointGuideModal";
 import { ProjectPicker } from "./ProjectPicker";
 
 type Props = {
@@ -66,16 +71,20 @@ export function CampaignModal({
   // editor is open has to survive this editor's own save, which rewrites
   // the whole document.
   const [shareToken, setShareToken] = useState(initial.shareToken);
+  // Same again for the link pasted back from SharePoint.
+  const [sharePointUrl, setSharePointUrl] = useState(initial.sharePointUrl);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onCancel();
+      // The SharePoint guide handles its own Escape, and may refuse it.
+      if (e.key === "Escape" && !guideOpen) onCancel();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
+  }, [onCancel, guideOpen]);
 
   const datesValid = !!startDate && !!endDate && endDate >= startDate;
   const canSave = name.trim().length > 0 && datesValid;
@@ -126,6 +135,18 @@ export function CampaignModal({
     downloadCampaignPage(initial as Campaign, token);
   }
 
+  function saveSharePointUrl(url: string) {
+    setGuideOpen(false);
+    if (!initial.id || url === sharePointUrl) return;
+    const previous = sharePointUrl;
+    setSharePointUrl(url);
+    setCampaignSharePointUrl(initial.id, url).catch((err) => {
+      console.warn("Couldn't save the campaign's SharePoint link", err);
+      setError("Couldn't save the SharePoint link. Open the guide again and re-paste it.");
+      setSharePointUrl(previous);
+    });
+  }
+
   // ── save ─────────────────────────────────────────────────────────────
 
   function submit() {
@@ -153,6 +174,7 @@ export function CampaignModal({
       milestones: cleanMilestones,
       projectIds,
       shareToken,
+      sharePointUrl,
       createdAt: initial.createdAt ?? new Date().toISOString(),
     };
     onSave(campaign);
@@ -183,14 +205,27 @@ export function CampaignModal({
           </div>
           <div className="modal-head-actions">
             {mode === "edit" && initial.id && (
-              <button
-                type="button"
-                className="share-btn"
-                onClick={downloadSharePointPage}
-                title="Download an .aspx page for SharePoint. It shows the campaign's timings and milestones, and updates itself from Waypoint every time it's opened. Unsaved edits appear on it once saved."
-              >
-                SharePoint page ↓
-              </button>
+              <>
+                {sharePointUrl && (
+                  <a
+                    className="share-btn"
+                    href={sharePointUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open the campaign's page on SharePoint"
+                  >
+                    Open on SharePoint ↗
+                  </a>
+                )}
+                <button
+                  type="button"
+                  className="share-btn"
+                  onClick={() => setGuideOpen(true)}
+                  title="Put a page for this campaign on SharePoint. It shows the campaign's timings and milestones, and updates itself every time it's opened. Unsaved edits appear on it once saved."
+                >
+                  {sharePointUrl ? "Update SharePoint page" : "Put on SharePoint"}
+                </button>
+              </>
             )}
             <button className="icon-btn" onClick={onCancel} aria-label="Close">
               ✕
@@ -428,6 +463,15 @@ export function CampaignModal({
           </button>
         </footer>
       </div>
+      {guideOpen && (
+        <SharePointGuideModal
+          fileName={campaignPageFileName(initial.name ?? "")}
+          initialUrl={sharePointUrl}
+          onDownload={downloadSharePointPage}
+          onSave={saveSharePointUrl}
+          onCancel={() => setGuideOpen(false)}
+        />
+      )}
     </div>
   );
 }
