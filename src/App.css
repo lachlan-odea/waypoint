@@ -6280,3 +6280,9 @@ a.share-btn {
 .csv-option input {
   margin-top: 2px;
 }
+
+/* Build stamp in the Settings footer, pushed left of Close. */
+.settings-version {
+  margin-right: auto;
+  align-self: center;
+}

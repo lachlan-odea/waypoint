@@ -3,6 +3,7 @@ import type { Designer, Hub, SocialConfig, Workspace } from "../types";
 import { changePassword } from "../firebase";
 import { Avatar } from "./Avatar";
 import { ManageSocialModal } from "./ManageSocialModal";
+import { APP_BUILT_AT, versionLabel } from "../version";
 import {
   DEFAULT_WORK_END_HOUR,
   DEFAULT_WORK_START_HOUR,
@@ -382,6 +383,12 @@ export function SettingsModal({
         </div>
 
         <footer className="modal-foot">
+          <span
+            className="muted small settings-version"
+            title={`Built ${new Date(APP_BUILT_AT).toLocaleString()}`}
+          >
+            {versionLabel()}
+          </span>
           <button onClick={onClose}>Close</button>
         </footer>
       </div>
