@@ -107,6 +107,88 @@ export const createProject = onRequest(
   },
 );
 
+type CampaignDoc = {
+  name?: string;
+  brand?: string;
+  category?: string;
+  owner?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  color?: string;
+  milestones?: { id?: string; date?: string; label?: string; done?: boolean }[];
+};
+
+// Tokens are 32 hex characters (see newShareToken in src/campaignExport.ts).
+// Anything else is rejected before it costs a Firestore read.
+const SHARE_TOKEN_PATTERN = /^[0-9a-f]{32}$/;
+
+// Read-only feed behind the SharePoint page a campaign can be downloaded
+// as. The page is hosted on SharePoint and opened by people who aren't on
+// Waypoint, so it can't sign in to Firestore; it fetches this instead, each
+// time it's opened, so it always shows the campaign as it stands now.
+//
+// Public on purpose, and the token is the only key: the campaign is found
+// by its shareToken field, never by id. The response is an explicit
+// allow-list of fields — contributing projects (projectIds) and anything
+// added to campaigns later stay out until someone adds them here.
+export const campaignSummary = onRequest(
+  {
+    region: "us-central1",
+    // The page is served from a SharePoint origin we don't know in advance.
+    cors: true,
+    invoker: "public",
+  },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).json({ error: "GET only" });
+      return;
+    }
+    const token = String(req.query.token ?? "");
+    if (!SHARE_TOKEN_PATTERN.test(token)) {
+      res.status(400).json({ error: "Bad or missing token" });
+      return;
+    }
+
+    // Edits should show the next time the page is opened, not after a cache
+    // expires somewhere between here and SharePoint.
+    res.set("Cache-Control", "no-store");
+
+    try {
+      const snap = await db
+        .collection("campaigns")
+        .where("shareToken", "==", token)
+        .limit(1)
+        .get();
+      if (snap.empty) {
+        res.status(404).json({ error: "Campaign not found" });
+        return;
+      }
+      const c = snap.docs[0].data() as CampaignDoc;
+      res.status(200).json({
+        name: c.name ?? "",
+        brand: c.brand ?? "",
+        category: c.category ?? "",
+        owner: c.owner ?? "",
+        description: c.description ?? "",
+        startDate: c.startDate ?? "",
+        endDate: c.endDate ?? "",
+        color: c.color ?? "",
+        milestones: (c.milestones ?? []).map((m) => ({
+          id: m.id ?? "",
+          date: m.date ?? "",
+          label: m.label ?? "",
+          done: !!m.done,
+        })),
+        fetchedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: `Firestore read failed: ${message}` });
+    }
+  },
+);
+
 // Public URL of the deployed Waypoint app — used in email bodies so the
 // reviewer can deep-link straight to the project. Update if the hosting
 // path ever changes.

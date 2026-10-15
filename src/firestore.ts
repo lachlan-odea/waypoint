@@ -8,6 +8,7 @@ import {
   onSnapshot,
   query,
   setDoc,
+  updateDoc,
   where,
   writeBatch,
 } from "firebase/firestore";
@@ -538,6 +539,15 @@ export function subscribeCampaignsForProject(
 
 export async function setCampaign(campaign: Campaign): Promise<void> {
   await setDoc(doc(campaignsCol(), campaign.id), campaign);
+}
+
+// Just the token, so it can be written from an open editor without saving
+// (or overwriting) whatever else is mid-edit there.
+export async function setCampaignShareToken(
+  id: string,
+  shareToken: string,
+): Promise<void> {
+  await updateDoc(doc(campaignsCol(), id), { shareToken });
 }
 
 export async function deleteCampaign(id: string): Promise<void> {

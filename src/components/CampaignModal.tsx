@@ -8,6 +8,8 @@ import type {
 } from "../types";
 import { BRANDS, brandColor, brandForChannel } from "../constants";
 import { formatShort, shiftIso, todayIso } from "../dates";
+import { downloadCampaignPage, newShareToken } from "../campaignExport";
+import { setCampaignShareToken } from "../firestore";
 import { ProjectPicker } from "./ProjectPicker";
 
 type Props = {
@@ -60,6 +62,10 @@ export function CampaignModal({
   const [milestones, setMilestones] = useState<CampaignMilestone[]>(() =>
     (initial.milestones ?? []).map((m) => ({ ...m })),
   );
+  // Held here rather than read from `initial`: a token minted while the
+  // editor is open has to survive this editor's own save, which rewrites
+  // the whole document.
+  const [shareToken, setShareToken] = useState(initial.shareToken);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,6 +102,30 @@ export function CampaignModal({
     setMilestones((cur) => cur.filter((m) => m.id !== id));
   }
 
+  // ── SharePoint page ──────────────────────────────────────────────────
+
+  // Downloads the saved campaign, not what's mid-edit here — the page
+  // fetches the saved version anyway, so unsaved edits show on it once
+  // they're saved. The first download mints the campaign's token; the
+  // write isn't awaited so the download doesn't wait on the network (and an
+  // offline write still lands once it syncs).
+  function downloadSharePointPage() {
+    if (!initial.id) return;
+    let token = shareToken;
+    if (!token) {
+      token = newShareToken();
+      setShareToken(token);
+      setCampaignShareToken(initial.id, token).catch((err) => {
+        console.warn("Couldn't save the campaign's share token", err);
+        setError(
+          "Couldn't register the SharePoint page with Waypoint, so it won't update. Try downloading it again.",
+        );
+        setShareToken(undefined);
+      });
+    }
+    downloadCampaignPage(initial as Campaign, token);
+  }
+
   // ── save ─────────────────────────────────────────────────────────────
 
   function submit() {
@@ -122,6 +152,7 @@ export function CampaignModal({
       color,
       milestones: cleanMilestones,
       projectIds,
+      shareToken,
       createdAt: initial.createdAt ?? new Date().toISOString(),
     };
     onSave(campaign);
@@ -150,9 +181,21 @@ export function CampaignModal({
               </div>
             )}
           </div>
-          <button className="icon-btn" onClick={onCancel} aria-label="Close">
-            ✕
-          </button>
+          <div className="modal-head-actions">
+            {mode === "edit" && initial.id && (
+              <button
+                type="button"
+                className="share-btn"
+                onClick={downloadSharePointPage}
+                title="Download an .aspx page for SharePoint. It shows the campaign's timings and milestones, and updates itself from Waypoint every time it's opened. Unsaved edits appear on it once saved."
+              >
+                SharePoint page ↓
+              </button>
+            )}
+            <button className="icon-btn" onClick={onCancel} aria-label="Close">
+              ✕
+            </button>
+          </div>
         </header>
 
         <div className="modal-body">
