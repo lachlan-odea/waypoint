@@ -5582,6 +5582,28 @@ a.share-btn {
   text-decoration: underline;
 }
 
+/* "Delete the social post too?", opened over the campaign editor. */
+.confirm-overlay {
+  z-index: 110;
+}
+.confirm-modal {
+  width: min(460px, 100%);
+}
+.confirm-modal .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.confirm-post {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 /* SharePoint guide, opened over the campaign editor. */
 .sp-guide-overlay {
   z-index: 110;

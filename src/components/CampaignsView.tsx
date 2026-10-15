@@ -40,7 +40,8 @@ type Props = {
   // milestone created, and the way to open one.
   socialPosts: SocialPost[];
   onOpenSocialPost: (postId: string) => void;
-  onSave: (campaign: Campaign) => void;
+  // deletePostIds: posts to delete with milestones removed in the editor.
+  onSave: (campaign: Campaign, deletePostIds?: string[]) => void;
   onDelete: (id: string) => void;
   // A campaign another view asked us to open (the Social calendar's
   // overlay hands over here). Consumed once the editor is up.
@@ -186,8 +187,8 @@ export function CampaignsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaigns, month, typeFilter]);
 
-  function save(campaign: Campaign) {
-    onSave(campaign);
+  function save(campaign: Campaign, deletePostIds: string[]) {
+    onSave(campaign, deletePostIds);
     setEditing(null);
     const { from, to } = monthBounds(month);
     if (!campaignOverlaps(campaign, from, to)) {
