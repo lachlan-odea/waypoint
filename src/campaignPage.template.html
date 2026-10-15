@@ -4,142 +4,314 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>__CAMPAIGN_TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&display=swap" />
 <style>
   :root {
-    --bg: #f6f6fb;
+    /* CargoWise brand palette. */
+    --navy: #1d1765;
+    --blue: #371ee1;
+    --violet: #b7b3ff;
+    --mint: #c6ffd1;
+    --highlighter: #eafc88;
+    --peach: #ffbe98;
+    --cherry: #651d32;
+    --pine: #244349;
+    --midnight: #141e30;
+
+    --page: #f6f6fb;
     --surface: #ffffff;
-    --surface-2: #f0f0f7;
-    --border: #e2e1ee;
-    --text: #141e30;
+    --rule: #e2e1ee;
+    --text: var(--midnight);
     --muted: #5f6079;
-    --primary: #371ee1;
-    --done: #1f7a4d;
-    --done-bg: #e3f6ea;
-    --danger: #c2335f;
-    --danger-bg: #fbe9ef;
-    --today: #9a5b00;
-    --today-bg: #fff3d6;
-    --camp: #371ee1;
+    --camp: var(--blue);
+
+    --gutter: clamp(16px, 5vw, 56px);
+    --measure: 1040px;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    background: var(--bg);
+    background: var(--page);
     color: var(--text);
-    font-family: "Segoe UI", "DM Sans", ui-sans-serif, system-ui, -apple-system, Roboto, sans-serif;
-    font-size: 15px;
+    font-family: "DM Sans", "Segoe UI", ui-sans-serif, system-ui, -apple-system, Roboto, sans-serif;
+    font-size: 16px;
     line-height: 1.5;
+    font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 16px 48px; }
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 16px;
+  .inner { max-width: var(--measure); margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* ── Notice: a slim bar above everything when the page can't refresh ── */
+  .notice {
+    margin: 0;
+    padding: 10px var(--gutter);
+    font-size: 14px;
+    text-align: center;
   }
-  .card-bar { height: 6px; background: var(--camp); }
-  .card-body { padding: 20px 24px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
-  .chip {
-    display: inline-block;
-    padding: 2px 10px;
+  .notice.warn { background: var(--highlighter); color: var(--navy); }
+  .notice.gone { background: var(--peach); color: var(--cherry); }
+
+  /* ── Hero: navy ground, the brand field pattern, and the campaign's run ── */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    background: var(--navy);
+    color: #fff;
+    padding: clamp(32px, 6vw, 64px) 0 clamp(28px, 4vw, 40px);
+  }
+  .field {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: min(70%, 900px);
+    color: var(--violet);
+    opacity: 0.4;
+    /* Fade the pattern out before it reaches the title. */
+    -webkit-mask-image: linear-gradient(to left, #000 35%, transparent 95%);
+    mask-image: linear-gradient(to left, #000 35%, transparent 95%);
+    pointer-events: none;
+  }
+  .hero .inner { position: relative; }
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 12px;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     line-height: 20px;
   }
-  .chip.brand { background: var(--camp); color: #fff; }
-  .chip.type { border: 1px solid var(--border); color: var(--muted); }
-  .chip.phase-live { background: var(--done-bg); color: var(--done); }
-  .chip.phase-upcoming { background: var(--surface-2); color: var(--primary); }
-  .chip.phase-finished { background: var(--surface-2); color: var(--muted); }
-  .chip.phase-evergreen { background: rgba(183, 179, 255, 0.3); color: #1d1765; }
-  h1 { font-size: 26px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -0.01em; }
-  .sub { color: var(--muted); margin: 0; }
-  .desc { margin: 14px 0 0; white-space: pre-wrap; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 12px; }
+  .tag.brand { background: var(--camp); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
+  .tag.type { color: var(--violet); box-shadow: inset 0 0 0 1px rgba(183, 179, 255, 0.5); }
+  .tag.phase-live { background: var(--highlighter); color: var(--navy); }
+  .tag.phase-upcoming { color: #fff; box-shadow: inset 0 0 0 1px #fff; }
+  .tag.phase-finished { background: rgba(255, 255, 255, 0.14); color: #fff; }
+  .tag.phase-evergreen { background: var(--mint); color: var(--pine); }
+  .tag.phase-live::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--navy);
+  }
+
+  h1 {
+    margin: 0;
+    max-width: 22ch;
+    font-size: clamp(32px, 5.4vw, 56px);
+    line-height: 1.04;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  .owner { margin: 14px 0 0; color: var(--violet); font-size: 15px; }
+  .owner strong { color: #fff; font-weight: 600; }
+  .desc {
+    margin: 18px 0 0;
+    max-width: 62ch;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 17px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  /* The run: start to end, filled to today, a diamond per milestone. */
+  .run { margin: clamp(36px, 5vw, 52px) 0 0; }
+  .run-track {
+    position: relative;
+    height: 44px;
+    margin: 0 8px;
+  }
+  .run-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 26px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(183, 179, 255, 0.28);
+  }
+  .run-fill {
+    position: absolute;
+    left: 0;
+    top: 26px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--violet);
+    transform-origin: left center;
+  }
+  .run-fill.intro { animation: grow 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  @keyframes grow { from { transform: scaleX(0); } }
+  .run-ms {
+    position: absolute;
+    top: 21px;
+    width: 14px;
+    height: 14px;
+    margin-left: -7px;
+    transform: rotate(45deg);
+    border: 2px solid var(--violet);
+    background: var(--navy);
+  }
+  .run-ms.done { background: var(--mint); border-color: var(--mint); }
+  .run-ms.overdue { background: var(--peach); border-color: var(--peach); }
+  .run-ms.today,
+  .run-ms.next { border-color: var(--highlighter); }
+  .run-today {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--highlighter);
+  }
+  .run-today span {
+    position: absolute;
+    top: -6px;
+    left: 8px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--highlighter);
+    color: var(--navy);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .run-today.flip span { left: auto; right: 8px; }
+  .run-ends {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    color: var(--violet);
+    font-size: 14px;
+  }
+  .run-ends strong { display: block; color: #fff; font-weight: 600; font-size: 15px; }
+  .run-ends div:last-child { text-align: right; }
+  .always {
+    margin: clamp(32px, 4vw, 44px) 0 0;
+    padding-top: 18px;
+    border-top: 1px solid rgba(183, 179, 255, 0.3);
+    color: var(--violet);
+    font-size: 15px;
+  }
+  .always strong { color: #fff; font-weight: 600; }
+
+  /* ── Facts: the numbers people come for, as plain type ── */
   .facts {
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+  }
+  .facts dl {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     margin: 0;
   }
-  .fact { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
-  .fact dt { font-size: 12px; color: var(--muted); }
-  .fact dd { margin: 2px 0 0; font-weight: 600; }
+  .fact { padding: 22px 0; }
+  .fact + .fact { padding-left: 24px; border-left: 1px solid var(--rule); }
+  .fact dt { color: var(--muted); font-size: 14px; }
+  .fact dd { margin: 4px 0 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; }
+  .fact dd small { display: block; margin-top: 2px; color: var(--muted); font-size: 14px; font-weight: 400; letter-spacing: 0; }
 
-  /* Campaign span with today and each milestone marked along it. */
-  .line { position: relative; height: 34px; margin: 18px 6px 4px; }
-  .line-track {
-    position: absolute; left: 0; right: 0; top: 15px; height: 4px;
-    border-radius: 2px; background: var(--surface-2);
+  /* ── Milestones: a dated sequence on a rail ── */
+  .milestones { padding: clamp(36px, 5vw, 56px) 0 24px; }
+  .ms-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
   }
-  .line-fill { position: absolute; left: 0; top: 15px; height: 4px; border-radius: 2px; background: var(--camp); }
-  .line-ms {
-    position: absolute; top: 11px; width: 12px; height: 12px; margin-left: -6px;
-    transform: rotate(45deg); border: 2px solid var(--camp); background: var(--surface);
+  h2 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700; letter-spacing: -0.015em; }
+  .ms-count { margin: 0; color: var(--muted); font-size: 15px; }
+  .ms-count strong { color: var(--text); font-weight: 600; }
+  .ms-list { list-style: none; margin: 0; padding: 0; position: relative; }
+  .ms-list::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    left: 11px;
+    top: 14px;
+    bottom: 14px;
+    width: 2px;
+    background: var(--rule);
   }
-  .line-ms.done { background: var(--camp); }
-  .line-ms.overdue { border-color: var(--danger); }
-  .line-today { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--text); }
-  .line-today span {
-    position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
-    font-size: 11px; font-weight: 600; white-space: nowrap;
-  }
-  .line-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
-
-  .progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .progress { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin: 6px 0 16px; }
-  .progress div { height: 100%; background: var(--done); }
-  .ms { list-style: none; margin: 0; padding: 0; }
-  .ms li {
+  .ms {
+    position: relative;
     display: grid;
-    grid-template-columns: 22px 150px 1fr auto;
-    gap: 12px;
+    grid-template-columns: 24px 132px minmax(0, 1fr) auto;
     align-items: center;
-    padding: 10px 0;
-    border-top: 1px solid var(--border);
+    gap: 18px;
+    padding: 14px 16px 14px 0;
+    border-radius: 10px;
   }
-  .ms li:first-child { border-top: 0; }
   .ms-mark {
-    width: 20px; height: 20px; border-radius: 50%;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; border: 2px solid var(--border); color: var(--muted);
+    position: relative;
+    z-index: 2;
+    justify-self: center;
+    width: 14px;
+    height: 14px;
+    transform: rotate(45deg);
+    border: 2px solid var(--blue);
+    background: var(--page);
   }
-  .ms li.done .ms-mark { background: var(--done); border-color: var(--done); color: #fff; }
-  .ms li.overdue .ms-mark { border-color: var(--danger); color: var(--danger); }
-  .ms li.today .ms-mark { border-color: var(--today); color: var(--today); }
-  .ms-date { color: var(--muted); font-size: 14px; }
-  .ms-label { font-weight: 600; }
-  .ms li.done .ms-label { color: var(--muted); }
-  .ms-status { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
-  .ms li.done .ms-status { background: var(--done-bg); color: var(--done); }
-  .ms li.overdue .ms-status { background: var(--danger-bg); color: var(--danger); }
-  .ms li.today .ms-status { background: var(--today-bg); color: var(--today); }
-  .ms li.upcoming .ms-status { background: var(--surface-2); color: var(--muted); }
-  .empty { color: var(--muted); margin: 0; }
+  .ms.done .ms-mark { background: var(--pine); border-color: var(--pine); }
+  .ms.overdue .ms-mark { background: var(--peach); border-color: var(--cherry); }
+  .ms.today .ms-mark,
+  .ms.next .ms-mark { background: var(--highlighter); border-color: var(--navy); }
+  .ms.next,
+  .ms.today { background: rgba(234, 252, 136, 0.45); }
+  .ms-date { color: var(--muted); font-size: 15px; }
+  .ms-label { font-size: 17px; font-weight: 600; }
+  .ms.done .ms-label { color: var(--muted); font-weight: 500; }
+  .ms-status { font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .ms.done .ms-status { color: var(--pine); }
+  .ms.overdue .ms-status { color: var(--cherry); }
+  .ms.today .ms-status,
+  .ms.next .ms-status { color: var(--navy); }
+  .ms.upcoming .ms-status { color: var(--muted); font-weight: 500; }
+  .empty { margin: 0; color: var(--muted); }
 
-  .notice { border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 14px; }
-  .notice.warn { background: var(--today-bg); color: var(--today); }
-  .notice.gone { background: var(--danger-bg); color: var(--danger); }
-  .foot { color: var(--muted); font-size: 12px; text-align: center; }
+  .foot {
+    padding: 24px 0 40px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .foot .live::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: #1f9d5c;
+    vertical-align: 1px;
+  }
 
-  @media (max-width: 560px) {
-    .card-body { padding: 16px; }
-    h1 { font-size: 22px; }
-    .ms li { grid-template-columns: 22px 1fr; row-gap: 2px; }
-    .ms-date { grid-column: 2; grid-row: 2; }
+  @media (max-width: 720px) {
+    .facts dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fact:nth-child(3) { padding-left: 0; border-left: 0; }
+    .fact:nth-child(n + 3) { border-top: 1px solid var(--rule); }
+    .ms { grid-template-columns: 24px minmax(0, 1fr); row-gap: 2px; }
+    .ms-mark { grid-row: 1 / span 3; align-self: start; margin-top: 6px; }
     .ms-label { grid-column: 2; grid-row: 1; }
-    .ms-status { grid-column: 2; grid-row: 3; justify-self: start; }
+    .ms-date { grid-column: 2; grid-row: 2; }
+    .ms-status { grid-column: 2; grid-row: 3; }
+    .field { width: 100%; opacity: 0.25; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .run-fill.intro { animation: none; }
   }
 </style>
 </head>
 <body>
-<div class="wrap" id="app">
+<div id="app">
   <noscript>
-    <p class="notice warn">This page needs scripts enabled to show the campaign.</p>
+    <p class="notice warn">Turn on scripts in your browser to see this campaign.</p>
   </noscript>
 </div>
 <script type="application/json" id="campaign-snapshot">__CAMPAIGN_SNAPSHOT__</script>
@@ -163,7 +335,7 @@
       .replace(/'/g, "&#39;");
   }
 
-  // Colours arrive from Firestore; only a plain hex is let into a style.
+  // Colours arrive from the campaign; only a plain hex is let into a style.
   function safeColor(c) {
     return /^#[0-9a-fA-F]{3,8}$/.test(c || "") ? c : "#371ee1";
   }
@@ -183,11 +355,13 @@
     return Math.round((parse(to).getTime() - parse(from).getTime()) / DAY_MS);
   }
 
-  function fmt(iso, withWeekday) {
+  function fmt(iso, opts) {
     if (!iso) return "—";
-    var opts = { day: "numeric", month: "short", year: "numeric" };
-    if (withWeekday) opts.weekday = "short";
-    return parse(iso).toLocaleDateString(undefined, opts);
+    return parse(iso).toLocaleDateString(undefined, opts || { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function fmtDay(iso) {
+    return fmt(iso, { weekday: "short", day: "numeric", month: "short" });
   }
 
   function plural(n, word) {
@@ -201,12 +375,18 @@
     return "live";
   }
 
-  function milestoneState(m, today) {
-    if (m.done) return { cls: "done", mark: "✓", text: "Completed" };
-    if (m.date < today) return { cls: "overdue", mark: "!", text: "Overdue" };
-    if (m.date === today) return { cls: "today", mark: "•", text: "Due today" };
+  // `nextId` is the first milestone not yet done from today on, the one
+  // row that gets the highlighter. A milestone due today is it.
+  function milestoneState(m, today, nextId) {
+    if (m.done) return { cls: "done", text: "Done" };
+    if (m.date < today) {
+      return { cls: "overdue", text: "Overdue by " + plural(days(m.date, today), "day") };
+    }
+    if (m.date === today) return { cls: m.id === nextId ? "today" : "upcoming", text: "Due today" };
     var n = days(today, m.date);
-    return { cls: "upcoming", mark: "", text: "In " + plural(n, "day") };
+    var text = n === 1 ? "Tomorrow" : "In " + plural(n, "day");
+    if (m.id === nextId) return { cls: "next", text: "Next up, " + text.toLowerCase() };
+    return { cls: "upcoming", text: text };
   }
 
   // Where a date falls along the campaign, 0–100, clamped to the ends.
@@ -217,105 +397,135 @@
     return Math.max(0, Math.min(100, p));
   }
 
+  // The brand "field": short Violet strokes that turn from upright at the
+  // top to flat at the bottom, rows drawing closer as they go down. The
+  // same geometry as the brand asset.
+  function fieldSvg() {
+    var lines = [];
+    var y = 50;
+    for (var row = 0; row < 20; row++) {
+      var hx = 1.5 * row + 0.5;
+      var hy = Math.max(0, 21 - 1.1 * row);
+      for (var col = 0; col < 19; col++) {
+        var x = 50 + 81.2 * col;
+        lines.push('<line x1="' + (x - hx).toFixed(1) + '" y1="' + (y + hy).toFixed(1) +
+          '" x2="' + (x + hx).toFixed(1) + '" y2="' + (y - hy).toFixed(1) + '"/>');
+      }
+      y += 82 - 2.55 * row;
+    }
+    return '<svg class="field" viewBox="0 0 1561 1201" preserveAspectRatio="xMaxYMid slice" aria-hidden="true" focusable="false">' +
+      '<g stroke="currentColor" stroke-width="3.2">' + lines.join("") + "</g></svg>";
+  }
+  var FIELD = fieldSvg();
+
+  // The run only draws itself in the first time the page shows it.
+  var introDone = false;
+
   function render(c, status) {
     var today = todayIso();
-    var color = safeColor(c.color);
     var phase = phaseOf(c, today);
-    var length = days(c.startDate, c.endDate) + 1;
     var ms = (c.milestones || []).slice().sort(function (a, b) {
       return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
     });
     var done = ms.filter(function (m) { return m.done; }).length;
     var overdue = ms.filter(function (m) { return !m.done && m.date < today; }).length;
-
-    var phaseNote =
-      phase === "upcoming"
-        ? "Starts in " + plural(days(today, c.startDate), "day")
-        : phase === "live"
-          ? plural(days(today, c.endDate), "day") + " left"
-          : "Ended " + fmt(c.endDate);
+    var next = ms.filter(function (m) { return !m.done && m.date >= today; })[0];
+    var nextId = next ? next.id : null;
 
     var h = [];
 
     if (status.kind === "gone") {
-      h.push('<p class="notice gone">This campaign has been removed. Showing the details as they were when this page was made.</p>');
+      h.push('<p class="notice gone" role="status">This campaign has been removed. These are its details from when the page was last updated.</p>');
     } else if (status.kind === "offline") {
-      h.push('<p class="notice warn">Couldn\'t load the latest details, so this may be out of date. It will try again shortly.</p>');
+      h.push('<p class="notice warn" role="status">Couldn\'t load the latest details, so these may be out of date. Trying again in a few minutes.</p>');
     }
 
-    // Header
-    h.push('<section class="card"><div class="card-bar"></div><div class="card-body">');
-    h.push('<div class="chips">');
-    if (c.brand) h.push('<span class="chip brand">' + esc(c.brand) + "</span>");
-    if (c.category) h.push('<span class="chip type">' + esc(c.category) + "</span>");
-    h.push('<span class="chip phase-' + phase + '">' + PHASE_LABEL[phase] + "</span>");
-    h.push("</div>");
+    // Hero
+    h.push('<header class="hero">' + FIELD + '<div class="inner">');
+    h.push('<ul class="tags">');
+    if (c.brand) h.push('<li class="tag brand">' + esc(c.brand) + "</li>");
+    if (c.category) h.push('<li class="tag type">' + esc(c.category) + "</li>");
+    h.push('<li class="tag phase-' + phase + '">' + PHASE_LABEL[phase] + "</li>");
+    h.push("</ul>");
     h.push("<h1>" + esc(c.name || "Untitled campaign") + "</h1>");
-    h.push('<p class="sub">' +
-      (phase === "evergreen" ? "Always on" : esc(fmt(c.startDate)) + " – " + esc(fmt(c.endDate))) +
-      (c.owner ? " · Owner: " + esc(c.owner) : "") + "</p>");
+    if (c.owner) h.push('<p class="owner">Run by <strong>' + esc(c.owner) + "</strong></p>");
     if (c.description) h.push('<p class="desc">' + esc(c.description) + "</p>");
-    h.push("</div></section>");
 
-    // Timings. An evergreen campaign has no run to lay out.
     if (phase === "evergreen") {
-      h.push('<section class="card"><div class="card-body"><h2>Timings</h2><dl class="facts">');
-      h.push('<div class="fact"><dt>Status</dt><dd>Always on, with no start or end date</dd></div>');
-      h.push("</dl></div></section>");
+      h.push('<p class="always"><strong>Always on.</strong> This campaign has no start or end date.</p>');
     } else {
-      h.push('<section class="card"><div class="card-body"><h2>Timings</h2><dl class="facts">');
-      h.push('<div class="fact"><dt>Starts</dt><dd>' + esc(fmt(c.startDate, true)) + "</dd></div>");
-      h.push('<div class="fact"><dt>Ends</dt><dd>' + esc(fmt(c.endDate, true)) + "</dd></div>");
-      h.push('<div class="fact"><dt>Duration</dt><dd>' + plural(length, "day") + "</dd></div>");
-      h.push('<div class="fact"><dt>Status</dt><dd>' + esc(phaseNote) + "</dd></div>");
-      h.push("</dl>");
-      h.push('<div class="line" aria-hidden="true"><div class="line-track"></div>');
-      h.push('<div class="line-fill" style="width:' +
-        (phase === "upcoming" ? 0 : phase === "finished" ? 100 : pos(today, c)) + '%"></div>');
+      var fill = phase === "upcoming" ? 0 : phase === "finished" ? 100 : pos(today, c);
+      h.push('<div class="run" aria-hidden="true"><div class="run-track"><div class="run-line"></div>');
+      h.push('<div class="run-fill' + (introDone ? "" : " intro") + '" style="width:' + fill + '%"></div>');
       ms.forEach(function (m) {
-        var st = milestoneState(m, today);
-        h.push('<div class="line-ms ' + st.cls + '" style="left:' + pos(m.date, c) + '%" title="' +
-          esc(m.label + " · " + fmt(m.date)) + '"></div>');
+        var st = milestoneState(m, today, nextId);
+        h.push('<div class="run-ms ' + st.cls + '" style="left:' + pos(m.date, c) + '%" title="' +
+          esc(m.label + ", " + fmtDay(m.date)) + '"></div>');
       });
       if (phase === "live") {
-        h.push('<div class="line-today" style="left:' + pos(today, c) + '%"><span>Today</span></div>');
+        var at = pos(today, c);
+        h.push('<div class="run-today' + (at > 82 ? " flip" : "") + '" style="left:' + at + '%"><span>Today</span></div>');
+      }
+      h.push("</div>");
+      h.push('<div class="run-ends"><div>Starts<strong>' + esc(fmt(c.startDate)) + "</strong></div>" +
+        "<div>Ends<strong>" + esc(fmt(c.endDate)) + "</strong></div></div>");
+      h.push("</div>");
     }
-    h.push('</div><div class="line-ends"><span>' + esc(fmt(c.startDate)) + "</span><span>" +
-      esc(fmt(c.endDate)) + "</span></div>");
-    h.push("</div></section>");
+    h.push("</div></header>");
+
+    // Facts
+    h.push('<section class="facts" aria-label="Campaign timings"><div class="inner"><dl>');
+    if (phase === "evergreen") {
+      h.push('<div class="fact"><dt>Runs</dt><dd>Always on</dd></div>');
+    } else {
+      var length = days(c.startDate, c.endDate) + 1;
+      h.push('<div class="fact"><dt>Runs for</dt><dd>' + plural(length, "day") + "</dd></div>");
+      var when =
+        phase === "upcoming"
+          ? ["Starts in", plural(days(today, c.startDate), "day")]
+          : phase === "live"
+            ? ["Time left", plural(days(today, c.endDate), "day")]
+            : ["Ended", fmt(c.endDate, { day: "numeric", month: "short" })];
+      h.push('<div class="fact"><dt>' + when[0] + "</dt><dd>" + esc(when[1]) + "</dd></div>");
     }
+    h.push('<div class="fact"><dt>Milestones done</dt><dd>' + (ms.length ? done + " of " + ms.length : "None yet") + "</dd></div>");
+    h.push('<div class="fact"><dt>Next up</dt><dd>' +
+      (next ? esc(next.label) + "<small>" + esc(fmtDay(next.date)) + "</small>" : "Nothing scheduled") +
+      "</dd></div>");
+    h.push("</dl></div></section>");
 
     // Milestones
-    h.push('<section class="card"><div class="card-body">');
-    h.push('<div class="progress-head"><h2>Milestones</h2>');
+    h.push('<section class="milestones"><div class="inner">');
+    h.push('<div class="ms-head"><h2>Milestones</h2>');
     if (ms.length) {
-      h.push('<span class="sub">' + done + " of " + ms.length + " completed" +
-        (overdue ? " · " + overdue + " overdue" : "") + "</span>");
+      h.push('<p class="ms-count"><strong>' + done + " of " + ms.length + "</strong> done" +
+        (overdue ? ", " + overdue + " overdue" : "") + "</p>");
     }
     h.push("</div>");
     if (!ms.length) {
-      h.push('<p class="empty">No milestones yet.</p>');
+      h.push('<p class="empty">No milestones have been added to this campaign yet.</p>');
     } else {
-      h.push('<div class="progress"><div style="width:' + (done / ms.length) * 100 + '%"></div></div>');
-      h.push('<ul class="ms">');
+      h.push('<ol class="ms-list">');
       ms.forEach(function (m) {
-        var st = milestoneState(m, today);
-        h.push('<li class="' + st.cls + '">' +
-          '<span class="ms-mark" aria-hidden="true">' + st.mark + "</span>" +
-          '<span class="ms-date">' + esc(fmt(m.date, true)) + "</span>" +
+        var st = milestoneState(m, today, nextId);
+        h.push('<li class="ms ' + st.cls + '">' +
+          '<span class="ms-mark" aria-hidden="true"></span>' +
+          '<span class="ms-date">' + esc(fmtDay(m.date)) + "</span>" +
           '<span class="ms-label">' + esc(m.label) + "</span>" +
           '<span class="ms-status">' + esc(st.text) + "</span></li>");
       });
-      h.push("</ul>");
+      h.push("</ol>");
     }
     h.push("</div></section>");
 
-    h.push('<p class="foot">' + esc(status.note) + "</p>");
+    h.push('<footer class="foot"><div class="inner"><span class="' + (status.kind === "live" ? "live" : "") + '">' +
+      esc(status.note) + "</span></div></footer>");
 
     var app = document.getElementById("app");
-    app.style.setProperty("--camp", color);
+    app.style.setProperty("--camp", safeColor(c.color));
     app.innerHTML = h.join("");
     document.title = (c.name || "Campaign") + " · Campaign";
+    introDone = true;
   }
 
   function timeNow() {
@@ -331,7 +541,7 @@
     return "Details as of " + new Date(latest.updatedAt).toLocaleString();
   }
 
-  render(latest, { kind: "loading", note: asOf() + " · checking for updates…" });
+  render(latest, { kind: "loading", note: asOf() + ". Checking for updates…" });
 
   function load() {
     fetch(FEED_URL, { cache: "no-store" })
@@ -348,7 +558,7 @@
           return;
         }
         latest = data;
-        render(latest, { kind: "live", note: "Updated " + timeNow() });
+        render(latest, { kind: "live", note: "Live. Updated at " + timeNow() });
       })
       .catch(function () {
         render(latest, { kind: "offline", note: asOf() });
