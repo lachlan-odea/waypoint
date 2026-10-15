@@ -548,6 +548,24 @@ export async function setCampaign(campaign: Campaign): Promise<void> {
   await setDoc(doc(campaignsCol(), campaign.id), campaign);
 }
 
+// ── Campaign pages ─────────────────────────────────────────────────────
+// The public copy of a campaign behind its SharePoint page, at
+// /campaignPages/{shareToken}. Anyone with the exact token can read it (the
+// page isn't signed in); the rules refuse listing, so tokens can't be found.
+// `json` is the page's data, serialised by campaignPageData in
+// campaignExport.ts, so the page reads one string field rather than
+// Firestore's typed values.
+
+const campaignPagesCol = () => collection(db, "campaignPages");
+
+export async function setCampaignPage(shareToken: string, json: string): Promise<void> {
+  await setDoc(doc(campaignPagesCol(), shareToken), { json });
+}
+
+export async function deleteCampaignPage(shareToken: string): Promise<void> {
+  await deleteDoc(doc(campaignPagesCol(), shareToken));
+}
+
 // Just the token, so it can be written from an open editor without saving
 // (or overwriting) whatever else is mid-edit there.
 export async function setCampaignShareToken(

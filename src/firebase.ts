@@ -17,7 +17,7 @@ import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
 
 // Firebase web `apiKey` is a public project identifier, not a secret. Access
 // is gated by Firestore security rules + signed-in users only.
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyCCeatk1Bv-GwlZOnp_NQgRrMBTLgQNH1o",
   authDomain: "wtg-waypoint.firebaseapp.com",
   projectId: "wtg-waypoint",

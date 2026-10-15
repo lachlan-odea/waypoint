@@ -31,6 +31,7 @@ import {
   setSocialConfig as firestoreSetSocialConfig,
   setCampaign as firestoreSetCampaign,
   deleteCampaign as firestoreDeleteCampaign,
+  deleteCampaignPage as firestoreDeleteCampaignPage,
   setSocialPost as firestoreSetSocialPost,
   moveSocialPost as firestoreMoveSocialPost,
   deleteSocialPost as firestoreDeleteSocialPost,
@@ -40,6 +41,7 @@ import {
   subscribeWorkspace,
 } from "./firestore";
 import { isSocialMilestone, milestoneSocialPost } from "./campaigns";
+import { publishCampaignPage } from "./campaignExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetailModal } from "./components/ProjectDetailModal";
@@ -700,7 +702,12 @@ export default function App() {
       }
       return m;
     });
-    firestoreSetCampaign({ ...campaign, milestones }).catch(writeError);
+    const saved = { ...campaign, milestones };
+    firestoreSetCampaign(saved).catch(writeError);
+    // Keep the SharePoint page's public copy in step with the campaign.
+    publishCampaignPage(saved).catch((err) =>
+      console.warn("Couldn't update the campaign's SharePoint page", err),
+    );
   }
 
   // Jump to the Social calendar with one post's editor open.
@@ -731,8 +738,16 @@ export default function App() {
     return map;
   }, [campaigns]);
 
+  // Its SharePoint page's public copy goes too, so the page says the
+  // campaign has been removed rather than showing it as it was.
   function deleteCampaign(id: string) {
+    const token = campaigns.find((c) => c.id === id)?.shareToken;
     firestoreDeleteCampaign(id).catch(writeError);
+    if (token) {
+      firestoreDeleteCampaignPage(token).catch((err) =>
+        console.warn("Couldn't remove the campaign's SharePoint page", err),
+      );
+    }
   }
 
   function addNotifications(notifs: Notification[]) {

@@ -41,6 +41,22 @@ service cloud.firestore {
     match /campaigns/{campaignId} {
       allow read, write: if request.auth != null;
     }
+    // Public copies of campaigns shared as a SharePoint page, keyed by the
+    // campaign's random shareToken (see src/campaignExport.ts). The page is
+    // opened by people who aren't signed in, so a document can be read by
+    // anyone holding its exact token. Listing is refused, so tokens can't be
+    // discovered. Signed-in users write them, as the single "json" string
+    // the page reads.
+    match /campaignPages/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if request.auth != null
+        && token.matches('^[0-9a-f]{32}$')
+        && request.resource.data.keys().hasOnly(['json'])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 200000;
+      allow delete: if request.auth != null;
+    }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any
     // signed-in user. Reads are constrained by the ownerId == uid filter the

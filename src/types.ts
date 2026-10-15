@@ -319,8 +319,8 @@ export type Campaign = {
   projectIds: string[];
   // Random token behind the campaign's SharePoint page (campaignExport.ts).
   // Set the first time someone downloads the page and never changed after,
-  // since every copy of the page already hosted holds it. The
-  // campaignSummary function answers to the token, never the id, so a
+  // since every copy of the page already hosted holds it. The page's public
+  // copy lives at /campaignPages/{shareToken}, never under the id, so a
   // campaign can't be read from outside by guessing its id.
   shareToken?: string;
   // Where that page lives on SharePoint, pasted back by whoever uploaded it
