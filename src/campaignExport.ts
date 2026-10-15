@@ -49,6 +49,7 @@ function snapshotOf(c: Campaign) {
     startDate: c.startDate,
     endDate: c.endDate,
     color: c.color,
+    evergreen: !!c.evergreen,
     milestones: c.milestones.map(({ id, date, label, done }) => ({
       id,
       date,

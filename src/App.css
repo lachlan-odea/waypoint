@@ -5530,6 +5530,16 @@ a.share-btn {
   color: #c6ffd1;
   border-color: rgba(46, 158, 104, 0.4);
 }
+.camp-phase.evergreen {
+  color: var(--brand-navy);
+  border-color: var(--brand-violet);
+  background: rgba(183, 179, 255, 0.25);
+}
+:root.dark-mode .camp-phase.evergreen {
+  color: var(--brand-violet);
+  border-color: rgba(183, 179, 255, 0.45);
+  background: rgba(183, 179, 255, 0.15);
+}
 .camp-card-title {
   background: transparent;
   border: none;

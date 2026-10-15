@@ -25,6 +25,9 @@ The marketing team's LinkedIn plan as a month grid of post cards, seeded from th
 - The post editor previews assets (images inline, video, PDFs on request, SharePoint links when you're signed in), links the post to a board project, offers one-click company hashtags, and hands off to LinkedIn: **Post on LinkedIn** copies the text and opens LinkedIn's composer pre-filled, then **Mark as published** records it. Posting to the company pages through LinkedIn's API would need an approved developer app and a backend to hold its token, which don't exist yet.
 - Linked posts appear in the project's detail window and open the calendar at that post.
 
+### Evergreen campaigns
+Ticking **Evergreen campaign** in the editor makes a campaign always on: its dates are hidden (and kept, in case it's switched back), it's left off the Campaigns grid and the Social calendar overlay, along with its milestones, and it's listed under "This month's campaigns" in every month with an Evergreen tag. Its SharePoint page shows "Always on" in place of timings.
+
 ### Campaign milestones
 Each milestone on a campaign is one of a fixed list of types: Organic Social Post, Sponsored Social Post, EDM, Landing Page, Press Release (`CAMPAIGN_MILESTONE_TYPES` in `src/campaigns.ts`). Saving a campaign with a new **social post** milestone puts a draft post on the Social calendar on the milestone's day. The post has no category, channel "Other", and the campaign's name as its topic. The milestone then links to that post from the campaign card and the editor, with the post's status. Moving the milestone's date moves the post with it. Removing the milestone asks whether to delete its post too, and that happens when the campaign is saved. Deleting the post from the calendar leaves the milestone, showing "Post deleted".
 

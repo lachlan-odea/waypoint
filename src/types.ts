@@ -301,9 +301,13 @@ export type Campaign = {
   brand: string;
   owner: string;
   description: string;
-  // Inclusive YYYY-MM-DD range.
+  // Inclusive YYYY-MM-DD range. Ignored while the campaign is evergreen,
+  // but kept, so switching evergreen off brings the old dates back.
   startDate: string;
   endDate: string;
+  // An always-on campaign. Kept off both calendars (it has no run to draw)
+  // and listed under every month's campaigns instead.
+  evergreen?: boolean;
   // Hex colour for the bar. Derived from `brand` on save and stored so the
   // calendar can paint without a lookup; campaigns written before brands
   // existed keep whatever colour they had.

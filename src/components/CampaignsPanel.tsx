@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { Campaign, Project } from "../types";
 import { brandColor } from "../constants";
 import { formatShort, todayIso } from "../dates";
-import { campaignPhase, spanDays } from "../campaigns";
+import { PHASE_LABEL, campaignPhase, spanDays, type CampaignPhase } from "../campaigns";
 
 type Props = {
   // Every campaign; the panel picks the ones that touch `projects`.
@@ -29,7 +29,12 @@ function daysBetween(a: string, b: string): number {
   );
 }
 
-const PHASE_ORDER = { live: 0, upcoming: 1, finished: 2 };
+const PHASE_ORDER: Record<CampaignPhase, number> = {
+  live: 0,
+  evergreen: 1,
+  upcoming: 2,
+  finished: 3,
+};
 
 // A row of compact campaign cards for My Desk and the team boards: which
 // campaigns the projects in front of you are feeding, where each one is in
@@ -122,14 +127,17 @@ export function CampaignsPanel({
               .map((id) => projectById.get(id))
               .filter((p): p is Project => !!p);
             // Progress through the run, for the time bar under the dates.
+            // An evergreen campaign has no run, so its bar sits full.
             const elapsed =
-              phase === "finished"
+              phase === "finished" || phase === "evergreen"
                 ? 1
                 : phase === "upcoming"
                   ? 0
                   : Math.min(1, Math.max(0, (daysBetween(c.startDate, today) + 1) / spanDays(c)));
             const when =
-              phase === "upcoming"
+              phase === "evergreen"
+                ? "Always on"
+                : phase === "upcoming"
                 ? `starts ${formatShort(c.startDate)} · in ${daysBetween(today, c.startDate)} day${
                     daysBetween(today, c.startDate) === 1 ? "" : "s"
                   }`
@@ -149,7 +157,7 @@ export function CampaignsPanel({
                     {c.brand || "No brand"}
                   </span>
                   <span className={`camp-phase ${phase}`}>
-                    {phase === "live" ? "Live" : phase === "upcoming" ? "Upcoming" : "Finished"}
+                    {PHASE_LABEL[phase]}
                   </span>
                 </div>
                 <button
@@ -161,7 +169,9 @@ export function CampaignsPanel({
                   {c.name}
                 </button>
                 <div className="camp-mini-when muted small">
-                  {formatShort(c.startDate)} – {formatShort(c.endDate)} · {when}
+                  {phase === "evergreen"
+                    ? when
+                    : `${formatShort(c.startDate)} – ${formatShort(c.endDate)} · ${when}`}
                 </div>
                 <div className="camp-mini-time" title="How far through the run it is">
                   <div className="camp-mini-time-bar" style={{ width: `${elapsed * 100}%` }} />
