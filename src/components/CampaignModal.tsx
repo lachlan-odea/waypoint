@@ -9,6 +9,7 @@ import type {
 } from "../types";
 import { CAMPAIGN_MILESTONE_TYPES, isSocialMilestone } from "../campaigns";
 import { MilestonePostLink } from "./MilestonePostLink";
+import { MilestonePostDeleteDialog } from "./MilestonePostDeleteDialog";
 import { BRANDS, brandColor, brandForChannel } from "../constants";
 import { formatShort, shiftIso, todayIso } from "../dates";
 import {
@@ -30,7 +31,9 @@ type Props = {
   projects: Project[];
   workspaces: Workspace[];
   onCancel: () => void;
-  onSave: (campaign: Campaign) => void;
+  // deletePostIds: Social calendar posts to delete along with the
+  // milestones that created them, as chosen when each was removed.
+  onSave: (campaign: Campaign, deletePostIds: string[]) => void;
   onDelete?: () => void;
   // Jump to a linked project's window. Closes this editor first.
   onOpenProject?: (projectId: string) => void;
@@ -82,17 +85,22 @@ export function CampaignModal({
   // Same again for the link pasted back from SharePoint.
   const [sharePointUrl, setSharePointUrl] = useState(initial.sharePointUrl);
   const [guideOpen, setGuideOpen] = useState(false);
+  // A milestone with a social post, waiting on "delete the post too?".
+  const [removing, setRemoving] = useState<CampaignMilestone | null>(null);
+  // Posts to delete when the campaign is saved. Held until then so that
+  // cancelling the editor leaves both the milestone and its post alone.
+  const [deletePostIds, setDeletePostIds] = useState<string[]>([]);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      // The SharePoint guide handles its own Escape, and may refuse it.
-      if (e.key === "Escape" && !guideOpen) onCancel();
+      // The SharePoint guide and the delete prompt handle their own Escape.
+      if (e.key === "Escape" && !guideOpen && !removing) onCancel();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel, guideOpen]);
+  }, [onCancel, guideOpen, removing]);
 
   const datesValid = !!startDate && !!endDate && endDate >= startDate;
   const canSave = name.trim().length > 0 && datesValid;
@@ -115,8 +123,28 @@ export function CampaignModal({
     ]);
   }
 
+  // A milestone whose post still exists asks about the post first. One
+  // whose post is already gone (or never existed) just goes.
   function removeMilestone(id: string) {
+    const m = milestones.find((x) => x.id === id);
+    const postId = m?.socialPostId;
+    if (m && postId && socialPosts?.some((p) => p.id === postId)) {
+      setRemoving(m);
+      return;
+    }
+    dropMilestone(id);
+  }
+
+  function dropMilestone(id: string) {
     setMilestones((cur) => cur.filter((m) => m.id !== id));
+  }
+
+  function confirmRemoval(deletePost: boolean) {
+    if (!removing) return;
+    const postId = removing.socialPostId;
+    if (deletePost && postId) setDeletePostIds((cur) => [...cur, postId]);
+    dropMilestone(removing.id);
+    setRemoving(null);
   }
 
   // ── SharePoint page ──────────────────────────────────────────────────
@@ -185,7 +213,7 @@ export function CampaignModal({
       sharePointUrl,
       createdAt: initial.createdAt ?? new Date().toISOString(),
     };
-    onSave(campaign);
+    onSave(campaign, deletePostIds);
   }
 
   const outside = milestones.filter(
@@ -494,6 +522,18 @@ export function CampaignModal({
           </button>
         </footer>
       </div>
+      {removing && (() => {
+        const post = socialPosts?.find((p) => p.id === removing.socialPostId);
+        return post ? (
+          <MilestonePostDeleteDialog
+            milestone={removing}
+            post={post}
+            onDeletePost={() => confirmRemoval(true)}
+            onKeepPost={() => confirmRemoval(false)}
+            onCancel={() => setRemoving(null)}
+          />
+        ) : null;
+      })()}
       {guideOpen && (
         <SharePointGuideModal
           fileName={campaignPageFileName(initial.name ?? "")}

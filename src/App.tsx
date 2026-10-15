@@ -33,6 +33,7 @@ import {
   deleteCampaign as firestoreDeleteCampaign,
   setSocialPost as firestoreSetSocialPost,
   moveSocialPost as firestoreMoveSocialPost,
+  deleteSocialPost as firestoreDeleteSocialPost,
   subscribeCampaigns,
   subscribeSocialConfig,
   subscribeSocialPosts,
@@ -679,8 +680,10 @@ export default function App() {
   // milestones get their Social calendar post: one is created the first
   // time a milestone is saved as a social type, and moved along when the
   // milestone's date changes. A post someone has since deleted is left
-  // deleted rather than recreated.
-  function saveCampaign(campaign: Campaign) {
+  // deleted rather than recreated. `deletePostIds` are posts whose
+  // milestones were removed in the editor with "delete the post too".
+  function saveCampaign(campaign: Campaign, deletePostIds: string[] = []) {
+    deletePostIds.forEach((id) => firestoreDeleteSocialPost(id).catch(writeError));
     const before = campaigns.find((c) => c.id === campaign.id);
     const milestones = campaign.milestones.map((m) => {
       if (!m.socialPostId) {
