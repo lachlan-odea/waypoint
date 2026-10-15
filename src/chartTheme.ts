@@ -39,46 +39,54 @@ export type ChartTheme = {
   legendStyle: React.CSSProperties;
   // Unfilled remainder of the completion gauge.
   gaugeTrack: string;
+  // Filled part of the completion gauge.
+  gaugeFill: string;
+  // Single-series bars (projects per designer, per content type).
+  bar: string;
 };
 
 // Values mirror the CSS custom properties in App.css so charts and chrome
 // don't drift apart.
 const LIGHT: ChartTheme = {
-  axisLabel: "#1f2937",
-  axisTick: "#6b7280",
-  cursorFill: "rgba(15, 23, 42, 0.04)",
+  axisLabel: "#141e30",
+  axisTick: "#5f6079",
+  cursorFill: "rgba(20, 30, 48, 0.04)",
   tooltipContentStyle: {
     background: "#ffffff",
-    border: "1px solid #e1e4e8",
+    border: "1px solid #e2e1ee",
     borderRadius: 10,
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
-    color: "#1f2937",
+    color: "#141e30",
     fontSize: 12,
   },
-  tooltipLabelStyle: { color: "#1f2937", fontWeight: 600, marginBottom: 2 },
-  tooltipItemStyle: { color: "#4b5563" },
-  legendStyle: { fontSize: 12, color: "#1f2937" },
-  gaugeTrack: "#e5e7eb",
+  tooltipLabelStyle: { color: "#141e30", fontWeight: 600, marginBottom: 2 },
+  tooltipItemStyle: { color: "#45475f" },
+  legendStyle: { fontSize: 12, color: "#141e30" },
+  gaugeTrack: "#e6e5f0",
+  gaugeFill: "#2e9e68",
+  bar: "#371ee1",
 };
 
 const DARK: ChartTheme = {
-  axisLabel: "#f1f5f9",
-  axisTick: "#94a3b8",
-  cursorFill: "rgba(148, 163, 184, 0.14)",
+  axisLabel: "#f0f0f7",
+  axisTick: "#a3a6c2",
+  cursorFill: "rgba(163, 166, 194, 0.14)",
   tooltipContentStyle: {
-    background: "#1e293b",
-    border: "1px solid #475569",
+    background: "#1c2a42",
+    border: "1px solid #3b4a66",
     borderRadius: 10,
     boxShadow: "0 6px 20px rgba(0, 0, 0, 0.45)",
-    color: "#f1f5f9",
+    color: "#f0f0f7",
     fontSize: 12,
   },
-  tooltipLabelStyle: { color: "#f1f5f9", fontWeight: 600, marginBottom: 2 },
-  // Not the series colour: an indigo bar's own fill is close to unreadable
+  tooltipLabelStyle: { color: "#f0f0f7", fontWeight: 600, marginBottom: 2 },
+  // Not the series colour: a blue bar's own fill is close to unreadable
   // against the dark tooltip panel.
-  tooltipItemStyle: { color: "#cbd5e1" },
-  legendStyle: { fontSize: 12, color: "#f1f5f9" },
-  gaugeTrack: "#334155",
+  tooltipItemStyle: { color: "#cfcde0" },
+  legendStyle: { fontSize: 12, color: "#f0f0f7" },
+  gaugeTrack: "#2a3854",
+  gaugeFill: "#3aa86a",
+  bar: "#8a7dff",
 };
 
 export function useChartTheme(): ChartTheme {
