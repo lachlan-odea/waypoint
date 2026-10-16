@@ -280,6 +280,10 @@ export type CampaignMilestone = {
   // milestoneSocialPost in campaigns.ts). Set once, on the save that adds
   // the milestone; left pointing at nothing if the post is deleted.
   socialPostId?: string;
+  // Where the milestone's asset lives: the landing page, the EDM's web
+  // version, the press release. Shown on the campaign's SharePoint page.
+  // A social milestone uses its post's live link (postUrl) instead.
+  url?: string;
 };
 
 // A marketing campaign: a named span of dates with milestones inside it.

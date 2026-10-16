@@ -705,7 +705,7 @@ export default function App() {
     const saved = { ...campaign, milestones };
     firestoreSetCampaign(saved).catch(writeError);
     // Keep the SharePoint page's public copy in step with the campaign.
-    publishCampaignPage(saved).catch((err) =>
+    publishCampaignPage(saved, socialPostsForUsage).catch((err) =>
       console.warn("Couldn't update the campaign's SharePoint page", err),
     );
   }

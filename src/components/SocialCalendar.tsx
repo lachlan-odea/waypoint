@@ -18,6 +18,7 @@ import {
   subscribeSocialPosts,
 } from "../firestore";
 import { campaignOverlaps, campaignsOn, milestonesOn, monthBounds } from "../campaigns";
+import { publishCampaignPagesForPost } from "../campaignExport";
 import { CampaignBand } from "./CampaignBand";
 import { socialPostTitle } from "../socialPosts";
 import { SocialPostCard } from "./SocialPostCard";
@@ -442,6 +443,13 @@ export function SocialCalendar({
 
   function savePost(post: SocialPost) {
     setSocialPost(post).catch(writeError);
+    // Its live link may have just appeared on a campaign's SharePoint page.
+    const exists = all.some((p) => p.id === post.id);
+    publishCampaignPagesForPost(
+      post.id,
+      campaigns,
+      exists ? all.map((p) => (p.id === post.id ? post : p)) : [...all, post],
+    );
     setEditing(null);
     // Follow a post that was saved onto a different month, or the modal
     // closing would look like the post vanished.
@@ -453,6 +461,11 @@ export function SocialCalendar({
 
   function removePost(id: string) {
     deleteSocialPost(id).catch(writeError);
+    publishCampaignPagesForPost(
+      id,
+      campaigns,
+      all.filter((p) => p.id !== id),
+    );
     setEditing(null);
   }
 

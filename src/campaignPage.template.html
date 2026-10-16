@@ -267,6 +267,19 @@
   .ms.today { background: rgba(234, 252, 136, 0.45); }
   .ms-date { color: var(--muted); font-size: 15px; }
   .ms-label { font-size: 17px; font-weight: 600; }
+  /* The milestone's asset: a live post, a landing page, an EDM. */
+  .ms-link {
+    display: inline-block;
+    margin-left: 12px;
+    color: var(--blue);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(55, 30, 225, 0.3);
+    vertical-align: 1px;
+  }
+  .ms-link:hover { border-bottom-color: var(--blue); }
+  .ms-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 2px; }
   .ms.done .ms-label { color: var(--muted); font-weight: 500; }
   .ms-status { font-size: 14px; font-weight: 600; white-space: nowrap; }
   .ms.done .ms-status { color: var(--pine); }
@@ -387,6 +400,13 @@
     var text = n === 1 ? "Tomorrow" : "In " + plural(n, "day");
     if (m.id === nextId) return { cls: "next", text: "Next up, " + text.toLowerCase() };
     return { cls: "upcoming", text: text };
+  }
+
+  // A milestone's link, only if it's a plain web address.
+  function linkHtml(m) {
+    if (!m.url || !/^https?:\/\//i.test(m.url)) return "";
+    return ' <a class="ms-link" href="' + esc(m.url) + '" target="_blank" rel="noopener noreferrer">' +
+      esc(m.linkText || "Open link") + ' <span aria-hidden="true">↗</span></a>';
   }
 
   // Where a date falls along the campaign, 0–100, clamped to the ends.
@@ -511,7 +531,7 @@
         h.push('<li class="ms ' + st.cls + '">' +
           '<span class="ms-mark" aria-hidden="true"></span>' +
           '<span class="ms-date">' + esc(fmtDay(m.date)) + "</span>" +
-          '<span class="ms-label">' + esc(m.label) + "</span>" +
+          '<span class="ms-label">' + esc(m.label) + linkHtml(m) + "</span>" +
           '<span class="ms-status">' + esc(st.text) + "</span></li>");
       });
       h.push("</ol>");
