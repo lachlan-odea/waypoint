@@ -8,6 +8,7 @@ import type {
   Workspace,
 } from "../types";
 import { CAMPAIGN_MILESTONE_TYPES, isSocialMilestone } from "../campaigns";
+import { isHttpUrl } from "../socialPosts";
 import { MilestonePostLink } from "./MilestonePostLink";
 import { MilestonePostDeleteDialog } from "./MilestonePostDeleteDialog";
 import { BRANDS, brandColor, brandForChannel } from "../constants";
@@ -175,11 +176,11 @@ export function CampaignModal({
     // Publish the public copy the page reads. Also brings a campaign shared
     // before the copy existed up to date.
     const shared = { ...(initial as Campaign), shareToken: token };
-    publishCampaignPage(shared).catch((err) => {
+    publishCampaignPage(shared, socialPosts ?? []).catch((err) => {
       console.warn("Couldn't publish the campaign's SharePoint page", err);
       setError("Couldn't publish the SharePoint page, so it won't show live details. Try downloading it again.");
     });
-    downloadCampaignPage(shared, token);
+    downloadCampaignPage(shared, token, socialPosts ?? []);
   }
 
   function saveSharePointUrl(url: string) {
@@ -199,11 +200,15 @@ export function CampaignModal({
   function submit() {
     if (!canSave) return;
     const cleanMilestones = milestones
-      .map((m) => ({ ...m, label: m.label.trim() }))
+      .map((m) => ({ ...m, label: m.label.trim(), url: m.url?.trim() || undefined }))
       .filter((m) => m.label && m.date)
       .sort((a, b) => a.date.localeCompare(b.date));
     if (cleanMilestones.length !== milestones.length) {
       setError("Every milestone needs a date and a type — remove any blank rows.");
+      return;
+    }
+    if (cleanMilestones.some((m) => m.url && !isHttpUrl(m.url))) {
+      setError("Milestone links need to be full web addresses, starting with https://");
       return;
     }
     const campaign: Campaign = {
@@ -494,12 +499,21 @@ export function CampaignModal({
                           onOpen={onOpenSocialPost}
                         />
                       )
+                    ) : isSocialMilestone(m) ? (
+                      <span className="field-hint camp-ms-post-hint">
+                        Creates a draft social post on save
+                      </span>
                     ) : (
-                      isSocialMilestone(m) && (
-                        <span className="field-hint camp-ms-post-hint">
-                          Creates a draft social post on save
-                        </span>
-                      )
+                      // Social milestones link to their post; the rest can
+                      // carry a link to their asset for the SharePoint page.
+                      <input
+                        type="url"
+                        className="camp-ms-url"
+                        value={m.url ?? ""}
+                        placeholder="Link (optional)"
+                        aria-label={`Link for ${m.label || "this milestone"}`}
+                        onChange={(e) => patchMilestone(m.id, { url: e.target.value })}
+                      />
                     )}
                     <button
                       type="button"

@@ -5427,6 +5427,7 @@ a.share-btn {
   gap: 8px;
 }
 .camp-ms-row input[type="date"],
+.camp-ms-row input[type="url"],
 .camp-ms-row input:not([type]),
 .camp-ms-row select {
   width: 100%;
@@ -5715,6 +5716,9 @@ a.share-btn {
 .camp-ms-post.dangling {
   color: var(--muted);
   cursor: default;
+}
+.camp-ms-row input.camp-ms-url {
+  width: 190px;
 }
 .camp-ms-post-hint {
   margin: 0;
