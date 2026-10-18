@@ -1,4 +1,4 @@
-import type { Campaign } from "./types";
+import type { Campaign, CampaignMilestone, SocialPost } from "./types";
 import template from "./campaignPage.template.html?raw";
 import { firebaseConfig } from "./firebase";
 import { setCampaignPage } from "./firestore";
@@ -47,10 +47,23 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+// The link a milestone shows on the page, and what to call it: a social
+// milestone's post once it's live on LinkedIn, otherwise any link added to
+// the milestone itself. Nothing for a post that hasn't gone out yet.
+function milestoneLink(
+  m: CampaignMilestone,
+  posts: SocialPost[],
+): { url: string; linkText: string } | null {
+  const post = m.socialPostId ? posts.find((p) => p.id === m.socialPostId) : undefined;
+  if (post?.postUrl) return { url: post.postUrl, linkText: "View live post" };
+  if (m.url) return { url: m.url, linkText: "Open link" };
+  return null;
+}
+
 // What the page shows, for the snapshot baked into the file and the public
 // copy alike, so it draws both through one path. An explicit list, so
 // contributing projects (and anything added to campaigns later) stay out.
-function campaignPageData(c: Campaign) {
+function campaignPageData(c: Campaign, posts: SocialPost[]) {
   return {
     name: c.name,
     brand: c.brand,
@@ -61,27 +74,50 @@ function campaignPageData(c: Campaign) {
     endDate: c.endDate,
     color: c.color,
     evergreen: !!c.evergreen,
-    milestones: c.milestones.map(({ id, date, label, done }) => ({
-      id,
-      date,
-      label,
-      done,
+    milestones: c.milestones.map((m) => ({
+      id: m.id,
+      date: m.date,
+      label: m.label,
+      done: m.done,
+      ...milestoneLink(m, posts),
     })),
     updatedAt: new Date().toISOString(),
   };
 }
 
 // Refresh a shared campaign's public copy. A campaign without a token has
-// no page, so nothing is written for it.
-export function publishCampaignPage(c: Campaign): Promise<void> {
+// no page, so nothing is written for it. `posts` supplies the live links of
+// its social milestones.
+export function publishCampaignPage(c: Campaign, posts: SocialPost[]): Promise<void> {
   if (!c.shareToken) return Promise.resolve();
-  return setCampaignPage(c.shareToken, JSON.stringify(campaignPageData(c)));
+  return setCampaignPage(c.shareToken, JSON.stringify(campaignPageData(c, posts)));
 }
 
-export function campaignPageHtml(campaign: Campaign, shareToken: string): string {
+// A post going live (or its link changing, or the post being deleted)
+// changes the pages of the campaigns it's a milestone of, without anyone
+// saving those campaigns. `posts` is every post as it now stands.
+export function publishCampaignPagesForPost(
+  postId: string,
+  campaigns: Campaign[],
+  posts: SocialPost[],
+): void {
+  campaigns
+    .filter((c) => c.shareToken && c.milestones.some((m) => m.socialPostId === postId))
+    .forEach((c) =>
+      publishCampaignPage(c, posts).catch((err) =>
+        console.warn("Couldn't update the campaign's SharePoint page", err),
+      ),
+    );
+}
+
+export function campaignPageHtml(
+  campaign: Campaign,
+  shareToken: string,
+  posts: SocialPost[],
+): string {
   // Inside <script type="application/json"> the only thing that can break
   // out is a closing tag, so every "<" is escaped as <.
-  const snapshot = JSON.stringify(campaignPageData(campaign)).replace(/</g, "\\u003c");
+  const snapshot = JSON.stringify(campaignPageData(campaign, posts)).replace(/</g, "\\u003c");
   const fill: Record<string, string> = {
     __CAMPAIGN_TITLE__: escapeHtml(`${campaign.name} · Campaign`),
     __CAMPAIGN_SNAPSHOT__: snapshot,
@@ -101,8 +137,12 @@ export function campaignPageFileName(name: string): string {
   return `${slug || "campaign"}.aspx`;
 }
 
-export function downloadCampaignPage(campaign: Campaign, shareToken: string): void {
-  const blob = new Blob([campaignPageHtml(campaign, shareToken)], {
+export function downloadCampaignPage(
+  campaign: Campaign,
+  shareToken: string,
+  posts: SocialPost[],
+): void {
+  const blob = new Blob([campaignPageHtml(campaign, shareToken, posts)], {
     type: "text/html;charset=utf-8",
   });
   const url = URL.createObjectURL(blob);
