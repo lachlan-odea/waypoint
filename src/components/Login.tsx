@@ -202,6 +202,7 @@ export function Login({ onSignedIn }: Props) {
           >
             {trophyShown && <TrophyIcon />}
           </button>
+          {trophyShown && <p className="login-egg-bubble">Don't ask questions</p>}
         </div>
 
         <div className="auth-tabs" role="tablist">
