@@ -22,7 +22,8 @@ type Props = {
 //
 // The phase is in the paint, not just the label: a live campaign is a
 // solid bar in its brand colour, an upcoming one is hatched, a finished one
-// is washed out with a tick. The same three looks are used in the legend.
+// is washed out with a tick, and an evergreen one is ticked along its length
+// and never gets a rounded end. The same looks are used in the legend.
 export function CampaignBand({
   campaign: c,
   iso,
@@ -33,7 +34,10 @@ export function CampaignBand({
 }: Props) {
   const phase = campaignPhase(c, today);
   const starts = c.startDate === iso;
-  const ends = c.endDate === iso;
+  const ends = !c.evergreen && c.endDate === iso;
+  const when = c.evergreen
+    ? `from ${formatShort(c.startDate)}, no end`
+    : `${formatShort(c.startDate)} – ${formatShort(c.endDate)}`;
   return (
     <button
       type="button"
@@ -42,9 +46,7 @@ export function CampaignBand({
       } ${ends ? "ends" : ""} ${compact ? "compact" : ""}`}
       style={{ ["--camp" as string]: c.color } as React.CSSProperties}
       onClick={onClick}
-      title={`${c.name} · ${PHASE_LABEL[phase]} · ${formatShort(c.startDate)} – ${formatShort(
-        c.endDate,
-      )}${c.brand ? ` · ${c.brand}` : ""}`}
+      title={`${c.name} · ${PHASE_LABEL[phase]} · ${when}${c.brand ? ` · ${c.brand}` : ""}`}
     >
       {showName && (
         <>

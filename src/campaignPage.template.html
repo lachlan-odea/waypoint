@@ -473,7 +473,8 @@
     if (c.description) h.push('<p class="desc">' + esc(c.description) + "</p>");
 
     if (phase === "evergreen") {
-      h.push('<p class="always"><strong>Always on.</strong> This campaign has no start or end date.</p>');
+      h.push('<p class="always"><strong>Always on</strong> ' + (c.startDate > today ? "from " : "since ") +
+        esc(fmt(c.startDate)) + ", with no end date.</p>");
     } else {
       var fill = phase === "upcoming" ? 0 : phase === "finished" ? 100 : pos(today, c);
       h.push('<div class="run" aria-hidden="true"><div class="run-track"><div class="run-line"></div>');
@@ -497,7 +498,8 @@
     // Facts
     h.push('<section class="facts" aria-label="Campaign timings"><div class="inner"><dl>');
     if (phase === "evergreen") {
-      h.push('<div class="fact"><dt>Runs</dt><dd>Always on</dd></div>');
+      h.push('<div class="fact"><dt>Always on ' + (c.startDate > today ? "from" : "since") + "</dt><dd>" +
+        esc(fmt(c.startDate, { day: "numeric", month: "short" })) + "</dd></div>");
     } else {
       var length = days(c.startDate, c.endDate) + 1;
       h.push('<div class="fact"><dt>Runs for</dt><dd>' + plural(length, "day") + "</dd></div>");

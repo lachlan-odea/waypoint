@@ -42,7 +42,7 @@ type Props = {
   categories: SocialCategory[];
   // The milestone type picker's options, from the same settings window.
   milestoneTypes: MilestoneType[];
-  // Owner suggestions in the editor.
+  // The team, for the editor's owner picker.
   designers: Designer[];
   // Board projects a campaign can link as contributing to it.
   projects: Project[];
@@ -124,6 +124,9 @@ export function CampaignsView({
   const [month, setMonth] = useState(() => today.slice(0, 7));
   // "" shows every type; NO_TYPE shows campaigns without one.
   const [typeFilter, setTypeFilter] = useState("");
+  // "" shows every campaign; otherwise only the always-on ones, or only
+  // those with an end date.
+  const [runFilter, setRunFilter] = useState<"" | "evergreen" | "dated">("");
   const [editing, setEditing] = useState<Editing | null>(null);
   // Which campaign card has its milestone list expanded.
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
@@ -150,41 +153,33 @@ export function CampaignsView({
 
   const matchesType = (c: Campaign) =>
     !typeFilter || (c.category || NO_TYPE) === typeFilter;
-
-  const owners = useMemo(() => {
-    const names = new Set<string>();
-    campaigns.forEach((c) => c.owner.trim() && names.add(c.owner.trim()));
-    designers.forEach((d) => names.add(d.name));
-    return Array.from(names).sort((a, b) => a.localeCompare(b));
-  }, [campaigns, designers]);
+  const matchesRun = (c: Campaign) =>
+    !runFilter || (runFilter === "evergreen") === !!c.evergreen;
+  const matchesFilters = (c: Campaign) => matchesType(c) && matchesRun(c);
 
   const cells = useMemo(() => monthGrid(month), [month]);
   const weeks = useMemo(() => weeksOf(cells), [cells]);
   const monthLabel = monthTitle(month);
 
-  // Everything touching the month, before the type filter — what the type
-  // pills count over so the counts don't collapse once you pick one. Dated
-  // campaigns by start, then every evergreen one, which belongs to every
-  // month (campaignOverlaps never matches those).
+  // Everything touching the month, before the filters — what the pills
+  // count over so the counts don't collapse once you pick one. An
+  // evergreen campaign touches every month from its start on.
   const monthAll = useMemo(() => {
     const { from, to } = monthBounds(month);
-    const dated = campaigns
+    return campaigns
       .filter((c) => campaignOverlaps(c, from, to))
       .sort(
         (a, b) =>
           a.startDate.localeCompare(b.startDate) || a.name.localeCompare(b.name),
       );
-    const evergreen = campaigns
-      .filter((c) => c.evergreen)
-      .sort((a, b) => a.name.localeCompare(b.name));
-    return [...dated, ...evergreen];
   }, [campaigns, month]);
 
   const monthCampaigns = useMemo(
-    () => monthAll.filter(matchesType),
+    () => monthAll.filter(matchesFilters),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [monthAll, typeFilter],
+    [monthAll, typeFilter, runFilter],
   );
+  const evergreenCount = monthAll.filter((c) => c.evergreen).length;
 
   const typeCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -195,34 +190,27 @@ export function CampaignsView({
     return counts;
   }, [monthAll]);
 
-  // What the grid draws: the list without evergreen campaigns, which have
-  // no run for a bar, and whose milestones stay on their card.
-  const calendarCampaigns = useMemo(
-    () => monthCampaigns.filter((c) => !c.evergreen),
-    [monthCampaigns],
-  );
-
   // A fixed row per campaign for the month, so its band stays level across
   // the grid.
-  const lanes = useMemo(() => assignLanes(calendarCampaigns), [calendarCampaigns]);
+  const lanes = useMemo(() => assignLanes(monthCampaigns), [monthCampaigns]);
 
   // What's coming after this month, so the page isn't a dead end at the
   // end of the current plan.
   const upcoming = useMemo(() => {
     const { to } = monthBounds(month);
     return campaigns
-      .filter((c) => !c.evergreen && c.startDate > to)
-      .filter(matchesType)
+      .filter((c) => c.startDate > to)
+      .filter(matchesFilters)
       .sort((a, b) => a.startDate.localeCompare(b.startDate))
       .slice(0, 5);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campaigns, month, typeFilter]);
+  }, [campaigns, month, typeFilter, runFilter]);
 
   function save(campaign: Campaign, deletePostIds: string[]) {
     onSave(campaign, deletePostIds);
     setEditing(null);
     const { from, to } = monthBounds(month);
-    if (!campaign.evergreen && !campaignOverlaps(campaign, from, to)) {
+    if (!campaignOverlaps(campaign, from, to)) {
       setMonth(campaign.startDate.slice(0, 7));
     }
   }
@@ -356,6 +344,34 @@ export function CampaignsView({
           </button>
         </div>
 
+        <div className="filter-quick" role="group" aria-label="Evergreen or dated">
+          <button
+            className={runFilter === "" ? "active" : ""}
+            onClick={() => setRunFilter("")}
+          >
+            All
+          </button>
+          <button
+            className={runFilter === "evergreen" ? "active" : ""}
+            onClick={() => setRunFilter(runFilter === "evergreen" ? "" : "evergreen")}
+            aria-pressed={runFilter === "evergreen"}
+            title="Only always-on campaigns"
+            // The count badge takes its tint from the type pills' variable.
+            style={{ ["--category" as string]: "var(--brand-violet)" } as React.CSSProperties}
+          >
+            Evergreen
+            {evergreenCount > 0 && <span className="soc-type-count">{evergreenCount}</span>}
+          </button>
+          <button
+            className={runFilter === "dated" ? "active" : ""}
+            onClick={() => setRunFilter(runFilter === "dated" ? "" : "dated")}
+            aria-pressed={runFilter === "dated"}
+            title="Only campaigns with an end date"
+          >
+            Dated
+          </button>
+        </div>
+
         <div className="soc-toolbar-right">
           <button
             className="btn-mini"
@@ -383,6 +399,7 @@ export function CampaignsView({
               ? " with no type"
               : ` of type ${typeFilter}`
             : ""}
+          {runFilter === "evergreen" ? ", evergreen only" : runFilter === "dated" ? ", dated only" : ""}
           {" · click a campaign bar to edit it, tick a milestone when it's happened, use + on a day to start a campaign there"}
         </span>
       </div>
@@ -409,6 +426,12 @@ export function CampaignsView({
           <span className="camps-key-text">ended — washed out</span>
         </span>
         <span className="camps-key-item">
+          <span className="camp-band phase-evergreen named sample starts">
+            <span className="camp-band-name">Evergreen</span>
+          </span>
+          <span className="camps-key-text">always on from its start — ticked, no end</span>
+        </span>
+        <span className="camps-key-item">
           <span className="camp-ms-card sample">
             <span className="camp-ms-tick" aria-hidden>
               <span className="camp-ms-diamond" />
@@ -430,9 +453,9 @@ export function CampaignsView({
             return <div key={`pad-${i}`} className="soc-cell pad" aria-hidden />;
           }
           const week = weeks[Math.floor(i / 7)];
-          const laneCount = weekLaneCount(calendarCampaigns, week, lanes);
-          const running = campaignsOn(calendarCampaigns, iso);
-          const marks = milestonesOn(calendarCampaigns, iso);
+          const laneCount = weekLaneCount(monthCampaigns, week, lanes);
+          const running = campaignsOn(monthCampaigns, iso);
+          const marks = milestonesOn(monthCampaigns, iso);
           const monday = new Date(`${iso}T00:00:00`).getDay() === 1;
           const weekend = [0, 6].includes(new Date(`${iso}T00:00:00`).getDay());
           return (
@@ -542,7 +565,7 @@ export function CampaignsView({
             const shown = open ? c.milestones : c.milestones.slice(0, 3);
             const phaseNote =
               phase === "evergreen"
-                ? "always on, not on the calendar"
+                ? `always on ${c.startDate > today ? "from" : "since"} ${formatShort(c.startDate)}`
                 : phase === "upcoming"
                 ? `starts in ${daysFromToday(c.startDate, today)} day${
                     daysFromToday(c.startDate, today) === 1 ? "" : "s"
@@ -582,7 +605,7 @@ export function CampaignsView({
                   </button>
                   <p className="camp-card-dates muted small">
                     {phase === "evergreen" ? (
-                      "Always on"
+                      <>From {formatShort(c.startDate)} · no end</>
                     ) : (
                       <>
                         {formatShort(c.startDate)} – {formatShort(c.endDate)} ·{" "}
@@ -727,7 +750,9 @@ export function CampaignsView({
                   <span className="camps-swatch" style={{ background: c.color }} />
                   <span className="camps-upcoming-name">{c.name}</span>
                   <span className="muted small">
-                    {formatShort(c.startDate)} – {formatShort(c.endDate)}
+                    {c.evergreen
+                      ? `From ${formatShort(c.startDate)} · evergreen`
+                      : `${formatShort(c.startDate)} – ${formatShort(c.endDate)}`}
                     {c.brand ? ` · ${c.brand}` : ""}
                     {c.category ? ` · ${c.category}` : ""}
                   </span>
@@ -744,7 +769,7 @@ export function CampaignsView({
           initial={editing.initial}
           categories={categories}
           milestoneTypes={milestoneTypes}
-          owners={owners}
+          designers={designers}
           projects={projects}
           workspaces={workspaces}
           onOpenProject={openProject}
@@ -761,7 +786,7 @@ export function CampaignsView({
           initial={editing.campaign}
           categories={categories}
           milestoneTypes={milestoneTypes}
-          owners={owners}
+          designers={designers}
           projects={projects}
           workspaces={workspaces}
           onOpenProject={openProject}

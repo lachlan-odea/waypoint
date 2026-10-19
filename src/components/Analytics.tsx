@@ -431,6 +431,7 @@ export function Analytics({
       live: phaseCount("live"),
       upcoming: phaseCount("upcoming"),
       finished: phaseCount("finished"),
+      evergreen: phaseCount("evergreen"),
       milestonesTotal: total,
       milestonesDone: done,
       milestonesPct: total === 0 ? 0 : Math.round((done / total) * 100),
@@ -657,6 +658,7 @@ export function Analytics({
           <Kpi label="Live" value={campaignStats.live} variant="live" />
           <Kpi label="Upcoming" value={campaignStats.upcoming} variant="planning" />
           <Kpi label="Finished" value={campaignStats.finished} variant="completed" />
+          <Kpi label="Evergreen" value={campaignStats.evergreen} variant="paused" />
           <Kpi
             label="Overdue milestones"
             value={campaignStats.overdueMilestones}

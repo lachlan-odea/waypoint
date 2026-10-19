@@ -6228,6 +6228,23 @@ a.share-btn {
 .camp-band.phase-finished .camp-band-phase {
   background: color-mix(in srgb, var(--camp) 18%, transparent);
 }
+/* Evergreen: solid like a live bar, ticked along its length because it
+   runs on with no end (so it never gets a rounded right edge either). */
+.camp-band.phase-evergreen {
+  background-color: var(--camp);
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0 14px,
+    rgba(255, 255, 255, 0.35) 14px 16px
+  );
+}
+/* My Desk: the open milestones on campaigns you own. */
+.desk-ms-list {
+  gap: 4px;
+}
+.desk-ms-list .camp-card-ms-label .muted {
+  font-weight: 400;
+}
 .camp-band-gap {
   display: block;
   height: 20px;

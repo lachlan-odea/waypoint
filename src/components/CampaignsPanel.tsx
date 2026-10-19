@@ -13,6 +13,9 @@ type Props = {
   title: string;
   // Who the projects belong to, for the chips' tooltip and the empty copy.
   subject: "you" | "this team";
+  // On My Desk: the viewer. Campaigns they own show too, since the owner
+  // works like a project's assignees.
+  ownerId?: string;
   onOpenCampaign: (campaignId: string) => void;
   onOpenProject: (projectId: string) => void;
   // localStorage key for the collapsed state.
@@ -44,6 +47,7 @@ export function CampaignsPanel({
   projects,
   title,
   subject,
+  ownerId,
   onOpenCampaign,
   onOpenProject,
   storageKey,
@@ -73,7 +77,11 @@ export function CampaignsPanel({
   const relevant = useMemo(
     () =>
       campaigns
-        .filter((c) => (c.projectIds ?? []).some((id) => projectById.has(id)))
+        .filter(
+          (c) =>
+            (!!ownerId && c.ownerId === ownerId) ||
+            (c.projectIds ?? []).some((id) => projectById.has(id)),
+        )
         // Recently finished campaigns stay a fortnight so the wrap-up work
         // still has its context; older ones drop off.
         .filter(
@@ -87,7 +95,7 @@ export function CampaignsPanel({
           if (pa !== pb) return pa - pb;
           return a.startDate.localeCompare(b.startDate) || a.name.localeCompare(b.name);
         }),
-    [campaigns, projectById, today],
+    [campaigns, projectById, ownerId, today],
   );
 
   if (relevant.length === 0) return null;
@@ -110,7 +118,10 @@ export function CampaignsPanel({
         </div>
         <span className="muted small">
           {relevant.length} campaign{relevant.length === 1 ? "" : "s"}
-          {live > 0 ? ` · ${live} live` : ""} · projects {subject === "you" ? "you're on" : "on this board"} are contributing
+          {live > 0 ? ` · ${live} live` : ""} ·{" "}
+          {ownerId
+            ? "ones you own, or that projects you're on are feeding"
+            : `projects ${subject === "you" ? "you're on" : "on this board"} are contributing`}
         </span>
       </div>
       {!collapsed && (
@@ -136,7 +147,7 @@ export function CampaignsPanel({
                   : Math.min(1, Math.max(0, (daysBetween(c.startDate, today) + 1) / spanDays(c)));
             const when =
               phase === "evergreen"
-                ? "Always on"
+                ? `Always on ${c.startDate > today ? "from" : "since"} ${formatShort(c.startDate)}`
                 : phase === "upcoming"
                 ? `starts ${formatShort(c.startDate)} · in ${daysBetween(today, c.startDate)} day${
                     daysBetween(today, c.startDate) === 1 ? "" : "s"
@@ -159,6 +170,11 @@ export function CampaignsPanel({
                   <span className={`camp-phase ${phase}`}>
                     {PHASE_LABEL[phase]}
                   </span>
+                  {ownerId && c.ownerId === ownerId && (
+                    <span className="camp-phase" title="You own this campaign">
+                      Owner
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"

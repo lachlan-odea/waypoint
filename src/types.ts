@@ -317,14 +317,20 @@ export type Campaign = {
   // Which brand the campaign is for — one of BRANDS in constants.ts. Gives
   // the campaign its colour (brandColor) everywhere it's drawn.
   brand: string;
+  // The owner's display name. Kept for the SharePoint page and the CSV,
+  // and for campaigns written before owners were picked from the team.
   owner: string;
+  // The Designer running the campaign. Works like a project's assignees:
+  // the campaign and its milestones show on this person's My Desk.
+  ownerId?: string;
   description: string;
-  // Inclusive YYYY-MM-DD range. Ignored while the campaign is evergreen,
-  // but kept, so switching evergreen off brings the old dates back.
+  // Inclusive YYYY-MM-DD range. An evergreen campaign has a start but no
+  // end: its endDate is empty (older ones may still carry a stale date,
+  // which is ignored while the flag is set).
   startDate: string;
   endDate: string;
-  // An always-on campaign. Kept off both calendars (it has no run to draw)
-  // and listed under every month's campaigns instead.
+  // An always-on campaign: runs from its start date with no end. Drawn on
+  // both calendars from that day on, and listed under every month after it.
   evergreen?: boolean;
   // Hex colour for the bar. Derived from `brand` on save and stored so the
   // calendar can paint without a lookup; campaigns written before brands

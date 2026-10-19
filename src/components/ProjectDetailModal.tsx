@@ -971,7 +971,9 @@ export function ProjectDetailModal({
                         </span>
                         <span className="linked-post-title">{c.name}</span>
                         <span className="linked-post-date">
-                          {formatShort(c.startDate)} – {formatShort(c.endDate)}
+                          {c.evergreen
+                            ? `From ${formatShort(c.startDate)} · evergreen`
+                            : `${formatShort(c.startDate)} – ${formatShort(c.endDate)}`}
                         </span>
                         <span className="muted small" style={{ whiteSpace: "nowrap" }}>
                           {c.milestones.length

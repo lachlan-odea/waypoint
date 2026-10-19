@@ -1108,6 +1108,14 @@ export default function App() {
             onClearNotifications={clearAllNotifications}
             campaigns={campaigns}
             onOpenCampaign={openCampaign}
+            onToggleMilestone={(campaign, milestoneId) =>
+              saveCampaign({
+                ...campaign,
+                milestones: campaign.milestones.map((m) =>
+                  m.id === milestoneId ? { ...m, done: !m.done } : m,
+                ),
+              })
+            }
           />
         ) : view === "executiveDashboard" ? (
           <Dashboard
