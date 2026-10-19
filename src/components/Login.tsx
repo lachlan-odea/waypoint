@@ -15,7 +15,27 @@ const heroImage = `${import.meta.env.BASE_URL}hero.png`;
 // outside collaborators to be able to register themselves.
 const ALLOWED_EMAIL_DOMAIN = "wisetechglobal.com";
 
+// Clicks on the logo's circle needed to reveal the trophy, and the longest
+// gap allowed between them for the clicks to count as "in a row".
+const EGG_CLICKS = 5;
+const EGG_WINDOW_MS = 1500;
+
 type Mode = "signin" | "signup";
+
+function TrophyIcon() {
+  return (
+    <svg className="login-egg-trophy" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V17h3v2H8v-2h3v-2.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3V3Zm0 4H6v1a2 2 0 0 0 1 1.7V7Zm10 0v2.7A2 2 0 0 0 18 8V7h-1Z"
+        fill="#f5c542"
+        stroke="#b8860b"
+        strokeWidth="0.6"
+        strokeLinejoin="round"
+      />
+      <rect x="7" y="19" width="10" height="2" rx="0.5" fill="#b8860b" />
+    </svg>
+  );
+}
 
 type Props = {
   onSignedIn: (designerId: string) => void;
@@ -56,6 +76,8 @@ export function Login({ onSignedIn }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
+  const [trophyShown, setTrophyShown] = useState(false);
+  const eggRef = useRef({ count: 0, last: 0 });
 
   useEffect(() => {
     emailRef.current?.focus();
@@ -142,6 +164,19 @@ export function Login({ onSignedIn }: Props) {
     }
   }
 
+  // Count clicks on the logo's circle; a pause longer than EGG_WINDOW_MS
+  // between clicks starts the count again.
+  function onEggClick() {
+    const now = Date.now();
+    const egg = eggRef.current;
+    egg.count = now - egg.last <= EGG_WINDOW_MS ? egg.count + 1 : 1;
+    egg.last = now;
+    if (egg.count >= EGG_CLICKS) {
+      egg.count = 0;
+      setTrophyShown(true);
+    }
+  }
+
   // Auto-fill the claim picker's name when a profile is selected.
   function onClaimChange(id: string) {
     setClaimId(id);
@@ -155,7 +190,19 @@ export function Login({ onSignedIn }: Props) {
     <div className="login">
       <LoginPattern />
       <div className="login-card">
-        <img src={heroImage} alt="Waypoint" className="login-hero" />
+        <div className="login-hero-wrap">
+          <img src={heroImage} alt="Waypoint" className="login-hero" />
+          {/* Easter egg: five quick clicks on the pin's circle reveal a trophy. */}
+          <button
+            type="button"
+            className="login-egg-hotspot"
+            tabIndex={-1}
+            aria-hidden="true"
+            onClick={onEggClick}
+          >
+            {trophyShown && <TrophyIcon />}
+          </button>
+        </div>
 
         <div className="auth-tabs" role="tablist">
           <button
