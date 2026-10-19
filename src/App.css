@@ -5273,6 +5273,56 @@ a.share-btn {
 .types-summary strong {
   color: var(--text);
 }
+/* Collapsible groups inside the Types & tags window. */
+.settings-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 0;
+  background: transparent;
+  border: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.modal-section.settings-group h3 {
+  margin: 0;
+}
+.settings-group-head:hover {
+  color: var(--text);
+}
+.settings-group-head:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.settings-group-chevron {
+  display: inline-block;
+  width: 12px;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+.settings-group.open .settings-group-chevron {
+  transform: rotate(90deg);
+}
+.settings-group-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  min-width: 22px;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  text-align: center;
+}
+.settings-group-body {
+  padding-top: 6px;
+}
 .manage-social-list {
   display: flex;
   flex-direction: column;
