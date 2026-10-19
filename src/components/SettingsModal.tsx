@@ -186,45 +186,29 @@ export function SettingsModal({
 
           {isSuperUser && (
             <section className="modal-section">
-              <h3>Category types &amp; social tags</h3>
+              <h3>Types &amp; tags</h3>
               <p className="muted small">
-                The types that social posts and campaigns are tagged with, the
-                company hashtags offered in the post editor, and the content
-                types projects can carry. Shared by everyone. Opens in a
-                dedicated window.
+                The shared lists behind the pickers. Opens in a dedicated
+                window.
               </p>
-              <div className="social-summary">
-                {socialConfig.categories.map((c) => (
-                  <span
-                    key={c.id}
-                    className="soc-category"
-                    style={{
-                      color: c.color,
-                      borderColor: c.color,
-                      ["--category" as string]: c.color,
-                    } as React.CSSProperties}
-                    title={c.label}
-                  >
-                    {c.short}
-                  </span>
+              <ul className="types-summary">
+                {[
+                  ["Category types", socialConfig.categories.length],
+                  ["Company hashtags", socialConfig.hashtags.length],
+                  ["Milestone types", socialConfig.milestoneTypes?.length ?? 0],
+                  ["Content types", socialConfig.contentTypes?.length ?? 0],
+                ].map(([label, n]) => (
+                  <li key={label}>
+                    <strong>{n}</strong> {label}
+                  </li>
                 ))}
-                {socialConfig.hashtags.length > 0 && (
-                  <span className="muted small social-summary-tags">
-                    {socialConfig.hashtags.map((h) => h.tag).join("  ")}
-                  </span>
-                )}
-                {(socialConfig.contentTypes ?? []).length > 0 && (
-                  <span className="muted small social-summary-tags">
-                    Content types: {(socialConfig.contentTypes ?? []).join(" · ")}
-                  </span>
-                )}
-              </div>
+              </ul>
               <div className="section-actions">
                 <button
                   className="primary"
                   onClick={() => setManageSocialOpen(true)}
                 >
-                  Manage category types &amp; social tags →
+                  Manage types &amp; tags →
                 </button>
               </div>
             </section>

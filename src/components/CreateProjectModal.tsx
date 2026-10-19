@@ -14,7 +14,7 @@ type Props = {
   defaultWorkspaceId: string;
   defaultAssigneeId: string | null;
   initial?: Partial<Project>;
-  // Content types on offer, from Settings → Category types & social tags.
+  // Content types on offer, from Settings → Types & tags.
   contentTypeOptions: readonly string[];
   onCancel: () => void;
   onCreate: (project: Project) => void;

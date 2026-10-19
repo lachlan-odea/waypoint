@@ -1,24 +1,12 @@
-import type { Campaign, CampaignMilestone, SocialPost } from "./types";
+import type { Campaign, CampaignMilestone, MilestoneType, SocialPost } from "./types";
 
-// What a milestone can be. The label is stored as this text, so renaming
-// one leaves existing milestones on the old wording (the editor still shows
-// it as an extra option).
-export const CAMPAIGN_MILESTONE_TYPES = [
-  "Organic Social Post",
-  "Sponsored Social Post",
-  "EDM",
-  "Landing Page",
-  "Press Release",
-] as const;
-
-const SOCIAL_MILESTONE_TYPES: readonly string[] = [
-  "Organic Social Post",
-  "Sponsored Social Post",
-];
-
-// Does this milestone get a post on the Social calendar?
-export function isSocialMilestone(m: Pick<CampaignMilestone, "label">): boolean {
-  return SOCIAL_MILESTONE_TYPES.includes(m.label);
+// Does this milestone get a post on the Social calendar? Only if its type
+// is still in the list and marked social.
+export function isSocialMilestone(
+  m: Pick<CampaignMilestone, "label">,
+  types: MilestoneType[],
+): boolean {
+  return types.some((t) => t.social && t.label === m.label);
 }
 
 // The draft post a social milestone puts on the Social calendar: on the

@@ -62,7 +62,7 @@ type Props = {
   // Jump to a campaign this project contributes to. App closes this window,
   // switches to the Campaigns page and opens that campaign's editor.
   onOpenCampaign: (campaignId: string) => void;
-  // Content types on offer, from Settings → Category types & social tags.
+  // Content types on offer, from Settings → Types & tags.
   contentTypeOptions: readonly string[];
 };
 
