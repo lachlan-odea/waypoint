@@ -6290,3 +6290,281 @@ a.share-btn {
   margin-right: auto;
   align-self: center;
 }
+
+/* ==========================================================================
+   Phones (max-width: 720px)
+
+   Everything below applies only on small screens, so the desktop layout
+   above is left exactly as it is. The sidebar becomes a drawer opened from
+   the ☰ button in the top bar (App.tsx holds the open state and closes it on
+   any navigation), modals go full-screen, multi-column grids stack, and the
+   two month calendars become a list of the days that have something on them.
+   ========================================================================== */
+
+/* The drawer button and scrim are in the DOM at every size; only phones
+   show them. */
+.mobile-nav-btn,
+.nav-scrim {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  /* --- Shell: the sidebar is a drawer ---------------------------------- */
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sidebar,
+  .sidebar.collapsed {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 86vw);
+    z-index: 110;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .app.nav-open .sidebar {
+    transform: none;
+    box-shadow: 12px 0 40px rgba(8, 5, 40, 0.4);
+  }
+  .nav-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 30, 48, 0.5);
+    z-index: 105;
+    animation: fade 0.12s ease-out;
+  }
+  .mobile-nav-btn {
+    display: inline-grid;
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  /* --- Main column and top bar ----------------------------------------- */
+  .main {
+    padding: 12px 14px calc(40px + env(safe-area-inset-bottom));
+  }
+  .topbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px 12px;
+    margin-bottom: 16px;
+    padding: 4px 0 12px;
+  }
+  .topbar-actions {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+  }
+  .topbar-actions .primary {
+    flex: 1 1 auto;
+  }
+  .page-title {
+    margin-bottom: 0;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+  .topbar-sub {
+    font-size: 13px;
+  }
+  /* The one-line description under the title is desk furniture; the title
+     alone says where you are. */
+  .topbar p.small {
+    display: none;
+  }
+  .section-head,
+  .mydesk-header,
+  .manage-users-toolbar,
+  .profile-photo-row,
+  .soc-project-row,
+  .modal-head-actions,
+  .desk-addrow,
+  .row {
+    flex-wrap: wrap;
+  }
+  .mydesk-header {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .workspace-section {
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+
+  /* --- Multi-column grids stack ---------------------------------------- */
+  .mydesk-grid,
+  .desk-panels,
+  .mydesk-notifications,
+  .workspace-grid,
+  .workspace-grid-scrollable,
+  .team-columns,
+  .dashboard-projects-grid,
+  .camps-grid,
+  .camps-panel-row,
+  .soc-tray-cards,
+  .soc-library {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mydesk-grid,
+  .desk-panels {
+    gap: 16px;
+  }
+  .kpi-row,
+  .kpi-row-status,
+  .dashboard-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  /* --- Dashboard activity: title and due date -------------------------- */
+  .activity-header,
+  .activity-row {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .activity-col-client {
+    display: none;
+  }
+  /* The campaign progress table scrolls sideways rather than squashing. */
+  .campaign-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* --- Analytics filter bar: two fields per row ------------------------ */
+  .filter-fields {
+    gap: 8px;
+  }
+  .field-inline {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 0;
+  }
+  .field-inline input,
+  .field-inline select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* --- Modals go full-screen ------------------------------------------- */
+  .modal-overlay {
+    padding: 0;
+    place-items: stretch;
+  }
+  .modal,
+  .modal-narrow,
+  .notifications-modal {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+  }
+  .modal-head {
+    padding: 12px 14px;
+  }
+  .modal-body {
+    padding: 14px;
+    gap: 14px;
+  }
+  .modal-foot {
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    flex-wrap: wrap;
+  }
+  .delete-confirm-prompt {
+    flex-basis: 100%;
+    margin-right: 0;
+  }
+
+  /* Campaign editor milestone rows: done, date and remove on the first
+     line, then the type and the link each on a line of their own. */
+  .camp-ms-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .camp-ms-row > select,
+  .camp-ms-row > .camp-ms-url,
+  .camp-ms-row > .camp-ms-post,
+  .camp-ms-row > .camp-ms-post-hint {
+    grid-column: 1 / -1;
+  }
+  .camp-ms-row > .link-btn {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  /* --- Month calendars become a day list ------------------------------- */
+  .soc-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .soc-weekday,
+  .soc-cell.pad {
+    display: none;
+  }
+  .soc-cell,
+  .camps-cal .soc-cell {
+    min-height: 0;
+    padding: 8px 10px;
+  }
+  /* The column header is gone, so each day carries its weekday. */
+  .soc-day[data-dow]::before {
+    content: attr(data-dow) " ";
+  }
+  /* Days with nothing on them are left out; today always shows. */
+  .soc-cell:not(.today):not(
+      :has(.soc-cell-posts > *, .soc-cell-camps, .camp-band, .camp-ms-card)
+    ) {
+    display: none;
+  }
+  .soc-grid::after {
+    content: "Only days with something on them are listed here. Use the toolbar to add to any other day.";
+    font-size: 12px;
+    color: var(--muted);
+  }
+  /* There is room for the words again, so undo the 1100px squeeze. */
+  .soc-status {
+    width: auto;
+    height: auto;
+    min-height: 16px;
+    padding: 1px 7px;
+  }
+  .soc-status-label,
+  .soc-cell-ms-label {
+    display: inline;
+  }
+
+  /* --- Login ----------------------------------------------------------- */
+  .login {
+    padding: 16px 12px;
+  }
+  .login-card {
+    padding: 22px 18px 18px;
+  }
+
+  /* --- Text inputs at 16px so iOS Safari doesn't zoom on focus --------- */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+      [type="color"]
+    ):not([type="file"]):not(.pin-input):not(.modal-title),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Touch screens have no hover, so controls that appear on hover are shown
+   outright. */
+@media (hover: none) and (pointer: coarse) {
+  .soc-cell-add,
+  .desk-actions {
+    opacity: 1;
+  }
+}
