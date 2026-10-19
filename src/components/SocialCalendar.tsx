@@ -856,7 +856,12 @@ export function SocialCalendar({
                   {...dropHandlers(iso)}
                 >
                   <div className="soc-cell-head">
-                    <span className="soc-day">{Number(iso.slice(8))}</span>
+                    <span
+                      className="soc-day"
+                      data-dow={WEEKDAYS[(new Date(`${iso}T00:00:00`).getDay() + 6) % 7]}
+                    >
+                      {Number(iso.slice(8))}
+                    </span>
                     <button
                       className="soc-cell-add"
                       onClick={() => openCreate({ date: iso })}

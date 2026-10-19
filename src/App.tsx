@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
   Campaign,
   Notification,
@@ -92,12 +93,27 @@ export default function App() {
     string | null | undefined
   >(undefined);
   const [collapsed, setCollapsed] = useState(false);
+  // On phones the sidebar is a drawer opened from the top bar (the ≤720px
+  // block in App.css does the layout). navOpen only matters while the
+  // viewport is that narrow, so widening the window simply drops it.
+  const isMobile = useMediaQuery("(max-width: 720px)");
+  const [navOpen, setNavOpen] = useState(false);
+  const drawerOpen = isMobile && navOpen;
   const [view, setView] = useState<SidebarView>("myDesk");
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [createInitial, setCreateInitial] = useState<Partial<Project> | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  // Escape closes the drawer.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setNavOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawerOpen]);
   const [filter, setFilter] = useState("");
   const [status, setStatus] = useState<string>("");
   const [dropOverColumn, setDropOverColumn] = useState<string | null>(null);
@@ -880,10 +896,10 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app ${drawerOpen ? "nav-open" : ""}`}>
       <Sidebar
         currentDesigner={currentDesigner}
-        collapsed={collapsed}
+        collapsed={isMobile ? false : collapsed}
         view={view}
         unreadNotifications={unreadNotifications}
         workspaces={availableWorkspaces}
@@ -892,21 +908,46 @@ export default function App() {
         onSelectWorkspace={(id) => {
           setCurrentWorkspaceId(id);
           setView("board");
+          setNavOpen(false);
         }}
         onDropProjectOnWorkspace={moveProjectToWorkspace}
-        onToggleCollapsed={() => setCollapsed((c) => !c)}
-        onSelectView={setView}
+        onToggleCollapsed={() =>
+          isMobile ? setNavOpen(false) : setCollapsed((c) => !c)
+        }
+        onSelectView={(v) => {
+          setView(v);
+          setNavOpen(false);
+        }}
         onNewProject={() => {
           setCreateInitial({ workspaceId: currentWorkspaceId });
           setCreating(true);
+          setNavOpen(false);
         }}
-        onOpenNotifications={() => setNotificationsOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenNotifications={() => {
+          setNotificationsOpen(true);
+          setNavOpen(false);
+        }}
+        onOpenSettings={() => {
+          setSettingsOpen(true);
+          setNavOpen(false);
+        }}
         onLogout={logout}
       />
+      {drawerOpen && (
+        <div className="nav-scrim" onClick={() => setNavOpen(false)} aria-hidden />
+      )}
 
       <main className="main">
         <header className="topbar">
+          <button
+            type="button"
+            className="icon-btn mobile-nav-btn"
+            onClick={() => setNavOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={drawerOpen}
+          >
+            ☰
+          </button>
           <div>
             <h1 className="page-title">
               {view === "analytics" ? (
