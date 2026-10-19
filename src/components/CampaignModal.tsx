@@ -204,7 +204,12 @@ export function CampaignModal({
   function submit() {
     if (!canSave) return;
     const cleanMilestones = milestones
-      .map((m) => ({ ...m, label: m.label.trim(), url: m.url?.trim() || undefined }))
+      .map((m) => ({
+        ...m,
+        label: m.label.trim(),
+        url: m.url?.trim() || undefined,
+        description: m.description?.trim() || undefined,
+      }))
       .filter((m) => m.label && m.date)
       .sort((a, b) => a.date.localeCompare(b.date));
     if (cleanMilestones.length !== milestones.length) {
@@ -527,6 +532,14 @@ export function CampaignModal({
                     >
                       Remove
                     </button>
+                    <input
+                      className="camp-ms-desc"
+                      value={m.description ?? ""}
+                      maxLength={200}
+                      placeholder="Short description (optional)"
+                      aria-label={`Description for ${m.label || "this milestone"}`}
+                      onChange={(e) => patchMilestone(m.id, { description: e.target.value })}
+                    />
                   </div>
                 ))}
               </div>

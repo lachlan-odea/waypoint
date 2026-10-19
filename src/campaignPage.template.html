@@ -281,6 +281,7 @@
   .ms-link:hover { border-bottom-color: var(--blue); }
   .ms-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 2px; }
   .ms.done .ms-label { color: var(--muted); font-weight: 500; }
+  .ms-desc { display: block; margin-top: 3px; color: var(--muted); font-size: 15px; font-weight: 400; line-height: 1.45; }
   .ms-status { font-size: 14px; font-weight: 600; white-space: nowrap; }
   .ms.done .ms-status { color: var(--pine); }
   .ms.overdue .ms-status { color: var(--cherry); }
@@ -531,7 +532,8 @@
         h.push('<li class="ms ' + st.cls + '">' +
           '<span class="ms-mark" aria-hidden="true"></span>' +
           '<span class="ms-date">' + esc(fmtDay(m.date)) + "</span>" +
-          '<span class="ms-label">' + esc(m.label) + linkHtml(m) + "</span>" +
+          '<span class="ms-label">' + esc(m.label) + linkHtml(m) +
+            (m.description ? '<span class="ms-desc">' + esc(m.description) + "</span>" : "") + "</span>" +
           '<span class="ms-status">' + esc(st.text) + "</span></li>");
       });
       h.push("</ol>");
