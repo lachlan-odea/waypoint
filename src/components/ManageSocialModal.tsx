@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import type {
   MilestoneType,
   SocialCategory,
@@ -28,6 +28,46 @@ const PALETTE = [
   "#371ee1", "#6a5cd8", "#244349", "#a3294d", "#b4501f",
   "#2f6fb0", "#1f7a4d", "#1d1765", "#6b7a12", "#c2335f",
 ];
+
+// One collapsible group in the window: a header button with the item count,
+// and the description + list underneath when open. All start collapsed so the
+// window opens as a short index of what can be edited.
+function SettingsGroup({
+  title,
+  count,
+  children,
+}: {
+  title: string;
+  count: number;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const bodyId = useId();
+  return (
+    <section className={`modal-section settings-group${open ? " open" : ""}`}>
+      <h3>
+        <button
+          type="button"
+          className="settings-group-head"
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <span className="settings-group-chevron" aria-hidden="true">
+            ▸
+          </span>
+          {title}
+          <span className="settings-group-count">{count}</span>
+        </button>
+      </h3>
+      {open && (
+        <div id={bodyId} className="settings-group-body">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
 
 // Super-user editor for the Social calendar's shared configuration: the
 // category list (label, short pill text, colour, order) and the company
@@ -298,8 +338,7 @@ export function ManageSocialModal({
         </header>
 
         <div className="modal-body">
-          <section className="modal-section">
-            <h3>Category types</h3>
+          <SettingsGroup title="Category types" count={categories.length}>
             <p className="muted small" style={{ marginTop: 0 }}>
               Each social post and each campaign can carry one type. The{" "}
               <strong>pill text</strong> is what fits on a calendar card, so
@@ -383,10 +422,9 @@ export function ManageSocialModal({
                 + Add category
               </button>
             </div>
-          </section>
+          </SettingsGroup>
 
-          <section className="modal-section">
-            <h3>Company hashtags</h3>
+          <SettingsGroup title="Company hashtags" count={hashtags.length}>
             <p className="muted small" style={{ marginTop: 0 }}>
               The tags the team should use consistently. They appear as
               one-click chips under the copy in the post editor, and the note
@@ -432,10 +470,9 @@ export function ManageSocialModal({
                 + Add hashtag
               </button>
             </div>
-          </section>
+          </SettingsGroup>
 
-          <section className="modal-section">
-            <h3>Campaign milestone types</h3>
+          <SettingsGroup title="Campaign milestone types" count={milestoneTypes.length}>
             <p className="muted small" style={{ marginTop: 0 }}>
               The options in a campaign milestone's <strong>type</strong>{" "}
               picker. Tick <strong>Social post</strong> for types that should
@@ -501,10 +538,9 @@ export function ManageSocialModal({
                 + Add milestone type
               </button>
             </div>
-          </section>
+          </SettingsGroup>
 
-          <section className="modal-section">
-            <h3>Project content types</h3>
+          <SettingsGroup title="Project content types" count={contentTypes.length}>
             <p className="muted small" style={{ marginTop: 0 }}>
               The chips offered under <strong>Content type</strong> when
               creating or editing a project (Web, Email, Video…). A project
@@ -566,7 +602,7 @@ export function ManageSocialModal({
                 + Add content type
               </button>
             </div>
-          </section>
+          </SettingsGroup>
 
           {error && <p className="login-error">{error}</p>}
           {saved && !dirty && <p className="manage-social-saved">{saved}</p>}
