@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import type {
   Campaign,
   CampaignMilestone,
+  MilestoneType,
   Project,
   SocialCategory,
   SocialPost,
   Workspace,
 } from "../types";
-import { CAMPAIGN_MILESTONE_TYPES, isSocialMilestone } from "../campaigns";
+import { isSocialMilestone } from "../campaigns";
 import { isHttpUrl } from "../socialPosts";
 import { MilestonePostLink } from "./MilestonePostLink";
 import { MilestonePostDeleteDialog } from "./MilestonePostDeleteDialog";
@@ -28,6 +29,8 @@ type Props = {
   mode: "create" | "edit";
   // The Social calendar's category list; campaigns use the same types.
   categories: SocialCategory[];
+  // The milestone type picker's options (Settings → Types & tags).
+  milestoneTypes: MilestoneType[];
   owners: string[];
   // Board projects that can be linked as contributing to the campaign.
   projects: Project[];
@@ -52,6 +55,7 @@ export function CampaignModal({
   initial,
   mode,
   categories,
+  milestoneTypes,
   owners,
   projects,
   workspaces,
@@ -480,14 +484,15 @@ export function CampaignModal({
                       <option value="" disabled>
                         Choose a type…
                       </option>
-                      {CAMPAIGN_MILESTONE_TYPES.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
+                      {milestoneTypes.map((t) => (
+                        <option key={t.id} value={t.label}>
+                          {t.label}
                         </option>
                       ))}
-                      {/* A milestone from before the list keeps its own text. */}
+                      {/* A milestone whose type predates the list, or was
+                          since renamed or removed, keeps its own text. */}
                       {m.label &&
-                        !(CAMPAIGN_MILESTONE_TYPES as readonly string[]).includes(m.label) && (
+                        !milestoneTypes.some((t) => t.label === m.label) && (
                           <option value={m.label}>{m.label}</option>
                         )}
                     </select>
@@ -499,7 +504,7 @@ export function CampaignModal({
                           onOpen={onOpenSocialPost}
                         />
                       )
-                    ) : isSocialMilestone(m) ? (
+                    ) : isSocialMilestone(m, milestoneTypes) ? (
                       <span className="field-hint camp-ms-post-hint">
                         Creates a draft social post on save
                       </span>

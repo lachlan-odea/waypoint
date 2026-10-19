@@ -1,4 +1,5 @@
 import type {
+  MilestoneType,
   ProjectStatus,
   SocialCategory,
   SocialConfig,
@@ -140,6 +141,17 @@ export const DEFAULT_SOCIAL_HASHTAGS: SocialHashtag[] = [
   { id: "wisetechglobal", tag: "#WiseTechGlobal", note: "Every WiseTech channel post" },
 ];
 
+// What a campaign milestone can be, to start with. The label is stored on
+// the milestone as text, so renaming a type leaves existing milestones on
+// the old wording (the editor still shows it as an extra option).
+export const DEFAULT_MILESTONE_TYPES: MilestoneType[] = [
+  { id: "organic-social-post", label: "Organic Social Post", social: true },
+  { id: "sponsored-social-post", label: "Sponsored Social Post", social: true },
+  { id: "edm", label: "EDM", social: false },
+  { id: "landing-page", label: "Landing Page", social: false },
+  { id: "press-release", label: "Press Release", social: false },
+];
+
 // CONTENT_TYPES is declared further down; the function form keeps this
 // independent of declaration order.
 export function defaultSocialConfig(): Required<SocialConfig> {
@@ -147,6 +159,7 @@ export function defaultSocialConfig(): Required<SocialConfig> {
     categories: DEFAULT_SOCIAL_CATEGORIES,
     hashtags: DEFAULT_SOCIAL_HASHTAGS,
     contentTypes: [...CONTENT_TYPES],
+    milestoneTypes: DEFAULT_MILESTONE_TYPES,
   };
 }
 
@@ -161,6 +174,7 @@ export function resolveSocialConfig(
     categories: doc.categories ?? d.categories,
     hashtags: doc.hashtags ?? d.hashtags,
     contentTypes: doc.contentTypes ?? d.contentTypes,
+    milestoneTypes: doc.milestoneTypes ?? d.milestoneTypes,
   };
 }
 

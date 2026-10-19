@@ -207,6 +207,17 @@ export type SocialConfig = {
   // was added after the first version; App fills in CONTENT_TYPES when it's
   // missing.
   contentTypes?: string[];
+  // The types a campaign milestone can be (EDM, Landing Page…). Optional
+  // for the same reason; App fills in DEFAULT_MILESTONE_TYPES.
+  milestoneTypes?: MilestoneType[];
+};
+
+// One option in a campaign milestone's type picker. A `social` type puts a
+// draft post on the Social calendar when the milestone is saved.
+export type MilestoneType = {
+  id: string;
+  label: string;
+  social: boolean;
 };
 
 // One entry on the shared Social calendar: a LinkedIn post going out on a

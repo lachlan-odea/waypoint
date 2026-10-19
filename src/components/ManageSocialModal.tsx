@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import type { SocialCategory, SocialConfig, SocialHashtag } from "../types";
+import type {
+  MilestoneType,
+  SocialCategory,
+  SocialConfig,
+  SocialHashtag,
+} from "../types";
 import { normaliseHashtag } from "../socialPosts";
 
 type Props = {
@@ -45,6 +50,9 @@ export function ManageSocialModal({
   const [contentTypes, setContentTypes] = useState<string[]>(() => [
     ...(config.contentTypes ?? []),
   ]);
+  const [milestoneTypes, setMilestoneTypes] = useState<MilestoneType[]>(() =>
+    (config.milestoneTypes ?? []).map((t) => ({ ...t })),
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -64,14 +72,40 @@ export function ManageSocialModal({
 
   const dirty = useMemo(
     () =>
-      JSON.stringify({ categories, hashtags, contentTypes }) !==
+      JSON.stringify({ categories, hashtags, contentTypes, milestoneTypes }) !==
       JSON.stringify({
         categories: config.categories,
         hashtags: config.hashtags,
         contentTypes: config.contentTypes ?? [],
+        milestoneTypes: config.milestoneTypes ?? [],
       }),
-    [categories, hashtags, contentTypes, config],
+    [categories, hashtags, contentTypes, milestoneTypes, config],
   );
+
+  // ── milestone types ──────────────────────────────────────────────────
+
+  function patchMilestoneType(id: string, patch: Partial<MilestoneType>) {
+    setMilestoneTypes((cur) => cur.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  }
+
+  function moveMilestoneType(id: string, delta: -1 | 1) {
+    setMilestoneTypes((cur) => {
+      const i = cur.findIndex((t) => t.id === id);
+      const j = i + delta;
+      if (i < 0 || j < 0 || j >= cur.length) return cur;
+      const next = cur.slice();
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  }
+
+  function addMilestoneType() {
+    setMilestoneTypes((cur) => [...cur, { id: newId("ms"), label: "", social: false }]);
+  }
+
+  function removeMilestoneType(id: string) {
+    setMilestoneTypes((cur) => cur.filter((t) => t.id !== id));
+  }
 
   // ── content types ────────────────────────────────────────────────────
 
@@ -190,11 +224,22 @@ export function ManageSocialModal({
       return { error: `“${dupType}” is listed twice under content types.` };
     }
 
+    const cleanMilestoneTypes = milestoneTypes.map((t) => ({ ...t, label: t.label.trim() }));
+    if (cleanMilestoneTypes.some((t) => !t.label)) {
+      return { error: "Every milestone type needs a name — remove any blank rows." };
+    }
+    const lowerMilestones = cleanMilestoneTypes.map((t) => t.label.toLowerCase());
+    const dupMilestone = lowerMilestones.find((t, i) => lowerMilestones.indexOf(t) !== i);
+    if (dupMilestone) {
+      return { error: `“${dupMilestone}” is listed twice under milestone types.` };
+    }
+
     return {
       config: {
         categories: cleanCategories,
         hashtags: cleanHashtags,
         contentTypes: cleanContentTypes,
+        milestoneTypes: cleanMilestoneTypes,
       },
     };
   }
@@ -227,6 +272,7 @@ export function ManageSocialModal({
       setCategories(result.config.categories);
       setHashtags(result.config.hashtags);
       setContentTypes(result.config.contentTypes ?? []);
+      setMilestoneTypes(result.config.milestoneTypes ?? []);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : String(err));
@@ -240,10 +286,10 @@ export function ManageSocialModal({
       <div className="modal">
         <header className="modal-head">
           <div>
-            <h2 className="modal-title-static">Category types &amp; social tags</h2>
+            <h2 className="modal-title-static">Types &amp; tags</h2>
             <div className="modal-sub">
-              Types for posts and campaigns, company hashtags, and project content
-              types — shared by everyone
+              Types for posts and campaigns, company hashtags, campaign milestone
+              types and project content types — shared by everyone
             </div>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
@@ -384,6 +430,75 @@ export function ManageSocialModal({
             <div className="section-actions" style={{ justifyContent: "flex-start" }}>
               <button className="btn-mini" onClick={addHashtag} disabled={busy}>
                 + Add hashtag
+              </button>
+            </div>
+          </section>
+
+          <section className="modal-section">
+            <h3>Campaign milestone types</h3>
+            <p className="muted small" style={{ marginTop: 0 }}>
+              The options in a campaign milestone's <strong>type</strong>{" "}
+              picker. Tick <strong>Social post</strong> for types that should
+              put a draft post on the Social calendar when the milestone is
+              saved. Renaming or removing one leaves existing milestones on
+              their old wording.
+            </p>
+            <div className="manage-social-list">
+              {milestoneTypes.map((t, i) => (
+                <div key={t.id} className="manage-social-row milestonetype">
+                  <input
+                    value={t.label}
+                    placeholder="Milestone type"
+                    onChange={(e) => patchMilestoneType(t.id, { label: e.target.value })}
+                    disabled={busy}
+                  />
+                  <label className="manage-social-check">
+                    <input
+                      type="checkbox"
+                      checked={t.social}
+                      onChange={(e) => patchMilestoneType(t.id, { social: e.target.checked })}
+                      disabled={busy}
+                    />
+                    Social post
+                  </label>
+                  <span className="manage-social-actions">
+                    <button
+                      className="icon-btn"
+                      onClick={() => moveMilestoneType(t.id, -1)}
+                      disabled={busy || i === 0}
+                      aria-label="Move up"
+                      title="Move up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      className="icon-btn"
+                      onClick={() => moveMilestoneType(t.id, 1)}
+                      disabled={busy || i === milestoneTypes.length - 1}
+                      aria-label="Move down"
+                      title="Move down"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      className="link-btn"
+                      onClick={() => removeMilestoneType(t.id)}
+                      disabled={busy}
+                    >
+                      Remove
+                    </button>
+                  </span>
+                </div>
+              ))}
+              {milestoneTypes.length === 0 && (
+                <p className="muted small">
+                  No milestone types — the campaign editor will have nothing to pick.
+                </p>
+              )}
+            </div>
+            <div className="section-actions" style={{ justifyContent: "flex-start" }}>
+              <button className="btn-mini" onClick={addMilestoneType} disabled={busy}>
+                + Add milestone type
               </button>
             </div>
           </section>

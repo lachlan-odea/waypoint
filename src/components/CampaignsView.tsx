@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type {
   Campaign,
   Designer,
+  MilestoneType,
   Project,
   SocialCategory,
   SocialPost,
@@ -36,9 +37,11 @@ import {
 
 type Props = {
   campaigns: Campaign[];
-  // The Social calendar's category list (Settings → Category types & social
-  // tags). Campaigns use the same types as posts.
+  // The Social calendar's category list (Settings → Types & tags).
+  // Campaigns use the same types as posts.
   categories: SocialCategory[];
+  // The milestone type picker's options, from the same settings window.
+  milestoneTypes: MilestoneType[];
   // Owner suggestions in the editor.
   designers: Designer[];
   // Board projects a campaign can link as contributing to it.
@@ -105,6 +108,7 @@ function daysFromToday(iso: string, today: string): number {
 export function CampaignsView({
   campaigns,
   categories,
+  milestoneTypes,
   designers,
   projects,
   workspaces,
@@ -739,6 +743,7 @@ export function CampaignsView({
           mode="create"
           initial={editing.initial}
           categories={categories}
+          milestoneTypes={milestoneTypes}
           owners={owners}
           projects={projects}
           workspaces={workspaces}
@@ -755,6 +760,7 @@ export function CampaignsView({
           mode="edit"
           initial={editing.campaign}
           categories={categories}
+          milestoneTypes={milestoneTypes}
           owners={owners}
           projects={projects}
           workspaces={workspaces}

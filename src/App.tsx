@@ -705,7 +705,7 @@ export default function App() {
     const before = campaigns.find((c) => c.id === campaign.id);
     const milestones = campaign.milestones.map((m) => {
       if (!m.socialPostId) {
-        if (!isSocialMilestone(m)) return m;
+        if (!isSocialMilestone(m, socialConfig.milestoneTypes)) return m;
         const post = milestoneSocialPost(campaign, m);
         firestoreSetSocialPost(post).catch(writeError);
         return { ...m, socialPostId: post.id };
@@ -1131,6 +1131,7 @@ export default function App() {
           <CampaignsView
             campaigns={campaigns}
             categories={socialConfig.categories}
+            milestoneTypes={socialConfig.milestoneTypes}
             designers={workspace.designers}
             projects={workspace.projects}
             workspaces={availableWorkspaces}

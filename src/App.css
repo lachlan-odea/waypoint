@@ -5258,17 +5258,20 @@ a.share-btn {
   margin: -6px 0 0;
 }
 
-/* ── Settings → Social calendar (categories + company hashtags) ────────── */
-.social-summary {
+/* ── Settings → Types & tags ──────────────────────────────────────────── */
+/* One line of counts on the Settings card; the lists live in the window. */
+.types-summary {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+  gap: 6px 18px;
   margin: 8px 0 4px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--muted);
 }
-.social-summary-tags {
-  flex-basis: 100%;
-  white-space: pre-wrap;
+.types-summary strong {
+  color: var(--text);
 }
 .manage-social-list {
   display: flex;
@@ -6343,9 +6346,20 @@ a.share-btn {
   color: var(--muted);
 }
 
-/* Content-type rows in the Category types & social tags window */
+/* Content-type and milestone-type rows in the Types & tags window */
 .manage-social-row.contenttype {
   grid-template-columns: minmax(0, 1fr) auto;
+}
+.manage-social-row.milestonetype {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.manage-social-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
 }
 /* Type pill on a campaign card */
 .camp-card-type {
