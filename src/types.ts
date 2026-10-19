@@ -295,6 +295,9 @@ export type CampaignMilestone = {
   // version, the press release. Shown on the campaign's SharePoint page.
   // A social milestone uses its post's live link (postUrl) instead.
   url?: string;
+  // A line or two on what the milestone is: "Launch email to the APAC
+  // list". Shown under its type on the campaign's SharePoint page.
+  description?: string;
 };
 
 // A marketing campaign: a named span of dates with milestones inside it.

@@ -78,6 +78,7 @@ function campaignPageData(c: Campaign, posts: SocialPost[]) {
       id: m.id,
       date: m.date,
       label: m.label,
+      description: m.description ?? "",
       done: m.done,
       ...milestoneLink(m, posts),
     })),

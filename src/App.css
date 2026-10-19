@@ -5810,6 +5810,10 @@ a.share-btn {
 .camp-ms-row input.camp-ms-url {
   width: 190px;
 }
+/* The description sits on its own line under the date, type and link. */
+.camp-ms-row > .camp-ms-desc {
+  grid-column: 2 / -1;
+}
 .camp-ms-post-hint {
   margin: 0;
   white-space: nowrap;
@@ -6592,6 +6596,7 @@ a.share-btn {
   }
   .camp-ms-row > select,
   .camp-ms-row > .camp-ms-url,
+  .camp-ms-row > .camp-ms-desc,
   .camp-ms-row > .camp-ms-post,
   .camp-ms-row > .camp-ms-post-hint {
     grid-column: 1 / -1;
