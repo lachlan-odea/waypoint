@@ -46,7 +46,7 @@ export function NewMenu({ onPick, variant, collapsed }: Props) {
   }
 
   return (
-    <div ref={root} className={`new-menu ${variant}`}>
+    <div ref={root} className={`new-menu new-menu-${variant}`}>
       <button
         type="button"
         className={variant === "nav" ? "nav-primary" : "primary"}

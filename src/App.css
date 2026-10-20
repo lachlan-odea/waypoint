@@ -494,10 +494,14 @@ textarea {
 .new-menu {
   position: relative;
 }
-.new-menu.nav,
-.new-menu.nav .nav-primary {
+.new-menu-nav,
+.new-menu-nav .nav-primary {
   display: block;
   width: 100%;
+}
+/* The label is short now, so it sits centred like the collapsed +. */
+.new-menu-nav .nav-primary {
+  text-align: center;
 }
 .new-menu-list {
   position: absolute;
@@ -512,10 +516,10 @@ textarea {
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(20, 30, 48, 0.12);
 }
-.new-menu.nav .new-menu-list {
+.new-menu-nav .new-menu-list {
   left: 0;
 }
-.new-menu.primary .new-menu-list {
+.new-menu-primary .new-menu-list {
   right: 0;
 }
 .sidebar.collapsed .new-menu-list {
@@ -6454,8 +6458,11 @@ a.share-btn {
     grid-column: 1 / -1;
     flex-wrap: wrap;
   }
-  .topbar-actions .primary {
+  .topbar-actions .new-menu {
     flex: 1 1 auto;
+  }
+  .topbar-actions .primary {
+    width: 100%;
   }
   .page-title {
     margin-bottom: 0;
