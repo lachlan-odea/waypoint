@@ -12,17 +12,12 @@ import { brandColor, socialCategoryMeta } from "../constants";
 import { formatShort, todayIso } from "../dates";
 import {
   PHASE_LABEL,
-  assignLanes,
   campaignOverlaps,
   campaignPhase,
-  campaignsOn,
   milestonesOn,
   monthBounds,
   spanDays,
-  weekLaneCount,
-  weeksOf,
 } from "../campaigns";
-import { CampaignBand } from "./CampaignBand";
 import { CampaignModal } from "./CampaignModal";
 import { MilestonePostLink } from "./MilestonePostLink";
 import { ExportCsvModal } from "./ExportCsvModal";
@@ -130,6 +125,9 @@ export function CampaignsView({
   const [editing, setEditing] = useState<Editing | null>(null);
   // Which campaign card has its milestone list expanded.
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  // The campaign whose milestone is under the pointer, so the rest of its
+  // milestones light up across the month grid.
+  const [hoverCampaignId, setHoverCampaignId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   // A row per campaign (its milestones in one cell), or a row per milestone.
   const [exportRows, setExportRows] = useState<"campaigns" | "milestones">(
@@ -158,7 +156,6 @@ export function CampaignsView({
   const matchesFilters = (c: Campaign) => matchesType(c) && matchesRun(c);
 
   const cells = useMemo(() => monthGrid(month), [month]);
-  const weeks = useMemo(() => weeksOf(cells), [cells]);
   const monthLabel = monthTitle(month);
 
   // Everything touching the month, before the filters — what the pills
@@ -189,10 +186,6 @@ export function CampaignsView({
     });
     return counts;
   }, [monthAll]);
-
-  // A fixed row per campaign for the month, so its band stays level across
-  // the grid.
-  const lanes = useMemo(() => assignLanes(monthCampaigns), [monthCampaigns]);
 
   // What's coming after this month, so the page isn't a dead end at the
   // end of the current plan.
@@ -400,149 +393,8 @@ export function CampaignsView({
               : ` of type ${typeFilter}`
             : ""}
           {runFilter === "evergreen" ? ", evergreen only" : runFilter === "dated" ? ", dated only" : ""}
-          {" · click a campaign bar to edit it, tick a milestone when it's happened, use + on a day to start a campaign there"}
+          {" · open a card to edit it, tick a milestone when it's happened"}
         </span>
-      </div>
-
-      {/* How to read the grid. The three bar styles are the same ones the
-          bands use (shared CSS), so the legend is the thing itself. */}
-      <div className="camps-key" role="note" aria-label="How campaigns are drawn">
-        <span className="camps-key-item">
-          <span className="camp-band phase-live named sample starts ends">
-            <span className="camp-band-name">Live</span>
-          </span>
-          <span className="camps-key-text">running now — solid bar</span>
-        </span>
-        <span className="camps-key-item">
-          <span className="camp-band phase-upcoming named sample starts ends">
-            <span className="camp-band-name">Upcoming</span>
-          </span>
-          <span className="camps-key-text">hasn't started — hatched</span>
-        </span>
-        <span className="camps-key-item">
-          <span className="camp-band phase-finished named sample starts ends">
-            <span className="camp-band-name">✓ Finished</span>
-          </span>
-          <span className="camps-key-text">ended — washed out</span>
-        </span>
-        <span className="camps-key-item">
-          <span className="camp-band phase-evergreen named sample starts">
-            <span className="camp-band-name">Evergreen</span>
-          </span>
-          <span className="camps-key-text">always on from its start — ticked, no end</span>
-        </span>
-        <span className="camps-key-item">
-          <span className="camp-ms-card sample">
-            <span className="camp-ms-tick" aria-hidden>
-              <span className="camp-ms-diamond" />
-            </span>
-            <span className="camp-ms-card-label">Milestone</span>
-          </span>
-          <span className="camps-key-text">on its day — click the diamond to tick it off</span>
-        </span>
-      </div>
-
-      <div className="soc-grid camps-cal" role="grid" aria-label={monthLabel}>
-        {WEEKDAYS.map((d) => (
-          <div key={d} className="soc-weekday" role="columnheader">
-            {d}
-          </div>
-        ))}
-        {cells.map((iso, i) => {
-          if (iso === null) {
-            return <div key={`pad-${i}`} className="soc-cell pad" aria-hidden />;
-          }
-          const week = weeks[Math.floor(i / 7)];
-          const laneCount = weekLaneCount(monthCampaigns, week, lanes);
-          const running = campaignsOn(monthCampaigns, iso);
-          const marks = milestonesOn(monthCampaigns, iso);
-          const monday = new Date(`${iso}T00:00:00`).getDay() === 1;
-          const weekend = [0, 6].includes(new Date(`${iso}T00:00:00`).getDay());
-          return (
-            <div
-              key={iso}
-              role="gridcell"
-              className={`soc-cell camp-cell ${iso === today ? "today" : ""} ${
-                weekend ? "weekend" : ""
-              }`}
-            >
-              <div className="soc-cell-head">
-                <span
-                  className="soc-day"
-                  data-dow={WEEKDAYS[(new Date(`${iso}T00:00:00`).getDay() + 6) % 7]}
-                >
-                  {Number(iso.slice(8))}
-                </span>
-                <button
-                  className="soc-cell-add"
-                  onClick={() => openCreate(iso)}
-                  title={`New campaign starting ${iso}`}
-                  aria-label={`New campaign starting ${iso}`}
-                >
-                  +
-                </button>
-              </div>
-              {laneCount > 0 && (
-                <div className="camp-cell-bands">
-                  {Array.from({ length: laneCount }, (_, lane) => {
-                    const c = running.find((x) => lanes.get(x.id) === lane);
-                    return c ? (
-                      <CampaignBand
-                        key={c.id}
-                        campaign={c}
-                        iso={iso}
-                        today={today}
-                        showName={c.startDate === iso || monday}
-                        onClick={() => setEditing({ mode: "edit", campaign: c })}
-                      />
-                    ) : (
-                      <span key={`gap-${lane}`} className="camp-band-gap" aria-hidden />
-                    );
-                  })}
-                </div>
-              )}
-              {marks.length > 0 && (
-                <div className="camp-cell-ms">
-                  {marks.map(({ campaign: c, milestone: m }) => {
-                    const overdue = !m.done && m.date < today;
-                    return (
-                      <div
-                        key={m.id}
-                        className={`camp-ms-card ${m.done ? "done" : ""} ${
-                          overdue ? "overdue" : ""
-                        }`}
-                        style={{ ["--camp" as string]: c.color } as React.CSSProperties}
-                      >
-                        <button
-                          type="button"
-                          className="camp-ms-tick"
-                          onClick={() => toggleMilestone(c, m.id)}
-                          aria-pressed={m.done}
-                          aria-label={`${m.label}: ${m.done ? "done" : "not done"}`}
-                          title={m.done ? "Done — click to unflag" : "Click to flag as done"}
-                        >
-                          <span className="camp-ms-diamond" aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          className="camp-ms-card-body"
-                          onClick={() => setEditing({ mode: "edit", campaign: c })}
-                          title={`${c.name} · open the campaign`}
-                        >
-                          <span className="camp-ms-card-label">{m.label}</span>
-                          <span className="camp-ms-card-camp">
-                            {c.name}
-                            {overdue ? " · overdue" : m.done ? " · done" : ""}
-                          </span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
       </div>
 
       <div className="section-head camps-list-head">
@@ -554,7 +406,7 @@ export function CampaignsView({
       {monthCampaigns.length === 0 ? (
         <p className="muted">
           Nothing running in {monthLabel}. Use + New campaign, or click a day on
-          the timeline above to start one there.
+          the month grid below to start one there.
         </p>
       ) : (
         <div className="camps-grid">
@@ -732,6 +584,101 @@ export function CampaignsView({
           })}
         </div>
       )}
+
+      <div className="section-head camps-list-head">
+        <h2>Milestones in {monthLabel}</h2>
+        <span className="muted small">
+          Click a diamond to tick a milestone off · hover one to light up the rest of
+          its campaign · use + on a day to start a campaign there
+        </span>
+      </div>
+      <div
+        className={`soc-grid camps-cal ${hoverCampaignId ? "hovering" : ""}`}
+        role="grid"
+        aria-label={monthLabel}
+      >
+        {WEEKDAYS.map((d) => (
+          <div key={d} className="soc-weekday" role="columnheader">
+            {d}
+          </div>
+        ))}
+        {cells.map((iso, i) => {
+          if (iso === null) {
+            return <div key={`pad-${i}`} className="soc-cell pad" aria-hidden />;
+          }
+          const marks = milestonesOn(monthCampaigns, iso);
+          const weekend = [0, 6].includes(new Date(`${iso}T00:00:00`).getDay());
+          return (
+            <div
+              key={iso}
+              role="gridcell"
+              className={`soc-cell camp-cell ${iso === today ? "today" : ""} ${
+                weekend ? "weekend" : ""
+              }`}
+            >
+              <div className="soc-cell-head">
+                <span
+                  className="soc-day"
+                  data-dow={WEEKDAYS[(new Date(`${iso}T00:00:00`).getDay() + 6) % 7]}
+                >
+                  {Number(iso.slice(8))}
+                </span>
+                <button
+                  className="soc-cell-add"
+                  onClick={() => openCreate(iso)}
+                  title={`New campaign starting ${iso}`}
+                  aria-label={`New campaign starting ${iso}`}
+                >
+                  +
+                </button>
+              </div>
+              {marks.length > 0 && (
+                <div className="camp-cell-ms">
+                  {marks.map(({ campaign: c, milestone: m }) => {
+                    const overdue = !m.done && m.date < today;
+                    return (
+                      <div
+                        key={m.id}
+                        className={`camp-ms-card ${m.done ? "done" : ""} ${
+                          overdue ? "overdue" : ""
+                        } ${hoverCampaignId === c.id ? "related" : ""}`}
+                        style={{ ["--camp" as string]: c.color } as React.CSSProperties}
+                        onMouseEnter={() => setHoverCampaignId(c.id)}
+                        onMouseLeave={() => setHoverCampaignId(null)}
+                        onFocus={() => setHoverCampaignId(c.id)}
+                        onBlur={() => setHoverCampaignId(null)}
+                      >
+                        <button
+                          type="button"
+                          className="camp-ms-tick"
+                          onClick={() => toggleMilestone(c, m.id)}
+                          aria-pressed={m.done}
+                          aria-label={`${m.label}: ${m.done ? "done" : "not done"}`}
+                          title={m.done ? "Done — click to unflag" : "Click to flag as done"}
+                        >
+                          <span className="camp-ms-diamond" aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          className="camp-ms-card-body"
+                          onClick={() => setEditing({ mode: "edit", campaign: c })}
+                          title={`${c.name} · open the campaign`}
+                        >
+                          <span className="camp-ms-card-label">{m.label}</span>
+                          <span className="camp-ms-card-camp">
+                            {c.name}
+                            {overdue ? " · overdue" : m.done ? " · done" : ""}
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {upcoming.length > 0 && (
         <div className="camps-upcoming">
