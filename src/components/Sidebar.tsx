@@ -3,6 +3,7 @@ import type { Designer, Hub, Workspace } from "../types";
 import { Avatar } from "./Avatar";
 import { HubClocks } from "./HubClocks";
 import { readDraggedProjectId } from "../dnd";
+import { NewMenu, type NewKind } from "./NewMenu";
 
 export type SidebarView =
   | "myDesk"
@@ -28,7 +29,8 @@ type Props = {
   onDropProjectOnWorkspace: (projectId: string, workspaceId: string) => void;
   onToggleCollapsed: () => void;
   onSelectView: (view: SidebarView) => void;
-  onNewProject: () => void;
+  // The + New menu: a project, a campaign or a social post.
+  onNew: (kind: NewKind) => void;
   onOpenNotifications: () => void;
   onOpenSettings: () => void;
   onLogout: () => void;
@@ -227,7 +229,7 @@ export function Sidebar({
   onDropProjectOnWorkspace,
   onToggleCollapsed,
   onSelectView,
-  onNewProject,
+  onNew,
   onOpenNotifications,
   onOpenSettings,
   onLogout,
@@ -271,9 +273,7 @@ export function Sidebar({
       />
 
       <nav className="sidebar-nav">
-        <button className="nav-primary" onClick={onNewProject} title="New project">
-          {collapsed ? "+" : "+ New project"}
-        </button>
+        <NewMenu variant="nav" collapsed={collapsed} onPick={onNew} />
 
         {!collapsed && <div className="nav-section">Navigation</div>}
         <ul className="designer-list">

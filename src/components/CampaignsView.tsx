@@ -59,6 +59,12 @@ type Props = {
   // overlay hands over here). Consumed once the editor is up.
   focusCampaignId?: string | null;
   onFocusHandled?: () => void;
+  // The header's + New → Campaign and Export CSV, as request numbers that
+  // change per click. Acted on once each, then cleared through the callback.
+  createRequest?: number;
+  onCreateHandled?: () => void;
+  exportRequest?: number;
+  onExportHandled?: () => void;
 };
 
 type Editing =
@@ -124,6 +130,10 @@ export function CampaignsView({
   onDelete,
   focusCampaignId,
   onFocusHandled,
+  createRequest,
+  onCreateHandled,
+  exportRequest,
+  onExportHandled,
 }: Props) {
   const today = todayIso();
   const [month, setMonth] = useState(() => today.slice(0, 7));
@@ -175,6 +185,26 @@ export function CampaignsView({
     }
     // Let the parent clear its request after this render commits.
     queueMicrotask(() => onFocusHandled?.());
+  }
+
+  // The header's + New → Campaign and Export CSV land here the same way.
+  const [handledCreate, setHandledCreate] = useState(0);
+  if (createRequest && createRequest !== handledCreate) {
+    setHandledCreate(createRequest);
+    setEditing({
+      mode: "create",
+      initial: {
+        startDate: `${month}-01`,
+        category: typeFilter && typeFilter !== NO_TYPE ? typeFilter : undefined,
+      },
+    });
+    queueMicrotask(() => onCreateHandled?.());
+  }
+  const [handledExport, setHandledExport] = useState(0);
+  if (exportRequest && exportRequest !== handledExport) {
+    setHandledExport(exportRequest);
+    setExporting(true);
+    queueMicrotask(() => onExportHandled?.());
   }
 
   const matchesType = (c: Campaign) =>
@@ -446,17 +476,6 @@ export function CampaignsView({
               Calendar
             </button>
           </div>
-          <button
-            className="btn-mini"
-            onClick={() => setExporting(true)}
-            disabled={campaigns.length === 0}
-            title="Download the campaigns in a date range as a CSV file"
-          >
-            Export CSV
-          </button>
-          <button className="primary" onClick={() => openCreate()}>
-            + New campaign
-          </button>
         </div>
       </div>
 
@@ -487,7 +506,7 @@ export function CampaignsView({
       </div>
       {monthCampaigns.length === 0 ? (
         <p className="muted">
-          Nothing running in {monthLabel}. Use + New campaign, or switch to
+          Nothing running in {monthLabel}. Use + New → Campaign, or switch to
           Calendar and click a day to start one there.
         </p>
       ) : (

@@ -50,6 +50,13 @@ type Props = {
   // posts" list hands over here. Consumed once the editor is up.
   focusPostId?: string | null;
   onFocusHandled?: () => void;
+  // The header's + New → Social post and Export CSV, as request numbers
+  // that change per click. Acted on once each, then cleared through the
+  // callback.
+  createRequest?: number;
+  onCreateHandled?: () => void;
+  exportRequest?: number;
+  onExportHandled?: () => void;
 };
 
 type Editing =
@@ -159,6 +166,10 @@ export function SocialCalendar({
   onOpenProject,
   focusPostId,
   onFocusHandled,
+  createRequest,
+  onCreateHandled,
+  exportRequest,
+  onExportHandled,
 }: Props) {
   // null until the first snapshot lands, so the empty state can't flash
   // before the import has been read.
@@ -185,6 +196,29 @@ export function SocialCalendar({
   const [importing, setImporting] = useState(false);
   const [importNote, setImportNote] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+
+  // The header's + New → Social post and Export CSV. Handled at render
+  // time (setState-during-render is React's sanctioned way to derive
+  // state) so the editor is up on the first paint. From the library tab a
+  // new post starts as an evergreen one, as the old page button did.
+  const [handledCreate, setHandledCreate] = useState(0);
+  if (createRequest && createRequest !== handledCreate) {
+    setHandledCreate(createRequest);
+    setEditing({
+      mode: "create",
+      initial: {
+        month,
+        ...(tab === "library" ? { evergreen: true, status: "backlog" } : {}),
+      },
+    });
+    queueMicrotask(() => onCreateHandled?.());
+  }
+  const [handledExport, setHandledExport] = useState(0);
+  if (exportRequest && exportRequest !== handledExport) {
+    setHandledExport(exportRequest);
+    setExporting(true);
+    queueMicrotask(() => onExportHandled?.());
+  }
   // Bring the months' unscheduled posts along with the dated ones.
   const [exportUnscheduled, setExportUnscheduled] = useState(true);
 
@@ -615,26 +649,6 @@ export function SocialCalendar({
               Evergreen{libraryCount > 0 ? ` (${libraryCount})` : ""}
             </button>
           </div>
-          <button
-            className="btn-mini"
-            onClick={() => setExporting(true)}
-            disabled={all.length === 0}
-            title="Download the posts in a date range as a CSV file"
-          >
-            Export CSV
-          </button>
-          <button
-            className="primary"
-            onClick={() =>
-              openCreate(
-                tab === "library"
-                  ? { evergreen: true, status: "backlog" }
-                  : {},
-              )
-            }
-          >
-            + New post
-          </button>
         </div>
       </div>
 
@@ -711,7 +725,7 @@ export function SocialCalendar({
             The 2026 social media calendar spreadsheet is bundled with the app
             and loads itself the first time someone signs in. If that didn't
             happen — usually because Firestore refused the write — import it
-            here, or start from scratch with + New post.
+            here, or start from scratch with + New → Social post.
           </p>
           <div className="soc-empty-actions">
             <button

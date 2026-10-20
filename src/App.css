@@ -489,6 +489,66 @@ textarea {
   text-align: center;
   padding: 10px 0;
 }
+/* The + New menu: one button, three things to create. In the sidebar the
+   button fills the width; in the header it sits with the other actions. */
+.new-menu {
+  position: relative;
+}
+.new-menu.nav,
+.new-menu.nav .nav-primary {
+  display: block;
+  width: 100%;
+}
+.new-menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 220px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(20, 30, 48, 0.12);
+}
+.new-menu.nav .new-menu-list {
+  left: 0;
+}
+.new-menu.primary .new-menu-list {
+  right: 0;
+}
+.sidebar.collapsed .new-menu-list {
+  left: calc(100% + 8px);
+  top: 0;
+}
+.new-menu-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.new-menu-item:hover,
+.new-menu-item:focus-visible {
+  background: var(--surface-2);
+  outline: none;
+}
+.new-menu-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.new-menu-hint {
+  font-size: 11px;
+  color: var(--muted);
+}
 .nav-section {
   margin-top: 12px;
   font-size: 11px;
