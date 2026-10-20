@@ -6247,6 +6247,14 @@ a.share-btn {
   color: #b4501f;
   font-weight: 700;
 }
+/* Milestone cards drag between days on the Campaigns grid. */
+.camp-ms-card[draggable="true"] {
+  cursor: grab;
+}
+.camp-ms-card.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
 /* Hovering a milestone lights up the rest of its campaign across the
    month and fades everything else, on both calendars. */
 .camp-ms-card,

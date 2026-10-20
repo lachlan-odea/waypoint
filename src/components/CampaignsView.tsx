@@ -22,6 +22,11 @@ import { CampaignModal } from "./CampaignModal";
 import { MilestonePostLink } from "./MilestonePostLink";
 import { ExportCsvModal } from "./ExportCsvModal";
 import {
+  MILESTONE_DRAG_MIME,
+  readDraggedMilestone,
+  writeDraggedMilestone,
+} from "../dnd";
+import {
   campaignsCsv,
   campaignsInRange,
   csvFileName,
@@ -64,6 +69,11 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // Type-filter value for campaigns with no category set.
 const NO_TYPE = "__none__";
+
+// Per-browser preference: the month's campaign cards, or the day grid of
+// their milestones.
+const VIEW_KEY = "waypoint.campaigns.view";
+type View = "cards" | "calendar";
 
 function shiftMonth(month: string, delta: number): string {
   const [y, m] = month.split("-").map(Number);
@@ -128,6 +138,24 @@ export function CampaignsView({
   // The campaign whose milestone is under the pointer, so the rest of its
   // milestones light up across the month grid.
   const [hoverCampaignId, setHoverCampaignId] = useState<string | null>(null);
+  const [view, setViewState] = useState<View>(() => {
+    try {
+      return localStorage.getItem(VIEW_KEY) === "calendar" ? "calendar" : "cards";
+    } catch {
+      return "cards";
+    }
+  });
+  function setView(next: View) {
+    setViewState(next);
+    try {
+      localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      // Storage unavailable — the choice still holds for this page load.
+    }
+  }
+  // A milestone being dragged to another day, and the day it's over.
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropOver, setDropOver] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   // A row per campaign (its milestones in one cell), or a row per milestone.
   const [exportRows, setExportRows] = useState<"campaigns" | "milestones">(
@@ -220,6 +248,40 @@ export function CampaignsView({
         m.id === milestoneId ? { ...m, done: !m.done } : m,
       ),
     });
+  }
+
+  // Drop a milestone on another day. Saving through onSave also moves the
+  // milestone's social post, if it has one (App.saveCampaign).
+  function moveMilestone(campaignId: string, milestoneId: string, date: string) {
+    const campaign = campaigns.find((c) => c.id === campaignId);
+    const milestone = campaign?.milestones.find((m) => m.id === milestoneId);
+    if (!campaign || !milestone || milestone.date === date) return;
+    onSave({
+      ...campaign,
+      milestones: campaign.milestones
+        .map((m) => (m.id === milestoneId ? { ...m, date } : m))
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    });
+  }
+
+  // Each day cell takes a dragged milestone. Only milestones: a post dragged
+  // in from elsewhere has a different payload and is ignored.
+  function dropHandlers(iso: string) {
+    return {
+      onDragOver: (e: React.DragEvent) => {
+        if (!e.dataTransfer.types.includes(MILESTONE_DRAG_MIME)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        setDropOver(iso);
+      },
+      onDragLeave: () => setDropOver((cur) => (cur === iso ? null : cur)),
+      onDrop: (e: React.DragEvent) => {
+        e.preventDefault();
+        setDropOver(null);
+        const dragged = readDraggedMilestone(e);
+        if (dragged) moveMilestone(dragged.campaignId, dragged.milestoneId, iso);
+      },
+    };
   }
 
   const projectTitle = (id: string) => projects.find((p) => p.id === id)?.title;
@@ -366,6 +428,24 @@ export function CampaignsView({
         </div>
 
         <div className="soc-toolbar-right">
+          <div className="soc-tabs" role="tablist" aria-label="Cards or calendar">
+            <button
+              role="tab"
+              aria-selected={view === "cards"}
+              className={view === "cards" ? "active" : ""}
+              onClick={() => setView("cards")}
+            >
+              Cards
+            </button>
+            <button
+              role="tab"
+              aria-selected={view === "calendar"}
+              className={view === "calendar" ? "active" : ""}
+              onClick={() => setView("calendar")}
+            >
+              Calendar
+            </button>
+          </div>
           <button
             className="btn-mini"
             onClick={() => setExporting(true)}
@@ -397,6 +477,8 @@ export function CampaignsView({
         </span>
       </div>
 
+      {view === "cards" && (
+        <>
       <div className="section-head camps-list-head">
         <h2>This month's campaigns</h2>
         <span className="muted small">
@@ -405,8 +487,8 @@ export function CampaignsView({
       </div>
       {monthCampaigns.length === 0 ? (
         <p className="muted">
-          Nothing running in {monthLabel}. Use + New campaign, or click a day on
-          the month grid below to start one there.
+          Nothing running in {monthLabel}. Use + New campaign, or switch to
+          Calendar and click a day to start one there.
         </p>
       ) : (
         <div className="camps-grid">
@@ -584,12 +666,17 @@ export function CampaignsView({
           })}
         </div>
       )}
+        </>
+      )}
 
+      {view === "calendar" && (
+        <>
       <div className="section-head camps-list-head">
         <h2>Milestones in {monthLabel}</h2>
         <span className="muted small">
-          Click a diamond to tick a milestone off · hover one to light up the rest of
-          its campaign · use + on a day to start a campaign there
+          Click a diamond to tick a milestone off · drag one to another day · hover
+          one to light up the rest of its campaign · use + on a day to start a
+          campaign there
         </span>
       </div>
       <div
@@ -612,9 +699,10 @@ export function CampaignsView({
             <div
               key={iso}
               role="gridcell"
-              className={`soc-cell camp-cell ${iso === today ? "today" : ""} ${
+              className={`soc-cell camp-cell drop-target ${iso === today ? "today" : ""} ${
                 weekend ? "weekend" : ""
-              }`}
+              } ${dropOver === iso ? "drop-over" : ""}`}
+              {...dropHandlers(iso)}
             >
               <div className="soc-cell-head">
                 <span
@@ -641,8 +729,20 @@ export function CampaignsView({
                         key={m.id}
                         className={`camp-ms-card ${m.done ? "done" : ""} ${
                           overdue ? "overdue" : ""
-                        } ${hoverCampaignId === c.id ? "related" : ""}`}
+                        } ${hoverCampaignId === c.id ? "related" : ""} ${
+                          draggingId === m.id ? "dragging" : ""
+                        }`}
                         style={{ ["--camp" as string]: c.color } as React.CSSProperties}
+                        draggable
+                        onDragStart={(e) => {
+                          writeDraggedMilestone(e, c.id, m.id);
+                          setDraggingId(m.id);
+                          setHoverCampaignId(null);
+                        }}
+                        onDragEnd={() => {
+                          setDraggingId(null);
+                          setDropOver(null);
+                        }}
                         onMouseEnter={() => setHoverCampaignId(c.id)}
                         onMouseLeave={() => setHoverCampaignId(null)}
                         onFocus={() => setHoverCampaignId(c.id)}
@@ -679,6 +779,8 @@ export function CampaignsView({
           );
         })}
       </div>
+        </>
+      )}
 
       {upcoming.length > 0 && (
         <div className="camps-upcoming">

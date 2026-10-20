@@ -23,3 +23,32 @@ export function writeDraggedSocialPostId(e: React.DragEvent, id: string) {
   e.dataTransfer.setData(SOCIAL_DRAG_MIME, id);
   e.dataTransfer.effectAllowed = "move";
 }
+
+// Campaign milestones, dragged between days on the Campaigns page grid.
+// The payload names both the campaign and the milestone, since a milestone
+// only means something inside its campaign.
+export const MILESTONE_DRAG_MIME = "application/x-waypoint-campaign-milestone";
+
+export type DraggedMilestone = { campaignId: string; milestoneId: string };
+
+export function readDraggedMilestone(e: React.DragEvent): DraggedMilestone | null {
+  const raw = e.dataTransfer.getData(MILESTONE_DRAG_MIME);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<DraggedMilestone>;
+    return typeof parsed.campaignId === "string" && typeof parsed.milestoneId === "string"
+      ? { campaignId: parsed.campaignId, milestoneId: parsed.milestoneId }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeDraggedMilestone(
+  e: React.DragEvent,
+  campaignId: string,
+  milestoneId: string,
+) {
+  e.dataTransfer.setData(MILESTONE_DRAG_MIME, JSON.stringify({ campaignId, milestoneId }));
+  e.dataTransfer.effectAllowed = "move";
+}
