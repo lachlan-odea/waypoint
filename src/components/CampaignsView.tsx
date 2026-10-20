@@ -12,20 +12,20 @@ import { brandColor, socialCategoryMeta } from "../constants";
 import { formatShort, todayIso } from "../dates";
 import {
   PHASE_LABEL,
-  assignLanes,
   campaignOverlaps,
   campaignPhase,
-  campaignsOn,
   milestonesOn,
   monthBounds,
   spanDays,
-  weekLaneCount,
-  weeksOf,
 } from "../campaigns";
-import { CampaignBand } from "./CampaignBand";
 import { CampaignModal } from "./CampaignModal";
 import { MilestonePostLink } from "./MilestonePostLink";
 import { ExportCsvModal } from "./ExportCsvModal";
+import {
+  MILESTONE_DRAG_MIME,
+  readDraggedMilestone,
+  writeDraggedMilestone,
+} from "../dnd";
 import {
   campaignsCsv,
   campaignsInRange,
@@ -42,7 +42,7 @@ type Props = {
   categories: SocialCategory[];
   // The milestone type picker's options, from the same settings window.
   milestoneTypes: MilestoneType[];
-  // Owner suggestions in the editor.
+  // The team, for the editor's owner picker.
   designers: Designer[];
   // Board projects a campaign can link as contributing to it.
   projects: Project[];
@@ -59,6 +59,12 @@ type Props = {
   // overlay hands over here). Consumed once the editor is up.
   focusCampaignId?: string | null;
   onFocusHandled?: () => void;
+  // The header's + New → Campaign and Export CSV, as request numbers that
+  // change per click. Acted on once each, then cleared through the callback.
+  createRequest?: number;
+  onCreateHandled?: () => void;
+  exportRequest?: number;
+  onExportHandled?: () => void;
 };
 
 type Editing =
@@ -69,6 +75,11 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // Type-filter value for campaigns with no category set.
 const NO_TYPE = "__none__";
+
+// Per-browser preference: the month's campaign cards, or the day grid of
+// their milestones.
+const VIEW_KEY = "waypoint.campaigns.view";
+type View = "cards" | "calendar";
 
 function shiftMonth(month: string, delta: number): string {
   const [y, m] = month.split("-").map(Number);
@@ -119,14 +130,42 @@ export function CampaignsView({
   onDelete,
   focusCampaignId,
   onFocusHandled,
+  createRequest,
+  onCreateHandled,
+  exportRequest,
+  onExportHandled,
 }: Props) {
   const today = todayIso();
   const [month, setMonth] = useState(() => today.slice(0, 7));
   // "" shows every type; NO_TYPE shows campaigns without one.
   const [typeFilter, setTypeFilter] = useState("");
+  // "" shows every campaign; otherwise only the always-on ones, or only
+  // those with an end date.
+  const [runFilter, setRunFilter] = useState<"" | "evergreen" | "dated">("");
   const [editing, setEditing] = useState<Editing | null>(null);
   // Which campaign card has its milestone list expanded.
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  // The campaign whose milestone is under the pointer, so the rest of its
+  // milestones light up across the month grid.
+  const [hoverCampaignId, setHoverCampaignId] = useState<string | null>(null);
+  const [view, setViewState] = useState<View>(() => {
+    try {
+      return localStorage.getItem(VIEW_KEY) === "calendar" ? "calendar" : "cards";
+    } catch {
+      return "cards";
+    }
+  });
+  function setView(next: View) {
+    setViewState(next);
+    try {
+      localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      // Storage unavailable — the choice still holds for this page load.
+    }
+  }
+  // A milestone being dragged to another day, and the day it's over.
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropOver, setDropOver] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   // A row per campaign (its milestones in one cell), or a row per milestone.
   const [exportRows, setExportRows] = useState<"campaigns" | "milestones">(
@@ -148,43 +187,54 @@ export function CampaignsView({
     queueMicrotask(() => onFocusHandled?.());
   }
 
+  // The header's + New → Campaign and Export CSV land here the same way.
+  const [handledCreate, setHandledCreate] = useState(0);
+  if (createRequest && createRequest !== handledCreate) {
+    setHandledCreate(createRequest);
+    setEditing({
+      mode: "create",
+      initial: {
+        startDate: `${month}-01`,
+        category: typeFilter && typeFilter !== NO_TYPE ? typeFilter : undefined,
+      },
+    });
+    queueMicrotask(() => onCreateHandled?.());
+  }
+  const [handledExport, setHandledExport] = useState(0);
+  if (exportRequest && exportRequest !== handledExport) {
+    setHandledExport(exportRequest);
+    setExporting(true);
+    queueMicrotask(() => onExportHandled?.());
+  }
+
   const matchesType = (c: Campaign) =>
     !typeFilter || (c.category || NO_TYPE) === typeFilter;
-
-  const owners = useMemo(() => {
-    const names = new Set<string>();
-    campaigns.forEach((c) => c.owner.trim() && names.add(c.owner.trim()));
-    designers.forEach((d) => names.add(d.name));
-    return Array.from(names).sort((a, b) => a.localeCompare(b));
-  }, [campaigns, designers]);
+  const matchesRun = (c: Campaign) =>
+    !runFilter || (runFilter === "evergreen") === !!c.evergreen;
+  const matchesFilters = (c: Campaign) => matchesType(c) && matchesRun(c);
 
   const cells = useMemo(() => monthGrid(month), [month]);
-  const weeks = useMemo(() => weeksOf(cells), [cells]);
   const monthLabel = monthTitle(month);
 
-  // Everything touching the month, before the type filter — what the type
-  // pills count over so the counts don't collapse once you pick one. Dated
-  // campaigns by start, then every evergreen one, which belongs to every
-  // month (campaignOverlaps never matches those).
+  // Everything touching the month, before the filters — what the pills
+  // count over so the counts don't collapse once you pick one. An
+  // evergreen campaign touches every month from its start on.
   const monthAll = useMemo(() => {
     const { from, to } = monthBounds(month);
-    const dated = campaigns
+    return campaigns
       .filter((c) => campaignOverlaps(c, from, to))
       .sort(
         (a, b) =>
           a.startDate.localeCompare(b.startDate) || a.name.localeCompare(b.name),
       );
-    const evergreen = campaigns
-      .filter((c) => c.evergreen)
-      .sort((a, b) => a.name.localeCompare(b.name));
-    return [...dated, ...evergreen];
   }, [campaigns, month]);
 
   const monthCampaigns = useMemo(
-    () => monthAll.filter(matchesType),
+    () => monthAll.filter(matchesFilters),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [monthAll, typeFilter],
+    [monthAll, typeFilter, runFilter],
   );
+  const evergreenCount = monthAll.filter((c) => c.evergreen).length;
 
   const typeCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -195,34 +245,23 @@ export function CampaignsView({
     return counts;
   }, [monthAll]);
 
-  // What the grid draws: the list without evergreen campaigns, which have
-  // no run for a bar, and whose milestones stay on their card.
-  const calendarCampaigns = useMemo(
-    () => monthCampaigns.filter((c) => !c.evergreen),
-    [monthCampaigns],
-  );
-
-  // A fixed row per campaign for the month, so its band stays level across
-  // the grid.
-  const lanes = useMemo(() => assignLanes(calendarCampaigns), [calendarCampaigns]);
-
   // What's coming after this month, so the page isn't a dead end at the
   // end of the current plan.
   const upcoming = useMemo(() => {
     const { to } = monthBounds(month);
     return campaigns
-      .filter((c) => !c.evergreen && c.startDate > to)
-      .filter(matchesType)
+      .filter((c) => c.startDate > to)
+      .filter(matchesFilters)
       .sort((a, b) => a.startDate.localeCompare(b.startDate))
       .slice(0, 5);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campaigns, month, typeFilter]);
+  }, [campaigns, month, typeFilter, runFilter]);
 
   function save(campaign: Campaign, deletePostIds: string[]) {
     onSave(campaign, deletePostIds);
     setEditing(null);
     const { from, to } = monthBounds(month);
-    if (!campaign.evergreen && !campaignOverlaps(campaign, from, to)) {
+    if (!campaignOverlaps(campaign, from, to)) {
       setMonth(campaign.startDate.slice(0, 7));
     }
   }
@@ -239,6 +278,40 @@ export function CampaignsView({
         m.id === milestoneId ? { ...m, done: !m.done } : m,
       ),
     });
+  }
+
+  // Drop a milestone on another day. Saving through onSave also moves the
+  // milestone's social post, if it has one (App.saveCampaign).
+  function moveMilestone(campaignId: string, milestoneId: string, date: string) {
+    const campaign = campaigns.find((c) => c.id === campaignId);
+    const milestone = campaign?.milestones.find((m) => m.id === milestoneId);
+    if (!campaign || !milestone || milestone.date === date) return;
+    onSave({
+      ...campaign,
+      milestones: campaign.milestones
+        .map((m) => (m.id === milestoneId ? { ...m, date } : m))
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    });
+  }
+
+  // Each day cell takes a dragged milestone. Only milestones: a post dragged
+  // in from elsewhere has a different payload and is ignored.
+  function dropHandlers(iso: string) {
+    return {
+      onDragOver: (e: React.DragEvent) => {
+        if (!e.dataTransfer.types.includes(MILESTONE_DRAG_MIME)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        setDropOver(iso);
+      },
+      onDragLeave: () => setDropOver((cur) => (cur === iso ? null : cur)),
+      onDrop: (e: React.DragEvent) => {
+        e.preventDefault();
+        setDropOver(null);
+        const dragged = readDraggedMilestone(e);
+        if (dragged) moveMilestone(dragged.campaignId, dragged.milestoneId, iso);
+      },
+    };
   }
 
   const projectTitle = (id: string) => projects.find((p) => p.id === id)?.title;
@@ -356,18 +429,53 @@ export function CampaignsView({
           </button>
         </div>
 
-        <div className="soc-toolbar-right">
+        <div className="filter-quick" role="group" aria-label="Evergreen or dated">
           <button
-            className="btn-mini"
-            onClick={() => setExporting(true)}
-            disabled={campaigns.length === 0}
-            title="Download the campaigns in a date range as a CSV file"
+            className={runFilter === "" ? "active" : ""}
+            onClick={() => setRunFilter("")}
           >
-            Export CSV
+            All
           </button>
-          <button className="primary" onClick={() => openCreate()}>
-            + New campaign
+          <button
+            className={runFilter === "evergreen" ? "active" : ""}
+            onClick={() => setRunFilter(runFilter === "evergreen" ? "" : "evergreen")}
+            aria-pressed={runFilter === "evergreen"}
+            title="Only always-on campaigns"
+            // The count badge takes its tint from the type pills' variable.
+            style={{ ["--category" as string]: "var(--brand-violet)" } as React.CSSProperties}
+          >
+            Evergreen
+            {evergreenCount > 0 && <span className="soc-type-count">{evergreenCount}</span>}
           </button>
+          <button
+            className={runFilter === "dated" ? "active" : ""}
+            onClick={() => setRunFilter(runFilter === "dated" ? "" : "dated")}
+            aria-pressed={runFilter === "dated"}
+            title="Only campaigns with an end date"
+          >
+            Dated
+          </button>
+        </div>
+
+        <div className="soc-toolbar-right">
+          <div className="soc-tabs" role="tablist" aria-label="Cards or calendar">
+            <button
+              role="tab"
+              aria-selected={view === "cards"}
+              className={view === "cards" ? "active" : ""}
+              onClick={() => setView("cards")}
+            >
+              Cards
+            </button>
+            <button
+              role="tab"
+              aria-selected={view === "calendar"}
+              className={view === "calendar" ? "active" : ""}
+              onClick={() => setView("calendar")}
+            >
+              Calendar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -383,145 +491,13 @@ export function CampaignsView({
               ? " with no type"
               : ` of type ${typeFilter}`
             : ""}
-          {" · click a campaign bar to edit it, tick a milestone when it's happened, use + on a day to start a campaign there"}
+          {runFilter === "evergreen" ? ", evergreen only" : runFilter === "dated" ? ", dated only" : ""}
+          {" · open a card to edit it, tick a milestone when it's happened"}
         </span>
       </div>
 
-      {/* How to read the grid. The three bar styles are the same ones the
-          bands use (shared CSS), so the legend is the thing itself. */}
-      <div className="camps-key" role="note" aria-label="How campaigns are drawn">
-        <span className="camps-key-item">
-          <span className="camp-band phase-live named sample starts ends">
-            <span className="camp-band-name">Live</span>
-          </span>
-          <span className="camps-key-text">running now — solid bar</span>
-        </span>
-        <span className="camps-key-item">
-          <span className="camp-band phase-upcoming named sample starts ends">
-            <span className="camp-band-name">Upcoming</span>
-          </span>
-          <span className="camps-key-text">hasn't started — hatched</span>
-        </span>
-        <span className="camps-key-item">
-          <span className="camp-band phase-finished named sample starts ends">
-            <span className="camp-band-name">✓ Finished</span>
-          </span>
-          <span className="camps-key-text">ended — washed out</span>
-        </span>
-        <span className="camps-key-item">
-          <span className="camp-ms-card sample">
-            <span className="camp-ms-tick" aria-hidden>
-              <span className="camp-ms-diamond" />
-            </span>
-            <span className="camp-ms-card-label">Milestone</span>
-          </span>
-          <span className="camps-key-text">on its day — click the diamond to tick it off</span>
-        </span>
-      </div>
-
-      <div className="soc-grid camps-cal" role="grid" aria-label={monthLabel}>
-        {WEEKDAYS.map((d) => (
-          <div key={d} className="soc-weekday" role="columnheader">
-            {d}
-          </div>
-        ))}
-        {cells.map((iso, i) => {
-          if (iso === null) {
-            return <div key={`pad-${i}`} className="soc-cell pad" aria-hidden />;
-          }
-          const week = weeks[Math.floor(i / 7)];
-          const laneCount = weekLaneCount(calendarCampaigns, week, lanes);
-          const running = campaignsOn(calendarCampaigns, iso);
-          const marks = milestonesOn(calendarCampaigns, iso);
-          const monday = new Date(`${iso}T00:00:00`).getDay() === 1;
-          const weekend = [0, 6].includes(new Date(`${iso}T00:00:00`).getDay());
-          return (
-            <div
-              key={iso}
-              role="gridcell"
-              className={`soc-cell camp-cell ${iso === today ? "today" : ""} ${
-                weekend ? "weekend" : ""
-              }`}
-            >
-              <div className="soc-cell-head">
-                <span
-                  className="soc-day"
-                  data-dow={WEEKDAYS[(new Date(`${iso}T00:00:00`).getDay() + 6) % 7]}
-                >
-                  {Number(iso.slice(8))}
-                </span>
-                <button
-                  className="soc-cell-add"
-                  onClick={() => openCreate(iso)}
-                  title={`New campaign starting ${iso}`}
-                  aria-label={`New campaign starting ${iso}`}
-                >
-                  +
-                </button>
-              </div>
-              {laneCount > 0 && (
-                <div className="camp-cell-bands">
-                  {Array.from({ length: laneCount }, (_, lane) => {
-                    const c = running.find((x) => lanes.get(x.id) === lane);
-                    return c ? (
-                      <CampaignBand
-                        key={c.id}
-                        campaign={c}
-                        iso={iso}
-                        today={today}
-                        showName={c.startDate === iso || monday}
-                        onClick={() => setEditing({ mode: "edit", campaign: c })}
-                      />
-                    ) : (
-                      <span key={`gap-${lane}`} className="camp-band-gap" aria-hidden />
-                    );
-                  })}
-                </div>
-              )}
-              {marks.length > 0 && (
-                <div className="camp-cell-ms">
-                  {marks.map(({ campaign: c, milestone: m }) => {
-                    const overdue = !m.done && m.date < today;
-                    return (
-                      <div
-                        key={m.id}
-                        className={`camp-ms-card ${m.done ? "done" : ""} ${
-                          overdue ? "overdue" : ""
-                        }`}
-                        style={{ ["--camp" as string]: c.color } as React.CSSProperties}
-                      >
-                        <button
-                          type="button"
-                          className="camp-ms-tick"
-                          onClick={() => toggleMilestone(c, m.id)}
-                          aria-pressed={m.done}
-                          aria-label={`${m.label}: ${m.done ? "done" : "not done"}`}
-                          title={m.done ? "Done — click to unflag" : "Click to flag as done"}
-                        >
-                          <span className="camp-ms-diamond" aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          className="camp-ms-card-body"
-                          onClick={() => setEditing({ mode: "edit", campaign: c })}
-                          title={`${c.name} · open the campaign`}
-                        >
-                          <span className="camp-ms-card-label">{m.label}</span>
-                          <span className="camp-ms-card-camp">
-                            {c.name}
-                            {overdue ? " · overdue" : m.done ? " · done" : ""}
-                          </span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
+      {view === "cards" && (
+        <>
       <div className="section-head camps-list-head">
         <h2>This month's campaigns</h2>
         <span className="muted small">
@@ -530,8 +506,8 @@ export function CampaignsView({
       </div>
       {monthCampaigns.length === 0 ? (
         <p className="muted">
-          Nothing running in {monthLabel}. Use + New campaign, or click a day on
-          the timeline above to start one there.
+          Nothing running in {monthLabel}. Use + New → Campaign, or switch to
+          Calendar and click a day to start one there.
         </p>
       ) : (
         <div className="camps-grid">
@@ -542,7 +518,7 @@ export function CampaignsView({
             const shown = open ? c.milestones : c.milestones.slice(0, 3);
             const phaseNote =
               phase === "evergreen"
-                ? "always on, not on the calendar"
+                ? `always on ${c.startDate > today ? "from" : "since"} ${formatShort(c.startDate)}`
                 : phase === "upcoming"
                 ? `starts in ${daysFromToday(c.startDate, today)} day${
                     daysFromToday(c.startDate, today) === 1 ? "" : "s"
@@ -582,7 +558,7 @@ export function CampaignsView({
                   </button>
                   <p className="camp-card-dates muted small">
                     {phase === "evergreen" ? (
-                      "Always on"
+                      <>From {formatShort(c.startDate)} · no end</>
                     ) : (
                       <>
                         {formatShort(c.startDate)} – {formatShort(c.endDate)} ·{" "}
@@ -709,6 +685,121 @@ export function CampaignsView({
           })}
         </div>
       )}
+        </>
+      )}
+
+      {view === "calendar" && (
+        <>
+      <div className="section-head camps-list-head">
+        <h2>Milestones in {monthLabel}</h2>
+        <span className="muted small">
+          Click a diamond to tick a milestone off · drag one to another day · hover
+          one to light up the rest of its campaign · use + on a day to start a
+          campaign there
+        </span>
+      </div>
+      <div
+        className={`soc-grid camps-cal ${hoverCampaignId ? "hovering" : ""}`}
+        role="grid"
+        aria-label={monthLabel}
+      >
+        {WEEKDAYS.map((d) => (
+          <div key={d} className="soc-weekday" role="columnheader">
+            {d}
+          </div>
+        ))}
+        {cells.map((iso, i) => {
+          if (iso === null) {
+            return <div key={`pad-${i}`} className="soc-cell pad" aria-hidden />;
+          }
+          const marks = milestonesOn(monthCampaigns, iso);
+          const weekend = [0, 6].includes(new Date(`${iso}T00:00:00`).getDay());
+          return (
+            <div
+              key={iso}
+              role="gridcell"
+              className={`soc-cell camp-cell drop-target ${iso === today ? "today" : ""} ${
+                weekend ? "weekend" : ""
+              } ${dropOver === iso ? "drop-over" : ""}`}
+              {...dropHandlers(iso)}
+            >
+              <div className="soc-cell-head">
+                <span
+                  className="soc-day"
+                  data-dow={WEEKDAYS[(new Date(`${iso}T00:00:00`).getDay() + 6) % 7]}
+                >
+                  {Number(iso.slice(8))}
+                </span>
+                <button
+                  className="soc-cell-add"
+                  onClick={() => openCreate(iso)}
+                  title={`New campaign starting ${iso}`}
+                  aria-label={`New campaign starting ${iso}`}
+                >
+                  +
+                </button>
+              </div>
+              {marks.length > 0 && (
+                <div className="camp-cell-ms">
+                  {marks.map(({ campaign: c, milestone: m }) => {
+                    const overdue = !m.done && m.date < today;
+                    return (
+                      <div
+                        key={m.id}
+                        className={`camp-ms-card ${m.done ? "done" : ""} ${
+                          overdue ? "overdue" : ""
+                        } ${hoverCampaignId === c.id ? "related" : ""} ${
+                          draggingId === m.id ? "dragging" : ""
+                        }`}
+                        style={{ ["--camp" as string]: c.color } as React.CSSProperties}
+                        draggable
+                        onDragStart={(e) => {
+                          writeDraggedMilestone(e, c.id, m.id);
+                          setDraggingId(m.id);
+                          setHoverCampaignId(null);
+                        }}
+                        onDragEnd={() => {
+                          setDraggingId(null);
+                          setDropOver(null);
+                        }}
+                        onMouseEnter={() => setHoverCampaignId(c.id)}
+                        onMouseLeave={() => setHoverCampaignId(null)}
+                        onFocus={() => setHoverCampaignId(c.id)}
+                        onBlur={() => setHoverCampaignId(null)}
+                      >
+                        <button
+                          type="button"
+                          className="camp-ms-tick"
+                          onClick={() => toggleMilestone(c, m.id)}
+                          aria-pressed={m.done}
+                          aria-label={`${m.label}: ${m.done ? "done" : "not done"}`}
+                          title={m.done ? "Done — click to unflag" : "Click to flag as done"}
+                        >
+                          <span className="camp-ms-diamond" aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          className="camp-ms-card-body"
+                          onClick={() => setEditing({ mode: "edit", campaign: c })}
+                          title={`${c.name} · open the campaign`}
+                        >
+                          <span className="camp-ms-card-label">{m.label}</span>
+                          <span className="camp-ms-card-camp">
+                            {c.name}
+                            {overdue ? " · overdue" : m.done ? " · done" : ""}
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+        </>
+      )}
 
       {upcoming.length > 0 && (
         <div className="camps-upcoming">
@@ -727,7 +818,9 @@ export function CampaignsView({
                   <span className="camps-swatch" style={{ background: c.color }} />
                   <span className="camps-upcoming-name">{c.name}</span>
                   <span className="muted small">
-                    {formatShort(c.startDate)} – {formatShort(c.endDate)}
+                    {c.evergreen
+                      ? `From ${formatShort(c.startDate)} · evergreen`
+                      : `${formatShort(c.startDate)} – ${formatShort(c.endDate)}`}
                     {c.brand ? ` · ${c.brand}` : ""}
                     {c.category ? ` · ${c.category}` : ""}
                   </span>
@@ -744,7 +837,7 @@ export function CampaignsView({
           initial={editing.initial}
           categories={categories}
           milestoneTypes={milestoneTypes}
-          owners={owners}
+          designers={designers}
           projects={projects}
           workspaces={workspaces}
           onOpenProject={openProject}
@@ -761,7 +854,7 @@ export function CampaignsView({
           initial={editing.campaign}
           categories={categories}
           milestoneTypes={milestoneTypes}
-          owners={owners}
+          designers={designers}
           projects={projects}
           workspaces={workspaces}
           onOpenProject={openProject}

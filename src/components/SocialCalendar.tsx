@@ -17,9 +17,8 @@ import {
   setSocialPost,
   subscribeSocialPosts,
 } from "../firestore";
-import { campaignOverlaps, campaignsOn, milestonesOn, monthBounds } from "../campaigns";
+import { campaignOverlaps, milestonesOn, monthBounds } from "../campaigns";
 import { publishCampaignPagesForPost } from "../campaignExport";
-import { CampaignBand } from "./CampaignBand";
 import { socialPostTitle } from "../socialPosts";
 import { SocialPostCard } from "./SocialPostCard";
 import { SocialPostModal } from "./SocialPostModal";
@@ -51,6 +50,13 @@ type Props = {
   // posts" list hands over here. Consumed once the editor is up.
   focusPostId?: string | null;
   onFocusHandled?: () => void;
+  // The header's + New → Social post and Export CSV, as request numbers
+  // that change per click. Acted on once each, then cleared through the
+  // callback.
+  createRequest?: number;
+  onCreateHandled?: () => void;
+  exportRequest?: number;
+  onExportHandled?: () => void;
 };
 
 type Editing =
@@ -160,6 +166,10 @@ export function SocialCalendar({
   onOpenProject,
   focusPostId,
   onFocusHandled,
+  createRequest,
+  onCreateHandled,
+  exportRequest,
+  onExportHandled,
 }: Props) {
   // null until the first snapshot lands, so the empty state can't flash
   // before the import has been read.
@@ -186,11 +196,38 @@ export function SocialCalendar({
   const [importing, setImporting] = useState(false);
   const [importNote, setImportNote] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+
+  // The header's + New → Social post and Export CSV. Handled at render
+  // time (setState-during-render is React's sanctioned way to derive
+  // state) so the editor is up on the first paint. From the library tab a
+  // new post starts as an evergreen one, as the old page button did.
+  const [handledCreate, setHandledCreate] = useState(0);
+  if (createRequest && createRequest !== handledCreate) {
+    setHandledCreate(createRequest);
+    setEditing({
+      mode: "create",
+      initial: {
+        month,
+        ...(tab === "library" ? { evergreen: true, status: "backlog" } : {}),
+      },
+    });
+    queueMicrotask(() => onCreateHandled?.());
+  }
+  const [handledExport, setHandledExport] = useState(0);
+  if (exportRequest && exportRequest !== handledExport) {
+    setHandledExport(exportRequest);
+    setExporting(true);
+    queueMicrotask(() => onExportHandled?.());
+  }
   // Bring the months' unscheduled posts along with the dated ones.
   const [exportUnscheduled, setExportUnscheduled] = useState(true);
 
-  // Draw campaigns inside the day cells, so posts can be placed around them.
+  // Draw campaign milestones inside the day cells, so posts can be placed
+  // around them.
   const [overlay, setOverlayState] = useState(() => readFlag(OVERLAY_KEY, true));
+  // The campaign whose milestone is under the pointer, so the rest of its
+  // milestones light up across the month.
+  const [hoverCampaignId, setHoverCampaignId] = useState<string | null>(null);
   function setOverlay(on: boolean) {
     setOverlayState(on);
     try {
@@ -581,7 +618,7 @@ export function SocialCalendar({
           {tab === "calendar" && (
             <label
               className="camp-overlay-toggle"
-              title="Draw campaigns and their milestones inside the day cells, so posts can be scheduled around them"
+              title="Show campaign milestones inside the day cells, so posts can be scheduled around them. Hover one to light up the rest of its campaign."
             >
               <input
                 type="checkbox"
@@ -612,26 +649,6 @@ export function SocialCalendar({
               Evergreen{libraryCount > 0 ? ` (${libraryCount})` : ""}
             </button>
           </div>
-          <button
-            className="btn-mini"
-            onClick={() => setExporting(true)}
-            disabled={all.length === 0}
-            title="Download the posts in a date range as a CSV file"
-          >
-            Export CSV
-          </button>
-          <button
-            className="primary"
-            onClick={() =>
-              openCreate(
-                tab === "library"
-                  ? { evergreen: true, status: "backlog" }
-                  : {},
-              )
-            }
-          >
-            + New post
-          </button>
         </div>
       </div>
 
@@ -708,7 +725,7 @@ export function SocialCalendar({
             The 2026 social media calendar spreadsheet is bundled with the app
             and loads itself the first time someone signs in. If that didn't
             happen — usually because Firestore refused the write — import it
-            here, or start from scratch with + New post.
+            here, or start from scratch with + New → Social post.
           </p>
           <div className="soc-empty-actions">
             <button
@@ -835,7 +852,11 @@ export function SocialCalendar({
             </span>
           </div>
 
-          <div className="soc-grid" role="grid" aria-label={monthLabel}>
+          <div
+            className={`soc-grid ${hoverCampaignId ? "hovering" : ""}`}
+            role="grid"
+            aria-label={monthLabel}
+          >
             {WEEKDAYS.map((d) => (
               <div key={d} className="soc-weekday" role="columnheader">
                 {d}
@@ -873,37 +894,27 @@ export function SocialCalendar({
                   </div>
                   {overlay &&
                     (() => {
-                      const running = campaignsOn(monthCampaigns, iso);
                       const marks = milestonesOn(monthCampaigns, iso);
-                      if (running.length === 0 && marks.length === 0) return null;
-                      const weekStart = new Date(`${iso}T00:00:00`).getDay() === 1;
+                      if (marks.length === 0) return null;
                       return (
                         <div className="soc-cell-camps">
-                          {running.map((c) => (
-                            // Name (and phase) on the day it starts and at
-                            // the start of each week; a bare colour bar in
-                            // between keeps the cells readable.
-                            <CampaignBand
-                              key={c.id}
-                              campaign={c}
-                              iso={iso}
-                              today={today}
-                              showName={c.startDate === iso || weekStart}
-                              compact
-                              onClick={() => onOpenCampaign(c.id)}
-                            />
-                          ))}
                           {marks.map(({ campaign: c, milestone: m }) => (
                             <button
                               key={m.id}
                               type="button"
-                              className={`soc-cell-ms ${m.done ? "done" : ""}`}
+                              className={`soc-cell-ms ${m.done ? "done" : ""} ${
+                                hoverCampaignId === c.id ? "related" : ""
+                              }`}
                               style={{
                                 color: c.color,
                                 borderColor: c.color,
                                 ["--camp" as string]: c.color,
                               } as React.CSSProperties}
                               onClick={() => onOpenCampaign(c.id)}
+                              onMouseEnter={() => setHoverCampaignId(c.id)}
+                              onMouseLeave={() => setHoverCampaignId(null)}
+                              onFocus={() => setHoverCampaignId(c.id)}
+                              onBlur={() => setHoverCampaignId(null)}
                               title={`${c.name}: ${m.label}${
                                 m.done ? " · done" : ""
                               } · open on the Campaigns page`}

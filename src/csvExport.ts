@@ -179,8 +179,8 @@ export function campaignsCsv(
         c.category ?? "",
         c.owner,
         c.startDate,
-        c.endDate,
-        spanDays(c),
+        c.evergreen ? "Evergreen" : c.endDate,
+        c.evergreen ? "" : spanDays(c),
         c.description,
         `${ms.filter((m) => m.done).length} of ${ms.length}`,
         ms
@@ -220,7 +220,7 @@ export function milestonesCsv(
       c.category ?? "",
       c.owner,
       c.startDate,
-      c.endDate,
+      c.evergreen ? "Evergreen" : c.endDate,
     ]),
   );
 }

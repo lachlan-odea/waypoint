@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
   Campaign,
@@ -55,6 +55,7 @@ import { MyDesk } from "./components/MyDesk";
 import { SocialCalendar } from "./components/SocialCalendar";
 import { CampaignsView } from "./components/CampaignsView";
 import { CampaignsPanel } from "./components/CampaignsPanel";
+import { NewMenu, type NewKind } from "./components/NewMenu";
 import { Login } from "./components/Login";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Avatar } from "./components/Avatar";
@@ -254,6 +255,36 @@ export default function App() {
   // A campaign the Social calendar's overlay asked to open on the
   // Campaigns view.
   const [focusCampaignId, setFocusCampaignId] = useState<string | null>(null);
+
+  // Requests from the header's + New menu and Export CSV button to the
+  // Campaigns and Social pages, which own their editors and export dialogs.
+  // Each is a fresh number per click (so a repeat click fires again) that
+  // the page acts on and then asks to have cleared, so a request never
+  // replays when the page is next shown.
+  const [newCampaignRequest, setNewCampaignRequest] = useState(0);
+  const [newPostRequest, setNewPostRequest] = useState(0);
+  const [exportRequest, setExportRequest] = useState(0);
+  const requestSeq = useRef(0);
+  const nextRequest = () => ++requestSeq.current;
+
+  // The + New menu, from the sidebar or the header. A project opens its
+  // window here; a campaign or a post goes to its page with the editor up.
+  function startNew(kind: NewKind) {
+    setNavOpen(false);
+    if (kind === "project") {
+      setCreateInitial({ workspaceId: currentWorkspaceId });
+      setCreating(true);
+      return;
+    }
+    setOpenProjectId(null);
+    if (kind === "campaign") {
+      setNewCampaignRequest(nextRequest());
+      setView("campaigns");
+    } else {
+      setNewPostRequest(nextRequest());
+      setView("socialCalendar");
+    }
+  }
 
   // Every social post, for Analytics and for the Settings editor's "N posts"
   // hints and delete warnings. Cheap enough to keep live.
@@ -918,11 +949,7 @@ export default function App() {
           setView(v);
           setNavOpen(false);
         }}
-        onNewProject={() => {
-          setCreateInitial({ workspaceId: currentWorkspaceId });
-          setCreating(true);
-          setNavOpen(false);
-        }}
+        onNew={startNew}
         onOpenNotifications={() => {
           setNotificationsOpen(true);
           setNavOpen(false);
@@ -1010,15 +1037,25 @@ export default function App() {
                 onChange={(e) => setFilter(e.target.value)}
               />
             )}
-            <button
-              className="primary"
-              onClick={() => {
-                setCreateInitial({ workspaceId: currentWorkspaceId });
-                setCreating(true);
-              }}
-            >
-              + New project
-            </button>
+            {(view === "campaigns" || view === "socialCalendar") && (
+              <button
+                className="btn-mini"
+                onClick={() => setExportRequest(nextRequest())}
+                disabled={
+                  view === "campaigns"
+                    ? campaigns.length === 0
+                    : socialPostsForUsage.length === 0
+                }
+                title={
+                  view === "campaigns"
+                    ? "Download the campaigns in a date range as a CSV file"
+                    : "Download the posts in a date range as a CSV file"
+                }
+              >
+                Export CSV
+              </button>
+            )}
+            <NewMenu variant="primary" onPick={startNew} />
           </div>
         </header>
 
@@ -1108,6 +1145,14 @@ export default function App() {
             onClearNotifications={clearAllNotifications}
             campaigns={campaigns}
             onOpenCampaign={openCampaign}
+            onToggleMilestone={(campaign, milestoneId) =>
+              saveCampaign({
+                ...campaign,
+                milestones: campaign.milestones.map((m) =>
+                  m.id === milestoneId ? { ...m, done: !m.done } : m,
+                ),
+              })
+            }
           />
         ) : view === "executiveDashboard" ? (
           <Dashboard
@@ -1126,6 +1171,10 @@ export default function App() {
             onOpenProject={setOpenProjectId}
             focusPostId={focusSocialPostId}
             onFocusHandled={() => setFocusSocialPostId(null)}
+            createRequest={newPostRequest}
+            onCreateHandled={() => setNewPostRequest(0)}
+            exportRequest={exportRequest}
+            onExportHandled={() => setExportRequest(0)}
           />
         ) : view === "campaigns" ? (
           <CampaignsView
@@ -1142,6 +1191,10 @@ export default function App() {
             onDelete={deleteCampaign}
             focusCampaignId={focusCampaignId}
             onFocusHandled={() => setFocusCampaignId(null)}
+            createRequest={newCampaignRequest}
+            onCreateHandled={() => setNewCampaignRequest(0)}
+            exportRequest={exportRequest}
+            onExportHandled={() => setExportRequest(0)}
           />
         ) : view === "board" ? (
           <>
@@ -1170,7 +1223,7 @@ export default function App() {
               </div>
               {myProjects.length === 0 ? (
                 <p className="muted">
-                  Nothing assigned to you yet. Hit + New project, drag a card from a teammate,
+                  Nothing assigned to you yet. Hit + New → Project, drag a card from a teammate,
                   or wait for an Outlook brief to arrive.
                 </p>
               ) : (

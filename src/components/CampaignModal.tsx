@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type {
   Campaign,
   CampaignMilestone,
+  Designer,
   MilestoneType,
   Project,
   SocialCategory,
@@ -23,6 +24,7 @@ import {
 import { setCampaignSharePointUrl, setCampaignShareToken } from "../firestore";
 import { SharePointGuideModal } from "./SharePointGuideModal";
 import { ProjectPicker } from "./ProjectPicker";
+import { AssigneePicker } from "./AssigneePicker";
 
 type Props = {
   initial: Partial<Campaign>;
@@ -31,7 +33,9 @@ type Props = {
   categories: SocialCategory[];
   // The milestone type picker's options (Settings → Types & tags).
   milestoneTypes: MilestoneType[];
-  owners: string[];
+  // The team, for the owner picker. The owner works like a project's
+  // assignees: the campaign and its milestones show on their My Desk.
+  designers: Designer[];
   // Board projects that can be linked as contributing to the campaign.
   projects: Project[];
   workspaces: Workspace[];
@@ -56,7 +60,7 @@ export function CampaignModal({
   mode,
   categories,
   milestoneTypes,
-  owners,
+  designers,
   projects,
   workspaces,
   onCancel,
@@ -74,11 +78,21 @@ export function CampaignModal({
   const [brand, setBrand] = useState(
     initial.brand || (initial.channel ? brandForChannel(initial.channel) : BRANDS[0]),
   );
-  const [owner, setOwner] = useState(initial.owner ?? "");
+  // The owner is picked from the team. A campaign saved before that, with
+  // a typed-in name, opens with whoever on the team has that name; failing
+  // that, the old name is kept until someone is picked.
+  const legacyOwner = initial.ownerId ? "" : (initial.owner ?? "").trim();
+  const [ownerId, setOwnerId] = useState(
+    initial.ownerId ??
+      (legacyOwner ? designers.find((d) => d.name.trim() === legacyOwner)?.id : undefined) ??
+      "",
+  );
   const [evergreen, setEvergreen] = useState(!!initial.evergreen);
-  const [startDate, setStartDate] = useState(initial.startDate ?? todayIso());
+  const [startDate, setStartDate] = useState(initial.startDate || todayIso());
+  // An evergreen campaign is stored without an end, so one being switched
+  // back to dated gets a fortnight to start from.
   const [endDate, setEndDate] = useState(
-    initial.endDate ?? shiftIso(initial.startDate ?? todayIso(), 13),
+    initial.endDate || shiftIso(initial.startDate || todayIso(), 13),
   );
   const [description, setDescription] = useState(initial.description ?? "");
   const [projectIds, setProjectIds] = useState<string[]>(initial.projectIds ?? []);
@@ -109,11 +123,22 @@ export function CampaignModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onCancel, guideOpen, removing]);
 
-  const datesValid = !!startDate && !!endDate && endDate >= startDate;
-  // An evergreen campaign's dates are hidden and unused, so they can't
-  // hold up a save.
-  const canSave = name.trim().length > 0 && (evergreen || datesValid);
+  // Every campaign needs a start; only a dated one needs an end after it.
+  const datesValid =
+    !!startDate && (evergreen || (!!endDate && endDate >= startDate));
+  const canSave = name.trim().length > 0 && datesValid;
   const color = brandColor(brand);
+
+  // The owner's display name, for the SharePoint page, the CSV and older
+  // readers of the campaign.
+  function ownerNameFor(id: string): string {
+    const d = designers.find((x) => x.id === id);
+    if (d) return d.name;
+    // Nobody picked: keep a name typed in before owners came from the team.
+    if (!id) return legacyOwner;
+    // Someone picked who has since left the team: keep their saved name.
+    return id === initial.ownerId ? (initial.owner ?? "") : "";
+  }
 
   // ── milestones ───────────────────────────────────────────────────────
 
@@ -227,10 +252,12 @@ export function CampaignModal({
       channel: initial.channel,
       category: category || undefined,
       brand,
-      owner: owner.trim(),
+      owner: ownerNameFor(ownerId),
+      ownerId: ownerId || undefined,
       description: description.trimEnd(),
       startDate,
-      endDate,
+      // An evergreen campaign runs on from its start, so it has no end.
+      endDate: evergreen ? "" : endDate,
       // Left off rather than stored as false, like the other optional fields.
       evergreen: evergreen || undefined,
       color,
@@ -243,9 +270,10 @@ export function CampaignModal({
     onSave(campaign, deletePostIds);
   }
 
-  // Only a dated campaign has a range for a milestone to fall outside.
+  // A milestone can fall before any campaign's start, and after a dated
+  // one's end; an evergreen campaign has no end to fall after.
   const isOutside = (m: CampaignMilestone) =>
-    !evergreen && !!m.date && (m.date < startDate || m.date > endDate);
+    !!m.date && (m.date < startDate || (!evergreen && m.date > endDate));
   const outside = milestones.filter(isOutside).length;
 
   const linkedProjects = projectIds
@@ -260,12 +288,12 @@ export function CampaignModal({
             <h2 className="modal-title-static">
               {mode === "create" ? "New campaign" : "Edit campaign"}
             </h2>
-            {(evergreen || datesValid) && (
+            {datesValid && (
               <div className="modal-sub">
                 <span className="camp-brand-dot" style={{ background: color }} />
                 {brand} ·{" "}
                 {evergreen
-                  ? "Evergreen"
+                  ? `Evergreen · from ${formatShort(startDate)}`
                   : `${formatShort(startDate)} – ${formatShort(endDate)}`}
               </div>
             )}
@@ -320,40 +348,50 @@ export function CampaignModal({
             <span>
               Evergreen campaign
               <span className="soc-check-hint">
-                Always on, with no start or end. Kept off the calendars and listed
-                under every month's campaigns instead.
+                Always on from its start date, with no end. Drawn on the calendars
+                from that day on and listed under every month after it.
               </span>
             </span>
           </label>
 
           <div className="modal-grid">
+            <label className="field">
+              <span>Start date</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setStartDate(next);
+                  if (next && endDate && endDate < next) setEndDate(next);
+                }}
+              />
+              {evergreen ? (
+                <span className="field-hint">
+                  The day it goes always-on. It's drawn on the calendars from here.
+                </span>
+              ) : (
+                !startDate && <span className="field-hint warn">Every campaign needs a start.</span>
+              )}
+            </label>
             {!evergreen && (
-              <>
-                <label className="field">
-                  <span>Start date</span>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setStartDate(next);
-                      if (next && endDate && endDate < next) setEndDate(next);
-                    }}
-                  />
-                </label>
-                <label className="field">
-                  <span>End date</span>
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate || undefined}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                  {!datesValid && startDate && endDate && (
-                    <span className="field-hint warn">End date is before the start.</span>
-                  )}
-                </label>
-              </>
+              <label className="field">
+                <span>End date</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+                {!datesValid && startDate && endDate && (
+                  <span className="field-hint warn">End date is before the start.</span>
+                )}
+                {!endDate && (
+                  <span className="field-hint">
+                    No end in sight? Tick Evergreen above instead.
+                  </span>
+                )}
+              </label>
             )}
             <label className="field">
               <span>Brand</span>
@@ -392,20 +430,25 @@ export function CampaignModal({
                 and its posts filter together.
               </span>
             </label>
-            <label className="field" style={{ gridColumn: "1 / -1" }}>
-              <span>Owner</span>
-              <input
-                list="camp-owner-options"
-                value={owner}
-                onChange={(e) => setOwner(e.target.value)}
+            <div className="asset-field" style={{ gridColumn: "1 / -1" }}>
+              <label className="field">
+                <span>Owner</span>
+              </label>
+              <AssigneePicker
+                designers={designers}
+                assigneeIds={ownerId ? [ownerId] : []}
+                // One owner at a time: picking someone else replaces them.
+                onChange={(ids) => setOwnerId(ids[ids.length - 1] ?? "")}
                 placeholder="Who's running it"
               />
-              <datalist id="camp-owner-options">
-                {owners.map((o) => (
-                  <option key={o} value={o} />
-                ))}
-              </datalist>
-            </label>
+              <span className="field-hint">
+                Works like a project's assignees: the campaign and its milestones
+                show on the owner's My Desk.
+                {legacyOwner && !ownerId
+                  ? ` Saved as “${legacyOwner}”, who isn't on the team list — pick someone to take it over.`
+                  : ""}
+              </span>
+            </div>
           </div>
 
           <label className="field">

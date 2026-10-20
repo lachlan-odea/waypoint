@@ -25,6 +25,7 @@ import {
   daysSince,
   daysUntil,
   formatLong,
+  formatShort,
   hasArrived,
   shiftIso,
   todayIso,
@@ -44,11 +45,16 @@ interface MyDeskProps {
   // panel does — a notification you've acted on shouldn't linger.
   onOpenNotification: (projectId: string, notificationId: string) => void;
   onClearNotifications: () => void;
-  // Marketing campaigns, for the "Your campaigns" panel: the ones any of
-  // your projects contribute to.
+  // Marketing campaigns, for the "Your campaigns" panel (the ones you own
+  // or any of your projects contribute to) and the milestone list below it.
   campaigns: Campaign[];
   onOpenCampaign: (campaignId: string) => void;
+  // Flags a milestone done (or not) on a campaign you own.
+  onToggleMilestone: (campaign: Campaign, milestoneId: string) => void;
 }
+
+// How far ahead the owner's milestone list looks.
+const MILESTONE_HORIZON_DAYS = 14;
 
 const PRIORITY_ORDER: Record<string, number> = {
   Urgent: 0,
@@ -87,6 +93,7 @@ export function MyDesk({
   onClearNotifications,
   campaigns,
   onOpenCampaign,
+  onToggleMilestone,
 }: MyDeskProps) {
   const [deskItems, setDeskItems] = useState<DeskItem[]>([]);
   const [deskError, setDeskError] = useState<string | null>(null);
@@ -298,6 +305,29 @@ export function MyDesk({
       .slice(0, 6);
   }, [myProjects]);
 
+  // Campaigns you own. The owner works like a project's assignees: these
+  // campaigns' milestones are your work, so the open ones land on the desk.
+  const ownedCampaigns = useMemo(
+    () => campaigns.filter((c) => c.ownerId === currentDesignerId),
+    [campaigns, currentDesignerId],
+  );
+
+  // Their overdue milestones and the next fortnight's, soonest first.
+  const myMilestones = useMemo(() => {
+    const horizon = shiftIso(todayIso(), MILESTONE_HORIZON_DAYS);
+    return ownedCampaigns
+      .flatMap((campaign) =>
+        campaign.milestones
+          .filter((m) => !m.done && m.date && m.date <= horizon)
+          .map((milestone) => ({ campaign, milestone })),
+      )
+      .sort(
+        (a, b) =>
+          a.milestone.date.localeCompare(b.milestone.date) ||
+          a.campaign.name.localeCompare(b.campaign.name),
+      );
+  }, [ownedCampaigns]);
+
   const getStatusColor = (priority: string): string => {
     switch (priority) {
       case "Urgent":
@@ -435,10 +465,70 @@ export function MyDesk({
         )}
         title="Your campaigns"
         subject="you"
+        ownerId={currentDesignerId}
         onOpenCampaign={onOpenCampaign}
         onOpenProject={onOpenProject}
         storageKey="waypoint.mydesk.campaignsCollapsed"
       />
+
+      {/* The milestones on campaigns you own — the owner's equivalent of a
+          project's due dates. Only owners see it, so everyone else's desk
+          stays as it was. */}
+      {ownedCampaigns.length > 0 && (
+        <section className="mydesk-section">
+          <div className="mydesk-section-head">
+            <h3>Your campaign milestones</h3>
+            <span className="badge">{myMilestones.length}</span>
+          </div>
+          {myMilestones.length === 0 ? (
+            <p className="muted small">
+              Nothing overdue or due in the next two weeks on the{" "}
+              {ownedCampaigns.length === 1
+                ? "campaign"
+                : `${ownedCampaigns.length} campaigns`}{" "}
+              you own.
+            </p>
+          ) : (
+            <ul className="camp-card-ms desk-ms-list">
+              {myMilestones.map(({ campaign: c, milestone: m }) => {
+                const overdue = m.date < todayIso();
+                return (
+                  <li
+                    key={m.id}
+                    style={{ ["--camp" as string]: c.color } as React.CSSProperties}
+                  >
+                    <label className={`camp-card-ms-row ${overdue ? "overdue" : ""}`}>
+                      <input
+                        type="checkbox"
+                        checked={m.done}
+                        onChange={() => onToggleMilestone(c, m.id)}
+                        title="Tick once it has happened"
+                      />
+                      <span className="camp-card-ms-date">{formatShort(m.date)}</span>
+                      <span className="camp-card-ms-label">
+                        {m.label}
+                        <span className="muted">
+                          {" "}
+                          · {c.name}
+                          {overdue ? " · overdue" : ""}
+                        </span>
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      className="camp-card-project"
+                      onClick={() => onOpenCampaign(c.id)}
+                      title={`Open ${c.name} on the Campaigns page`}
+                    >
+                      Open
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
 
       {/* Things other people have directed at you, as distinct from the cards
           above, which are derived from your own projects' dates. */}
