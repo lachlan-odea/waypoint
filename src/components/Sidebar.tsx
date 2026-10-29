@@ -384,7 +384,7 @@ export function Sidebar({
               onClick={() => onSelectView("events")}
               title="Events"
             >
-              <span className="dot-avatar nav-tile" style={{ background: "var(--brand-cherry)" }}>
+              <span className="dot-avatar nav-tile" style={{ background: "#c2335f" }}>
                 <PinGlyph />
               </span>
               {!collapsed && <span className="designer-name">Events</span>}
