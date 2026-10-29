@@ -381,8 +381,11 @@ export function EventsView({
       })
       .catch((err) => {
         console.error("Events import failed", err);
+        const message = err instanceof Error ? err.message : String(err);
         setNotice(
-          `Import failed: ${err instanceof Error ? err.message : String(err)}`,
+          /permission/i.test(message)
+            ? "Import failed: Firestore refused the write. The /events rule in firestore.rules hasn't been deployed yet — deploy it, reload, then import again."
+            : `Import failed: ${message}`,
         );
       })
       .finally(() => setImporting(false));
@@ -640,7 +643,7 @@ export function EventsView({
           {filterSummary ? ` · ${filterSummary}` : ""}
           {events.length > 0 && " · open one to edit it, tick its checklist as things get done"}
         </span>
-        {notice && <span className="muted small">{notice}</span>}
+        {notice && events.length > 0 && <span className="muted small">{notice}</span>}
       </div>
 
       {events.length === 0 ? (
@@ -658,6 +661,15 @@ export function EventsView({
           >
             {importing ? "Importing…" : "Import the portal export"}
           </button>
+          {notice && (
+            <p
+              className={/failed/i.test(notice) ? "login-error" : "muted small"}
+              style={{ margin: 0 }}
+              role="status"
+            >
+              {notice}
+            </p>
+          )}
         </div>
       ) : view === "calendar" ? (
         <>
