@@ -933,6 +933,15 @@ button.item-strip-cell:hover {
 .modal.item-editor .modal-foot {
   border-radius: 0 0 var(--radius) var(--radius);
 }
+.modal.item-editor.item-editor-comments {
+  border: 0;
+}
+.modal.item-editor.item-editor-comments .modal-body {
+  padding: 0;
+}
+.modal.item-editor.item-editor-comments .modal-section {
+  margin: 0;
+}
 
 /* The item page's top bar: just the menu button and the header actions */
 .topbar.topbar-item {

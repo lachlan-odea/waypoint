@@ -194,8 +194,31 @@ export function ProjectPage({
     { id: "overview", label: "Overview" },
     { id: "details", label: "Details" },
     { id: "tasks", label: "Tasks", count: openTasks.length },
+    { id: "comments", label: "Comments", count: project.comments.length },
     { id: "links", label: "Links", count: linkedCampaigns.length + linkedPosts.length },
   ];
+
+  // The full editor is the Details tab; the same component, narrowed to
+  // its comment thread, is the Comments tab.
+  const editorProps = {
+    project,
+    designers,
+    reviewers,
+    workspaces,
+    currentDesignerId,
+    currentDesignerName,
+    contentTypeOptions,
+    onClose: onBack,
+    onChange,
+    onSetReviewers,
+    onStatusChange,
+    onArchiveToggle,
+    onDelete,
+    onNotify,
+    onMoveToWorkspace,
+    onOpenSocialPost,
+    onOpenCampaign,
+  };
 
   const facts = [
     { label: "Due", value: project.dueDate ? <b className="mono">{formatShort(project.dueDate)}</b> : "Not set" },
@@ -262,25 +285,30 @@ export function ProjectPage({
       stripLabel="Project lifecycle"
     >
       {tab === "details" ? (
-        <ProjectDetailModal
-          inline
-          project={project}
-          designers={designers}
-          reviewers={reviewers}
-          workspaces={workspaces}
-          currentDesignerId={currentDesignerId}
-          currentDesignerName={currentDesignerName}
-          contentTypeOptions={contentTypeOptions}
-          onClose={onBack}
-          onChange={onChange}
-          onSetReviewers={onSetReviewers}
-          onStatusChange={onStatusChange}
-          onArchiveToggle={onArchiveToggle}
-          onDelete={onDelete}
-          onNotify={onNotify}
-          onMoveToWorkspace={onMoveToWorkspace}
-          onOpenSocialPost={onOpenSocialPost}
-          onOpenCampaign={onOpenCampaign}
+        <ProjectDetailModal inline {...editorProps} />
+      ) : tab === "comments" ? (
+        <ItemGrid
+          main={
+            <SideCard title="Comments" aside={<span className="item-hint">Mention a teammate with @ to notify them</span>}>
+              <ProjectDetailModal inline section="comments" {...editorProps} />
+            </SideCard>
+          }
+          sideTop={
+            <SideCard title="Thread">
+              <KeyValues
+                rows={[
+                  { label: "Comments", value: <b className="mono">{project.comments.filter((c) => !c.parentId).length}</b> },
+                  { label: "Replies", value: <b className="mono">{project.comments.filter((c) => !!c.parentId).length}</b> },
+                  {
+                    label: "Latest",
+                    value: project.comments.length
+                      ? timeAgo(project.comments.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0].createdAt)
+                      : "—",
+                  },
+                ]}
+              />
+            </SideCard>
+          }
         />
       ) : tab === "tasks" ? (
         <ItemGrid
@@ -459,7 +487,7 @@ export function ProjectPage({
               <SideCard
                 title="Recent comments"
                 aside={
-                  <button type="button" className="link-btn" onClick={() => onTab("details")}>
+                  <button type="button" className="link-btn" onClick={() => onTab("comments")}>
                     All comments
                   </button>
                 }

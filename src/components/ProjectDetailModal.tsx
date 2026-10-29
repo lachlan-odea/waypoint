@@ -70,6 +70,9 @@ type Props = {
   // window over the board: no overlay, no close button, no Escape, no
   // "Done". Everything else — the live edits, tasks, comments — is the same.
   inline?: boolean;
+  // With `inline`, show only the comment thread (the project page's
+  // Comments tab): no header, no other sections, no footer.
+  section?: "comments";
 };
 
 const priorities: Priority[] = ["Urgent", "High", "Normal", "Low"];
@@ -116,7 +119,9 @@ export function ProjectDetailModal({
   onOpenCampaign,
   contentTypeOptions,
   inline = false,
+  section,
 }: Props) {
+  const onlyComments = inline && section === "comments";
   // Campaigns this project is doing work for. Same shape as the linked
   // posts below: its own small query, soonest start first.
   const [linkedCampaigns, setLinkedCampaigns] = useState<Campaign[]>([]);
@@ -569,7 +574,8 @@ export function ProjectDetailModal({
   }
 
   const editor = (
-      <div className={inline ? "modal item-editor" : "modal"}>
+      <div className={inline ? `modal item-editor ${onlyComments ? "item-editor-comments" : ""}` : "modal"}>
+        {!onlyComments && (
         <header className="modal-head">
           <div>
             <input
@@ -631,8 +637,11 @@ export function ProjectDetailModal({
             )}
           </div>
         </header>
+        )}
 
         <div className="modal-body">
+          {!onlyComments && (
+          <>
           <section className="modal-section">
             <h3>Overview</h3>
             {editingOverview ? (
@@ -1040,8 +1049,11 @@ export function ProjectDetailModal({
             </section>
           )}
 
+          </>
+          )}
+
           <section className="modal-section">
-            <h3>Comments</h3>
+            {!onlyComments && <h3>Comments</h3>}
             <div className="comments">
               {topLevelComments.length === 0 && (
                 <p className="muted">No comments yet — start the thread below.</p>
@@ -1099,6 +1111,7 @@ export function ProjectDetailModal({
           </section>
         </div>
 
+        {!onlyComments && (
         <footer className="modal-foot">
           {confirmingDelete ? (
             <>
@@ -1125,6 +1138,7 @@ export function ProjectDetailModal({
             </>
           )}
         </footer>
+        )}
       </div>
   );
   return inline ? editor : <div className="modal-overlay">{editor}</div>;
