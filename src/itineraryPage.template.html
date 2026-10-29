@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>__ITINERARY_TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&display=swap" />
+<style>
+  :root {
+    /* CargoWise brand palette. */
+    --navy: #1d1765;
+    --blue: #371ee1;
+    --violet: #b7b3ff;
+    --mint: #c6ffd1;
+    --highlighter: #eafc88;
+    --peach: #ffbe98;
+    --cherry: #651d32;
+    --pine: #244349;
+    --midnight: #141e30;
+
+    --page: #f6f6fb;
+    --surface: #ffffff;
+    --rule: #e2e1ee;
+    --text: var(--midnight);
+    --muted: #5f6079;
+
+    --gutter: clamp(16px, 5vw, 56px);
+    --measure: 1040px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--page);
+    color: var(--text);
+    font-family: "DM Sans", "Segoe UI", ui-sans-serif, system-ui, -apple-system, Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+  .inner { max-width: var(--measure); margin: 0 auto; padding: 0 var(--gutter); }
+
+  .notice {
+    margin: 0;
+    padding: 10px var(--gutter);
+    font-size: 14px;
+    text-align: center;
+  }
+  .notice.warn { background: var(--highlighter); color: var(--navy); }
+  .notice.gone { background: var(--peach); color: var(--cherry); }
+
+  /* ── Hero: navy ground, the brand field pattern, the days as a strip ── */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    background: var(--navy);
+    color: #fff;
+    padding: clamp(32px, 6vw, 64px) 0 clamp(28px, 4vw, 40px);
+  }
+  .field {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: min(70%, 900px);
+    color: var(--violet);
+    opacity: 0.4;
+    -webkit-mask-image: linear-gradient(to left, #000 35%, transparent 95%);
+    mask-image: linear-gradient(to left, #000 35%, transparent 95%);
+    pointer-events: none;
+  }
+  .hero .inner { position: relative; }
+  .kicker { margin: 0 0 14px; color: var(--violet); font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  h1 {
+    margin: 0;
+    max-width: 22ch;
+    font-size: clamp(32px, 5.4vw, 56px);
+    line-height: 1.04;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  .sub { margin: 14px 0 0; color: var(--violet); font-size: 17px; }
+  .sub strong { color: #fff; font-weight: 600; }
+  .strip { display: flex; flex-wrap: wrap; gap: 8px; margin: clamp(28px, 4vw, 40px) 0 0; padding: 0; list-style: none; }
+  .strip a {
+    display: flex;
+    flex-direction: column;
+    min-width: 72px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(183, 179, 255, 0.4);
+    color: #fff;
+    text-decoration: none;
+    line-height: 1.2;
+    border-top: 3px solid var(--city, var(--violet));
+  }
+  .strip a:hover { background: rgba(255, 255, 255, 0.08); }
+  .strip a.today { background: var(--highlighter); color: var(--navy); border-color: var(--highlighter); }
+  .strip a.past { opacity: 0.55; }
+  .strip small { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; }
+  .strip b { font-size: 20px; font-weight: 700; }
+  .strip span { font-size: 12px; opacity: 0.85; }
+  .cities { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 16px 0 0; padding: 0; list-style: none; color: var(--violet); font-size: 14px; }
+  .cities li::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; background: var(--city); vertical-align: -1px; }
+
+  /* ── Tables: who, where, contacts ── */
+  .section { padding: clamp(28px, 4vw, 44px) 0 0; }
+  h2 { margin: 0 0 14px; font-size: 24px; line-height: 1.2; font-weight: 700; letter-spacing: -0.015em; }
+  .table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+  .table td { padding: 12px 16px; border-top: 1px solid var(--rule); vertical-align: top; font-size: 15px; }
+  .table tr:first-child td { border-top: 0; }
+  .table td:first-child { font-weight: 600; width: 28%; }
+  .table td:last-child { color: var(--muted); width: 34%; }
+  .tnote { margin: 10px 0 0; color: var(--muted); font-size: 14px; font-style: italic; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 clamp(20px, 3vw, 40px); }
+
+  .travel {
+    margin-top: clamp(28px, 4vw, 44px);
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: rgba(183, 179, 255, 0.22);
+    color: var(--navy);
+    font-size: 15px;
+  }
+  .travel strong { font-weight: 700; }
+  .travel-section { padding: clamp(28px, 4vw, 44px) 0 0; }
+  .travel-section .travel { margin-top: 0; margin-bottom: 14px; }
+  .travel-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; font-size: 15px; }
+  .travel-table th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--rule); }
+  .travel-table td { padding: 10px 14px; border-top: 1px solid var(--rule); vertical-align: top; }
+  .travel-table tr:first-child td { border-top: 0; }
+  .travel-table td.name { font-weight: 600; white-space: nowrap; }
+  .travel-table td.notes { color: var(--muted); font-size: 14px; }
+  .travel-table .edit { font: inherit; font-size: 13px; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+  .travel-table .edit.remove { color: var(--cherry); margin-left: 10px; }
+  .travel-table td.acts { white-space: nowrap; }
+  .travel-table .confirm { font-size: 13px; color: var(--cherry); }
+  .travel-table .confirm .edit { margin-left: 8px; }
+  .travel-add { margin-top: 12px; }
+
+  /* ── Days: a timeline each ── */
+  .day { padding: clamp(32px, 5vw, 52px) 0 0; scroll-margin-top: 20px; }
+  .day-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; padding-left: 14px; border-left: 5px solid var(--city, var(--blue)); }
+  .day-head h2 { margin: 0; }
+  .day-head .where { color: var(--muted); font-size: 16px; }
+  .day-head .where b { color: var(--text); font-weight: 600; }
+  .day-note { margin: 14px 0 0; padding: 10px 14px; border-radius: 10px; background: var(--highlighter); color: var(--navy); font-size: 15px; }
+  .items { list-style: none; margin: 18px 0 0; padding: 0; position: relative; }
+  .items::before { content: ""; position: absolute; left: 131px; top: 12px; bottom: 12px; width: 2px; background: var(--rule); }
+  .item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 112px 40px minmax(0, 1fr);
+    gap: 0 12px;
+    padding: 12px 0;
+  }
+  .time { color: var(--muted); font-size: 15px; text-align: right; padding-top: 2px; white-space: nowrap; }
+  .mark { position: relative; z-index: 1; justify-self: center; width: 14px; height: 14px; margin-top: 6px; background: var(--page); border: 2px solid var(--city, var(--blue)); }
+  .mark.meeting { border-radius: 50%; background: var(--city, var(--blue)); }
+  .mark.stand { border-radius: 50%; }
+  .mark.meal { border-radius: 2px; background: var(--city, var(--blue)); }
+  .mark.session { transform: rotate(45deg); background: var(--highlighter); border-color: var(--navy); }
+  .item.now { background: rgba(234, 252, 136, 0.45); border-radius: 10px; }
+  .item.past .title { color: var(--muted); }
+  .title { font-size: 17px; font-weight: 600; }
+  .type { display: inline-block; margin-left: 10px; color: var(--muted); font-size: 13px; font-weight: 500; }
+  .details { margin: 3px 0 0; color: var(--text); font-size: 15px; line-height: 1.45; white-space: pre-wrap; }
+  .who { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  .who b { color: var(--text); font-weight: 600; }
+  .empty { margin: 14px 0 0; color: var(--muted); }
+
+  /* Something a reader added from this page: dashed mark, who added it. */
+  .item.added .mark { border-style: dashed; background: var(--page); }
+  .item.added .body { padding-left: 10px; border-left: 2px dashed var(--rule); }
+  .added-by { display: inline-block; margin-left: 10px; padding: 1px 8px; border-radius: 999px; background: var(--mint); color: var(--pine); font-size: 12px; font-weight: 600; }
+
+  /* ── Adding to a day ── */
+  .add { margin: 10px 0 0 152px; }
+  .add-btn {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--blue);
+    background: transparent;
+    border: 1px dashed rgba(55, 30, 225, 0.4);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+  }
+  .add-btn:hover { background: rgba(55, 30, 225, 0.06); border-color: var(--blue); }
+  .add-form {
+    margin: 12px 0 0;
+    padding: 16px;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .add-form h3 { grid-column: 1 / -1; margin: 0; font-size: 16px; }
+  .add-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .add-form input, .add-form select, .add-form textarea {
+    font: inherit;
+    font-size: 15px;
+    color: var(--text);
+    padding: 8px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--surface);
+    min-width: 0;
+  }
+  .add-form input:focus, .add-form select:focus, .add-form textarea:focus { outline: none; border-color: var(--blue); }
+  .add-form .c2 { grid-column: span 2; }
+  .add-form .c3 { grid-column: span 3; }
+  .add-form .c6 { grid-column: 1 / -1; }
+  .add-form .actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .add-form .hint { color: var(--muted); font-size: 13px; margin-left: auto; }
+  .add-form .err { color: var(--cherry); font-size: 14px; }
+  .btn {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .btn:disabled { opacity: 0.6; cursor: default; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: clamp(28px, 4vw, 40px) 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 14px; }
+  .legend .mark { display: inline-block; vertical-align: -2px; margin: 0 8px 0 0; --city: var(--blue); }
+
+  .foot { padding: clamp(28px, 4vw, 40px) 0 40px; color: var(--muted); font-size: 13px; }
+  .foot ul { margin: 0 0 12px; padding-left: 18px; }
+  .foot li { margin: 2px 0; }
+  .foot .live::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: #1f9d5c;
+    vertical-align: 1px;
+  }
+
+  @media (max-width: 720px) {
+    .grid2 { grid-template-columns: minmax(0, 1fr); }
+    .items::before { left: 7px; }
+    .item { grid-template-columns: 16px minmax(0, 1fr); }
+    .time { grid-column: 2; grid-row: 1; text-align: left; }
+    .mark { grid-column: 1; grid-row: 1 / span 2; margin-top: 4px; width: 12px; height: 12px; }
+    .body { grid-column: 2; }
+    .table td:first-child, .table td:last-child { width: auto; }
+    .field { width: 100%; opacity: 0.25; }
+    .add { margin-left: 28px; }
+    .travel-table thead { display: none; }
+    .travel-table tr { display: block; padding: 8px 0; border-top: 1px solid var(--rule); }
+    .travel-table td { display: block; border: 0; padding: 2px 14px; }
+    .travel-table td.name { padding-top: 8px; }
+    .travel-table td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); }
+    .add-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .add-form .c3 { grid-column: span 2; }
+  }
+  @media print {
+    .hero { background: #fff; color: var(--text); }
+    .field, .notice, .add { display: none; }
+    .strip a { color: var(--text); border-color: var(--rule); }
+    .day { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <noscript>
+    <p class="notice warn">Turn on scripts in your browser to see this itinerary.</p>
+  </noscript>
+</div>
+<script type="application/json" id="itinerary-snapshot">__ITINERARY_SNAPSHOT__</script>
+<script>
+(function () {
+  "use strict";
+
+  var FEED_URL = "__ITINERARY_FEED_URL__";
+  // Where readers' additions to the days live: listed on every refresh,
+  // added to with a plain POST. Empty disables adding.
+  var ADDITIONS_URL = "__ITINERARY_ADDITIONS_URL__";
+  // Attendees' travel and accommodation: listed, added to, and corrected.
+  var TRAVEL_URL = "__ITINERARY_TRAVEL_URL__";
+  var REFRESH_MS = 5 * 60 * 1000;
+  var NAME_KEY = "itinerary.yourName";
+
+  var TYPE_LABEL = { meeting: "Meeting", stand: "Stand & setup", meal: "Meal / networking", session: "Session / speaking" };
+  var TYPES = ["meeting", "stand", "meal", "session"];
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function safeColor(c, fallback) {
+    return /^#[0-9a-fA-F]{3,8}$/.test(c || "") ? c : fallback;
+  }
+
+  function todayIso() {
+    var d = new Date();
+    var local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  function nowHm() {
+    var d = new Date();
+    return (d.getHours() < 10 ? "0" : "") + d.getHours() + ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+  }
+
+  function parse(iso) {
+    return new Date(iso + "T00:00:00");
+  }
+
+  function fmt(iso, opts) {
+    if (!iso) return "";
+    return parse(iso).toLocaleDateString(undefined, opts || { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function fmtTime(hhmm) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || "");
+    if (!m) return hhmm || "";
+    var h = Number(m[1]);
+    var hour12 = h % 12 === 0 ? 12 : h % 12;
+    return hour12 + ":" + m[2] + (h < 12 ? "am" : "pm");
+  }
+
+  function fmtRange(a, b) {
+    var x = fmtTime(a), y = fmtTime(b);
+    if (x && y) return x + "–" + y;
+    return x || y || "All day";
+  }
+
+  function cityColor(it, name) {
+    var c = null;
+    (it.cities || []).forEach(function (x) { if (x.name === name) c = x.color; });
+    return safeColor(c, "#371ee1");
+  }
+
+  function savedName() {
+    try { return localStorage.getItem(NAME_KEY) || ""; } catch (e) { return ""; }
+  }
+  function rememberName(name) {
+    try { localStorage.setItem(NAME_KEY, name); } catch (e) { /* private window */ }
+  }
+
+  // The brand "field", as on the campaign pages.
+  function fieldSvg() {
+    var lines = [];
+    var y = 50;
+    for (var row = 0; row < 20; row++) {
+      var hx = 1.5 * row + 0.5;
+      var hy = Math.max(0, 21 - 1.1 * row);
+      for (var col = 0; col < 19; col++) {
+        var x = 50 + 81.2 * col;
+        lines.push('<line x1="' + (x - hx).toFixed(1) + '" y1="' + (y + hy).toFixed(1) +
+          '" x2="' + (x + hx).toFixed(1) + '" y2="' + (y - hy).toFixed(1) + '"/>');
+      }
+      y += 82 - 2.55 * row;
+    }
+    return '<svg class="field" viewBox="0 0 1561 1201" preserveAspectRatio="xMaxYMid slice" aria-hidden="true" focusable="false">' +
+      '<g stroke="currentColor" stroke-width="3.2">' + lines.join("") + "</g></svg>";
+  }
+  var FIELD = fieldSvg();
+
+  function table(rows) {
+    var h = ['<table class="table">'];
+    rows.forEach(function (r) {
+      h.push("<tr><td>" + esc(r.label) + "</td><td>" + esc(r.value) + "</td><td>" + esc(r.note) + "</td></tr>");
+    });
+    h.push("</table>");
+    return h.join("");
+  }
+
+  function section(title, rows, note) {
+    if (!rows || !rows.length) return "";
+    return '<section class="section"><h2>' + esc(title) + "</h2>" + table(rows) +
+      (note ? '<p class="tnote">' + esc(note) + "</p>" : "") + "</section>";
+  }
+
+  // ── State ────────────────────────────────────────────────────────────
+  var latest = JSON.parse(document.getElementById("itinerary-snapshot").textContent);
+  var additions = [];
+  var status = { kind: "loading", note: "" };
+  // The day whose add form is open. While it is, refreshes don't redraw,
+  // so nothing typed is lost; the redraw happens when it closes.
+  var openDate = null;
+  var pendingRedraw = false;
+  var sending = false;
+  var formError = "";
+  var canAdd = !!ADDITIONS_URL;
+  var travel = [];
+  // null, "new", or the id of the entry being corrected.
+  var openTravel = null;
+  var sendingTravel = false;
+  var travelError = "";
+  // The id of the entry whose Remove is awaiting a yes.
+  var confirmTravel = null;
+
+  function itemHtml(i, dayDate, today, now) {
+    var state = "";
+    if (dayDate === today) {
+      var end = i.end || i.start;
+      if (i.start && end && i.start <= now && now <= end) state = " now";
+      else if (end && end < now) state = " past";
+    } else if (dayDate < today) {
+      state = " past";
+    }
+    return '<li class="item' + state + (i.addedBy !== undefined ? " added" : "") + '">' +
+      '<span class="time">' + esc(fmtRange(i.start, i.end)) + "</span>" +
+      '<span class="mark ' + esc(TYPES.indexOf(i.type) >= 0 ? i.type : "meeting") + '" title="' + esc(TYPE_LABEL[i.type] || "") + '" aria-hidden="true"></span>' +
+      '<div class="body"><div class="title">' + esc(i.title || "Untitled") +
+        '<span class="type">' + esc(TYPE_LABEL[i.type] || "") + "</span>" +
+        (i.addedBy !== undefined ? '<span class="added-by">Added' + (i.addedBy ? " by " + esc(i.addedBy) : "") + "</span>" : "") +
+      "</div>" +
+      (i.details ? '<p class="details">' + esc(i.details) + "</p>" : "") +
+      (i.attending ? '<p class="who"><b>Attending:</b> ' + esc(i.attending) + "</p>" : "") +
+      (i.also ? '<p class="who"><b>Also:</b> ' + esc(i.also) + "</p>" : "") +
+      "</div></li>";
+  }
+
+  function addFormHtml(d) {
+    var h = ['<form class="add-form" data-date="' + esc(d.date) + '">'];
+    h.push("<h3>Add to " + esc(fmt(d.date, { weekday: "long", day: "numeric", month: "short" })) + "</h3>");
+    h.push('<label class="c2">Your name<input name="name" maxlength="80" value="' + esc(savedName()) + '" placeholder="So people know who added it"></label>');
+    h.push('<label>From<input name="start" type="time"></label>');
+    h.push('<label>To<input name="end" type="time"></label>');
+    h.push('<label class="c2">Type<select name="type">');
+    TYPES.forEach(function (t) { h.push('<option value="' + t + '">' + TYPE_LABEL[t] + "</option>"); });
+    h.push("</select></label>");
+    h.push('<label class="c6">What\'s happening<input name="title" maxlength="120" required placeholder="e.g. Meeting with Sample Freight, meeting room 2"></label>');
+    h.push('<label class="c6">Details<textarea name="details" rows="2" maxlength="600" placeholder="Where, who\'s hosting, what to bring"></textarea></label>');
+    h.push('<label class="c6">Attending<input name="attending" maxlength="200" placeholder="Names, comma-separated"></label>');
+    h.push('<div class="actions"><button type="submit" class="btn primary"' + (sending ? " disabled" : "") + ">" + (sending ? "Adding…" : "Add to the day") + "</button>" +
+      '<button type="button" class="btn" data-cancel>Cancel</button>' +
+      (formError ? '<span class="err">' + esc(formError) + "</span>" : "") +
+      '<span class="hint">Travel and accommodation don\'t go here.</span></div>');
+    h.push("</form>");
+    return h.join("");
+  }
+
+  function travelFormHtml(entry) {
+    var e = entry || { name: savedName(), arrive: "", depart: "", hotel: "", mobile: "", notes: "" };
+    var h = ['<form class="add-form travel-form" data-travel-id="' + esc(entry ? entry.id : "") + '">'];
+    h.push("<h3>" + (entry ? "Correct " + esc(entry.name) + "'s travel" : "Your travel and accommodation") + "</h3>");
+    h.push('<label class="c3">Your name<input name="name" maxlength="80" required value="' + esc(e.name) + '"></label>');
+    h.push('<label class="c3">Mobile (optional)<input name="mobile" maxlength="40" value="' + esc(e.mobile) + '" placeholder="So the team can reach you on site"></label>');
+    h.push('<label class="c3">Arriving<input name="arrive" maxlength="200" value="' + esc(e.arrive) + '" placeholder="e.g. Mon 26 Oct, QF11 lands 6:40pm"></label>');
+    h.push('<label class="c3">Departing<input name="depart" maxlength="200" value="' + esc(e.depart) + '" placeholder="e.g. Fri 30 Oct, AA123 departs 9:15am"></label>');
+    h.push('<label class="c6">Staying at<input name="hotel" maxlength="200" value="' + esc(e.hotel) + '" placeholder="Hotel and address, and the nights if they differ from the event"></label>');
+    h.push('<label class="c6">Notes<input name="notes" maxlength="300" value="' + esc(e.notes) + '" placeholder="Anything else the team should know"></label>');
+    h.push('<div class="actions"><button type="submit" class="btn primary"' + (sendingTravel ? " disabled" : "") + ">" + (sendingTravel ? "Saving…" : "Save") + "</button>" +
+      '<button type="button" class="btn" data-travel-cancel>Cancel</button>' +
+      (travelError ? '<span class="err">' + esc(travelError) + "</span>" : "") +
+      '<span class="hint">Everyone with this page can see it.</span></div>');
+    h.push("</form>");
+    return h.join("");
+  }
+
+  function travelSectionHtml(it, adding) {
+    var h = ['<section class="travel-section" id="travel"><h2>Travel and accommodation</h2>'];
+    h.push('<p class="travel"><strong>Each attendee books their own.</strong> ' + esc(it.travel || "") + "</p>");
+    if (travel.length) {
+      h.push('<table class="travel-table"><thead><tr><th>Who</th><th>Arriving</th><th>Departing</th><th>Staying at</th><th>Contact / notes</th>' + (adding ? "<th></th>" : "") + "</tr></thead><tbody>");
+      travel.forEach(function (t) {
+        h.push("<tr>" +
+          '<td class="name">' + esc(t.name) + "</td>" +
+          '<td data-label="Arriving">' + esc(t.arrive || "—") + "</td>" +
+          '<td data-label="Departing">' + esc(t.depart || "—") + "</td>" +
+          '<td data-label="Staying at">' + esc(t.hotel || "—") + "</td>" +
+          '<td class="notes">' + esc([t.mobile, t.notes].filter(Boolean).join(" · ") || "—") + "</td>" +
+          (adding
+            ? '<td class="acts">' + (confirmTravel === t.id
+                ? '<span class="confirm">Remove ' + esc(t.name) + "'s entry?" +
+                  '<button type="button" class="edit remove" data-travel-remove-yes="' + esc(t.id) + '">Yes, remove</button>' +
+                  '<button type="button" class="edit" data-travel-remove-no>No</button></span>'
+                : '<button type="button" class="edit" data-travel-edit="' + esc(t.id) + '">Correct</button>' +
+                  '<button type="button" class="edit remove" data-travel-remove="' + esc(t.id) + '">Remove</button>') +
+              "</td>"
+            : "") +
+          "</tr>");
+      });
+      h.push("</tbody></table>");
+    } else {
+      h.push('<p class="empty">Nobody has added their travel yet.</p>');
+    }
+    if (adding) {
+      var editing = openTravel && openTravel !== "new" ? travel.filter(function (t) { return t.id === openTravel; })[0] : null;
+      h.push('<div class="travel-add">' +
+        (openTravel === "new" ? travelFormHtml(null)
+          : editing ? travelFormHtml(editing)
+          : '<button type="button" class="add-btn" data-travel-add>+ Add your flights and accommodation</button>') +
+        "</div>");
+    }
+    h.push("</section>");
+    return h.join("");
+  }
+
+  function render() {
+    var it = latest;
+    var today = todayIso();
+    var now = nowHm();
+    var h = [];
+    var adding = canAdd && status.kind !== "gone";
+
+    if (status.kind === "gone") {
+      h.push('<p class="notice gone" role="status">This itinerary has been removed. These are its details from when the page was last updated.</p>');
+    } else if (status.kind === "offline") {
+      h.push('<p class="notice warn" role="status">Couldn\'t load the latest details, so these may be out of date. Trying again in a few minutes.</p>');
+    }
+
+    var days = (it.days || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+
+    // Hero
+    h.push('<header class="hero">' + FIELD + '<div class="inner">');
+    h.push('<p class="kicker">Itinerary</p>');
+    h.push("<h1>" + esc(it.name || "Event") + "</h1>");
+    var when = it.startDate && it.endDate
+      ? (it.startDate === it.endDate ? fmt(it.startDate) : fmt(it.startDate) + " to " + fmt(it.endDate))
+      : "Dates to be confirmed";
+    h.push('<p class="sub"><strong>' + esc(when) + "</strong>" + (it.headerLine ? " · " + esc(it.headerLine) : "") + "</p>");
+    if (days.length) {
+      h.push('<ul class="strip" aria-label="Days">');
+      days.forEach(function (d) {
+        var cls = d.date === today ? " today" : d.date < today ? " past" : "";
+        h.push('<li><a href="#day-' + esc(d.date) + '" class="' + cls + '" style="--city:' + cityColor(it, d.city) + '">' +
+          "<small>" + esc(fmt(d.date, { weekday: "short" })) + "</small>" +
+          "<b>" + esc(fmt(d.date, { day: "numeric" })) + "</b>" +
+          "<span>" + esc(fmt(d.date, { month: "short" })) + (d.title ? " · " + esc(d.title) : "") + "</span></a></li>");
+      });
+      h.push("</ul>");
+    }
+    if ((it.cities || []).length > 1) {
+      h.push('<ul class="cities" aria-label="Cities">');
+      it.cities.forEach(function (c) {
+        h.push('<li style="--city:' + safeColor(c.color, "#b7b3ff") + '">' + esc(c.name) + "</li>");
+      });
+      h.push("</ul>");
+    }
+    h.push("</div></header>");
+
+    // People and venue
+    h.push('<div class="inner">');
+    h.push('<div class="grid2">');
+    h.push(section("Who’s attending", it.attendees, it.attendeesNote));
+    h.push(section("Venue and stand", it.venue));
+    h.push("</div>");
+    h.push('<div class="grid2">');
+    h.push(section("Key contacts", it.contacts));
+    h.push(section("Stand shifts", it.standShifts));
+    h.push("</div>");
+    h.push(section("Shipping and collateral", it.shipping));
+    h.push(travelSectionHtml(it, adding));
+
+    // Days
+    if (!days.length) {
+      h.push('<p class="empty">No days planned yet.</p>');
+    }
+    days.forEach(function (d) {
+      var color = cityColor(it, d.city);
+      h.push('<section class="day" id="day-' + esc(d.date) + '" style="--city:' + color + '">');
+      h.push('<div class="day-head"><h2>' + esc(fmt(d.date, { weekday: "long", day: "numeric", month: "short" })) + "</h2>" +
+        '<span class="where">' + (d.city ? "<b>" + esc(d.city) + "</b>" : "") + (d.city && d.title ? ": " : "") + esc(d.title || "") + "</span></div>");
+      // The day's items and anything readers added to it, in time order.
+      var list = (d.items || []).slice();
+      additions.forEach(function (a) {
+        if (a.date === d.date) {
+          list.push({ start: a.start, end: a.end, type: a.type, title: a.title, details: a.details, attending: a.attending, also: "", addedBy: a.name || "" });
+        }
+      });
+      list.sort(function (a, b) { var x = a.start || "00:00", y = b.start || "00:00"; return x < y ? -1 : x > y ? 1 : 0; });
+      if (!list.length) {
+        h.push('<p class="empty">Nothing planned on this day yet.</p>');
+      } else {
+        h.push('<ol class="items">');
+        list.forEach(function (i) { h.push(itemHtml(i, d.date, today, now)); });
+        h.push("</ol>");
+      }
+      if (d.note) h.push('<p class="day-note">' + esc(d.note) + "</p>");
+      if (adding) {
+        h.push('<div class="add">' +
+          (openDate === d.date
+            ? addFormHtml(d)
+            : '<button type="button" class="add-btn" data-add="' + esc(d.date) + '">+ Add to this day</button>') +
+          "</div>");
+      }
+      h.push("</section>");
+    });
+
+    h.push('<ul class="legend" aria-label="Key">' +
+      '<li><span class="mark meeting"></span>Meeting</li>' +
+      '<li><span class="mark stand"></span>Stand & setup</li>' +
+      '<li><span class="mark meal"></span>Meal / networking</li>' +
+      '<li><span class="mark session"></span>Session / speaking</li>' +
+      (adding ? '<li><span class="added-by">Added</span> by a reader of this page; the organiser folds these into the plan.</li>' : "") +
+      "</ul>");
+
+    h.push('<footer class="foot"><ul>');
+    (it.footer || []).forEach(function (line) { h.push("<li>" + esc(line) + "</li>"); });
+    h.push('</ul><span class="' + (status.kind === "live" ? "live" : "") + '">' + esc(status.note) + "</span></footer>");
+    h.push("</div>");
+
+    document.getElementById("app").innerHTML = h.join("");
+    document.title = (it.name || "Event") + " · Itinerary";
+    pendingRedraw = false;
+    if (openDate) {
+      var first = document.querySelector('.add-form input[name="' + (savedName() ? "title" : "name") + '"]');
+      if (first) first.focus();
+    } else if (openTravel) {
+      var firstTravel = document.querySelector('.travel-form input[name="' + (savedName() ? "arrive" : "name") + '"]');
+      if (firstTravel) firstTravel.focus();
+    }
+  }
+
+  // Redraw now, unless someone is mid-form; then once the form closes.
+  function redraw() {
+    if (openDate || openTravel) pendingRedraw = true;
+    else render();
+  }
+
+  function timeNow() {
+    return new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
+
+  function asOf() {
+    return "Details as of " + new Date(latest.updatedAt).toLocaleString();
+  }
+
+  // ── Readers' additions ───────────────────────────────────────────────
+  function str(fields, key) {
+    return fields && fields[key] && typeof fields[key].stringValue === "string" ? fields[key].stringValue : "";
+  }
+
+  function loadAdditions() {
+    if (!ADDITIONS_URL) return Promise.resolve();
+    return fetch(ADDITIONS_URL + "&pageSize=300", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (body) {
+        additions = (body.documents || []).map(function (doc) {
+          var f = doc.fields || {};
+          return {
+            date: str(f, "date"), start: str(f, "start"), end: str(f, "end"), type: str(f, "type"),
+            title: str(f, "title"), details: str(f, "details"), attending: str(f, "attending"),
+            name: str(f, "name"), createdAt: str(f, "createdAt")
+          };
+        }).sort(function (a, b) { return a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0; });
+      })
+      .catch(function () { /* keep what we had */ });
+  }
+
+  function loadTravel() {
+    if (!TRAVEL_URL) return Promise.resolve();
+    return fetch(TRAVEL_URL + "&pageSize=300", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (body) {
+        travel = (body.documents || []).map(function (doc) {
+          var f = doc.fields || {};
+          var parts = String(doc.name || "").split("/");
+          return {
+            id: parts[parts.length - 1],
+            name: str(f, "name"), arrive: str(f, "arrive"), depart: str(f, "depart"), hotel: str(f, "hotel"),
+            mobile: str(f, "mobile"), notes: str(f, "notes"), createdAt: str(f, "createdAt"), updatedAt: str(f, "updatedAt")
+          };
+        }).sort(function (a, b) { return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : a.name.toLowerCase() > b.name.toLowerCase() ? 1 : 0; });
+      })
+      .catch(function () { /* keep what we had */ });
+  }
+
+  // A new entry is a POST to the collection; a correction is a PATCH of
+  // the one document, replacing every field.
+  function submitTravel(form) {
+    var get = function (name) { var el = form.elements[name]; return el ? String(el.value || "").trim() : ""; };
+    var name = get("name");
+    if (!name) {
+      travelError = "Put your name in.";
+      render();
+      return;
+    }
+    rememberName(name);
+    var id = form.getAttribute("data-travel-id");
+    var existing = id ? travel.filter(function (t) { return t.id === id; })[0] : null;
+    var now = new Date().toISOString();
+    var data = {
+      name: name.slice(0, 80),
+      arrive: get("arrive").slice(0, 200),
+      depart: get("depart").slice(0, 200),
+      hotel: get("hotel").slice(0, 200),
+      mobile: get("mobile").slice(0, 40),
+      notes: get("notes").slice(0, 300),
+      createdAt: existing && existing.createdAt ? existing.createdAt : now,
+      updatedAt: now
+    };
+    var fields = {};
+    Object.keys(data).forEach(function (k) { fields[k] = { stringValue: data[k] }; });
+    var url = TRAVEL_URL;
+    if (id) {
+      var at = TRAVEL_URL.indexOf("?");
+      url = TRAVEL_URL.slice(0, at) + "/" + encodeURIComponent(id) + TRAVEL_URL.slice(at);
+    }
+    sendingTravel = true;
+    travelError = "";
+    render();
+    fetch(url, {
+      method: id ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields: fields })
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        sendingTravel = false;
+        openTravel = null;
+        return loadTravel();
+      })
+      .then(function () { render(); })
+      .catch(function () {
+        sendingTravel = false;
+        travelError = "Couldn't save it just now. Check you're online and try again.";
+        render();
+      });
+  }
+
+  // Taking an entry off the page: a DELETE of the one document.
+  function removeTravel(id) {
+    var at = TRAVEL_URL.indexOf("?");
+    var url = TRAVEL_URL.slice(0, at) + "/" + encodeURIComponent(id) + TRAVEL_URL.slice(at);
+    confirmTravel = null;
+    fetch(url, { method: "DELETE" })
+      .then(function (res) {
+        if (!res.ok && res.status !== 404) throw new Error("HTTP " + res.status);
+        return loadTravel();
+      })
+      .then(function () { render(); })
+      .catch(function () {
+        travelError = "Couldn't remove it just now. Check you're online and try again.";
+        openTravel = id;
+        render();
+      });
+  }
+
+  function submitAddition(form) {
+    var get = function (name) { var el = form.elements[name]; return el ? String(el.value || "").trim() : ""; };
+    var title = get("title");
+    if (!title) {
+      formError = "Say what's happening.";
+      render();
+      return;
+    }
+    var name = get("name");
+    rememberName(name);
+    var data = {
+      date: form.getAttribute("data-date"),
+      start: get("start"),
+      end: get("end"),
+      type: TYPES.indexOf(get("type")) >= 0 ? get("type") : "meeting",
+      title: title.slice(0, 120),
+      details: get("details").slice(0, 600),
+      attending: get("attending").slice(0, 200),
+      name: name.slice(0, 80),
+      createdAt: new Date().toISOString()
+    };
+    var fields = {};
+    Object.keys(data).forEach(function (k) { fields[k] = { stringValue: data[k] }; });
+    sending = true;
+    formError = "";
+    render();
+    fetch(ADDITIONS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields: fields })
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        sending = false;
+        openDate = null;
+        return loadAdditions();
+      })
+      .then(function () { render(); })
+      .catch(function () {
+        sending = false;
+        formError = "Couldn't add it just now. Check you're online and try again.";
+        render();
+      });
+  }
+
+  document.getElementById("app").addEventListener("click", function (e) {
+    var addBtn = e.target.closest ? e.target.closest("[data-add]") : null;
+    if (addBtn) {
+      openDate = addBtn.getAttribute("data-add");
+      formError = "";
+      render();
+      return;
+    }
+    var cancel = e.target.closest ? e.target.closest("[data-cancel]") : null;
+    if (cancel) {
+      openDate = null;
+      formError = "";
+      render();
+      return;
+    }
+    var travelAdd = e.target.closest ? e.target.closest("[data-travel-add]") : null;
+    if (travelAdd) {
+      openTravel = "new";
+      travelError = "";
+      render();
+      return;
+    }
+    var travelEdit = e.target.closest ? e.target.closest("[data-travel-edit]") : null;
+    if (travelEdit) {
+      openTravel = travelEdit.getAttribute("data-travel-edit");
+      travelError = "";
+      render();
+      return;
+    }
+    var travelCancel = e.target.closest ? e.target.closest("[data-travel-cancel]") : null;
+    if (travelCancel) {
+      openTravel = null;
+      travelError = "";
+      render();
+      return;
+    }
+    var travelRemove = e.target.closest ? e.target.closest("[data-travel-remove]") : null;
+    if (travelRemove) {
+      confirmTravel = travelRemove.getAttribute("data-travel-remove");
+      render();
+      return;
+    }
+    var travelRemoveYes = e.target.closest ? e.target.closest("[data-travel-remove-yes]") : null;
+    if (travelRemoveYes) {
+      removeTravel(travelRemoveYes.getAttribute("data-travel-remove-yes"));
+      return;
+    }
+    var travelRemoveNo = e.target.closest ? e.target.closest("[data-travel-remove-no]") : null;
+    if (travelRemoveNo) {
+      confirmTravel = null;
+      render();
+    }
+  });
+  document.getElementById("app").addEventListener("submit", function (e) {
+    var travelForm = e.target.closest ? e.target.closest("form.travel-form") : null;
+    if (travelForm) {
+      e.preventDefault();
+      if (!sendingTravel) submitTravel(travelForm);
+      return;
+    }
+    var form = e.target.closest ? e.target.closest("form.add-form") : null;
+    if (!form) return;
+    e.preventDefault();
+    if (!sending) submitAddition(form);
+  });
+
+  // ── Loading ──────────────────────────────────────────────────────────
+  function load() {
+    var main = fetch(FEED_URL, { cache: "no-store" })
+      .then(function (res) {
+        if (res.status === 404) return { gone: true };
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json().then(function (doc) {
+          return JSON.parse(doc.fields.json.stringValue);
+        });
+      })
+      .then(function (data) {
+        if (data.gone) {
+          status = { kind: "gone", note: asOf() };
+          return;
+        }
+        latest = data;
+        status = { kind: "live", note: "Live. Updated at " + timeNow() };
+      })
+      .catch(function () {
+        status = { kind: "offline", note: asOf() };
+      });
+    Promise.all([main, loadAdditions(), loadTravel()]).then(redraw);
+  }
+
+  status = { kind: "loading", note: asOf() + ". Checking for updates…" };
+  render();
+  load();
+  setInterval(load, REFRESH_MS);
+})();
+</script>
+</body>
+</html>

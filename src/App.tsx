@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
   Campaign,
+  MarketingEvent,
   Notification,
   Project,
   ProjectStatus,
@@ -36,6 +37,11 @@ import {
   setSocialPost as firestoreSetSocialPost,
   moveSocialPost as firestoreMoveSocialPost,
   deleteSocialPost as firestoreDeleteSocialPost,
+  setEvent as firestoreSetEvent,
+  deleteEvent as firestoreDeleteEvent,
+  deleteItineraryPage as firestoreDeleteItineraryPage,
+  seedEventsIfMissing,
+  subscribeEvents,
   subscribeCampaigns,
   subscribeSocialConfig,
   subscribeSocialPosts,
@@ -43,6 +49,7 @@ import {
 } from "./firestore";
 import { isSocialMilestone, milestoneSocialPost } from "./campaigns";
 import { publishCampaignPage } from "./campaignExport";
+import { publishItineraryPage } from "./itineraryExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetailModal } from "./components/ProjectDetailModal";
@@ -55,6 +62,7 @@ import { MyDesk } from "./components/MyDesk";
 import { SocialCalendar } from "./components/SocialCalendar";
 import { CampaignsView } from "./components/CampaignsView";
 import { CampaignsPanel } from "./components/CampaignsPanel";
+import { EventsView } from "./components/EventsView";
 import { NewMenu, type NewKind } from "./components/NewMenu";
 import { Login } from "./components/Login";
 import { ProfileSetup } from "./components/ProfileSetup";
@@ -200,6 +208,10 @@ export default function App() {
     seedSocialPostsIfMissing().catch((err) => {
       console.warn("Couldn't seed the social calendar", err);
     });
+    // Likewise the CargoWise Event Portal export into an empty /events.
+    seedEventsIfMissing().catch((err) => {
+      console.warn("Couldn't seed the events", err);
+    });
   }, [sessionDesignerId]);
 
   // Live-subscribe to Firestore once we have a signed-in user. The
@@ -256,19 +268,31 @@ export default function App() {
   // Campaigns view.
   const [focusCampaignId, setFocusCampaignId] = useState<string | null>(null);
 
+  // Trade shows and conferences, for the Events page.
+  const [events, setEvents] = useState<MarketingEvent[]>([]);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeEvents(setEvents, (err) => {
+      console.warn("Couldn't load events", err);
+      setStatus(`Sync error: ${err.message}`);
+    });
+  }, [sessionDesignerId]);
+
   // Requests from the header's + New menu and Export CSV button to the
-  // Campaigns and Social pages, which own their editors and export dialogs.
-  // Each is a fresh number per click (so a repeat click fires again) that
-  // the page acts on and then asks to have cleared, so a request never
-  // replays when the page is next shown.
+  // Campaigns, Events and Social pages, which own their editors and export
+  // dialogs. Each is a fresh number per click (so a repeat click fires
+  // again) that the page acts on and then asks to have cleared, so a
+  // request never replays when the page is next shown.
   const [newCampaignRequest, setNewCampaignRequest] = useState(0);
+  const [newEventRequest, setNewEventRequest] = useState(0);
   const [newPostRequest, setNewPostRequest] = useState(0);
   const [exportRequest, setExportRequest] = useState(0);
   const requestSeq = useRef(0);
   const nextRequest = () => ++requestSeq.current;
 
   // The + New menu, from the sidebar or the header. A project opens its
-  // window here; a campaign or a post goes to its page with the editor up.
+  // window here; a campaign, an event or a post goes to its page with the
+  // editor up.
   function startNew(kind: NewKind) {
     setNavOpen(false);
     if (kind === "project") {
@@ -280,6 +304,9 @@ export default function App() {
     if (kind === "campaign") {
       setNewCampaignRequest(nextRequest());
       setView("campaigns");
+    } else if (kind === "event") {
+      setNewEventRequest(nextRequest());
+      setView("events");
     } else {
       setNewPostRequest(nextRequest());
       setView("socialCalendar");
@@ -797,6 +824,27 @@ export default function App() {
     }
   }
 
+  // Saving an event also refreshes its itinerary's SharePoint page, if it
+  // has one, since the page shows the event's name and dates.
+  function saveEvent(event: MarketingEvent) {
+    firestoreSetEvent(event).catch(writeError);
+    publishItineraryPage(event).catch((err) =>
+      console.warn("Couldn't update the itinerary's SharePoint page", err),
+    );
+  }
+
+  // The itinerary page's public copy goes with the event, so the page says
+  // the itinerary has been removed rather than showing it as it was.
+  function deleteEvent(id: string) {
+    const token = events.find((e) => e.id === id)?.itineraryShareToken;
+    firestoreDeleteEvent(id).catch(writeError);
+    if (token) {
+      firestoreDeleteItineraryPage(token).catch((err) =>
+        console.warn("Couldn't remove the itinerary's SharePoint page", err),
+      );
+    }
+  }
+
   function addNotifications(notifs: Notification[]) {
     if (notifs.length === 0) return;
     notifs.forEach((n) => firestoreSetNotification(n).catch(writeError));
@@ -995,6 +1043,8 @@ export default function App() {
                 "Social calendar"
               ) : view === "campaigns" ? (
                 "Campaigns"
+              ) : view === "events" ? (
+                "Events"
               ) : (
                 <>
                   {currentDesigner.name}
@@ -1024,7 +1074,9 @@ export default function App() {
                         ? "Plan and track posts across the CargoWise and WiseTech channels"
                         : view === "campaigns"
                           ? "Marketing campaigns and their milestones, month by month"
-                          : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned · ${currentWorkspaceName}`}
+                          : view === "events"
+                            ? "Trade shows and conferences — what's booked, what's on, what needs following up"
+                            : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned · ${currentWorkspaceName}`}
               {" · live"}
             </p>
           </div>
@@ -1037,19 +1089,23 @@ export default function App() {
                 onChange={(e) => setFilter(e.target.value)}
               />
             )}
-            {(view === "campaigns" || view === "socialCalendar") && (
+            {(view === "campaigns" || view === "events" || view === "socialCalendar") && (
               <button
                 className="btn-mini"
                 onClick={() => setExportRequest(nextRequest())}
                 disabled={
                   view === "campaigns"
                     ? campaigns.length === 0
-                    : socialPostsForUsage.length === 0
+                    : view === "events"
+                      ? events.length === 0
+                      : socialPostsForUsage.length === 0
                 }
                 title={
                   view === "campaigns"
                     ? "Download the campaigns in a date range as a CSV file"
-                    : "Download the posts in a date range as a CSV file"
+                    : view === "events"
+                      ? "Download the events in a date range as a CSV file"
+                      : "Download the posts in a date range as a CSV file"
                 }
               >
                 Export CSV
@@ -1173,6 +1229,22 @@ export default function App() {
             onFocusHandled={() => setFocusSocialPostId(null)}
             createRequest={newPostRequest}
             onCreateHandled={() => setNewPostRequest(0)}
+            exportRequest={exportRequest}
+            onExportHandled={() => setExportRequest(0)}
+          />
+        ) : view === "events" ? (
+          <EventsView
+            events={events}
+            campaigns={campaigns}
+            designers={workspace.designers}
+            projects={workspace.projects}
+            workspaces={availableWorkspaces}
+            onOpenProject={setOpenProjectId}
+            onOpenCampaign={openCampaign}
+            onSave={saveEvent}
+            onDelete={deleteEvent}
+            createRequest={newEventRequest}
+            onCreateHandled={() => setNewEventRequest(0)}
             exportRequest={exportRequest}
             onExportHandled={() => setExportRequest(0)}
           />

@@ -362,3 +362,230 @@ export type WorkspaceData = {
   notifications: Notification[];
   hubs: Hub[];
 };
+
+// Where an event is in its life. Prospect → Planning → Confirmed → Live →
+// Done, or Cancelled. The stored value is what the team set; eventPhase()
+// in events.ts moves a confirmed event to Live and Done by its dates, so
+// always display through that rather than the raw value.
+export type EventStatus =
+  | "prospect"
+  | "planning"
+  | "confirmed"
+  | "live"
+  | "done"
+  | "cancelled";
+
+// The ten things to have done around an event, in the order they happen.
+// EVENT_CHECKLIST in events.ts gives each its label; the last three are
+// what "needs follow-up" looks at once the event is over.
+export type EventChecklist = {
+  budgetApproved: boolean;
+  boothBooked: boolean;
+  campaignCodeCreated: boolean;
+  travelBooked: boolean;
+  collateralReady: boolean;
+  bookWithMeLive: boolean;
+  leadScanningArranged: boolean;
+  feedbackFormSent: boolean;
+  reportFiled: boolean;
+  resultsLogged: boolean;
+};
+
+// A trade show, conference or industry meeting the team attends, sponsors
+// or exhibits at. Stored in /events, shared by everyone. Imported from the
+// CargoWise Event Portal export by scripts/event-portal-md-to-seed.py; the
+// field names follow the portal's so the two stay easy to reconcile.
+//
+// Named MarketingEvent rather than Event so it doesn't shadow the DOM's
+// Event type in the files that use it.
+export type MarketingEvent = {
+  id: string;
+  name: string;
+  status: EventStatus;
+  // The planning year the event is filed under (the portal's 2026 / 2027
+  // sheets). Always set, so an event whose dates are TBC still has a year.
+  year: number;
+  // Inclusive YYYY-MM-DD run, local. Both empty while the dates are TBC.
+  startDate: string;
+  endDate: string;
+  // YYYY-MM when only the month is known ("Feb 2026 (TBC)"). Left off when
+  // the dates are set, or when not even the month is known.
+  tbcMonth?: string;
+  // The organiser's own wording of the dates, as published.
+  datesAsPublished?: string;
+  // Which part of the business runs it: CargoWise or Landside. Free text
+  // with those as suggestions (EVENT_DIVISIONS in events.ts).
+  division: string;
+  // Sales region: Americas, EMEA, LATAM, APAC… (EVENT_REGIONS). Optional,
+  // free text.
+  region?: string;
+  location?: string;
+  // Who goes, in the organiser's words: size and make-up of the crowd.
+  audience?: string;
+  // Our presence. Each flag can carry a note ("Bronze sponsor", "8 sqm",
+  // "attend in partner booth").
+  sponsor?: boolean;
+  sponsorNote?: string;
+  booth?: boolean;
+  boothNote?: string;
+  // Attending as visitors to sell, rather than exhibiting.
+  attendAndSell?: boolean;
+  // Who's speaking, on what, when.
+  speakingOpportunity?: string;
+  // People. Free text: the events and sales teams aren't necessarily on
+  // Waypoint as designers.
+  marketingLead?: string;
+  salesLead?: string;
+  salesAttendeeCount?: number;
+  salesAttendees?: string;
+  academyAttendee?: string;
+  partnerAttendees?: string;
+  // The CRM campaign code leads are logged against (CMP00009904).
+  campaignCode?: string;
+  // A Waypoint campaign this event is part of, if any.
+  campaignId?: string;
+  // Board projects producing work for the event — the booth graphics, the
+  // presentation, the social posts.
+  projectIds: string[];
+  // File names, as the team records them.
+  presentation?: string;
+  feedbackDoc?: string;
+  // What it costs, in the currency it was invoiced in, plus the fixed-rate
+  // US dollar figure (toUsd in events.ts) so events can be compared.
+  investment?: number;
+  currency?: string;
+  investmentUsd?: number;
+  costDetails?: string;
+  // Results logged after the event: conversations had, opportunities
+  // opened, and the breakdown of those by tier ("2 Gold · 2 Silver").
+  comms?: number;
+  opps?: number;
+  oppsBreakdown?: string;
+  notes?: string;
+  checklist: EventChecklist;
+  // The on-site plan for attendees (stand shifts, sessions, meetings,
+  // meals), edited from the event and put on SharePoint as a page. Travel
+  // and accommodation are deliberately not part of it: each attendee books
+  // their own.
+  itinerary?: EventItinerary;
+  // Random token behind the itinerary's SharePoint page (itineraryExport.ts),
+  // set on the first download and never changed; the page's public copy is
+  // at /itineraryPages/{itineraryShareToken}.
+  itineraryShareToken?: string;
+  // Where that page lives on SharePoint, pasted back by whoever uploaded it.
+  itinerarySharePointUrl?: string;
+  createdAt: string;
+  source?: "import" | "manual";
+};
+
+// What kind of thing an itinerary item is. Each has its own mark on the
+// page's timeline: meetings a filled circle, stand and setup a hollow one,
+// meals and networking a square, sessions and speaking a diamond.
+export type ItineraryItemType = "meeting" | "stand" | "meal" | "session";
+
+// One line on a day's timeline. Times are HH:MM (24h) or empty; `end` is
+// empty for a point in time. `attending` names people from the itinerary's
+// "Who's attending" list; `also` is anyone else (a customer, the stand
+// builder). Strings rather than optional fields so the editor's rows are
+// simple; empty means not set.
+export type ItineraryItem = {
+  id: string;
+  start: string;
+  end: string;
+  type: ItineraryItemType;
+  title: string;
+  details: string;
+  attending: string;
+  also: string;
+};
+
+export type ItineraryDay = {
+  // YYYY-MM-DD. Normally one of the event's days.
+  date: string;
+  // Which of the itinerary's cities the day is in, by name.
+  city: string;
+  // "Stand build", "Show day 1".
+  title: string;
+  note: string;
+  items: ItineraryItem[];
+};
+
+// A labelled line in one of the itinerary's tables: a person and their
+// role, "Venue" and its address, a contact and who they are.
+export type ItineraryRow = {
+  id: string;
+  label: string;
+  value: string;
+  note: string;
+};
+
+export type ItineraryCity = {
+  id: string;
+  name: string;
+  // Hex colour, used for the day headings in that city.
+  color: string;
+};
+
+// The attendee itinerary for an event, as the CargoWise Event Itinerary
+// Planner lays it out: the event header, its cities, who's attending, the
+// venue and stand, optional contacts / shifts / shipping, then a timeline
+// per day. itinerary.ts drafts one from the event and runs the checks.
+export type EventItinerary = {
+  // A line under the event name: the venue, the city, the theme.
+  headerLine: string;
+  cities: ItineraryCity[];
+  // label = name, value = role.
+  attendees: ItineraryRow[];
+  // A note under the attendee list, e.g. the dress code.
+  attendeesNote: string;
+  // Venue, Stand, Opening hours, Badge collection… label = what, value =
+  // where/when, note = the detail.
+  venue: ItineraryRow[];
+  contacts: ItineraryRow[];
+  standShifts: ItineraryRow[];
+  shipping: ItineraryRow[];
+  days: ItineraryDay[];
+  // The ids of the manual checks (MANUAL_CHECKS in itinerary.ts) ticked off.
+  manualChecks: string[];
+  updatedAt: string;
+};
+
+// Something a reader of the itinerary's SharePoint page added to one of its
+// days, without being signed in to anything. Written by the page through
+// Firestore's REST API to /itineraryPages/{token}/additions, where the
+// rules take a create from anyone who holds the token and nothing else.
+// Shown on the page straight away, marked as an addition, and listed in
+// the itinerary editor, where the organiser folds it into the day or
+// dismisses it. The same fields as an ItineraryItem, plus who added it.
+export type ItineraryAddition = {
+  id: string;
+  date: string;
+  start: string;
+  end: string;
+  type: ItineraryItemType;
+  title: string;
+  details: string;
+  attending: string;
+  // The reader's name, as they typed it.
+  name: string;
+  createdAt: string;
+};
+
+// An attendee's own travel and accommodation, entered on the itinerary's
+// SharePoint page so the team can see who arrives when and where everyone
+// is staying. Each attendee books their own; this is just the record of
+// it. Written and updated by the page through Firestore's REST API to
+// /itineraryPages/{token}/travel, free text throughout.
+export type ItineraryTravel = {
+  id: string;
+  name: string;
+  // "Mon 26 Oct, QF11 lands MIA 6:40pm"
+  arrive: string;
+  depart: string;
+  // Hotel name and address, and the nights if they differ from the event.
+  hotel: string;
+  mobile: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};

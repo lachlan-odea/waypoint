@@ -6667,3 +6667,694 @@ a.share-btn {
     opacity: 1;
   }
 }
+
+/* ── Events: trade shows and conferences ──────────────────────────────── */
+/* The page shares the Social / Campaigns toolbar shell (.soc, .soc-toolbar,
+   .soc-tabs, the type pills) and the campaign card grid. What's here is
+   the year title, the second filter row, the KPI strip, the month-grouped
+   table, the event cards, the calendar chips and the editor's sections. */
+.ev-year-title {
+  min-width: 80px;
+}
+.ev-filters {
+  margin-top: -4px;
+}
+.ev-filter-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ev-filter-select select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+  color: inherit;
+  max-width: 220px;
+}
+.ev-filter-select select:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+/* KPI tiles. Two of them (Live now, Needs follow-up) are buttons that set
+   the matching filter, so they reset the button look and show selection. */
+.ev-kpi-btn {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.ev-kpi-btn:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+.ev-kpi-btn.selected {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+/* A button can't hold <p>s, so the clickable tiles use spans laid out the
+   same way. */
+.ev-kpi-btn .kpi-label,
+.ev-kpi-btn .kpi-value,
+.ev-kpi-btn .kpi-note {
+  display: block;
+}
+.kpi .kpi-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Empty collection: the import prompt. */
+.ev-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+/* ── List: a table grouped by month ─────────────────────────────────── */
+.ev-table-wrap {
+  overflow-x: auto;
+}
+.ev-table {
+  min-width: 980px;
+}
+.ev-table th.num,
+.ev-table td.num {
+  text-align: right;
+  white-space: nowrap;
+}
+.ev-table td {
+  vertical-align: middle;
+}
+.ev-table td:first-child {
+  font-weight: 500;
+}
+.ev-month-row th {
+  padding: 18px 8px 6px 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+}
+.ev-table tbody:first-of-type .ev-month-row th {
+  padding-top: 8px;
+}
+.ev-row {
+  cursor: pointer;
+}
+.ev-row:hover td {
+  background: var(--surface-2);
+}
+.ev-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.ev-row.cancelled td {
+  color: var(--muted);
+}
+.ev-row.cancelled .ev-name {
+  text-decoration: line-through;
+}
+.ev-td-dates {
+  white-space: nowrap;
+}
+.ev-now {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e3fbe9;
+  color: #1f7a4d;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+:root.dark-mode .ev-now {
+  background: rgba(46, 158, 104, 0.2);
+  color: #c6ffd1;
+}
+.ev-td-name {
+  min-width: 220px;
+}
+.ev-name {
+  display: block;
+  font-weight: 600;
+}
+.ev-sub {
+  display: block;
+}
+.ev-td-code {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.ev-td-check {
+  min-width: 170px;
+}
+
+/* ── Checklist progress: rows, cards and the editor ─────────────────── */
+.ev-check {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ev-check-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+  min-width: 90px;
+}
+.ev-check-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.2s ease;
+}
+.ev-check-fill.full {
+  background: #1f7a4d;
+}
+.ev-check-n {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.ev-followup {
+  font-weight: 700;
+  color: #b4501f;
+}
+:root.dark-mode .ev-followup {
+  color: var(--brand-peach);
+}
+
+/* ── Cards ──────────────────────────────────────────────────────────── */
+.ev-card {
+  --ev: var(--primary);
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.ev-card.done,
+.ev-card.cancelled {
+  opacity: 0.85;
+}
+.ev-card.cancelled .camp-card-title {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.ev-card-bar {
+  flex: 0 0 6px;
+  background: var(--ev);
+}
+/* Not yet confirmed: the stripe is hatched, like an upcoming campaign. */
+.ev-card.prospect .ev-card-bar,
+.ev-card.planning .ev-card-bar {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.35) 0 4px,
+    transparent 4px 8px
+  );
+}
+.ev-card-body {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ev-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.ev-card-people {
+  margin: 0;
+  color: var(--muted);
+}
+.ev-card-people strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.ev-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ev-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ev-card-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--border);
+}
+.ev-card-stats div {
+  min-width: 0;
+}
+.ev-card-stats dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.ev-card-stats dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Calendar: a chip on every day an event runs ────────────────────── */
+.ev-cal-nav {
+  margin-top: -4px;
+  flex-wrap: wrap;
+}
+.ev-cell-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ev-chip {
+  --ev: var(--primary);
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 3px 6px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--ev) 45%, var(--border));
+  border-left: 3px solid var(--ev);
+  background: color-mix(in srgb, var(--ev) 10%, var(--surface));
+  color: var(--text);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ev-chip:hover {
+  background: color-mix(in srgb, var(--ev) 20%, var(--surface));
+}
+/* Days after the first of a run: quieter, so the start stands out. */
+.ev-chip.cont {
+  font-weight: 500;
+  color: var(--muted);
+  border-style: dashed;
+  border-left-style: solid;
+}
+.ev-chip.cancelled {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.ev-tbc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.ev-tbc .ev-chip {
+  display: inline-block;
+  width: auto;
+}
+
+/* ── Editor ─────────────────────────────────────────────────────────── */
+.ev-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ev-section h3 {
+  margin: 0;
+}
+.ev-flag-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ev-flag-field input:not([type="checkbox"]) {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--surface);
+  color: inherit;
+}
+.ev-flag-field input:not([type="checkbox"]):focus {
+  border-color: var(--primary);
+  outline: none;
+}
+.ev-money {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+.ev-checklist-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.ev-checklist {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+}
+
+/* ── Itinerary editor ─────────────────────────────────────────────────── */
+.modal.it-modal {
+  max-width: min(1040px, 96vw);
+}
+.it-travel {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(183, 179, 255, 0.22);
+  color: var(--brand-navy);
+  font-size: 13px;
+  line-height: 1.5;
+}
+:root.dark-mode .it-travel {
+  background: rgba(183, 179, 255, 0.14);
+  color: var(--brand-violet);
+}
+.it-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.it-section-head h3 {
+  margin: 0;
+}
+.it-cities {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.it-city {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.it-city input[type="color"] {
+  width: 40px;
+  height: 32px;
+  padding: 0 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.it-rows,
+.it-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.it-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 1.6fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.it-row-head,
+.it-item-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: -2px;
+}
+.it-city input:not([type="color"]),
+.it-row input,
+.it-item input,
+.it-item select,
+.it-day-head input,
+.it-day-head select,
+.it-day-note {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--surface);
+  color: inherit;
+  min-width: 0;
+}
+.it-city input:focus,
+.it-row input:focus,
+.it-item input:focus,
+.it-item select:focus,
+.it-day-head input:focus,
+.it-day-head select:focus,
+.it-day-note:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+.it-day {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface);
+}
+.it-day-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(120px, auto) auto;
+  gap: 8px;
+  align-items: center;
+}
+.it-day-head strong {
+  white-space: nowrap;
+}
+.it-day-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.it-day-add input[type="date"] {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 12px;
+  background: var(--surface);
+  color: inherit;
+}
+.it-item {
+  display: grid;
+  grid-template-columns: 104px 104px 150px minmax(0, 1fr) auto;
+  gap: 6px 8px;
+  align-items: center;
+  padding: 8px 0 10px;
+  border-top: 1px solid var(--border);
+}
+.it-item-head {
+  border-top: none;
+  padding: 0;
+}
+.it-item > .it-item-details {
+  grid-column: 1 / span 4;
+}
+.it-item > .it-item-who {
+  grid-column: 1 / span 2;
+}
+.it-item > .it-item-who + .it-item-who {
+  grid-column: 3 / span 2;
+}
+.it-day-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.it-item-adds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.it-day-note {
+  width: 100%;
+}
+/* Readers' additions from the SharePoint page, under their day. */
+.it-additions {
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-2);
+}
+.it-additions-head {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+.it-addition {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: start;
+  font-size: 13px;
+}
+.it-addition-time {
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.it-addition-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.it-addition-title {
+  font-weight: 600;
+}
+.it-addition-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.it-day-stray {
+  border-style: dashed;
+}
+.it-travel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.it-travel-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: baseline;
+  font-size: 13px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+.it-check-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.it-check-list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.it-check-mark {
+  font-weight: 700;
+  width: 14px;
+  flex: 0 0 auto;
+}
+.it-check-list li.ok .it-check-mark {
+  color: #1f7a4d;
+}
+.it-check-list li.fail .it-check-mark,
+.it-checks-failing {
+  color: #b4501f;
+}
+.it-check-detail {
+  color: var(--muted);
+}
+.ev-card-actions,
+.ev-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.ev-card-actions {
+  margin-top: 2px;
+}
+.ev-row-actions {
+  margin-top: 4px;
+}
+.ev-row-actions .btn-mini {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+@media (max-width: 720px) {
+  .it-row,
+  .it-item,
+  .it-day-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .it-item > .it-item-details,
+  .it-item > .it-item-who,
+  .it-item > .it-item-who + .it-item-who {
+    grid-column: 1;
+  }
+  .it-row-head,
+  .it-item-head {
+    display: none;
+  }
+  .it-addition,
+  .it-travel-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ev-card-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ev-checklist {
+    grid-template-columns: 1fr;
+  }
+  .ev-filter-select {
+    width: 100%;
+  }
+  .ev-filter-select select {
+    flex: 1;
+    max-width: none;
+  }
+  /* The day list above hides days with nothing on them; a day with an
+     event chip has something on it. */
+  .ev-cal .soc-cell:has(.ev-cell-list) {
+    display: flex;
+  }
+}

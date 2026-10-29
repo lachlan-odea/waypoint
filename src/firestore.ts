@@ -18,7 +18,11 @@ import type {
   Campaign,
   DeskItem,
   Designer,
+  EventItinerary,
   Hub,
+  ItineraryAddition,
+  ItineraryTravel,
+  MarketingEvent,
   Notification,
   Project,
   SocialConfig,
@@ -36,6 +40,7 @@ const hubsCol = () => collection(db, "hubs");
 const socialPostsCol = () => collection(db, "socialPosts");
 const socialConfigDoc = () => doc(collection(db, "socialConfig"), "default");
 const campaignsCol = () => collection(db, "campaigns");
+const eventsCol = () => collection(db, "events");
 
 // Backfill missing workspaceId on legacy docs that predate the multi-
 // workspace feature. They all belonged to the original Design workspace.
@@ -585,6 +590,155 @@ export async function setCampaignSharePointUrl(
 
 export async function deleteCampaign(id: string): Promise<void> {
   await deleteDoc(doc(campaignsCol(), id));
+}
+
+// ── Events ─────────────────────────────────────────────────────────────
+// Trade shows and conferences, for the Events page. Its own subscription,
+// like campaigns: a hundred or so documents a year, all needed at once.
+
+export function subscribeEvents(
+  onChange: (events: MarketingEvent[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    eventsCol(),
+    (snap) => onChange(snap.docs.map((d) => d.data() as MarketingEvent)),
+    onError,
+  );
+}
+
+export async function setEvent(event: MarketingEvent): Promise<void> {
+  await setDoc(doc(eventsCol(), event.id), event);
+}
+
+export async function deleteEvent(id: string): Promise<void> {
+  await deleteDoc(doc(eventsCol(), id));
+}
+
+// The itinerary on its own, written from the itinerary editor so the event
+// editor it may be open over isn't overwritten mid-edit.
+export async function setEventItinerary(
+  id: string,
+  itinerary: EventItinerary,
+): Promise<void> {
+  await updateDoc(doc(eventsCol(), id), { itinerary });
+}
+
+// Just the token, like setCampaignShareToken.
+export async function setEventItineraryShareToken(
+  id: string,
+  itineraryShareToken: string,
+): Promise<void> {
+  await updateDoc(doc(eventsCol(), id), { itineraryShareToken });
+}
+
+export async function setEventItinerarySharePointUrl(
+  id: string,
+  itinerarySharePointUrl: string,
+): Promise<void> {
+  await updateDoc(doc(eventsCol(), id), { itinerarySharePointUrl });
+}
+
+// ── Itinerary pages ────────────────────────────────────────────────────
+// The public copy of an event's itinerary behind its SharePoint page, at
+// /itineraryPages/{itineraryShareToken}. Same arrangement as campaign
+// pages: anyone with the exact token can read it, listing is refused, and
+// `json` is the page's data serialised by itineraryExport.ts.
+
+const itineraryPagesCol = () => collection(db, "itineraryPages");
+
+export async function setItineraryPage(shareToken: string, json: string): Promise<void> {
+  await setDoc(doc(itineraryPagesCol(), shareToken), { json });
+}
+
+export async function deleteItineraryPage(shareToken: string): Promise<void> {
+  await deleteDoc(doc(itineraryPagesCol(), shareToken));
+}
+
+// What readers of the page have added to its days (see ItineraryAddition).
+// Subscribed by the itinerary editor while it's open.
+const itineraryAdditionsCol = (shareToken: string) =>
+  collection(doc(itineraryPagesCol(), shareToken), "additions");
+
+export function subscribeItineraryAdditions(
+  shareToken: string,
+  onChange: (additions: ItineraryAddition[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    itineraryAdditionsCol(shareToken),
+    (snap) =>
+      onChange(
+        snap.docs
+          .map((d) => ({ ...(d.data() as Omit<ItineraryAddition, "id">), id: d.id }))
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+      ),
+    onError,
+  );
+}
+
+// Once an addition has been folded into the itinerary, or dismissed.
+export async function deleteItineraryAddition(
+  shareToken: string,
+  additionId: string,
+): Promise<void> {
+  await deleteDoc(doc(itineraryAdditionsCol(shareToken), additionId));
+}
+
+// Attendees' travel and accommodation entered on the page (see
+// ItineraryTravel). Read-only in Waypoint apart from removal.
+const itineraryTravelCol = (shareToken: string) =>
+  collection(doc(itineraryPagesCol(), shareToken), "travel");
+
+export function subscribeItineraryTravel(
+  shareToken: string,
+  onChange: (travel: ItineraryTravel[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    itineraryTravelCol(shareToken),
+    (snap) =>
+      onChange(
+        snap.docs
+          .map((d) => ({ ...(d.data() as Omit<ItineraryTravel, "id">), id: d.id }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      ),
+    onError,
+  );
+}
+
+export async function deleteItineraryTravel(
+  shareToken: string,
+  travelId: string,
+): Promise<void> {
+  await deleteDoc(doc(itineraryTravelCol(shareToken), travelId));
+}
+
+// Load the CargoWise Event Portal export (src/data/eventsSeed.json, made by
+// scripts/event-portal-md-to-seed.py) into an empty /events collection.
+// Same rules as the social posts seed: only into an empty collection, so a
+// deleted event stays deleted; checked against the server, so an offline
+// first boot fails quietly rather than queueing a re-import; and loaded
+// on demand, so the seed only downloads on the visit that needs it.
+export async function seedEventsIfMissing(): Promise<number> {
+  const existing = await getDocsFromServer(eventsCol());
+  if (!existing.empty) return 0;
+  const { default: seed } = await import("./data/eventsSeed.json");
+  const createdAt = new Date().toISOString();
+  const CHUNK = 400;
+  for (let i = 0; i < seed.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    seed.slice(i, i + CHUNK).forEach((e) => {
+      const event: MarketingEvent = {
+        ...(e as unknown as Omit<MarketingEvent, "createdAt" | "source">),
+        createdAt,
+        source: "import",
+      };
+      batch.set(doc(eventsCol(), event.id), event);
+    });
+    await batch.commit();
+  }
+  return seed.length;
 }
 
 // ── Social calendar configuration ──────────────────────────────────────

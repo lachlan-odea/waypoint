@@ -1,6 +1,6 @@
 # Waypoint
 
-Project management for the WiseTech Global creative teams — Design, Video, Marketing and Comms — plus the marketing team's social media calendar.
+Project management for the WiseTech Global creative teams — Design, Video, Marketing and Comms — plus the marketing team's social media calendar, campaigns and events.
 
 Live app: **https://lachlan-odea.github.io/waypoint/** (installable as a PWA). Sign in with your WiseTech email.
 
@@ -31,6 +31,17 @@ Ticking **Evergreen campaign** in the editor makes a campaign always on: its dat
 ### Campaign milestones
 Each milestone on a campaign is one of a fixed list of types: Organic Social Post, Sponsored Social Post, EDM, Landing Page, Press Release (`CAMPAIGN_MILESTONE_TYPES` in `src/campaigns.ts`). Saving a campaign with a new **social post** milestone puts a draft post on the Social calendar on the milestone's day. The post has no category, channel "Other", and the campaign's name as its topic. The milestone then links to that post from the campaign card and the editor, with the post's status. Moving the milestone's date moves the post with it. Removing the milestone asks whether to delete its post too, and that happens when the campaign is saved. Deleting the post from the calendar leaves the milestone, showing "Post deleted".
 
+### Events
+The events team's view of every trade show, conference and industry meeting — the CargoWise Event Portal's two year sheets (CargoWise and Landside) brought into Waypoint. One event is a `MarketingEvent` in `src/types.ts`, stored in `/events`; the page is `src/components/EventsView.tsx`, the editor `EventModal.tsx`, the helpers `src/events.ts`.
+
+- The page shows one **year** at a time, as a **List** (a table grouped by month: dates, place, status, leads, campaign code, spend, comms, opps and checklist progress), as **Cards** by month, or as a **Calendar** month grid with a chip on every day an event runs. The choice is remembered per browser.
+- **Status** is Prospect → Planning → Confirmed → Live → Done, or Cancelled. The stored status is what the team set; a confirmed event shows as Live while it's on and Done once it's over, by its dates (`eventPhase`). Filter by status, division (CargoWise / Landside), region and marketing lead; search matches names, places, people and campaign codes.
+- A **KPI strip** sums the year: upcoming, live now, done, needs follow-up, spend in US dollars (converted at the portal's fixed rates, cancelled events excluded) and comms → opps with the cost per opp. The Live and Needs follow-up tiles are buttons that set the matching filter.
+- Each event has a ten-step **checklist** (budget, booth, campaign code, travel, collateral, book-with-me link, lead scanning, feedback form, report, comms & opps logged). A past event missing any of the last three is flagged **needs follow-up**, which is also a filter.
+- Dates can be a run, a month only ("Feb 2026, TBC") or fully TBC; TBC events are listed under their month or at the end of their year. Spend is entered in its own currency and shown in US dollars; results (comms, opps and opps by tier) are logged after the event. An event can link a Waypoint campaign and the board projects doing work for it.
+- Export CSV downloads every event touching a date range, one row each, with its checklist and results.
+- **Generate itinerary** on an event (its card, its row or its editor) opens the attendee itinerary: the event header, its cities, who's attending, the venue and stand, optional key contacts / stand shifts / shipping, then a timeline per day of meetings, stand & setup, meals & networking and sessions & speaking. The first draft comes from the event itself (a day per date, the stand open on each, the speaking slot, the leads). Travel and accommodation stay off the day timelines: every page says each attendee books their own, a check flags any day item that reads like a flight, hotel or transfer, and the page has its own Travel and accommodation section for attendees to record what they've booked. **Check & send** runs the automatic checks (every day planned and non-empty, venue and stand filled in, no travel, Attending names in the attendee list, each city named and coloured) and holds the manual ones. **Put on SharePoint** works exactly like a campaign's page (see below). Types live in `src/types.ts` (`EventItinerary`), helpers in `src/itinerary.ts`, the editor in `src/components/ItineraryModal.tsx`.
+
 ### Settings
 Dark mode, text size, profile photo, password. Super users also manage users (roles, team membership, locations), office locations and their time zones (which drive the live clocks in the sidebar), and the Social calendar's categories and company hashtags.
 
@@ -49,7 +60,7 @@ Dark mode, text size, profile photo, password. Super users also manage users (ro
 | Backend | Firebase Cloud Functions v2 (`functions/`): Teams ingest, reviewer-assigned emails via the Trigger Email extension |
 | Hosting | GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to `main` |
 
-Firestore collections: `designers`, `workspaces`, `projects`, `notifications`, `hubs`, `deskItems` (private per owner), `socialPosts`, `socialConfig`, `campaigns`, `campaignPages` (public copies behind SharePoint pages). Types for every document live in `src/types.ts`; every read and write goes through `src/firestore.ts`.
+Firestore collections: `designers`, `workspaces`, `projects`, `notifications`, `hubs`, `deskItems` (private per owner), `socialPosts`, `socialConfig`, `campaigns`, `campaignPages` (public copies behind SharePoint pages), `events`, `itineraryPages` (public copies of event itineraries behind their SharePoint pages). Types for every document live in `src/types.ts`; every read and write goes through `src/firestore.ts`.
 
 ## Running it locally
 
@@ -93,7 +104,11 @@ firebase deploy --only functions
 
 SharePoint viewers aren't signed in to Waypoint, so the page can't read `/campaigns`. The first download gives the campaign a random `shareToken`. From then on, every save of the campaign also writes a public copy of the fields the page shows (a fixed allow-list, no contributing projects) to `/campaignPages/{shareToken}`, and deleting the campaign deletes it. The page reads that document through Firestore's REST API. The rules let anyone read a `campaignPages` document by its exact token but refuse listing, so anyone holding the page can read that one campaign and nothing else. No Cloud Function is involved. The site has to allow custom scripts for SharePoint to render an uploaded `.aspx` with its script, rather than offer it as a download.
 
-**Seeding.** On first sign-in the app creates anything missing: the seed teams (`SEED_WORKSPACES`), the seed locations (`SEED_HUBS`), and — only if the collection is completely empty — the 2026 social calendar from `src/data/socialPostsSeed.json`. Edits and deletions after that stick. The social seed is also available from the empty-state Import button on the calendar.
+### Event itinerary pages
+
+The same arrangement as campaign pages, for an event's attendee itinerary. **Put on SharePoint** in the itinerary editor opens the same four-step guide; the first download gives the event an `itineraryShareToken`, and from then on every save of the itinerary (and of the event, since the page shows its name and dates) writes the page's data to `/itineraryPages/{itineraryShareToken}`. Deleting the event deletes it. The page (`src/itineraryPage.template.html`, built by `src/itineraryExport.ts`) shows a strip of the days, who's attending, the venue and stand, the other tables, the fixed travel-and-accommodation statement, a timeline per day with a mark per item type, and the fixed footer notes. Anyone reading the page can **add to a day** without signing in: a small form under each day takes their name, a time, a type and what's happening, and writes it through Firestore's REST API to `/itineraryPages/{token}/additions`, where the rules accept a create from anyone holding the token (every field checked and capped), refuse changes, and let only signed-in users delete. Additions show on the page straight away, marked with who added them, and appear in the itinerary editor under their day, where the organiser folds each into the itinerary or dismisses it. The page also has a **Travel and accommodation** section where each attendee enters their own flights, hotel and contact number (and can correct or remove them later) at `/itineraryPages/{token}/travel`, same rule but with updates and deletes allowed, so the whole team can see who arrives when and where everyone is staying. Travel still stays off the day timelines, and the editor lists the entries read-only with a Remove.
+
+**Seeding.** On first sign-in the app creates anything missing: the seed teams (`SEED_WORKSPACES`), the seed locations (`SEED_HUBS`), and — only if the collection is completely empty — the 2026 social calendar from `src/data/socialPostsSeed.json` and the events from `src/data/eventsSeed.json`. Edits and deletions after that stick. Both seeds are also available from the empty-state Import button on their page.
 
 ## Regenerating the social calendar seed
 
@@ -105,6 +120,16 @@ python scripts/social-calendar-xlsx-to-seed.py "path/to/Social Media Calendar 20
 ```
 
 The script's docstring explains how the sheet is read (the coloured cell is the publish day; undated rows take a date from their Notes where one is written). Document ids are derived from sheet and row, so re-running is idempotent.
+
+## Regenerating the events seed
+
+`scripts/event-portal-md-to-seed.py` converts a CargoWise Event Portal export (the Markdown file the portal produces) into `src/data/eventsSeed.json`. Standard library only:
+
+```bash
+python scripts/event-portal-md-to-seed.py "path/to/CargoWise-Event-Portal-Export.md"
+```
+
+It reads the per-event detail tables, turns the portal's date wordings into `startDate`/`endDate`, a `tbcMonth` or just a year, and the checklist line into the ten booleans. Email addresses are stripped from the partner-attendee field, since the seed is committed. Document ids are derived from the year and the event name, so re-running is idempotent. Remember the seed only loads into an empty `/events` collection; to replace what's there, delete the collection first.
 
 ## Conventions
 

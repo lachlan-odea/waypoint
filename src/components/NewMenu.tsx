@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 
-export type NewKind = "project" | "campaign" | "post";
+export type NewKind = "project" | "campaign" | "event" | "post";
 
 type Props = {
   onPick: (kind: NewKind) => void;
@@ -13,11 +13,12 @@ type Props = {
 const ITEMS: { kind: NewKind; label: string; hint: string }[] = [
   { kind: "project", label: "Project", hint: "A card on a team board" },
   { kind: "campaign", label: "Campaign", hint: "A dated run with milestones" },
+  { kind: "event", label: "Event", hint: "A trade show or conference" },
   { kind: "post", label: "Social post", hint: "A post on the Social calendar" },
 ];
 
 // The one "+ New" button, in the sidebar and the page header: opens a small
-// menu of the three things you can create. Closes on a pick, on Escape, or
+// menu of the four things you can create. Closes on a pick, on Escape, or
 // on a click anywhere else.
 export function NewMenu({ onPick, variant, collapsed }: Props) {
   const [open, setOpen] = useState(false);
@@ -54,7 +55,7 @@ export function NewMenu({ onPick, variant, collapsed }: Props) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        title="New project, campaign or social post"
+        title="New project, campaign, event or social post"
       >
         {variant === "nav" && collapsed ? "+" : "+ New"}
       </button>
