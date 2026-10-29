@@ -34,13 +34,30 @@
 
 /* Header band: WiseTech Blue, white ink, the countdown on the right. */
 .item-band {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px 24px;
   padding: 22px 24px 18px;
-  background: var(--wtg-blue);
+  background: var(--wp-field);
   color: #fff;
   border-radius: var(--radius);
+  overflow: hidden;
+}
+/* The brand field's grid, strongest behind the title and fading out to
+   the right, as on the login page. */
+.item-band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--wp-field-grid);
+  background-size: var(--wp-field-grid-size);
+  -webkit-mask-image: radial-gradient(ellipse 80% 120% at 20% 50%, #000 30%, transparent 80%);
+  mask-image: radial-gradient(ellipse 80% 120% at 20% 50%, #000 30%, transparent 80%);
+  pointer-events: none;
+}
+.item-band > * {
+  position: relative;
 }
 .item-band-main {
   min-width: 0;

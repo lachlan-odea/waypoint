@@ -56,6 +56,13 @@
   --wp-sidebar-width: 240px;
   --border-subtle: #DDE1E8;
   --cobalt-050: #ECEBFF;
+  /* The brand field: WiseTech Blue with a faint 48px grid, from the login
+     design. The signature surface for the sidebar and item header bands. */
+  --wp-field: #1D1765;
+  --wp-field-grid: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  --wp-field-grid-size: 48px 48px;
+  --wp-field-line: rgba(255, 255, 255, 0.12);
   --focus-ring: 0 0 0 3px rgba(55, 30, 225, 0.35);
   --ease: cubic-bezier(0.2, 0, 0.1, 1);
   --dur: 160ms;
@@ -781,8 +788,10 @@ textarea {
   --side-line: rgba(255, 255, 255, 0.1);
   --side-hover: rgba(255, 255, 255, 0.06);
   --side-active: rgba(255, 255, 255, 0.1);
-  background: var(--wtg-navy);
-  border-right-color: var(--wtg-navy);
+  background-color: var(--wp-field);
+  background-image: var(--wp-field-grid);
+  background-size: var(--wp-field-grid-size);
+  border-right-color: var(--wp-field-line);
   color: var(--side-text);
 }
 .sidebar-head,
@@ -4075,7 +4084,7 @@ a.share-btn {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: #141e30;
+  background: var(--wp-field);
   color: white;
   padding: 10px 12px 10px 16px;
   border-radius: var(--radius);
