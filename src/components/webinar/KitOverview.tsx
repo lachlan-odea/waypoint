@@ -336,14 +336,21 @@ export function KitManage({
   api,
   onDelete,
   onDuplicate,
+  onCopy,
 }: {
   api: KitApi;
   onDelete: () => void;
+  // Start the next iteration: a fresh webinar seeded from this one.
   onDuplicate: () => void;
+  // An exact copy, dates and all.
+  onCopy: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
   return (
     <div className="item-manage">
+      <button type="button" className="btn btn-secondary btn-sm" onClick={onCopy} title='An exact copy of this webinar, with "(copy)" after its name'>
+        Duplicate webinar
+      </button>
       <button type="button" className="btn btn-secondary btn-sm" onClick={onDuplicate}>
         Start the next iteration
       </button>

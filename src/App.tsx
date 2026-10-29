@@ -47,7 +47,7 @@ import {
   subscribeSocialPosts,
   subscribeWorkspace,
 } from "./firestore";
-import { isSocialMilestone, milestoneSocialPost } from "./campaigns";
+import { duplicateCampaign as copyCampaign, isSocialMilestone, milestoneSocialPost } from "./campaigns";
 import { publishCampaignPage } from "./campaignExport";
 import { publishItineraryPage } from "./itineraryExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
@@ -826,6 +826,17 @@ export default function App() {
 
   // Its SharePoint page's public copy goes too, so the page says the
   // campaign has been removed rather than showing it as it was.
+  // An exact copy, opened straight away. Written directly so the copy's
+  // social milestones don't create posts on the Social calendar.
+  function duplicateCampaign(id: string) {
+    const c = campaigns.find((x) => x.id === id);
+    if (!c) return;
+    const copy = copyCampaign(c, sessionDesignerId ?? undefined);
+    firestoreSetCampaign(copy).catch(writeError);
+    setToast({ message: `Created "${copy.name}"` });
+    openItem("campaign", copy.id);
+  }
+
   function deleteCampaign(id: string) {
     closeItem();
     const token = campaigns.find((c) => c.id === id)?.shareToken;
@@ -1116,6 +1127,7 @@ export default function App() {
                 }}
                 onSave={saveCampaign}
                 onDelete={() => deleteCampaign(routedCampaign.id)}
+                onDuplicate={() => duplicateCampaign(routedCampaign.id)}
                 onOpenProject={openProject}
                 onOpenSocialPost={openSocialPost}
               />

@@ -70,6 +70,8 @@ type Props = {
   onBack: () => void;
   onSave: (campaign: Campaign, deletePostIds?: string[]) => void;
   onDelete: () => void;
+  // An exact copy of this campaign, opened straight away.
+  onDuplicate: () => void;
   onOpenProject: (projectId: string) => void;
   onOpenSocialPost: (postId: string) => void;
   onOpenCampaign: (campaignId: string, tab?: string) => void;
@@ -111,6 +113,7 @@ function WebinarCampaignPage({
   onBack,
   onSave,
   onDelete,
+  onDuplicate,
   onOpenProject,
   onOpenSocialPost,
   onOpenCampaign,
@@ -275,7 +278,7 @@ function WebinarCampaignPage({
         ) : here === "activity" ? (
           <KitActivityTab api={api} />
         ) : (
-          <KitOverview api={api} onSection={onTab} onTab={onTab} manage={<KitManage api={api} onDelete={onDelete} onDuplicate={() => setIterating(true)} />} />
+          <KitOverview api={api} onSection={onTab} onTab={onTab} manage={<KitManage api={api} onDelete={onDelete} onDuplicate={() => setIterating(true)} onCopy={onDuplicate} />} />
         )}
       </ItemPage>
       {iterating && (
@@ -321,6 +324,7 @@ function PlainCampaignPage({
   onBack,
   onSave,
   onDelete,
+  onDuplicate,
   onOpenProject,
   onOpenSocialPost,
 }: Props) {
@@ -586,6 +590,9 @@ function PlainCampaignPage({
               </SideCard>
               <SideCard title="Manage">
                 <div className="item-manage">
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={onDuplicate} title='An exact copy of this campaign, with "(copy)" after its name'>
+                    Duplicate campaign
+                  </button>
                   {campaign.category !== "Webinar" && (
                     <button
                       type="button"
