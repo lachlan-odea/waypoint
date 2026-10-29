@@ -52,7 +52,6 @@ import { publishCampaignPage } from "./campaignExport";
 import { publishItineraryPage } from "./itineraryExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
-import { ProjectDetailModal } from "./components/ProjectDetailModal";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { CreateProjectModal } from "./components/CreateProjectModal";
 import { SettingsModal } from "./components/SettingsModal";
@@ -65,6 +64,10 @@ import { CampaignsPanel } from "./components/CampaignsPanel";
 import { EventsView } from "./components/EventsView";
 import { NewMenu, type NewKind } from "./components/NewMenu";
 import { Login } from "./components/Login";
+import { ProjectPage } from "./components/pages/ProjectPage";
+import { CampaignPage } from "./components/pages/CampaignPage";
+import { EventPage } from "./components/pages/EventPage";
+import { closeItem, openItem, replaceItemTab, useItemRoute } from "./router";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
@@ -75,6 +78,7 @@ import {
   SUPER_USER_EMAILS,
 } from "./constants";
 import "./App.css";
+import "./pages.css";
 
 const PRIORITY_ORDER: Record<string, number> = {
   Urgent: 0,
@@ -109,7 +113,12 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false);
   const drawerOpen = isMobile && navOpen;
   const [view, setView] = useState<SidebarView>("myDesk");
-  const [openProjectId, setOpenProjectId] = useState<string | null>(null);
+  // The project, campaign or event open as a page, from the address bar.
+  const route = useItemRoute();
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0);
+  }, [route?.kind, route?.id]);
   const [creating, setCreating] = useState(false);
   const [createInitial, setCreateInitial] = useState<Partial<Project> | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -264,9 +273,6 @@ export default function App() {
       setStatus(`Sync error: ${err.message}`);
     });
   }, [sessionDesignerId]);
-  // A campaign the Social calendar's overlay asked to open on the
-  // Campaigns view.
-  const [focusCampaignId, setFocusCampaignId] = useState<string | null>(null);
 
   // Trade shows and conferences, for the Events page.
   const [events, setEvents] = useState<MarketingEvent[]>([]);
@@ -300,7 +306,7 @@ export default function App() {
       setCreating(true);
       return;
     }
-    setOpenProjectId(null);
+    closeItem();
     if (kind === "campaign") {
       setNewCampaignRequest(nextRequest());
       setView("campaigns");
@@ -381,7 +387,7 @@ export default function App() {
       setCreateInitial({ ...payload, source: "outlook" });
       setCreating(true);
       params.delete("new");
-      const url = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+      const url = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", url);
     } catch (err) {
       console.warn("Bad ?new payload", err);
@@ -438,7 +444,7 @@ export default function App() {
     const project = workspace.projects.find((p) => p.id === id);
     if (project) {
       setCurrentWorkspaceId(project.workspaceId);
-      setOpenProjectId(id);
+      openItem("project", id);
     } else {
       // Someone shared a link to a project that's since been deleted. Say so
       // — stripping the param and showing an ordinary board leaves the
@@ -453,7 +459,8 @@ export default function App() {
     // hand-off doesn't navigate, so there's nothing to tidy there.
     if (fromAddressBar) {
       params.delete("project");
-      const url = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+      // Keep the hash: openItem above just put the project's page route there.
+      const url = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", url);
     }
   }, [sessionDesignerId, workspace, pendingLaunchProjectId]);
@@ -714,7 +721,7 @@ export default function App() {
 
   function deleteProject(id: string) {
     firestoreDeleteProject(id).catch(writeError);
-    setOpenProjectId(null);
+    closeItem();
   }
 
   function createProject(project: Project) {
@@ -732,7 +739,7 @@ export default function App() {
     // hide it, drop back to the board so the new project is actually visible
     // behind the modal.
     if (view !== "board") setView("board");
-    setOpenProjectId(project.id);
+    openItem("project", project.id);
   }
 
   // Drop semantics: dropping a card on a designer's column adds them as an
@@ -786,17 +793,20 @@ export default function App() {
 
   // Jump to the Social calendar with one post's editor open.
   function openSocialPost(postId: string) {
-    setOpenProjectId(null);
+    closeItem();
     setFocusSocialPostId(postId);
     setView("socialCalendar");
   }
 
-  // Jump to the Campaigns page with one campaign's editor open. Closes any
-  // project window first so the page isn't hidden behind it.
+  // Open a project, campaign or event as its own page.
+  function openProject(projectId: string) {
+    openItem("project", projectId);
+  }
+  function openEvent(eventId: string) {
+    openItem("event", eventId);
+  }
   function openCampaign(campaignId: string) {
-    setOpenProjectId(null);
-    setFocusCampaignId(campaignId);
-    setView("campaigns");
+    openItem("campaign", campaignId);
   }
 
   // Which campaigns each project contributes to, for the flag on its card.
@@ -815,6 +825,7 @@ export default function App() {
   // Its SharePoint page's public copy goes too, so the page says the
   // campaign has been removed rather than showing it as it was.
   function deleteCampaign(id: string) {
+    closeItem();
     const token = campaigns.find((c) => c.id === id)?.shareToken;
     firestoreDeleteCampaign(id).catch(writeError);
     if (token) {
@@ -836,6 +847,7 @@ export default function App() {
   // The itinerary page's public copy goes with the event, so the page says
   // the itinerary has been removed rather than showing it as it was.
   function deleteEvent(id: string) {
+    closeItem();
     const token = events.find((e) => e.id === id)?.itineraryShareToken;
     firestoreDeleteEvent(id).catch(writeError);
     if (token) {
@@ -907,7 +919,7 @@ export default function App() {
   // Sign-out resets local UI state; the observeAuth callback will clear
   // sessionDesignerId, which tears down the subscription.
   function logout() {
-    setOpenProjectId(null);
+    closeItem();
     setCreating(false);
     setSettingsOpen(false);
     setView("myDesk");
@@ -946,9 +958,24 @@ export default function App() {
     );
   }
 
-  const openProject = openProjectId
-    ? workspace.projects.find((p) => p.id === openProjectId)
-    : null;
+  const routedProject =
+    route?.kind === "project"
+      ? (workspace.projects.find((p) => p.id === route.id) ?? null)
+      : null;
+  const routedCampaign =
+    route?.kind === "campaign" ? (campaigns.find((c) => c.id === route.id) ?? null) : null;
+  const routedEvent =
+    route?.kind === "event" ? (events.find((e) => e.id === route.id) ?? null) : null;
+  // Which sidebar row the open page belongs to.
+  const navView: SidebarView = route
+    ? route.kind === "project"
+      ? "board"
+      : route.kind === "campaign"
+        ? "campaigns"
+        : "events"
+    : view;
+  const listFor = (kind: "project" | "campaign" | "event"): SidebarView =>
+    kind === "project" ? "board" : kind === "campaign" ? "campaigns" : "events";
 
   const unassigned = activeProjects
     .filter((p) => p.assigneeIds.length === 0)
@@ -979,12 +1006,13 @@ export default function App() {
       <Sidebar
         currentDesigner={currentDesigner}
         collapsed={isMobile ? false : collapsed}
-        view={view}
+        view={navView}
         unreadNotifications={unreadNotifications}
         workspaces={availableWorkspaces}
         hubs={workspace.hubs}
         currentWorkspaceId={currentWorkspaceId}
         onSelectWorkspace={(id) => {
+          closeItem();
           setCurrentWorkspaceId(id);
           setView("board");
           setNavOpen(false);
@@ -994,6 +1022,7 @@ export default function App() {
           isMobile ? setNavOpen(false) : setCollapsed((c) => !c)
         }
         onSelectView={(v) => {
+          closeItem();
           setView(v);
           setNavOpen(false);
         }}
@@ -1012,7 +1041,120 @@ export default function App() {
         <div className="nav-scrim" onClick={() => setNavOpen(false)} aria-hidden />
       )}
 
-      <main className="main">
+      <main className="main" ref={mainRef}>
+        {route ? (
+          <>
+            <header className="topbar topbar-item">
+              <button
+                type="button"
+                className="icon-btn mobile-nav-btn"
+                onClick={() => setNavOpen(true)}
+                aria-label="Open menu"
+                aria-expanded={drawerOpen}
+              >
+                ☰
+              </button>
+              <span className="topbar-item-kind">{route.kind}</span>
+              <div className="topbar-actions">
+                <NewMenu variant="primary" onPick={startNew} />
+              </div>
+            </header>
+            {status && <div className="banner">{status}</div>}
+            {route.kind === "project" && routedProject ? (
+              <ProjectPage
+                key={routedProject.id}
+                project={routedProject}
+                designers={workspace.designers}
+                reviewers={reviewers}
+                workspaces={availableWorkspaces}
+                campaigns={campaigns}
+                socialPosts={socialPostsForUsage}
+                contentTypeOptions={socialConfig.contentTypes}
+                currentDesignerId={currentDesigner.id}
+                currentDesignerName={currentDesigner.name}
+                tab={route.tab}
+                onTab={(t) => replaceItemTab("project", routedProject.id, t)}
+                onBack={() => {
+                  setCurrentWorkspaceId(routedProject.workspaceId);
+                  setView("board");
+                  closeItem();
+                }}
+                onChange={(updater) => updateProject(routedProject.id, updater)}
+                onSetReviewers={(reviewerIds) =>
+                  setProjectReviewers(routedProject.id, reviewerIds)
+                }
+                onStatusChange={(s) => setProjectStatus(routedProject.id, s)}
+                onArchiveToggle={(archived) => setProjectArchived(routedProject.id, archived)}
+                onDelete={() => deleteProject(routedProject.id)}
+                onNotify={addNotifications}
+                onMoveToWorkspace={(workspaceId) =>
+                  moveProjectToWorkspace(routedProject.id, workspaceId)
+                }
+                onOpenSocialPost={openSocialPost}
+                onOpenCampaign={openCampaign}
+              />
+            ) : route.kind === "campaign" && routedCampaign ? (
+              <CampaignPage
+                key={routedCampaign.id}
+                campaign={routedCampaign}
+                categories={socialConfig.categories}
+                milestoneTypes={socialConfig.milestoneTypes}
+                designers={workspace.designers}
+                projects={workspace.projects}
+                workspaces={availableWorkspaces}
+                socialPosts={socialPostsForUsage}
+                tab={route.tab}
+                onTab={(t) => replaceItemTab("campaign", routedCampaign.id, t)}
+                onBack={() => {
+                  setView("campaigns");
+                  closeItem();
+                }}
+                onSave={saveCampaign}
+                onDelete={() => deleteCampaign(routedCampaign.id)}
+                onOpenProject={openProject}
+                onOpenSocialPost={openSocialPost}
+              />
+            ) : route.kind === "event" && routedEvent ? (
+              <EventPage
+                key={routedEvent.id}
+                event={routedEvent}
+                events={events}
+                campaigns={campaigns}
+                designers={workspace.designers}
+                projects={workspace.projects}
+                workspaces={availableWorkspaces}
+                tab={route.tab}
+                onTab={(t) => replaceItemTab("event", routedEvent.id, t)}
+                onBack={() => {
+                  setView("events");
+                  closeItem();
+                }}
+                onSave={saveEvent}
+                onDelete={() => deleteEvent(routedEvent.id)}
+                onOpenProject={openProject}
+                onOpenCampaign={openCampaign}
+              />
+            ) : (
+              <section className="item-missing">
+                <h2>This {route.kind} isn’t here</h2>
+                <p className="muted">
+                  It may have been deleted, or the link is incomplete.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setView(listFor(route.kind));
+                    closeItem();
+                  }}
+                >
+                  Back to {route.kind === "project" ? "the board" : route.kind === "campaign" ? "Campaigns" : "Events"}
+                </button>
+              </section>
+            )}
+          </>
+        ) : (
+          <>
         <header className="topbar">
           <button
             type="button"
@@ -1172,7 +1314,7 @@ export default function App() {
                     project={p}
                     designers={workspace.designers}
                     campaigns={campaignsByProject.get(p.id)}
-                    onClick={() => setOpenProjectId(p.id)}
+                    onClick={() => openProject(p.id)}
                     // Only worth labelling when teams are mixed together —
                     // redundant once you've filtered to one.
                     teamBadge={
@@ -1191,12 +1333,12 @@ export default function App() {
           <MyDesk
             workspace={workspace}
             currentDesignerId={sessionDesignerId}
-            onOpenProject={setOpenProjectId}
+            onOpenProject={openProject}
             notifications={myNotifications}
             reviewProjects={reviewProjects}
             onOpenNotification={(projectId, notificationId) => {
               deleteNotification(notificationId);
-              setOpenProjectId(projectId);
+              openProject(projectId);
             }}
             onClearNotifications={clearAllNotifications}
             campaigns={campaigns}
@@ -1214,7 +1356,7 @@ export default function App() {
           <Dashboard
             workspace={workspace}
             currentDesignerId={sessionDesignerId}
-            onOpenProject={setOpenProjectId}
+            onOpenProject={openProject}
           />
         ) : view === "socialCalendar" ? (
           <SocialCalendar
@@ -1224,7 +1366,7 @@ export default function App() {
             onOpenCampaign={openCampaign}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
-            onOpenProject={setOpenProjectId}
+            onOpenProject={openProject}
             focusPostId={focusSocialPostId}
             onFocusHandled={() => setFocusSocialPostId(null)}
             createRequest={newPostRequest}
@@ -1239,8 +1381,9 @@ export default function App() {
             designers={workspace.designers}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
-            onOpenProject={setOpenProjectId}
+            onOpenProject={openProject}
             onOpenCampaign={openCampaign}
+            onOpenEvent={openEvent}
             onSave={saveEvent}
             onDelete={deleteEvent}
             createRequest={newEventRequest}
@@ -1256,13 +1399,12 @@ export default function App() {
             designers={workspace.designers}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
-            onOpenProject={setOpenProjectId}
+            onOpenProject={openProject}
             socialPosts={socialPostsForUsage}
             onOpenSocialPost={openSocialPost}
             onSave={saveCampaign}
             onDelete={deleteCampaign}
-            focusCampaignId={focusCampaignId}
-            onFocusHandled={() => setFocusCampaignId(null)}
+            onOpenCampaign={openCampaign}
             createRequest={newCampaignRequest}
             onCreateHandled={() => setNewCampaignRequest(0)}
             exportRequest={exportRequest}
@@ -1277,7 +1419,7 @@ export default function App() {
               title={`${currentWorkspaceName} campaigns`}
               subject="this team"
               onOpenCampaign={openCampaign}
-              onOpenProject={setOpenProjectId}
+              onOpenProject={openProject}
               storageKey={`waypoint.board.${currentWorkspaceId}.campaignsCollapsed`}
             />
 
@@ -1306,7 +1448,7 @@ export default function App() {
                       project={p}
                       designers={workspace.designers}
                       campaigns={campaignsByProject.get(p.id)}
-                      onClick={() => setOpenProjectId(p.id)}
+                      onClick={() => openProject(p.id)}
                       teamBadge={
                         p.workspaceId !== currentWorkspaceId
                           ? availableWorkspaces.find(
@@ -1336,7 +1478,7 @@ export default function App() {
                       project={p}
                       designers={workspace.designers}
                       campaigns={campaignsByProject.get(p.id)}
-                      onClick={() => setOpenProjectId(p.id)}
+                      onClick={() => openProject(p.id)}
                       teamBadge={
                         p.workspaceId !== currentWorkspaceId
                           ? availableWorkspaces.find(
@@ -1388,7 +1530,7 @@ export default function App() {
                             project={p}
                             designers={workspace.designers}
                             campaigns={campaignsByProject.get(p.id)}
-                            onClick={() => setOpenProjectId(p.id)}
+                            onClick={() => openProject(p.id)}
                             compact
                           />
                         ))}
@@ -1423,7 +1565,7 @@ export default function App() {
                         project={p}
                         designers={workspace.designers}
                         campaigns={campaignsByProject.get(p.id)}
-                        onClick={() => setOpenProjectId(p.id)}
+                        onClick={() => openProject(p.id)}
                         compact
                       />
                     ))}
@@ -1459,7 +1601,7 @@ export default function App() {
                         project={p}
                         designers={workspace.designers}
                         campaigns={campaignsByProject.get(p.id)}
-                        onClick={() => setOpenProjectId(p.id)}
+                        onClick={() => openProject(p.id)}
                       />
                     ))}
                   </div>
@@ -1494,7 +1636,7 @@ export default function App() {
                         project={p}
                         designers={workspace.designers}
                         campaigns={campaignsByProject.get(p.id)}
-                        onClick={() => setOpenProjectId(p.id)}
+                        onClick={() => openProject(p.id)}
                       />
                     ))}
                   </div>
@@ -1528,7 +1670,7 @@ export default function App() {
                         project={p}
                         designers={workspace.designers}
                         campaigns={campaignsByProject.get(p.id)}
-                        onClick={() => setOpenProjectId(p.id)}
+                        onClick={() => openProject(p.id)}
                       />
                     ))}
                   </div>
@@ -1537,36 +1679,9 @@ export default function App() {
             )}
           </>
         ) : null}
+          </>
+        )}
       </main>
-
-      {openProject && (
-        <ProjectDetailModal
-          project={openProject}
-          designers={workspace.designers}
-          reviewers={reviewers}
-          workspaces={availableWorkspaces}
-          currentDesignerId={currentDesigner.id}
-          contentTypeOptions={socialConfig.contentTypes}
-          currentDesignerName={currentDesigner.name}
-          onClose={() => setOpenProjectId(null)}
-          onChange={(updater) => updateProject(openProject.id, updater)}
-          onSetReviewers={(reviewerIds) =>
-            setProjectReviewers(openProject.id, reviewerIds)
-          }
-          onStatusChange={(status) => setProjectStatus(openProject.id, status)}
-          onArchiveToggle={(archived) => {
-            setProjectArchived(openProject.id, archived);
-            if (archived) setOpenProjectId(null);
-          }}
-          onDelete={() => deleteProject(openProject.id)}
-          onNotify={addNotifications}
-          onMoveToWorkspace={(workspaceId) =>
-            moveProjectToWorkspace(openProject.id, workspaceId)
-          }
-          onOpenSocialPost={openSocialPost}
-          onOpenCampaign={openCampaign}
-        />
-      )}
 
       {creating && (
         <CreateProjectModal
@@ -1625,7 +1740,7 @@ export default function App() {
           onClose={() => setNotificationsOpen(false)}
           onOpenProject={(projectId, notificationId) => {
             deleteNotification(notificationId);
-            setOpenProjectId(projectId);
+            openProject(projectId);
             setNotificationsOpen(false);
           }}
           onClearAll={clearAllNotifications}

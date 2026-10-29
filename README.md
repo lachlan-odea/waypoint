@@ -1,35 +1,52 @@
 # Waypoint
 
-Project management for the WiseTech Global creative teams — Design, Video, Marketing and Comms — plus the marketing team's social media calendar, campaigns and events.
+Project management for the WiseTech Global creative teams — Design, Video, Marketing and Comms — plus the marketing team's social media calendar, campaign planning and events.
 
 Live app: **https://lachlan-odea.github.io/waypoint/** (installable as a PWA). Sign in with your WiseTech email.
+
+Version 3.0 is the Waypoint design system release: the Waypoint logo, the WiseTech palette and type, and projects, campaigns and events that open as full pages rather than windows.
 
 ## What it does
 
 ### Team boards
 Each team has a board. Your own work sits at the top, then a column per teammate; drag a card between columns to reassign it, or onto a team in the sidebar to move it across. Projects carry a client, brand, content types, priority, due date, a brief link, milestones and a comment thread with @-mentions and likes. Sections below the board collect Planning, On hold and Completed work; the Archive spans every team.
 
+The **+ New** menu in the header creates a project, a campaign, an event or a social post.
+
+### Pages
+A project, a campaign or an event opens as its own page, at `#project/<id>/<tab>`, `#campaign/<id>/<tab>` or `#event/<id>/<tab>` (`src/router.ts`). Each page has the same shape (`src/components/pages/ItemPage.tsx`): breadcrumbs, a header band with the name, a countdown to the key date and the facts that matter, tabs, a stage strip, then the body as a main column with side cards for **Status & schedule**, **Ready when** (what has to be true before the item is done, with progress), **Links** and **Manage**.
+
+- **Project** (`ProjectPage.tsx`): tabs Overview, Details, Tasks, Links. The strip is the lifecycle, Planning → Active → On hold → Completed; click a stage to move the project. Details is the full editor, inline.
+- **Campaign** (`CampaignPage.tsx`): tabs Overview, Details, Milestones, Projects. The strip is the milestones in date order; the Overview draws the campaign as a timeline bar with its milestones and today.
+- **Event** (`EventPage.tsx`): tabs Overview, Details, Checklist, Itinerary, Results. The strip is the ten-step checklist; click a step to tick it.
+
+Tab changes replace the history entry, so Back always closes the page and returns to the list it came from. The editors (`ProjectDetailModal`, `CampaignModal`, `EventModal`) take an `inline` prop and render as the Details tab; the Campaigns and Events pages only open them as windows to create.
+
 ### My Desk
 A personal start page: your assigned projects, anything flagged for your review, your notifications, and a private checklist. Unticked items roll forward each day (and say how many times they've rolled), reminders surface when their time arrives, and completed items sweep themselves out after a fortnight.
 
 ### Executive Dashboard and Analytics
-A read-only view across every team — deadlines, recent activity, overdue work — and charts breaking the work down by priority, brand, content type and designer (the by-designer chart is super-users only). Filter by team and date range, and export the filtered projects as CSV.
+The **Executive Dashboard** is a read-only view across every team — deadlines, recent activity, overdue work.
+
+**Analytics** charts the work in three groups: Projects (by status, brand and content type), the Social calendar (posts per month, by category and by channel), and Campaigns (milestones to watch, campaign progress). Filter by team and date range, and export the filtered rows as CSV.
 
 ### Social calendar
 The marketing team's LinkedIn plan as a month grid of post cards, seeded from the 2026 spreadsheet.
 
 - Cards show the **channel** (CargoWise / WiseTech) on the left edge, a solid **status** pill (draft, pending, scheduled, published, cancelled) that also washes the card's background, an outlined **category** pill (Product – CargoWise, Thought Leadership, Event…), the topic, owner initials, and glyphs for an attached asset, CTA link, linked project or live LinkedIn post.
-- Add a post from the toolbar or the `+` on any day; drag a card to another day to reschedule; drop it in the **Unscheduled** tray to take it off the calendar.
+- Add a post from the toolbar, the `+` on any day, or the **+ New** menu; drag a card to another day to reschedule; drop it in the **Unscheduled** tray to take it off the calendar.
 - Filter by channel, type and status (pills with counts); search dims non-matching posts rather than hiding them, so a hit is read against its week.
-- The **Evergreen** tab holds reusable copy; *Use this post* starts a fresh draft from it.
+- The **Evergreen library** tab holds reusable copy; *Use this post* starts a fresh draft from it.
 - The post editor previews assets (images inline, video, PDFs on request, SharePoint links when you're signed in), links the post to a board project, offers one-click company hashtags, and hands off to LinkedIn: **Post on LinkedIn** copies the text and opens LinkedIn's composer pre-filled, then **Mark as published** records it. Posting to the company pages through LinkedIn's API would need an approved developer app and a backend to hold its token, which don't exist yet.
 - Linked posts appear in the project's detail window and open the calendar at that post.
 
-### Evergreen campaigns
-Ticking **Evergreen campaign** in the editor makes a campaign always on: its dates are hidden (and kept, in case it's switched back), it's left off the Campaigns grid and the Social calendar overlay, along with its milestones, and it's listed under "This month's campaigns" in every month with an Evergreen tag. Its SharePoint page shows "Always on" in place of timings.
+### Campaigns
+A campaign is a dated run with milestones, owned by a person picked from its team. The Campaigns page shows the month's campaigns either as **cards** or on a **calendar** grid (a per-browser choice, remembered), with the grid below the cards. Milestones show on the calendar and can be dragged between days. Filter by evergreen or dated runs, and export them as CSV. **Webinar** is a predefined campaign type — a campaign of that type is a webinar, from brief to on-demand recording.
+
+**Evergreen campaigns.** Ticking **Evergreen campaign** in the editor makes a campaign always on: its dates are hidden (and kept, in case it's switched back), it's left off the Campaigns grid and the Social calendar overlay, along with its milestones, and it's listed under "This month's campaigns" in every month with an Evergreen tag. Its SharePoint page shows "Always on" in place of timings.
 
 ### Campaign milestones
-Each milestone on a campaign is one of a fixed list of types: Organic Social Post, Sponsored Social Post, EDM, Landing Page, Press Release (`CAMPAIGN_MILESTONE_TYPES` in `src/campaigns.ts`). Saving a campaign with a new **social post** milestone puts a draft post on the Social calendar on the milestone's day. The post has no category, channel "Other", and the campaign's name as its topic. The milestone then links to that post from the campaign card and the editor, with the post's status. Moving the milestone's date moves the post with it. Removing the milestone asks whether to delete its post too, and that happens when the campaign is saved. Deleting the post from the calendar leaves the milestone, showing "Post deleted".
+Each milestone on a campaign has a type. The types are managed in Settings → Types & tags, so the team can add or rename them as needed (stored in `socialConfig.milestoneTypes`, modelled by `MilestoneType` in `src/types.ts`). A type marked **social** puts a draft post on the Social calendar when a milestone of that type is saved. **Webinar** is predefined as a milestone type (and as a campaign type): `resolveSocialConfig` in `src/constants.ts` always offers it, even when the saved lists predate it. The post has no category, channel "Other", and the campaign's name as its topic. The milestone then links to that post from the campaign card and the editor, with the post's status. Moving the milestone's date moves the post with it. Removing the milestone asks whether to delete its post too, and that happens when the campaign is saved. Deleting the post from the calendar leaves the milestone, showing "Post deleted". The logic lives in `isSocialMilestone` and `milestoneSocialPost` in `src/campaigns.ts`.
 
 ### Events
 The events team's view of every trade show, conference and industry meeting — the CargoWise Event Portal's two year sheets (CargoWise and Landside) brought into Waypoint. One event is a `MarketingEvent` in `src/types.ts`, stored in `/events`; the page is `src/components/EventsView.tsx`, the editor `EventModal.tsx`, the helpers `src/events.ts`.
@@ -43,22 +60,29 @@ The events team's view of every trade show, conference and industry meeting — 
 - **Generate itinerary** on an event (its card, its row or its editor) opens the attendee itinerary: the event header, its cities, who's attending, the venue and stand, optional key contacts / stand shifts / shipping, then a timeline per day of meetings, stand & setup, meals & networking and sessions & speaking. The first draft comes from the event itself (a day per date, the stand open on each, the speaking slot, the leads). Travel and accommodation stay off the day timelines: every page says each attendee books their own, a check flags any day item that reads like a flight, hotel or transfer, and the page has its own Travel and accommodation section for attendees to record what they've booked. **Check & send** runs the automatic checks (every day planned and non-empty, venue and stand filled in, no travel, Attending names in the attendee list, each city named and coloured) and holds the manual ones. **Put on SharePoint** works exactly like a campaign's page (see below). Types live in `src/types.ts` (`EventItinerary`), helpers in `src/itinerary.ts`, the editor in `src/components/ItineraryModal.tsx`.
 
 ### Settings
-Dark mode, text size, profile photo, password. Super users also manage users (roles, team membership, locations), office locations and their time zones (which drive the live clocks in the sidebar), and the Social calendar's categories and company hashtags.
+Dark mode, text size, profile photo, password. Super users also manage:
+
+- **Users** — roles, team membership, locations.
+- **Types & tags** — the shared lists behind the pickers: category types and company hashtags for the Social calendar, campaign milestone types, and content types. These open in a dedicated window.
+- **Locations & time zones** — office locations, which drive the live clocks in the sidebar.
 
 ### Inbound integrations
 - **Outlook add-in** — a separate repo. Opens the New project form pre-filled, either by `postMessage` into an open Waypoint window or by deep link (`/waypoint/?new=<base64 json>`).
-- **Teams / Power Automate** — the `createProject` Cloud Function accepts a JSON project and a shared secret header. See `functions/src/index.ts`.
+- **Teams / Power Automate** — the `createProject` Cloud Function accepts a JSON project and a shared secret in the `X-Waypoint-Secret` header. See `functions/src/index.ts`.
 - **Shared project links** — `/waypoint/?project=<id>`. The installed app captures these where the browser allows.
 
 ## Stack
 
 | Layer | Choice |
 | --- | --- |
-| UI | React 19, TypeScript, Vite 8, hand-written CSS (`src/App.css`), Recharts |
+| UI | React 19, TypeScript, Vite 8, hand-written CSS (`src/App.css`), Recharts, vite-plugin-pwa |
 | Data | Firebase Firestore with offline persistence; live `onSnapshot` subscriptions throughout |
-| Auth | Firebase Auth, email + password |
-| Backend | Firebase Cloud Functions v2 (`functions/`): Teams ingest, reviewer-assigned emails via the Trigger Email extension |
+| Auth | Firebase Auth, email + password, restricted to the WiseTech email domain |
+| Backend | Firebase Cloud Functions v2 on Node 20 (`functions/`): Teams ingest, reviewer-assigned emails via the Trigger Email extension |
 | Hosting | GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to `main` |
+
+### Design system
+The reference is the Waypoint agent reference (the design system PDF). In code: the tokens at the top of `src/App.css` (`--wtg-*` brand colours, the `--ink-*` neutral scale, `--wp-status-*` work statuses, one `--radius` of 10px, no shadows, 120–200ms motion on `--ease`); the logo as `WaypointLogo` / `WaypointMark` in `src/components/brand/WaypointLogo.tsx` with the SVG lockups and app icon in `public/logos/` (regenerate with `node scripts/make-logos.mjs`); the line icons as `<Icon name="…">` in `src/components/Icon.tsx`, which renders a dashed placeholder for a name it does not know rather than inventing one; and the page styles in `src/pages.css`. Fonts are DM Sans and DM Mono only — mono for dates, counts, eyebrows and labels, never body copy.
 
 Firestore collections: `designers`, `workspaces`, `projects`, `notifications`, `hubs`, `deskItems` (private per owner), `socialPosts`, `socialConfig`, `campaigns`, `campaignPages` (public copies behind SharePoint pages), `events`, `itineraryPages` (public copies of event itineraries behind their SharePoint pages). Types for every document live in `src/types.ts`; every read and write goes through `src/firestore.ts`.
 

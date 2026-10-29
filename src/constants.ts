@@ -132,6 +132,9 @@ export const DEFAULT_SOCIAL_CATEGORIES: SocialCategory[] = [
   { id: "digital-event", label: "Digital Event", short: "Digital event", color: "#2f6fb0" },
   { id: "industry", label: "Industry", short: "Industry", color: "#1f7a4d" },
   { id: "wisetech-academy", label: "WiseTech Academy", short: "Academy", color: "#1d1765" },
+  // Predefined for the webinar programme: a campaign of this type is a
+  // webinar, from brief to on-demand recording.
+  { id: "webinar", label: "Webinar", short: "Webinar", color: "#3a4a66" },
 ];
 
 // Company hashtags to start with — the two brand tags. Edited in the same
@@ -150,7 +153,26 @@ export const DEFAULT_MILESTONE_TYPES: MilestoneType[] = [
   { id: "edm", label: "EDM", social: false },
   { id: "landing-page", label: "Landing Page", social: false },
   { id: "press-release", label: "Press Release", social: false },
+  // The webinar itself — the go-live date inside a webinar campaign.
+  { id: "webinar", label: "Webinar", social: false },
 ];
+
+// Webinar is a predefined option everywhere a campaign is typed: as a
+// campaign type and as a milestone type. A /socialConfig document saved
+// before it existed won't list it, so the resolved config always carries
+// it, whatever the saved lists hold.
+const WEBINAR_CATEGORY = DEFAULT_SOCIAL_CATEGORIES.find((c) => c.id === "webinar")!;
+const WEBINAR_MILESTONE = DEFAULT_MILESTONE_TYPES.find((t) => t.id === "webinar")!;
+
+function withPredefined<T extends { id: string; label: string }>(
+  list: T[],
+  required: T,
+): T[] {
+  const present = list.some(
+    (x) => x.id === required.id || x.label.trim().toLowerCase() === required.label.toLowerCase(),
+  );
+  return present ? list : [...list, required];
+}
 
 // CONTENT_TYPES is declared further down; the function form keeps this
 // independent of declaration order.
@@ -171,10 +193,13 @@ export function resolveSocialConfig(
   const d = defaultSocialConfig();
   if (!doc) return d;
   return {
-    categories: doc.categories ?? d.categories,
+    categories: withPredefined(doc.categories ?? d.categories, WEBINAR_CATEGORY),
     hashtags: doc.hashtags ?? d.hashtags,
     contentTypes: doc.contentTypes ?? d.contentTypes,
-    milestoneTypes: doc.milestoneTypes ?? d.milestoneTypes,
+    milestoneTypes: withPredefined(
+      doc.milestoneTypes ?? d.milestoneTypes,
+      WEBINAR_MILESTONE,
+    ),
   };
 }
 

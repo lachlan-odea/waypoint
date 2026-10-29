@@ -64,6 +64,10 @@ type Props = {
   onOpenCampaign: (campaignId: string) => void;
   // Content types on offer, from Settings → Types & tags.
   contentTypeOptions: readonly string[];
+  // Render as the Details tab of the project's page rather than as a
+  // window over the board: no overlay, no close button, no Escape, no
+  // "Done". Everything else — the live edits, tasks, comments — is the same.
+  inline?: boolean;
 };
 
 const priorities: Priority[] = ["Urgent", "High", "Normal", "Low"];
@@ -109,6 +113,7 @@ export function ProjectDetailModal({
   onOpenSocialPost,
   onOpenCampaign,
   contentTypeOptions,
+  inline = false,
 }: Props) {
   // Campaigns this project is doing work for. Same shape as the linked
   // posts below: its own small query, soonest start first.
@@ -193,12 +198,13 @@ export function ProjectDetailModal({
   }
 
   useEffect(() => {
+    if (inline) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, inline]);
 
   useEffect(() => {
     if (shareState === "idle") return;
@@ -560,9 +566,8 @@ export function ProjectDetailModal({
     }
   }
 
-  return (
-    <div className="modal-overlay">
-      <div className="modal">
+  const editor = (
+      <div className={inline ? "modal item-editor" : "modal"}>
         <header className="modal-head">
           <div>
             <input
@@ -617,9 +622,11 @@ export function ProjectDetailModal({
                 </option>
               ))}
             </select>
-            <button className="icon-btn" onClick={onClose} aria-label="Close">
-              ✕
-            </button>
+            {!inline && (
+              <button className="icon-btn" onClick={onClose} aria-label="Close">
+                ✕
+              </button>
+            )}
           </div>
         </header>
 
@@ -1115,13 +1122,13 @@ export function ProjectDetailModal({
               <button onClick={() => onArchiveToggle(!project.archived)}>
                 {project.archived ? "Unarchive" : "Archive"}
               </button>
-              <button onClick={onClose}>Done</button>
+              {!inline && <button onClick={onClose}>Done</button>}
             </>
           )}
         </footer>
       </div>
-    </div>
   );
+  return inline ? editor : <div className="modal-overlay">{editor}</div>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

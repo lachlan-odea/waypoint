@@ -1,32 +1,97 @@
+/* ------------------------------------------------------------------------
+   Waypoint v3 design tokens. Source of truth: the Waypoint design system
+   (agent reference v1.0). Hard rules: DM Sans + DM Mono only, one radius
+   (10px), no shadows or gradients, light accents carry dark ink.
+   ------------------------------------------------------------------------ */
 :root {
-  --bg: #f6f6fb;
-  --surface: #ffffff;
-  --surface-2: #f0f0f7;
-  --border: #e2e1ee;
-  --border-strong: #cfcde0;
-  --text: #141e30;
-  --muted: #5f6079;
-  /* CargoWise brand palette. Primary is CargoWise Blue; the rest are the
-     secondary and tertiary swatches, used as accents rather than surfaces. */
-  --brand-navy: #1d1765;
-  --brand-blue: #371ee1;
-  --brand-midnight: #141e30;
-  --brand-violet: #b7b3ff;
-  --brand-sky: #a7cff8;
-  --brand-pine: #244349;
-  --brand-mint: #c6ffd1;
-  --brand-highlighter: #eafc88;
-  --brand-cherry: #651d32;
-  --brand-peach: #ffbe98;
-  --primary: #371ee1;
+  /* Brand & accents (§4) */
+  --wtg-blue: #1D1765;
+  --wtg-cobalt: #371EE1;
+  --wtg-navy: #141E30;
+  --wtg-white: #FFFFFF;
+  --wtg-sky: #A7CFF8;
+  --wtg-sky-100: #D7E6FA;
+  --wtg-periwinkle: #B7B3FF;
+  --wtg-peach: #FFBF98;
+  --wtg-mint: #C6FFD1;
+  --wtg-lime: #EAFC88;
+  --wtg-maroon: #651D32;
+  --wtg-teal: #244349;
+
+  /* Neutral ink scale */
+  --ink-900: #0E1726;
+  --ink-800: #141E30;
+  --ink-700: #243450;
+  --ink-600: #3A4A66;
+  --ink-500: #5D6B82;
+  --ink-400: #8B96A8;
+  --ink-300: #B9C0CC;
+  --ink-200: #DDE1E8;
+  --ink-100: #EEF0F4;
+  --ink-50: #F7F8FB;
+
+  /* Work status — --wp-status-* (bg / fg) */
+  --wp-status-draft-bg: #EEF0F4;
+  --wp-status-draft-fg: #243450;
+  --wp-status-planning-bg: #D7E6FA;
+  --wp-status-planning-fg: #1D1765;
+  --wp-status-in-progress-bg: #ECEBFF;
+  --wp-status-in-progress-fg: #371EE1;
+  --wp-status-review-bg: #B7B3FF;
+  --wp-status-review-fg: #0E1726;
+  --wp-status-scheduled-bg: #FFBF98;
+  --wp-status-scheduled-fg: #0E1726;
+  --wp-status-live-bg: #C6FFD1;
+  --wp-status-live-fg: #0C5A2E;
+  --wp-status-complete-bg: #1D1765;
+  --wp-status-complete-fg: #FFFFFF;
+  --wp-status-blocked-bg: #FFDAD6;
+  --wp-status-blocked-fg: #8A1C16;
+
+  /* Spacing, radius, motion (§6) */
+  --radius: 10px;
+  --wp-bar-height: 20px;
+  --wp-bar-radius: 10px;
+  --wp-row-height: 52px;
+  --wp-sidebar-width: 240px;
+  --border-subtle: #DDE1E8;
+  --cobalt-050: #ECEBFF;
+  --focus-ring: 0 0 0 3px rgba(55, 30, 225, 0.35);
+  --ease: cubic-bezier(0.2, 0, 0.1, 1);
+  --dur: 160ms;
+
+  /* Semantic surface tokens the rest of the stylesheet is written against */
+  --bg: var(--ink-50);
+  --surface: var(--wtg-white);
+  --surface-2: var(--ink-100);
+  --border: var(--ink-200);
+  --border-strong: var(--ink-300);
+  --text: var(--ink-800);
+  --muted: var(--ink-500);
+  /* The one highlight colour: Cobalt in light mode, Violet on dark surfaces */
+  --accent: var(--wtg-cobalt);
+  --accent-wash: var(--cobalt-050);
+
+  /* Legacy brand aliases — same palette, older names */
+  --brand-navy: var(--wtg-blue);
+  --brand-blue: var(--wtg-cobalt);
+  --brand-midnight: var(--wtg-navy);
+  --brand-violet: var(--wtg-periwinkle);
+  --brand-sky: var(--wtg-sky);
+  --brand-pine: var(--wtg-teal);
+  --brand-mint: var(--wtg-mint);
+  --brand-highlighter: var(--wtg-lime);
+  --brand-cherry: var(--wtg-maroon);
+  --brand-peach: var(--wtg-peach);
+  --primary: var(--wtg-cobalt);
   --primary-hover: #2a15b8;
-  --danger: #c2335f;
-  --urgent: #c2335f;
-  --high: #f0844f;
-  --normal: #371ee1;
-  --low: #8a84ff;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --radius: 12px;
+  --danger: #8A1C16;
+  --urgent: #8A1C16;
+  --high: #b4501f;
+  --normal: var(--wtg-cobalt);
+  --low: var(--ink-500);
+  /* No elevation in this system: depth is hairline borders on solid surfaces */
+  --shadow: none;
   --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     sans-serif;
   --font-mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -53,16 +118,19 @@ body,
 
 /* Dark mode */
 :root.dark-mode {
-  --bg: #141e30;
-  --surface: #1c2a42;
-  --surface-2: #2a3854;
-  --border: #3b4a66;
-  --border-strong: #6b6d88;
-  --text: #f0f0f7;
-  --muted: #a3a6c2;
-  /* CargoWise Blue is too dark to read against the slate surfaces. */
-  --primary: #5b45f0;
-  --primary-hover: #6e5bff;
+  --bg: var(--ink-900);
+  --surface: var(--ink-800);
+  --surface-2: var(--ink-700);
+  --border: var(--ink-600);
+  --border-strong: var(--ink-500);
+  --text: var(--ink-100);
+  --muted: var(--ink-300);
+  /* Primary stays Cobalt; the highlight (selected, destination) is Violet,
+     which reads on slate where Cobalt would not. */
+  --primary: var(--wtg-cobalt);
+  --primary-hover: #5b45f0;
+  --accent: var(--wtg-periwinkle);
+  --accent-wash: rgba(183, 179, 255, 0.16);
   /* The single most important line for dark mode: the parts of a form
      control the browser paints itself — a <select>'s drop-down list, the
      number spinner arrows, the calendar and clock pickers on date/time
@@ -426,12 +494,12 @@ textarea {
 
 /* Sidebar */
 .sidebar {
-  width: 232px;
+  width: var(--wp-sidebar-width);
   background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  transition: width 0.18s ease;
+  transition: width 0.18s var(--ease);
 }
 .sidebar.collapsed {
   width: 64px;
@@ -440,13 +508,25 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 14px;
+  padding: 0 14px;
   border-bottom: 1px solid var(--border);
-  height: 56px;
+  height: 64px;
+  flex: 0 0 auto;
+}
+.sidebar.collapsed .sidebar-head {
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  height: auto;
+  padding: 12px 0;
 }
 .brand-mark {
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.brand-mark svg {
+  display: block;
 }
 .icon-btn {
   background: transparent;
@@ -454,13 +534,13 @@ textarea {
   color: var(--text);
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   display: inline-grid;
   place-items: center;
   font-size: 16px;
   flex-shrink: 0;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: all 0.12s var(--ease);
 }
 .icon-btn:hover {
   background: var(--surface-2);
@@ -477,7 +557,7 @@ textarea {
   background: var(--primary);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 10px 12px;
   font-weight: 600;
   text-align: left;
@@ -513,8 +593,8 @@ textarea {
   list-style: none;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(20, 30, 48, 0.12);
+  border-radius: var(--radius);
+  box-shadow: none;
 }
 .new-menu-nav .new-menu-list {
   left: 0;
@@ -533,7 +613,7 @@ textarea {
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 7px;
+  border-radius: var(--radius);
   background: transparent;
   color: var(--text);
   font: inherit;
@@ -571,15 +651,29 @@ textarea {
 }
 .designer-btn {
   width: 100%;
+  min-height: 40px;
   display: flex;
   align-items: center;
   gap: 10px;
   background: transparent;
   border: none;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 0 10px;
+  border-radius: var(--radius);
   color: var(--text);
   text-align: left;
+  font-size: 14px;
+}
+.nav-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  color: currentColor;
+}
+.sidebar.collapsed .designer-btn {
+  justify-content: center;
+  padding: 0;
 }
 .designer-btn:hover {
   background: var(--surface-2);
@@ -620,6 +714,7 @@ textarea {
 .sidebar-foot {
   border-top: 1px solid var(--border);
   padding: 10px 12px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -639,7 +734,7 @@ textarea {
   right: -2px;
   min-width: 16px;
   height: 16px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: var(--danger);
   color: white;
   font-size: 10px;
@@ -649,12 +744,14 @@ textarea {
   padding: 0 4px;
   box-sizing: border-box;
 }
+/* Pinned at the bottom, above the footer actions. */
 .sidebar-user {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  margin-top: auto;
 }
 .sidebar.collapsed .sidebar-user {
   padding: 12px 18px;
@@ -673,18 +770,19 @@ textarea {
   text-overflow: ellipsis;
 }
 
-/* Sidebar in CargoWise navy, the same in light and dark mode. It carries
-   its own text colours so nothing inside it reads the page's --text/--muted,
-   which are tuned for white or slate surfaces. Highlighter is the accent:
-   the call to action and the bar marking where you are, as on the brand's
-   own banners. */
+/* Sidebar in Midnight, the same in light and dark mode (§9 Shell). It
+   carries its own text colours so nothing inside it reads the page's
+   --text/--muted, which are tuned for white or slate surfaces. Violet is
+   the one highlight: the icon on the row you are on, echoing the logo's
+   destination bar. */
 .sidebar {
   --side-text: #ffffff;
-  --side-muted: rgba(183, 179, 255, 0.72);
+  --side-muted: rgba(255, 255, 255, 0.55);
   --side-line: rgba(255, 255, 255, 0.1);
-  --side-hover: rgba(255, 255, 255, 0.07);
-  background: var(--brand-navy);
-  border-right-color: var(--brand-navy);
+  --side-hover: rgba(255, 255, 255, 0.06);
+  --side-active: rgba(255, 255, 255, 0.1);
+  background: var(--wtg-navy);
+  border-right-color: var(--wtg-navy);
   color: var(--side-text);
 }
 .sidebar-head,
@@ -692,82 +790,68 @@ textarea {
 .sidebar-foot {
   border-color: var(--side-line);
 }
-.brand-mark {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: 15px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--brand-highlighter);
-}
 .sidebar .icon-btn {
   color: var(--side-muted);
 }
 .sidebar .icon-btn:hover {
   background: var(--side-hover);
-  color: var(--brand-highlighter);
+  color: var(--side-text);
 }
 .sidebar .muted {
   color: var(--side-muted);
 }
 .sidebar .nav-primary {
-  background: var(--brand-highlighter);
-  color: var(--brand-navy);
+  background: var(--wtg-cobalt);
+  color: #ffffff;
+  min-height: 40px;
 }
 .sidebar .nav-primary:hover {
-  background: #f3ffb0;
+  background: var(--primary-hover);
 }
 .sidebar .nav-section {
+  margin-top: 14px;
+  padding: 0 10px;
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.16em;
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--side-muted);
 }
 .sidebar .designer-btn {
   position: relative;
   color: var(--side-text);
-  opacity: 0.86;
+  opacity: 0.82;
 }
 .sidebar .designer-btn:hover {
   background: var(--side-hover);
   opacity: 1;
 }
 .sidebar .designer-btn.active {
-  background: rgba(255, 255, 255, 0.11);
+  background: var(--side-active);
   color: var(--side-text);
   opacity: 1;
-  font-weight: 600;
+  font-weight: 700;
 }
-.sidebar .designer-btn.active::before {
-  content: "";
-  position: absolute;
-  left: -12px;
-  top: 7px;
-  bottom: 7px;
-  width: 4px;
-  border-radius: 0 3px 3px 0;
-  background: var(--brand-highlighter);
+.sidebar .designer-btn.active .nav-icon {
+  color: var(--wtg-periwinkle);
 }
 .sidebar .designer-btn.drop-over {
-  outline-color: var(--brand-highlighter);
-  background: rgba(234, 252, 136, 0.12);
-}
-/* Nav tiles are filled with the light brand swatches, so the glyph on them
-   is navy rather than white. */
-.sidebar .nav-tile {
-  color: var(--brand-navy);
+  outline: 1px solid var(--wtg-periwinkle);
+  outline-offset: -1px;
+  background: rgba(183, 179, 255, 0.14);
 }
 .sidebar .hub-tag {
-  color: var(--brand-navy);
-  background: var(--brand-violet);
+  color: var(--wtg-navy);
+  background: var(--wtg-periwinkle);
 }
 .sidebar .hub-clock {
   border-color: var(--side-line);
   background: rgba(255, 255, 255, 0.04);
 }
 .sidebar .hub-clock.me {
-  border-color: rgba(234, 252, 136, 0.55);
-  background: rgba(234, 252, 136, 0.08);
+  border-color: rgba(183, 179, 255, 0.55);
+  background: rgba(183, 179, 255, 0.1);
 }
 .sidebar .hub-clock-name {
   font-family: var(--font-mono);
@@ -781,14 +865,17 @@ textarea {
   color: var(--side-text);
 }
 .sidebar .hub-clock.me .hub-clock-time {
-  color: var(--brand-highlighter);
+  color: var(--wtg-periwinkle);
 }
 .sidebar .hub-clock.off-hours .hub-clock-time,
 .sidebar .hub-clock-gap {
   color: var(--side-muted);
 }
 .sidebar .notif-badge {
-  box-shadow: 0 0 0 2px var(--brand-navy);
+  box-shadow: 0 0 0 2px var(--wtg-navy);
+}
+.sidebar .sidebar-user-name {
+  font-weight: 600;
 }
 
 /* Login screen */
@@ -818,8 +905,8 @@ textarea {
   overflow: hidden;
   background: var(--surface);
   border: 1px solid transparent;
-  border-radius: 18px;
-  box-shadow: 0 30px 80px rgba(8, 5, 40, 0.45);
+  border-radius: var(--radius);
+  box-shadow: none;
   padding: 28px 28px 22px;
   max-width: 560px;
   width: 100%;
@@ -834,18 +921,21 @@ textarea {
   margin: 0 auto 4px;
 }
 .login-hero {
-  display: block;
+  display: flex;
+  justify-content: center;
   width: 100%;
-  height: auto;
-  border-radius: 12px;
-  object-fit: contain;
+  padding: 18px 0 10px;
+}
+.login-hero svg {
+  display: block;
+  max-width: 100%;
 }
 /* Invisible hotspot over the circle in the logo's pin (centred at
    188,88 of the 376px hero.png), so it scales with the image. */
 .login-egg-hotspot {
   position: absolute;
-  left: 50.1%;
-  top: 23.3%;
+  left: 54.5%;
+  top: 38%;
   width: 9%;
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
@@ -864,16 +954,15 @@ textarea {
 .login-egg-trophy {
   width: 78%;
   height: 78%;
-  filter: drop-shadow(0 0 3px rgba(245, 197, 66, 0.7));
-  animation: trophy-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: trophy-pop 0.2s var(--ease);
 }
 @keyframes trophy-pop {
   from {
-    transform: scale(0) rotate(-20deg);
+    transform: scale(0.9);
     opacity: 0;
   }
   to {
-    transform: scale(1) rotate(0);
+    transform: scale(1);
     opacity: 1;
   }
 }
@@ -882,20 +971,20 @@ textarea {
    anything above it. */
 .login-egg-bubble {
   position: absolute;
-  left: 50.1%;
-  bottom: 87%;
+  left: 54.5%;
+  bottom: 74%;
   margin: 0;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #fff;
   color: var(--brand-navy);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(8, 5, 40, 0.35);
+  box-shadow: none;
   pointer-events: none;
   transform-origin: 50% 100%;
-  animation: bubble-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: bubble-pop 0.2s var(--ease) both;
   translate: -50% 0;
 }
 .login-egg-bubble::after {
@@ -923,13 +1012,13 @@ textarea {
     animation: none;
   }
 }
-/* A Highlighter strip across the top of the card. */
+/* A Cobalt strip across the top of the card — the logo's destination bar. */
 .login-card::before {
   content: "";
   position: absolute;
   inset: 0 0 auto;
   height: 6px;
-  background: var(--brand-highlighter);
+  background: var(--wtg-cobalt);
 }
 .login-title {
   margin: 0;
@@ -949,11 +1038,11 @@ textarea {
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface);
   text-align: left;
   color: var(--text);
-  transition: border-color 0.08s ease, transform 0.08s ease;
+  transition: border-color 0.12s var(--ease), transform 0.12s var(--ease);
 }
 .login-tile:hover {
   border-color: var(--primary);
@@ -989,7 +1078,7 @@ textarea {
   letter-spacing: 0.4em;
   text-align: center;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface);
   outline: none;
   font-family: var(--font-mono);
@@ -1012,7 +1101,7 @@ textarea {
 }
 .primary.login-submit:hover {
   background: #2a2290;
-  box-shadow: 0 4px 12px rgba(29, 23, 101, 0.3);
+  box-shadow: none;
 }
 .login-foot {
   margin: 6px 0 0;
@@ -1022,14 +1111,14 @@ textarea {
   display: flex;
   gap: 4px;
   background: var(--surface-2);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 4px;
 }
 .auth-tab {
   flex: 1;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 8px 10px;
   font-size: 13px;
   font-weight: 600;
@@ -1039,7 +1128,7 @@ textarea {
 .auth-tab.active {
   background: var(--brand-navy);
   color: #ffffff;
-  box-shadow: 0 1px 2px rgba(20, 30, 48, 0.05);
+  box-shadow: none;
 }
 .auth-form {
   display: flex;
@@ -1079,8 +1168,13 @@ textarea {
 }
 .page-title {
   margin: 0 0 6px;
-  font-size: 28px;
+  font-size: 32px;
+  line-height: 1.15;
   font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--wtg-blue);
+}
+:root.dark-mode .page-title {
   color: var(--text);
 }
 .topbar-sub {
@@ -1095,32 +1189,38 @@ textarea {
 }
 .search {
   width: 280px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--ink-200);
+  background: var(--surface);
   outline: none;
   font-size: 14px;
-  transition: all 0.12s ease;
+  transition: all 0.12s var(--ease);
 }
 .search:focus {
   border-color: var(--primary);
   background: var(--surface);
-  box-shadow: 0 0 0 3px rgba(55, 30, 225, 0.1);
+  box-shadow: var(--focus-ring);
 }
 .primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
   background: var(--primary);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 10px 16px;
+  border-radius: var(--radius);
+  padding: 0 16px;
   font-weight: 600;
   font-size: 14px;
-  transition: all 0.12s ease;
+  transition: all 0.12s var(--ease);
 }
 .primary:hover {
   background: var(--primary-hover);
-  box-shadow: 0 4px 12px rgba(55, 30, 225, 0.2);
+  box-shadow: none;
 }
 .primary:disabled {
   opacity: 0.6;
@@ -1132,7 +1232,7 @@ textarea {
   border: 1px solid #ffcfae;
   color: #7a3415;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   margin-bottom: 14px;
   font-size: 13px;
 }
@@ -1165,7 +1265,7 @@ textarea {
   align-items: center;
   justify-content: center;
   color: var(--muted);
-  transition: color 0.12s ease;
+  transition: color 0.12s var(--ease);
   margin-left: -8px;
 }
 .collapse-toggle:hover {
@@ -1173,7 +1273,7 @@ textarea {
 }
 .collapse-icon {
   display: inline-block;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s var(--ease);
   font-size: 12px;
 }
 .collapse-icon.expanded {
@@ -1248,17 +1348,17 @@ textarea {
   width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 14px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: all 0.12s ease;
+  transition: all 0.12s var(--ease);
 }
 .project-card:hover {
   border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(55, 30, 225, 0.15);
+  box-shadow: none;
   transform: translateY(-2px);
 }
 .project-card.compact {
@@ -1282,7 +1382,7 @@ textarea {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   color: white;
 }
 .card-priority.urgent {
@@ -1316,7 +1416,7 @@ textarea {
   letter-spacing: 0.5px;
   text-transform: uppercase;
   padding: 2px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   line-height: 1;
 }
 .card-title {
@@ -1338,7 +1438,7 @@ textarea {
   padding: 2px 8px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   font-size: 10px;
   font-weight: 600;
   color: var(--muted);
@@ -1357,7 +1457,7 @@ textarea {
   flex: none;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: var(--primary);
 }
 .card-next-milestone-label {
@@ -1405,7 +1505,7 @@ textarea {
   min-width: 22px;
   height: 22px;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   border: 2px solid var(--surface);
   display: inline-grid;
@@ -1429,12 +1529,12 @@ textarea {
   gap: 6px;
   align-items: center;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 6px 8px;
   background: var(--surface);
   min-height: 38px;
   cursor: text;
-  transition: border-color 0.12s ease;
+  transition: border-color 0.12s var(--ease);
 }
 .assignee-tag-input:focus-within {
   border-color: var(--primary);
@@ -1445,7 +1545,7 @@ textarea {
   gap: 6px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   padding: 2px 4px 2px 2px;
   font-size: 12px;
   color: var(--text);
@@ -1466,7 +1566,7 @@ textarea {
   line-height: 1;
   padding: 0 4px;
   cursor: pointer;
-  border-radius: 999px;
+  border-radius: var(--radius);
 }
 .assignee-tag-remove:hover {
   background: rgba(20, 30, 48, 0.08);
@@ -1489,8 +1589,8 @@ textarea {
   right: 0;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(20, 30, 48, 0.08);
+  border-radius: var(--radius);
+  box-shadow: none;
   list-style: none;
   padding: 4px;
   margin: 0;
@@ -1503,7 +1603,7 @@ textarea {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 13px;
   user-select: none;
@@ -1523,7 +1623,7 @@ textarea {
   gap: 6px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   padding: 3px 10px 3px 3px;
   font-size: 12px;
   color: var(--text);
@@ -1566,7 +1666,7 @@ textarea {
   width: 100%;
   padding: 7px 10px;
   border: 1px solid var(--primary);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -1581,7 +1681,7 @@ textarea {
 .card-progress {
   height: 3px;
   background: var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 .card-progress-bar {
@@ -1606,11 +1706,11 @@ textarea {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--muted);
-  border-radius: 999px;
+  border-radius: var(--radius);
   padding: 3px 10px 3px 8px;
   font-size: 11px;
   cursor: pointer;
-  transition: border-color 0.1s ease, color 0.1s ease, background 0.1s ease;
+  transition: border-color 0.12s var(--ease), color 0.12s var(--ease), background 0.12s var(--ease);
 }
 .flag-btn:hover {
   color: var(--primary);
@@ -1632,7 +1732,7 @@ textarea {
   background: #fff4ec;
   border: 1px solid #ffbe98;
   color: #b4501f;
-  border-radius: 999px;
+  border-radius: var(--radius);
   padding: 2px 10px 2px 8px;
   font-size: 11px;
 }
@@ -1650,7 +1750,7 @@ textarea {
   flex-wrap: wrap;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   padding: 2px 4px 2px 10px;
 }
 .flag-picker-label {
@@ -1664,7 +1764,7 @@ textarea {
   gap: 4px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--radius);
   padding: 2px 8px 2px 2px;
   font-size: 11px;
   color: inherit;
@@ -1701,20 +1801,20 @@ textarea {
 }
 
 .review-section {
-  border-color: #ffbe98;
-  background: #fffaf6;
+  border-color: var(--wtg-peach);
+  background: var(--ink-50);
 }
 .planning-section {
-  border-color: #d6d4ff;
-  background: #f5f6ff;
+  border-color: var(--ink-200);
+  background: var(--wtg-sky-100);
 }
 .paused-section {
   border-color: #cfcde0;
   background: #f7f7fc;
 }
 .completed-section {
-  border-color: #c6ffd1;
-  background: #f1fff4;
+  border-color: var(--ink-200);
+  background: var(--ink-50);
 }
 .archived-section {
   border-color: #cfcde0;
@@ -1738,7 +1838,7 @@ textarea {
   font-size: 12px;
   font-weight: 600;
   padding: 5px 26px 5px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background-color: var(--surface);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 4.5 L6 7.5 L9 4.5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
@@ -1777,13 +1877,13 @@ textarea {
   font-size: 12px;
   font-weight: 600;
   padding: 5px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
   cursor: pointer;
   white-space: nowrap;
-  transition: border-color 0.12s ease, color 0.12s ease;
+  transition: border-color 0.12s var(--ease), color 0.12s var(--ease);
 }
 .share-btn:hover {
   border-color: var(--primary);
@@ -1797,7 +1897,7 @@ a.share-btn {
 .mention {
   background: rgba(55, 30, 225, 0.1);
   color: var(--primary);
-  border-radius: 4px;
+  border-radius: var(--radius);
   padding: 0 4px;
   font-weight: 600;
 }
@@ -1814,7 +1914,7 @@ a.share-btn {
   gap: 6px;
 }
 .notif {
-  border-radius: 10px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
   overflow: hidden;
@@ -1860,16 +1960,17 @@ a.share-btn {
   place-items: center;
   padding: 24px;
   z-index: 100;
-  animation: fade 0.12s ease-out;
+  animation: fade 0.12s var(--ease);
 }
 .modal {
   background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   width: min(720px, 100%);
   max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(20, 30, 48, 0.2);
+  box-shadow: none;
   overflow: hidden;
 }
 .modal-narrow {
@@ -1915,7 +2016,7 @@ a.share-btn {
 }
 .modal-sub select {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 3px 8px;
   background: var(--surface);
 }
@@ -1941,10 +2042,13 @@ a.share-btn {
   background: var(--surface-2);
 }
 .modal-foot button {
+  min-height: 36px;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px 14px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  padding: 0 14px;
+  color: var(--wtg-blue);
+  font-weight: 600;
 }
 .modal-foot button:hover {
   background: var(--bg);
@@ -1956,7 +2060,7 @@ a.share-btn {
 }
 .modal-foot .danger {
   color: var(--danger);
-  border-color: #f4cbd7;
+  border-color: var(--wp-status-blocked-bg);
 }
 .modal-foot .danger:hover {
   background: #fbeff3;
@@ -2011,7 +2115,7 @@ a.share-btn {
   flex: 1;
   min-width: 140px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 7px 10px;
   background: var(--surface);
   font-size: 13px;
@@ -2024,7 +2128,7 @@ a.share-btn {
 .manage-users-add button:not(.primary) {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 8px 14px;
   font-weight: 500;
   color: inherit;
@@ -2041,7 +2145,7 @@ a.share-btn {
   flex: 1;
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 8px 10px;
   background: var(--surface);
   font-size: 13px;
@@ -2062,7 +2166,7 @@ a.share-btn {
    the full role / location / team toggles underneath. */
 .manage-user-row {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
   overflow: hidden;
 }
@@ -2105,7 +2209,7 @@ a.share-btn {
   display: inline-flex;
   align-items: center;
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   font-size: 12px;
   border: 1px solid var(--border);
   background: var(--surface-2);
@@ -2123,7 +2227,7 @@ a.share-btn {
 .manage-user-caret {
   color: var(--muted);
   font-size: 12px;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s var(--ease);
 }
 .manage-user-row.open .manage-user-caret {
   transform: rotate(180deg);
@@ -2144,9 +2248,9 @@ a.share-btn {
   color: var(--muted);
   font-size: 11px;
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+  transition: color 0.12s var(--ease), border-color 0.12s var(--ease), background 0.12s var(--ease);
 }
 .manage-user-delete:hover:not(:disabled) {
   color: var(--urgent);
@@ -2210,7 +2314,7 @@ a.share-btn {
 }
 .workspace-member-row {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 10px 12px;
   background: var(--surface);
 }
@@ -2261,7 +2365,7 @@ a.share-btn {
   gap: 5px;
   background: var(--surface-2);
   padding: 3px;
-  border-radius: 9px;
+  border-radius: var(--radius);
 }
 
 .theme-btn,
@@ -2273,9 +2377,9 @@ a.share-btn {
   font-weight: 500;
   color: var(--muted);
   padding: 6px 0;
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: all 0.12s var(--ease);
   font-size: 14px;
 }
 
@@ -2283,7 +2387,7 @@ a.share-btn {
 .size-btn.on {
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 1px 2px rgba(20, 30, 48, 0.04), 0 1px 3px rgba(20, 30, 48, 0.03);
+  box-shadow: none;
 }
 
 .size-btn {
@@ -2312,12 +2416,13 @@ a.share-btn {
 .modal-section textarea,
 .row input {
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
   padding: 8px 10px;
   background: var(--surface);
   outline: none;
   font-family: inherit;
+  transition: border-color 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 .modal-section textarea {
   resize: vertical;
@@ -2329,6 +2434,7 @@ a.share-btn {
 .modal-section textarea:focus,
 .row input:focus {
   border-color: var(--primary);
+  box-shadow: var(--focus-ring);
 }
 .brief-link {
   font-size: 12px;
@@ -2342,7 +2448,7 @@ a.share-btn {
 
 .overview-view {
   border: 1px dashed transparent;
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 8px 10px;
   min-height: 56px;
   font-size: 13px;
@@ -2374,7 +2480,7 @@ a.share-btn {
 .field-hint code {
   background: var(--surface-2);
   padding: 1px 4px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   font-size: 11px;
 }
 /* `.field span` styles every span in a field as an uppercase, letter-spaced
@@ -2409,11 +2515,11 @@ a.share-btn {
   align-items: center;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 6px 10px;
   font-size: 13px;
   position: relative;
-  transition: opacity 0.12s ease;
+  transition: opacity 0.12s var(--ease);
 }
 .milestones label {
   display: flex;
@@ -2432,7 +2538,7 @@ a.share-btn {
   font-size: 13px;
   padding: 2px 6px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: inherit;
 }
@@ -2469,7 +2575,7 @@ a.share-btn {
   right: 4px;
   height: 2px;
   background: var(--primary);
-  border-radius: 1px;
+  border-radius: var(--radius);
   pointer-events: none;
 }
 .milestones li.milestone-drop-before::before {
@@ -2481,8 +2587,9 @@ a.share-btn {
 .link-btn {
   background: transparent;
   border: none;
-  color: var(--muted);
+  color: var(--primary);
   font-size: 12px;
+  font-weight: 600;
 }
 .link-btn:hover {
   color: var(--danger);
@@ -2498,7 +2605,7 @@ a.share-btn {
 .row button {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 6px 12px;
 }
 .row button:hover {
@@ -2514,7 +2621,7 @@ a.share-btn {
 .comment {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 10px 12px;
 }
 .comment-head {
@@ -2579,7 +2686,7 @@ a.share-btn {
 .comment-reply-form textarea {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 8px 10px;
   background: var(--surface);
   outline: none;
@@ -2599,7 +2706,7 @@ a.share-btn {
 .comment-edit textarea {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 8px 10px;
   background: var(--surface);
   outline: none;
@@ -2619,7 +2726,7 @@ a.share-btn {
 .comment-edit-actions button {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 4px 10px;
   font-size: 12px;
   cursor: pointer;
@@ -2636,7 +2743,7 @@ a.share-btn {
   display: flex;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 3px;
   margin-bottom: 12px;
 }
@@ -2645,14 +2752,14 @@ a.share-btn {
   background: transparent;
   border: none;
   padding: 6px 10px;
-  border-radius: 7px;
+  border-radius: var(--radius);
   color: var(--muted);
   font-weight: 600;
 }
 .seg .seg-on {
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 
 /* My Desk Styles */
@@ -2737,10 +2844,10 @@ a.share-btn {
 
 .notification-item {
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s var(--ease);
 }
 
 .notification-item:hover {
@@ -2763,7 +2870,7 @@ a.share-btn {
   display: block;
   font-size: 12px;
   color: var(--muted);
-  transition: color 0.2s;
+  transition: color 0.2s var(--ease);
 }
 
 .mydesk-grid {
@@ -2801,7 +2908,7 @@ a.share-btn {
   font-size: 12px;
   font-weight: 600;
   padding: 4px 8px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   min-width: 24px;
   text-align: center;
 }
@@ -2815,10 +2922,10 @@ a.share-btn {
 .project-item {
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s var(--ease);
 }
 
 .project-item:hover {
@@ -2881,10 +2988,10 @@ a.share-btn {
   gap: 12px;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s var(--ease);
 }
 
 .deadline-item:hover {
@@ -2900,7 +3007,7 @@ a.share-btn {
   padding: 6px;
   background: var(--primary);
   color: white;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 
 .deadline-day {
@@ -2965,7 +3072,7 @@ a.share-btn {
   gap: 8px;
   padding: 6px 9px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface-2);
 }
 
@@ -3045,7 +3152,7 @@ a.share-btn {
   color: var(--primary);
   background: rgba(55, 30, 225, 0.1);
   padding: 2px 8px;
-  border-radius: 20px;
+  border-radius: var(--radius);
 }
 
 /* Read-only preview of the configured locations in Settings. */
@@ -3061,7 +3168,7 @@ a.share-btn {
   color: var(--muted);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 4px 10px;
   font-variant-numeric: tabular-nums;
 }
@@ -3084,7 +3191,7 @@ a.share-btn {
   gap: 14px;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   flex-wrap: wrap;
 }
@@ -3102,7 +3209,7 @@ a.share-btn {
   min-width: 0;
   padding: 7px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -3129,7 +3236,7 @@ a.share-btn {
   width: 56px;
   padding: 6px 8px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -3195,12 +3302,12 @@ a.share-btn {
   text-align: left;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--text);
   font: inherit;
   cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition: border-color 0.12s var(--ease), background 0.12s var(--ease);
 }
 
 .notify-row:hover {
@@ -3215,7 +3322,7 @@ a.share-btn {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 3px 7px;
-  border-radius: 5px;
+  border-radius: var(--radius);
   background: rgba(55, 30, 225, 0.12);
   color: var(--primary);
   margin-top: 1px;
@@ -3265,7 +3372,7 @@ a.share-btn {
   border: 1px solid var(--border);
   color: var(--text);
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   margin-bottom: 16px;
   font-size: 13px;
 }
@@ -3306,7 +3413,7 @@ a.share-btn {
   min-width: 0;
   padding: 9px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -3320,14 +3427,19 @@ a.share-btn {
 }
 
 .btn-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
   background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text);
+  border: 1px solid var(--ink-200);
+  color: var(--wtg-blue);
   font: inherit;
   font-size: 13px;
-  font-weight: 500;
-  padding: 7px 12px;
-  border-radius: 8px;
+  font-weight: 600;
+  padding: 0 12px;
+  border-radius: var(--radius);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -3360,7 +3472,7 @@ a.share-btn {
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
-  border-radius: 9px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   border: 1px solid var(--border);
   margin-bottom: 12px;
@@ -3400,7 +3512,7 @@ a.share-btn {
   align-items: center;
   gap: 10px;
   padding: 9px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   flex-wrap: wrap;
 }
 
@@ -3412,7 +3524,7 @@ a.share-btn {
   width: 19px;
   height: 19px;
   flex: 0 0 19px;
-  border-radius: 5px;
+  border-radius: var(--radius);
   border: 1.5px solid var(--border);
   background: var(--surface);
   cursor: pointer;
@@ -3428,7 +3540,7 @@ a.share-btn {
   width: 19px;
   height: 19px;
   flex: 0 0 19px;
-  border-radius: 5px;
+  border-radius: var(--radius);
   background: rgba(58, 168, 106, 0.15);
   color: #2e9e68;
   display: flex;
@@ -3448,7 +3560,7 @@ a.share-btn {
 .desk-body input {
   padding: 5px 8px;
   border: 1px solid var(--primary);
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -3476,7 +3588,7 @@ a.share-btn {
   display: flex;
   gap: 10px;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s var(--ease);
 }
 
 .desk-row:hover .desk-actions,
@@ -3550,7 +3662,7 @@ a.share-btn {
   font-size: 12.5px;
   font-weight: 500;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
 }
 
@@ -3570,7 +3682,7 @@ a.share-btn {
 .desk-moverow input {
   padding: 6px 9px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -3601,7 +3713,7 @@ a.share-btn {
   font-size: 12.5px;
   font-weight: 500;
   padding: 6px 0;
-  border-radius: 7px;
+  border-radius: var(--radius);
   cursor: pointer;
 }
 
@@ -3625,7 +3737,7 @@ a.share-btn {
 .drop-target {
   outline: 2px dashed transparent;
   outline-offset: -4px;
-  transition: outline-color 0.1s ease, background 0.1s ease;
+  transition: outline-color 0.12s var(--ease), background 0.12s var(--ease);
 }
 .drop-target.drop-over {
   outline-color: var(--primary);
@@ -3720,7 +3832,7 @@ a.share-btn {
   width: 100%;
 }
 .recharts-default-tooltip {
-  border-radius: 8px !important;
+  border-radius: var(--radius) !important;
   border: 1px solid var(--border) !important;
   box-shadow: var(--shadow) !important;
   font-size: 12px !important;
@@ -3753,10 +3865,10 @@ a.share-btn {
 .filter-quick button {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 7px 12px;
   font-size: 13px;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition: background 0.12s var(--ease), border-color 0.12s var(--ease), color 0.12s var(--ease);
 }
 .export-row button:hover,
 .filter-quick button:hover {
@@ -3801,7 +3913,7 @@ a.share-btn {
 .field-inline input,
 .field-inline select {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 7px 10px;
   background: var(--surface);
   outline: none;
@@ -3908,9 +4020,9 @@ a.share-btn {
 .phase-tag {
   display: inline-block;
   margin-left: 8px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: var(--radius);
+  font-size: 12px;
   font-weight: 600;
   background: var(--surface-2);
   color: var(--muted);
@@ -3966,11 +4078,11 @@ a.share-btn {
   background: #141e30;
   color: white;
   padding: 10px 12px 10px 16px;
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(20, 30, 48, 0.25);
+  border-radius: var(--radius);
+  box-shadow: none;
   font-size: 13px;
   z-index: 200;
-  animation: toast-in 0.18s ease-out;
+  animation: toast-in 0.18s var(--ease);
   max-width: calc(100% - 40px);
 }
 /* The new-version toast sits above the move/undo toast so both can show. */
@@ -3983,7 +4095,7 @@ a.share-btn {
   border: none;
   padding: 4px 8px;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
 }
 .toast-undo:hover {
@@ -3997,7 +4109,7 @@ a.share-btn {
   line-height: 1;
   cursor: pointer;
   padding: 4px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 .toast-close:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -4119,14 +4231,14 @@ a.share-btn {
   padding: 12px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: all 0.12s var(--ease);
 }
 
 .dashboard-task-item:hover {
   border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(55, 30, 225, 0.1);
+  box-shadow: none;
   background: var(--surface);
 }
 
@@ -4156,12 +4268,12 @@ a.share-btn {
 
 .priority-badge {
   display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   color: white;
   white-space: nowrap;
 }
@@ -4194,14 +4306,14 @@ a.share-btn {
   padding: 12px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: all 0.12s var(--ease);
 }
 
 .dashboard-deadline-item:hover {
   border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(55, 30, 225, 0.1);
+  box-shadow: none;
   background: var(--surface);
 }
 
@@ -4214,7 +4326,7 @@ a.share-btn {
   padding: 8px;
   background: var(--primary);
   color: white;
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-weight: 700;
 }
 
@@ -4258,7 +4370,7 @@ a.share-btn {
 
 .dashboard-activity-table {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
@@ -4284,7 +4396,7 @@ a.share-btn {
   border-bottom: 1px solid var(--border);
   align-items: center;
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background 0.12s var(--ease);
 }
 
 .activity-row:last-child {
@@ -4358,7 +4470,7 @@ a.share-btn {
   padding: 4px 8px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 600;
   text-transform: capitalize;
@@ -4439,7 +4551,7 @@ a.share-btn {
 .soc-tabs {
   display: inline-flex;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -4506,13 +4618,13 @@ a.share-btn {
   min-height: 118px;
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
   padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition: border-color 0.12s var(--ease), background 0.12s var(--ease);
 }
 .soc-cell.pad {
   border-style: dashed;
@@ -4545,7 +4657,7 @@ a.share-btn {
 .soc-cell.today .soc-day {
   color: white;
   background: var(--primary);
-  border-radius: 999px;
+  border-radius: var(--radius);
   min-width: 20px;
   height: 20px;
   display: inline-grid;
@@ -4555,7 +4667,7 @@ a.share-btn {
 .soc-cell-add {
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius);
   color: var(--muted);
   width: 22px;
   height: 22px;
@@ -4563,7 +4675,7 @@ a.share-btn {
   font-size: 15px;
   padding: 0;
   opacity: 0;
-  transition: opacity 0.12s ease, background 0.12s ease;
+  transition: opacity 0.12s var(--ease), background 0.12s var(--ease);
 }
 .soc-cell:hover .soc-cell-add,
 .soc-cell-add:focus-visible {
@@ -4588,7 +4700,7 @@ a.share-btn {
   background: var(--surface);
   border: 1px solid var(--border);
   border-left: 3px solid var(--border-strong);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 6px 7px 6px 8px;
   cursor: pointer;
   display: flex;
@@ -4597,11 +4709,11 @@ a.share-btn {
   font: inherit;
   color: var(--text);
   box-shadow: var(--shadow);
-  transition: transform 0.1s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease), border-color 0.12s var(--ease);
 }
 .soc-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(20, 30, 48, 0.12);
+  box-shadow: none;
   border-color: var(--border-strong);
 }
 .soc-card.dragging {
@@ -4626,11 +4738,11 @@ a.share-btn {
   display: inline-block;
   color: white;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 2px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4646,9 +4758,9 @@ a.share-btn {
   gap: 4px;
   min-height: 16px;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   font-size: 9.5px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: white;
@@ -4733,7 +4845,7 @@ a.share-btn {
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius);
   padding: 16px 18px;
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition: border-color 0.12s var(--ease), background 0.12s var(--ease);
 }
 .soc-tray .section-head {
   margin-bottom: 10px;
@@ -4780,7 +4892,7 @@ a.share-btn {
 }
 
 :root.dark-mode .soc-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 :root.dark-mode .soc-cell.drop-over,
 :root.dark-mode .soc-tray.drop-over {
@@ -4872,7 +4984,7 @@ a.share-btn {
   margin: 0;
   font-size: 12px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #e3fbe9;
   color: #174a35;
 }
@@ -4919,7 +5031,7 @@ a.share-btn {
 .asset-figure {
   margin: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -4987,13 +5099,13 @@ a.share-btn {
   gap: 10px;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 .asset-card-icon {
   width: 34px;
   height: 34px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
@@ -5034,7 +5146,7 @@ a.share-btn {
   width: 100%;
   height: 96px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface-2);
 }
@@ -5099,7 +5211,7 @@ a.share-btn {
   max-width: 100%;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 2px 4px;
   margin-left: -4px;
   cursor: pointer;
@@ -5157,10 +5269,10 @@ a.share-btn {
   color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 8px 10px;
   cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition: border-color 0.12s var(--ease), background 0.12s var(--ease);
 }
 .linked-post:hover {
   border-color: var(--border-strong);
@@ -5187,7 +5299,7 @@ a.share-btn {
   max-width: 100%;
   padding: 1px 7px;
   border: 1px solid;
-  border-radius: 999px;
+  border-radius: var(--radius);
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -5255,7 +5367,7 @@ a.share-btn {
   font-size: 10px;
   font-weight: 700;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--category) 18%, var(--surface));
   color: var(--text);
 }
@@ -5281,13 +5393,13 @@ a.share-btn {
 .soc-legend-item {
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--radius);
   padding: 2px 6px 2px 2px;
   font: inherit;
   font-size: 12px;
   color: var(--muted);
   cursor: pointer;
-  transition: opacity 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+  transition: opacity 0.12s var(--ease), border-color 0.12s var(--ease), background 0.12s var(--ease);
 }
 .soc-legend-item:hover {
   background: var(--surface-2);
@@ -5312,7 +5424,7 @@ a.share-btn {
   opacity: 0.38;
   filter: grayscale(1);
   box-shadow: none;
-  transition: opacity 0.15s ease, filter 0.15s ease;
+  transition: opacity 0.15s var(--ease), filter 0.15s var(--ease);
 }
 .soc-card.dimmed:hover {
   opacity: 0.85;
@@ -5362,13 +5474,13 @@ a.share-btn {
 .settings-group-head:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 .settings-group-chevron {
   display: inline-block;
   width: 12px;
   color: var(--muted);
-  transition: transform 0.15s ease;
+  transition: transform 0.15s var(--ease);
 }
 .settings-group.open .settings-group-chevron {
   transform: rotate(90deg);
@@ -5381,7 +5493,7 @@ a.share-btn {
   min-width: 22px;
   padding: 1px 8px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   text-align: center;
 }
 .settings-group-body {
@@ -5400,7 +5512,7 @@ a.share-btn {
   align-items: center;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface-2);
 }
 .manage-social-row.hashtag {
@@ -5411,7 +5523,7 @@ a.share-btn {
   width: 100%;
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 7px 9px;
   background: var(--surface);
   font: inherit;
@@ -5433,7 +5545,7 @@ a.share-btn {
   height: 28px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: transparent;
   cursor: pointer;
   flex: 0 0 auto;
@@ -5498,12 +5610,12 @@ a.share-btn {
   font-size: 12px;
   font-weight: 600;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--primary);
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition: background 0.12s var(--ease), border-color 0.12s var(--ease), color 0.12s var(--ease);
 }
 .soc-hashtag-chip:hover {
   border-color: var(--primary);
@@ -5534,10 +5646,10 @@ a.share-btn {
   height: 9px;
   transform: rotate(45deg);
   border: 2px solid white;
-  border-radius: 1px;
+  border-radius: var(--radius);
   background: transparent;
   box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.25);
-  transition: transform 0.1s ease, background 0.1s ease;
+  transition: transform 0.12s var(--ease), background 0.12s var(--ease);
 }
 
 /* Inside a day cell when the overlay is on */
@@ -5554,7 +5666,7 @@ a.share-btn {
   max-width: 100%;
   padding: 1px 6px 1px 4px;
   border: 1px dashed;
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--camp) 10%, var(--surface));
   font: inherit;
   font-size: 10px;
@@ -5596,7 +5708,7 @@ a.share-btn {
   border: 2px solid transparent;
   cursor: pointer;
   padding: 0;
-  transition: transform 0.1s ease;
+  transition: transform 0.12s var(--ease);
 }
 .camp-color:hover {
   transform: scale(1.1);
@@ -5637,7 +5749,7 @@ a.share-btn {
   width: 100%;
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 6px 9px;
   background: var(--surface);
   font: inherit;
@@ -5681,7 +5793,7 @@ a.share-btn {
   --camp: var(--primary);
   display: flex;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
   overflow: hidden;
@@ -5694,11 +5806,7 @@ a.share-btn {
   background: var(--camp);
 }
 .camp-card.upcoming .camp-card-bar {
-  background-image: repeating-linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.35) 0 4px,
-    transparent 4px 8px
-  );
+  opacity: 0.55;
 }
 .camp-card-body {
   flex: 1;
@@ -5720,7 +5828,7 @@ a.share-btn {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   color: var(--muted);
   background: var(--surface-2);
@@ -5776,7 +5884,7 @@ a.share-btn {
 }
 .camp-card-progress {
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   overflow: hidden;
   margin-top: 2px;
@@ -5784,7 +5892,7 @@ a.share-btn {
 .camp-card-progress-bar {
   height: 100%;
   background: var(--camp);
-  transition: width 0.2s ease;
+  transition: width 0.2s var(--ease);
 }
 .camp-card-sharepoint {
   align-self: flex-start;
@@ -5812,7 +5920,7 @@ a.share-btn {
 .confirm-post {
   margin: 0;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   display: flex;
   flex-direction: column;
@@ -5876,7 +5984,7 @@ a.share-btn {
   width: min(100%, 340px);
   height: auto;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 .sp-step-body .field {
   margin: 0;
@@ -5908,7 +6016,7 @@ a.share-btn {
   font-weight: 600;
   white-space: nowrap;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--primary);
@@ -5938,7 +6046,7 @@ a.share-btn {
   align-items: center;
   gap: 8px;
   padding: 3px 4px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-size: 13px;
   cursor: pointer;
 }
@@ -5995,7 +6103,7 @@ a.share-btn {
   gap: 10px;
   padding: 7px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
   font: inherit;
   color: var(--text);
@@ -6019,7 +6127,7 @@ a.share-btn {
 .soc-toolbar-right .camp-overlay-toggle {
   padding: 6px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 .soc-toolbar-right .camp-overlay-toggle .soc-legend-count {
@@ -6069,7 +6177,7 @@ a.share-btn {
   max-width: 100%;
   padding: 2px 8px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--text);
   font: inherit;
@@ -6106,7 +6214,7 @@ a.share-btn {
   --camp: var(--primary);
   border: 1px solid var(--border);
   border-left: 4px solid var(--camp);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
   padding: 10px 12px;
   display: flex;
@@ -6144,14 +6252,14 @@ a.share-btn {
 }
 .camp-mini-time {
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   overflow: hidden;
 }
 .camp-mini-time-bar {
   height: 100%;
   background: var(--camp);
-  transition: width 0.2s ease;
+  transition: width 0.2s var(--ease);
 }
 .camp-mini-ms {
   display: flex;
@@ -6234,7 +6342,7 @@ a.share-btn {
   gap: 0;
   border: 1px solid color-mix(in srgb, var(--camp) 45%, var(--border));
   border-left: 3px solid var(--camp);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--camp) 8%, var(--surface));
   overflow: hidden;
   box-shadow: var(--shadow);
@@ -6323,7 +6431,7 @@ a.share-btn {
    month and fades everything else, on both calendars. */
 .camp-ms-card,
 .soc-cell-ms {
-  transition: opacity 0.12s, box-shadow 0.12s;
+  transition: opacity 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 .soc-grid.hovering .camp-ms-card:not(.related),
 .soc-grid.hovering .soc-cell-ms:not(.related) {
@@ -6417,13 +6525,13 @@ a.share-btn {
     width: min(300px, 86vw);
     z-index: 110;
     transform: translateX(-100%);
-    transition: transform 0.22s ease;
+    transition: transform 0.2s var(--ease);
     overflow-y: auto;
     padding-bottom: env(safe-area-inset-bottom);
   }
   .app.nav-open .sidebar {
     transform: none;
-    box-shadow: 12px 0 40px rgba(8, 5, 40, 0.4);
+    box-shadow: none;
   }
   .nav-scrim {
     display: block;
@@ -6431,7 +6539,7 @@ a.share-btn {
     inset: 0;
     background: rgba(20, 30, 48, 0.5);
     z-index: 105;
-    animation: fade 0.12s ease-out;
+    animation: fade 0.12s var(--ease);
   }
   .mobile-nav-btn {
     display: inline-grid;
@@ -6686,7 +6794,7 @@ a.share-btn {
 }
 .ev-filter-select select {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 6px 10px;
   background: var(--surface);
   font: inherit;
@@ -6706,7 +6814,7 @@ a.share-btn {
   text-align: left;
   cursor: pointer;
   color: inherit;
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition: border-color 0.12s var(--ease), background 0.12s var(--ease);
 }
 .ev-kpi-btn:hover {
   border-color: var(--border-strong);
@@ -6790,7 +6898,7 @@ a.share-btn {
   display: inline-block;
   margin-left: 6px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: #e3fbe9;
   color: #1f7a4d;
   font-size: 10px;
@@ -6832,7 +6940,7 @@ a.share-btn {
 }
 .ev-check-bar {
   height: 5px;
-  border-radius: 3px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   overflow: hidden;
   min-width: 90px;
@@ -6840,7 +6948,7 @@ a.share-btn {
 .ev-check-fill {
   height: 100%;
   background: var(--primary);
-  transition: width 0.2s ease;
+  transition: width 0.2s var(--ease);
 }
 .ev-check-fill.full {
   background: #1f7a4d;
@@ -6863,7 +6971,7 @@ a.share-btn {
   --ev: var(--primary);
   display: flex;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
   overflow: hidden;
@@ -6883,11 +6991,7 @@ a.share-btn {
 /* Not yet confirmed: the stripe is hatched, like an upcoming campaign. */
 .ev-card.prospect .ev-card-bar,
 .ev-card.planning .ev-card-bar {
-  background-image: repeating-linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.35) 0 4px,
-    transparent 4px 8px
-  );
+  opacity: 0.55;
 }
 .ev-card-body {
   flex: 1;
@@ -6920,7 +7024,7 @@ a.share-btn {
   font-size: 10.5px;
   font-weight: 600;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--muted);
@@ -6976,7 +7080,7 @@ a.share-btn {
   font-weight: 600;
   line-height: 1.25;
   padding: 3px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   border: 1px solid color-mix(in srgb, var(--ev) 45%, var(--border));
   border-left: 3px solid var(--ev);
   background: color-mix(in srgb, var(--ev) 10%, var(--surface));
@@ -7027,7 +7131,7 @@ a.share-btn {
 }
 .ev-flag-field input:not([type="checkbox"]) {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 8px 10px;
   font: inherit;
   font-size: 13px;
@@ -7061,7 +7165,7 @@ a.share-btn {
 .it-travel {
   margin: 0;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: rgba(183, 179, 255, 0.22);
   color: var(--brand-navy);
   font-size: 13px;
@@ -7097,7 +7201,7 @@ a.share-btn {
   height: 32px;
   padding: 0 2px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 .it-rows,
@@ -7129,7 +7233,7 @@ a.share-btn {
 .it-day-head select,
 .it-day-note {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 7px 10px;
   font: inherit;
   font-size: 13px;
@@ -7149,7 +7253,7 @@ a.share-btn {
 }
 .it-day {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -7173,7 +7277,7 @@ a.share-btn {
 }
 .it-day-add input[type="date"] {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 5px 8px;
   font: inherit;
   font-size: 12px;
@@ -7217,7 +7321,7 @@ a.share-btn {
 /* Readers' additions from the SharePoint page, under their day. */
 .it-additions {
   border: 1px dashed var(--border-strong);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
@@ -7357,4 +7461,222 @@ a.share-btn {
   .ev-cal .soc-cell:has(.ev-cell-list) {
     display: flex;
   }
+}
+
+/* ------------------------------------------------------------------------
+   v3 shared primitives (design system §5, §8). Used by the full-page item
+   views and available everywhere else.
+   ------------------------------------------------------------------------ */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* StatusBadge: Draft → Planning → In progress → In review → Scheduled →
+   Live → Complete; Blocked at any stage. */
+.wp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  background: var(--wp-status-draft-bg);
+  color: var(--wp-status-draft-fg);
+}
+.wp-status.draft {
+  background: var(--wp-status-draft-bg);
+  color: var(--wp-status-draft-fg);
+}
+.wp-status.planning {
+  background: var(--wp-status-planning-bg);
+  color: var(--wp-status-planning-fg);
+}
+.wp-status.in-progress {
+  background: var(--wp-status-in-progress-bg);
+  color: var(--wp-status-in-progress-fg);
+}
+.wp-status.review {
+  background: var(--wp-status-review-bg);
+  color: var(--wp-status-review-fg);
+}
+.wp-status.scheduled {
+  background: var(--wp-status-scheduled-bg);
+  color: var(--wp-status-scheduled-fg);
+}
+.wp-status.live {
+  background: var(--wp-status-live-bg);
+  color: var(--wp-status-live-fg);
+}
+.wp-status.complete {
+  background: var(--wp-status-complete-bg);
+  color: var(--wp-status-complete-fg);
+}
+.wp-status.blocked {
+  background: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+}
+:root.dark-mode .wp-status.draft {
+  background: var(--ink-700);
+  color: var(--ink-100);
+}
+:root.dark-mode .wp-status.complete {
+  background: var(--wtg-periwinkle);
+  color: var(--ink-900);
+}
+
+/* Button: primary | brand | secondary | ghost | inverse · sm | md | lg */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s var(--ease), border-color 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.btn-primary {
+  background: var(--wtg-cobalt);
+  border-color: var(--wtg-cobalt);
+  color: #ffffff;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+.btn-brand {
+  background: var(--wtg-blue);
+  border-color: var(--wtg-blue);
+  color: #ffffff;
+}
+.btn-brand:hover:not(:disabled) {
+  background: #15104a;
+  border-color: #15104a;
+}
+.btn-secondary {
+  background: var(--surface);
+  border-color: var(--ink-200);
+  color: var(--wtg-blue);
+}
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--wtg-cobalt);
+  color: var(--wtg-cobalt);
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--wtg-cobalt);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--accent-wash);
+}
+.btn-inverse {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: var(--wtg-blue);
+}
+.btn-danger {
+  background: transparent;
+  border-color: var(--wp-status-blocked-bg);
+  color: var(--danger);
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--wp-status-blocked-bg);
+}
+.btn-sm {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+.btn-lg {
+  min-height: 44px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+.btn-full {
+  width: 100%;
+}
+:root.dark-mode .btn-secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+:root.dark-mode .btn-ghost {
+  color: var(--wtg-periwinkle);
+}
+
+/* Icon tiles: rounded squares in a light accent, glyph always WiseTech Blue */
+.icon-tile {
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius);
+  color: var(--wtg-blue);
+  flex: 0 0 auto;
+}
+.icon-tile.tone-sky {
+  background: var(--wtg-sky);
+}
+.icon-tile.tone-pale {
+  background: var(--wtg-sky-100);
+}
+.icon-tile.tone-violet {
+  background: var(--wtg-periwinkle);
+}
+.icon-tile.tone-peach {
+  background: var(--wtg-peach);
+}
+.icon-tile.tone-mint {
+  background: var(--wtg-mint);
+}
+.icon-tile.tone-lime {
+  background: var(--wtg-lime);
+}
+.icon-missing {
+  display: inline-block;
+  border: 1.5px dashed var(--ink-300);
+  border-radius: var(--radius);
+  color: var(--ink-400);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-align: center;
+  line-height: 1;
+  overflow: hidden;
+}
+
+/* Keyboard focus everywhere: the one ring, no outlines */
+.designer-btn:focus-visible,
+.icon-btn:focus-visible,
+.primary:focus-visible,
+.btn-mini:focus-visible,
+.nav-primary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }

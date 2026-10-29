@@ -43,6 +43,9 @@ type Props = {
   // editor first.
   onOpenProject?: (projectId: string) => void;
   onOpenCampaign?: (campaignId: string) => void;
+  // Render as the Details tab of the event's page: no overlay, no close
+  // button, no Escape, no Cancel. Save and Delete work as before.
+  inline?: boolean;
 };
 
 function newId(): string {
@@ -86,6 +89,7 @@ export function EventModal({
   onDelete,
   onOpenProject,
   onOpenCampaign,
+  inline = false,
 }: Props) {
   const today = todayIso();
   const [name, setName] = useState(initial.name ?? "");
@@ -146,13 +150,14 @@ export function EventModal({
   const [itineraryOpen, setItineraryOpen] = useState(false);
 
   useEffect(() => {
+    if (inline) return;
     function onKey(e: KeyboardEvent) {
       // The itinerary window handles its own Escape.
       if (e.key === "Escape" && !itineraryOpen) onCancel();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel, itineraryOpen]);
+  }, [onCancel, itineraryOpen, inline]);
 
   const datesValid = tbc
     ? !!tbcMonth || /^\d{4}$/.test(year.trim())
@@ -252,13 +257,12 @@ export function EventModal({
       ? `${formatShort(startDate)} – ${formatShort(endDate)} ${startDate.slice(0, 4)} · ${fiscalYear(startDate)}`
       : "";
 
-  return (
-    <div className="modal-overlay">
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+  const editor = (
+      <div className={inline ? "modal item-editor" : "modal"} onClick={(e) => e.stopPropagation()}>
         <header className="modal-head">
           <div>
             <h2 className="modal-title-static">
-              {mode === "create" ? "New event" : "Edit event"}
+              {inline ? "Event details" : mode === "create" ? "New event" : "Edit event"}
             </h2>
             {subtitle && (
               <div className="modal-sub">
@@ -292,9 +296,11 @@ export function EventModal({
                 </button>
               </>
             )}
-            <button className="icon-btn" onClick={onCancel} aria-label="Close">
-              ✕
-            </button>
+            {!inline && (
+              <button className="icon-btn" onClick={onCancel} aria-label="Close">
+                ✕
+              </button>
+            )}
           </div>
         </header>
 
@@ -806,7 +812,7 @@ export function EventModal({
               </button>
             )
           )}
-          <button onClick={onCancel}>Cancel</button>
+          {!inline && <button onClick={onCancel}>Cancel</button>}
           {mode === "create" && (
             <span className="muted small" style={{ marginRight: "auto" }}>
               Save the event, then open it to generate its itinerary.
@@ -831,6 +837,10 @@ export function EventModal({
           </button>
         </footer>
       </div>
+  );
+  return (
+    <div className={inline ? "item-editor-wrap" : "modal-overlay"}>
+      {editor}
       {itineraryOpen && initial.id && (
         <ItineraryModal
           event={{

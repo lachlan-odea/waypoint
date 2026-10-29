@@ -48,6 +48,9 @@ type Props = {
   projects: Project[];
   workspaces: Workspace[];
   onOpenProject: (projectId: string) => void;
+  // Open a campaign as its own page (hash route in App.tsx). Editing
+  // happens there; this view only creates.
+  onOpenCampaign: (campaignId: string) => void;
   // Every social post, to show the status of the post each social
   // milestone created, and the way to open one.
   socialPosts: SocialPost[];
@@ -67,9 +70,7 @@ type Props = {
   onExportHandled?: () => void;
 };
 
-type Editing =
-  | { mode: "create"; initial: Partial<Campaign> }
-  | { mode: "edit"; campaign: Campaign };
+type Editing = { mode: "create"; initial: Partial<Campaign> };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -124,10 +125,10 @@ export function CampaignsView({
   projects,
   workspaces,
   onOpenProject,
+  onOpenCampaign,
   socialPosts,
   onOpenSocialPost,
   onSave,
-  onDelete,
   focusCampaignId,
   onFocusHandled,
   createRequest,
@@ -181,7 +182,7 @@ export function CampaignsView({
     setHandledFocus(focusCampaignId);
     if (c) {
       setMonth(c.startDate.slice(0, 7));
-      setEditing({ mode: "edit", campaign: c });
+      onOpenCampaign(c.id);
     }
     // Let the parent clear its request after this render commits.
     queueMicrotask(() => onFocusHandled?.());
@@ -264,11 +265,6 @@ export function CampaignsView({
     if (!campaignOverlaps(campaign, from, to)) {
       setMonth(campaign.startDate.slice(0, 7));
     }
-  }
-
-  function remove(id: string) {
-    onDelete(id);
-    setEditing(null);
   }
 
   function toggleMilestone(campaign: Campaign, milestoneId: string) {
@@ -551,7 +547,7 @@ export function CampaignsView({
                   <button
                     type="button"
                     className="camp-card-title"
-                    onClick={() => setEditing({ mode: "edit", campaign: c })}
+                    onClick={() => onOpenCampaign(c.id)}
                     title="Edit campaign"
                   >
                     {c.name}
@@ -780,7 +776,7 @@ export function CampaignsView({
                         <button
                           type="button"
                           className="camp-ms-card-body"
-                          onClick={() => setEditing({ mode: "edit", campaign: c })}
+                          onClick={() => onOpenCampaign(c.id)}
                           title={`${c.name} · open the campaign`}
                         >
                           <span className="camp-ms-card-label">{m.label}</span>
@@ -813,7 +809,7 @@ export function CampaignsView({
                 <button
                   type="button"
                   className="camps-upcoming-row"
-                  onClick={() => setEditing({ mode: "edit", campaign: c })}
+                  onClick={() => onOpenCampaign(c.id)}
                 >
                   <span className="camps-swatch" style={{ background: c.color }} />
                   <span className="camps-upcoming-name">{c.name}</span>
@@ -845,24 +841,6 @@ export function CampaignsView({
           onOpenSocialPost={openSocialPost}
           onCancel={() => setEditing(null)}
           onSave={save}
-        />
-      )}
-      {editing && editing.mode === "edit" && (
-        <CampaignModal
-          key={editing.campaign.id}
-          mode="edit"
-          initial={editing.campaign}
-          categories={categories}
-          milestoneTypes={milestoneTypes}
-          designers={designers}
-          projects={projects}
-          workspaces={workspaces}
-          onOpenProject={openProject}
-          socialPosts={socialPosts}
-          onOpenSocialPost={openSocialPost}
-          onCancel={() => setEditing(null)}
-          onSave={save}
-          onDelete={() => remove(editing.campaign.id)}
         />
       )}
       {exporting && (

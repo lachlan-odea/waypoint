@@ -8,8 +8,7 @@ import {
 } from "../firestore";
 import { resetPassword, signIn, signUp } from "../firebase";
 import { LoginPattern } from "./LoginPattern";
-
-const heroImage = `${import.meta.env.BASE_URL}hero.png`;
+import { WaypointLogo } from "./brand/WaypointLogo";
 
 // Restrict signups to the team's email domain. Loosen / remove if you want
 // outside collaborators to be able to register themselves.
@@ -191,8 +190,10 @@ export function Login({ onSignedIn }: Props) {
       <LoginPattern />
       <div className="login-card">
         <div className="login-hero-wrap">
-          <img src={heroImage} alt="Waypoint" className="login-hero" />
-          {/* Easter egg: five quick clicks on the pin's circle reveal a trophy. */}
+          <div className="login-hero">
+            <WaypointLogo variant="stacked" color="blue" height={96} />
+          </div>
+          {/* Easter egg: five quick clicks on the mark's destination bar reveal a trophy. */}
           <button
             type="button"
             className="login-egg-hotspot"

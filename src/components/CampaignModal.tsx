@@ -49,6 +49,9 @@ type Props = {
   // For the link from each social milestone to the post it created.
   socialPosts?: SocialPost[];
   onOpenSocialPost?: (postId: string) => void;
+  // Render as the Details tab of the campaign's page: no overlay, no close
+  // button, no Escape, no Cancel. Save and Delete work as before.
+  inline?: boolean;
 };
 
 function newId(prefix: string): string {
@@ -69,6 +72,7 @@ export function CampaignModal({
   onOpenProject,
   socialPosts,
   onOpenSocialPost,
+  inline = false,
 }: Props) {
   const [name, setName] = useState(initial.name ?? "");
   const [category, setCategory] = useState(initial.category ?? "");
@@ -115,13 +119,14 @@ export function CampaignModal({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (inline) return;
     function onKey(e: KeyboardEvent) {
       // The SharePoint guide and the delete prompt handle their own Escape.
       if (e.key === "Escape" && !guideOpen && !removing) onCancel();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel, guideOpen, removing]);
+  }, [onCancel, guideOpen, removing, inline]);
 
   // Every campaign needs a start; only a dated one needs an end after it.
   const datesValid =
@@ -280,13 +285,12 @@ export function CampaignModal({
     .map((id) => projects.find((p) => p.id === id))
     .filter((p): p is Project => !!p);
 
-  return (
-    <div className="modal-overlay">
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+  const editor = (
+      <div className={inline ? "modal item-editor" : "modal"} onClick={(e) => e.stopPropagation()}>
         <header className="modal-head">
           <div>
             <h2 className="modal-title-static">
-              {mode === "create" ? "New campaign" : "Edit campaign"}
+              {inline ? "Campaign details" : mode === "create" ? "New campaign" : "Edit campaign"}
             </h2>
             {datesValid && (
               <div className="modal-sub">
@@ -322,9 +326,11 @@ export function CampaignModal({
                 </button>
               </>
             )}
-            <button className="icon-btn" onClick={onCancel} aria-label="Close">
-              ✕
-            </button>
+            {!inline && (
+              <button className="icon-btn" onClick={onCancel} aria-label="Close">
+                ✕
+              </button>
+            )}
           </div>
         </header>
 
@@ -625,12 +631,16 @@ export function CampaignModal({
               </button>
             )
           )}
-          <button onClick={onCancel}>Cancel</button>
+          {!inline && <button onClick={onCancel}>Cancel</button>}
           <button className="primary" onClick={submit} disabled={!canSave}>
             {mode === "create" ? "Add campaign" : "Save changes"}
           </button>
         </footer>
       </div>
+  );
+  return (
+    <div className={inline ? "item-editor-wrap" : "modal-overlay"}>
+      {editor}
       {removing && (() => {
         const post = socialPosts?.find((p) => p.id === removing.socialPostId);
         return post ? (

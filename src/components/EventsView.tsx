@@ -43,6 +43,9 @@ type Props = {
   workspaces: Workspace[];
   onOpenProject: (projectId: string) => void;
   onOpenCampaign: (campaignId: string) => void;
+  // Open an event as its own page (hash route in App.tsx). Editing
+  // happens there; this view only creates.
+  onOpenEvent: (eventId: string) => void;
   onSave: (event: MarketingEvent) => void;
   onDelete: (id: string) => void;
   // The header's + New → Event and Export CSV, as request numbers that
@@ -53,9 +56,7 @@ type Props = {
   onExportHandled?: () => void;
 };
 
-type Editing =
-  | { mode: "create"; initial: Partial<MarketingEvent> }
-  | { mode: "edit"; event: MarketingEvent };
+type Editing = { mode: "create"; initial: Partial<MarketingEvent> };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -133,8 +134,8 @@ export function EventsView({
   workspaces,
   onOpenProject,
   onOpenCampaign,
+  onOpenEvent,
   onSave,
-  onDelete,
   createRequest,
   onCreateHandled,
   exportRequest,
@@ -342,7 +343,7 @@ export function EventsView({
   }
 
   function openEdit(e: MarketingEvent) {
-    setEditing({ mode: "edit", event: e });
+    onOpenEvent(e.id);
   }
 
   // Follow a saved event to its year (and, on the Calendar tab, its month)
@@ -354,11 +355,6 @@ export function EventsView({
       goYear(event.startDate ? Number(event.startDate.slice(0, 4)) : event.year);
     }
     if (event.startDate && view === "calendar") setCalMonth(event.startDate.slice(0, 7));
-  }
-
-  function remove(id: string) {
-    onDelete(id);
-    setEditing(null);
   }
 
   function openProject(projectId: string) {
@@ -1051,23 +1047,6 @@ export function EventsView({
           onOpenCampaign={openCampaign}
           onCancel={() => setEditing(null)}
           onSave={save}
-        />
-      )}
-      {editing && editing.mode === "edit" && (
-        <EventModal
-          key={editing.event.id}
-          mode="edit"
-          initial={editing.event}
-          events={events}
-          campaigns={campaigns}
-          designers={designers}
-          projects={projects}
-          workspaces={workspaces}
-          onOpenProject={openProject}
-          onOpenCampaign={openCampaign}
-          onCancel={() => setEditing(null)}
-          onSave={save}
-          onDelete={() => remove(editing.event.id)}
         />
       )}
       {itineraryFor && (() => {
