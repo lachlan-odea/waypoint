@@ -27,6 +27,7 @@ import {
   monthTitle,
 } from "../events";
 import { EventModal } from "./EventModal";
+import { EventCalendarCard } from "./EventCalendarCard";
 import { ItineraryModal } from "./ItineraryModal";
 import { ExportCsvModal } from "./ExportCsvModal";
 import { csvFileName, downloadCsv, eventsCsv, eventsInRange } from "../csvExport";
@@ -736,24 +737,20 @@ export function EventsView({
                     </button>
                   </div>
                   {dayEvents.length > 0 && (
-                    <div className="ev-cell-list">
-                      {dayEvents.map((e) => {
-                        const ph = eventPhase(e, today);
-                        return (
-                          <button
-                            key={e.id}
-                            type="button"
-                            className={`ev-chip ${ph} ${iso !== e.startDate ? "cont" : ""}`}
-                            style={{ ["--ev" as string]: eventStatusMeta(ph).color } as React.CSSProperties}
-                            onClick={() => openEdit(e)}
-                            title={`${e.name} · ${formatEventDates(e)}${
-                              e.location ? ` · ${e.location}` : ""
-                            } · ${eventStatusMeta(ph).label}`}
-                          >
-                            {e.name}
-                          </button>
-                        );
-                      })}
+                    <div className="soc-cell-posts ev-cell-list">
+                      {dayEvents.map((e) => (
+                        <EventCalendarCard
+                          key={e.id}
+                          event={e}
+                          day={iso}
+                          today={today}
+                          campaign={e.campaignId ? campaigns.find((c) => c.id === e.campaignId) : undefined}
+                          onClick={() => openEdit(e)}
+                          // The full card on the run's first day, or on the first of the
+                          // month for a run that started earlier; later days compact.
+                          compact={iso !== e.startDate && iso !== `${calMonth}-01`}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>

@@ -8951,3 +8951,89 @@ a.share-btn {
   background: var(--wtg-periwinkle);
   color: var(--ink-900);
 }
+
+/* ── Events calendar cards (the Social calendar card, for an event) ──── */
+.ev-cal-card .soc-card-title {
+  color: var(--wtg-blue);
+}
+.ev-cal-card.compact {
+  gap: 2px;
+}
+.ev-cal-card.compact .soc-card-title {
+  font-weight: 500;
+  color: var(--muted);
+  -webkit-line-clamp: 1;
+}
+.ev-cal-day {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ev-cal-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 0;
+}
+.ev-cal-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ev-cal-meta .mono {
+  font-size: 10.5px;
+}
+.ev-cal-region {
+  color: var(--ink-600);
+  border-color: var(--ink-300);
+  --category: var(--ink-500);
+}
+.ev-cal-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.ev-cal-check i {
+  display: block;
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius);
+  background: var(--ink-100);
+  overflow: hidden;
+  min-width: 24px;
+}
+.ev-cal-check b {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius);
+  background: var(--wtg-cobalt);
+}
+.ev-cal-check.full b {
+  background: var(--wp-status-live-fg);
+}
+.ev-cal-check .mono {
+  font-size: 10px;
+  color: var(--muted);
+}
+.ev-cal-owed {
+  color: var(--wp-status-blocked-fg);
+}
+.ev-cal-card .soc-card-links {
+  color: var(--ink-500);
+}
+:root.dark-mode .ev-cal-card .soc-card-title {
+  color: var(--text);
+}
+:root.dark-mode .ev-cal-check i {
+  background: var(--ink-700);
+}
