@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   PolarAngleAxis,
   RadialBar,
@@ -23,7 +25,7 @@ import type {
   SocialPostStatus,
   Workspace,
 } from "../types";
-import { useChartTheme } from "../chartTheme";
+import { CHART_FONT, CHART_MONO, useChartTheme } from "../chartTheme";
 import { contentTypesLabel, projectContentTypes } from "../contentTypes";
 import {
   PROJECT_STATUSES,
@@ -39,7 +41,10 @@ import {
   monthBounds,
   type CampaignPhase,
 } from "../campaigns";
+import { campaignPhaseTone } from "../statusTone";
 import { formatShort, shiftIso, todayIso } from "../dates";
+import { Icon, type IconName, type IconTone } from "./Icon";
+import { StatusChip } from "./pages/ItemPage";
 
 type Props = {
   // Every project across every workspace. Analytics filters this down based
@@ -66,18 +71,6 @@ function isLiveWork(p: Project): boolean {
   if (p.archived) return false;
   return (p.status ?? "active") === "active";
 }
-
-// Brand steps (CargoWise Blue, Sky, a navy grey, Mint/Pine green), kept
-// mid-tone so the same bars read on the white and the dark-mode panel.
-const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
-  planning: "#a7cff8",
-  active: "#371ee1",
-  paused: "#8b96a8",
-  completed: "#1d1765",
-};
-
-// CargoWise Blue, lifted a step so it holds up on the dark panel too.
-const NEUTRAL_BAR = "#371ee1";
 
 // How far ahead the campaign watch list looks for milestones still to do.
 const WATCH_DAYS = 14;
@@ -213,6 +206,15 @@ type WatchItem = {
   campaign: Campaign;
   milestone: CampaignMilestone;
   overdue: boolean;
+};
+
+// The project status bars take fixed brand steps: Planning Sky, Active
+// Cobalt, On hold a neutral, Completed WiseTech Blue.
+const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
+  planning: "#a7cff8",
+  active: "#371ee1",
+  paused: "#8b96a8",
+  completed: "#1d1765",
 };
 
 export function Analytics({
@@ -351,7 +353,7 @@ export function Analytics({
         color:
           label === "Uncategorised"
             ? "#b9c0cc"
-            : (socialCategoryMeta(label, socialCategories)?.color ?? NEUTRAL_BAR),
+            : (socialCategoryMeta(label, socialCategories)?.color ?? undefined),
       }))
       .sort((a, b) => b.count - a.count);
     const byChannel = [...channels.entries()]
@@ -456,123 +458,76 @@ export function Analytics({
   }
 
   const activeQuickRange = detectActiveQuickRange(from, to);
-  const rangeLabel = from || to ? `${from || "…"} → ${to || "…"}` : "All time";
+  const rangeLabel =
+    from || to ? `${from ? formatShort(from) : "…"} – ${to ? formatShort(to) : "…"}` : "All time";
   const teamName =
     selectedWorkspaceId === ALL_WORKSPACES
       ? "all teams"
       : (workspaces.find((w) => w.id === selectedWorkspaceId)?.name ?? "");
 
   return (
-    <div className="analytics">
-      <div className="filter-bar">
-        <div className="filter-fields">
-          <label className="field-inline">
-            <span>Team</span>
-            <select
-              value={selectedWorkspaceId}
-              onChange={(e) => setSelectedWorkspaceId(e.target.value)}
-            >
-              <option value={ALL_WORKSPACES}>All teams</option>
-              {workspaces.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field-inline">
-            <span>From</span>
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              max={to || undefined}
-            />
-          </label>
-          <label className="field-inline">
-            <span>To</span>
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              min={from || undefined}
-            />
-          </label>
+    <div className="an">
+      {/* One row of filters above every chart, left to right: who, when. */}
+      <div className="an-filters" role="group" aria-label="Filters">
+        <label className="an-filter">
+          <span className="eyebrow">Team</span>
+          <select
+            value={selectedWorkspaceId}
+            onChange={(e) => setSelectedWorkspaceId(e.target.value)}
+          >
+            <option value={ALL_WORKSPACES}>All teams</option>
+            {workspaces.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="an-filter">
+          <span className="eyebrow">Range</span>
+          <div className="an-seg" role="group" aria-label="Quick range">
+            {(
+              [
+                ["7", "7 days"],
+                ["30", "30 days"],
+                ["90", "90 days"],
+                ["month", "This month"],
+                ["all", "All time"],
+              ] as Array<[QuickRange, string]>
+            ).map(([kind, label]) => (
+              <button
+                key={kind}
+                type="button"
+                aria-pressed={activeQuickRange === kind}
+                onClick={() => applyQuickRange(kind)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="filter-quick">
-          {(
-            [
-              ["7", "Last 7d"],
-              ["30", "Last 30d"],
-              ["90", "Last 90d"],
-              ["month", "This month"],
-              ["all", "All time"],
-            ] as Array<[QuickRange, string]>
-          ).map(([kind, label]) => (
-            <button
-              key={kind}
-              className={activeQuickRange === kind ? "active" : ""}
-              onClick={() => applyQuickRange(kind)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <section className="analytics-section">
-        <div className="section-head">
-          <h2>Projects</h2>
-          <span className="muted small">
-            {filtered.length} of {workspaceProjects.length} for {teamName},
-            commenced {rangeLabel}
-          </span>
-        </div>
-
-        <div className="kpi-row">
-          <Kpi label="Active" value={stats.activeCount} variant="live" />
-          <Kpi label="Overdue" value={stats.overdue} variant="overdue" />
-          <Kpi label="Due in 7 days" value={stats.dueThisWeek} variant="duesoon" />
-          <Kpi label="Urgent" value={stats.urgentCount} variant="urgent" />
-          <Kpi label="In review" value={stats.inReview} variant="planning" />
-          <CompletionKpi
-            label="Active tasks"
-            done={stats.doneMilestones}
-            total={stats.totalMilestones}
-            pct={stats.completionPct}
+        <label className="an-filter">
+          <span className="eyebrow">From</span>
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            max={to || undefined}
           />
-        </div>
-
-        <div className="panel-grid">
-          <div className="panel">
-            <h3>By status</h3>
-            {stats.byStatus.every((s) => s.count === 0) ? (
-              <p className="muted small">No data.</p>
-            ) : (
-              <CategoryBars data={stats.byStatus} unit="projects" />
-            )}
-          </div>
-          <div className="panel">
-            <h3>By brand</h3>
-            {stats.byBrand.length === 0 ? (
-              <p className="muted small">No data.</p>
-            ) : (
-              <CategoryBars data={stats.byBrand} unit="projects" />
-            )}
-          </div>
-        </div>
-
-        <div className="panel">
-          <h3>By content type</h3>
-          {stats.byContentType.length === 0 ? (
-            <p className="muted small">No data.</p>
-          ) : (
-            <CategoryBars data={stats.byContentType} unit="projects" />
-          )}
-        </div>
-
-        <div className="export-row">
+        </label>
+        <label className="an-filter">
+          <span className="eyebrow">To</span>
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            min={from || undefined}
+          />
+        </label>
+        <div className="an-filter an-filter-actions">
           <button
+            type="button"
+            className="btn btn-secondary btn-sm"
             onClick={() =>
               download(
                 `waypoint-projects-${today}.csv`,
@@ -580,10 +535,13 @@ export function Analytics({
                 "text/csv;charset=utf-8",
               )
             }
+            title="The filtered projects as a CSV file"
           >
-            Export CSV
+            <Icon name="download" size={14} /> CSV
           </button>
           <button
+            type="button"
+            className="btn btn-secondary btn-sm"
             onClick={() =>
               download(
                 `waypoint-projects-${today}.json`,
@@ -591,80 +549,117 @@ export function Analytics({
                 "application/json",
               )
             }
+            title="The filtered projects as JSON"
           >
-            Export JSON
+            <Icon name="download" size={14} /> JSON
           </button>
         </div>
-      </section>
+      </div>
 
-      <section className="analytics-section">
-        <div className="section-head">
-          <h2>Social calendar</h2>
-          <span className="muted small">
-            {social.total} posts planned {rangeLabel === "All time" ? "in total" : rangeLabel}
-            , all teams
-          </span>
+      <Section
+        eyebrow={`${rangeLabel} · ${teamName}`}
+        title="Projects"
+        summary={`${filtered.length} of ${workspaceProjects.length} projects, by the day they commenced`}
+      >
+        <div className="an-stats">
+          <Stat label="Active" value={stats.activeCount} icon="target" tone="sky" />
+          <Stat label="Overdue" value={stats.overdue} icon="clock-circle" tone="peach" alert={stats.overdue > 0} />
+          <Stat label="Due in 7 days" value={stats.dueThisWeek} icon="calendar" tone="pale" />
+          <Stat label="Urgent" value={stats.urgentCount} icon="flag" tone="peach" alert={stats.urgentCount > 0} />
+          <Stat label="In review" value={stats.inReview} icon="checkmark" tone="violet" />
+          <GaugeStat
+            label="Active tasks"
+            done={stats.doneMilestones}
+            total={stats.totalMilestones}
+            pct={stats.completionPct}
+          />
         </div>
 
-        <div className="kpi-row">
-          <Kpi label="Published" value={social.published} variant="completed" />
-          <Kpi label="Scheduled" value={social.scheduled} variant="duesoon" />
-          <Kpi label="Ready to publish" value={social.ready} />
-          <Kpi label="Draft" value={social.draft} />
-          <Kpi label="On hold" value={social.onHold} variant="planning" />
-          <Kpi label="No date yet" value={social.unscheduled} variant="paused" />
-          <Kpi label="No asset yet" value={social.needsAsset} variant="overdue" />
+        <div className="an-grid">
+          <Panel title="By status" aside={`${filtered.filter((p) => !p.archived).length} projects`}>
+            {stats.byStatus.every((s) => s.count === 0) ? (
+              <Empty>No projects in this range.</Empty>
+            ) : (
+              <CategoryBars data={stats.byStatus} unit="projects" />
+            )}
+          </Panel>
+          <Panel title="By brand" aside="One bar per brand">
+            {stats.byBrand.length === 0 ? (
+              <Empty>No projects in this range.</Empty>
+            ) : (
+              <CategoryBars data={stats.byBrand} unit="projects" />
+            )}
+          </Panel>
         </div>
 
-        <div className="panel">
-          <h3>Posts per month</h3>
+        <Panel title="By content type" aside="A project with several types counts once against each">
+          {stats.byContentType.length === 0 ? (
+            <Empty>No projects in this range.</Empty>
+          ) : (
+            <CategoryBars data={stats.byContentType} unit="projects" />
+          )}
+        </Panel>
+      </Section>
+
+      <Section
+        eyebrow={`${rangeLabel} · all teams`}
+        title="Social calendar"
+        summary={`${social.total} post${social.total === 1 ? "" : "s"} planned, by publish date`}
+      >
+        <div className="an-stats">
+          <Stat label="Published" value={social.published} icon="checkmark" tone="mint" />
+          <Stat label="Scheduled" value={social.scheduled} icon="calendar" tone="pale" />
+          <Stat label="Ready to publish" value={social.ready} icon="rocket" tone="violet" />
+          <Stat label="Draft" value={social.draft} icon="file" tone="pale" />
+          <Stat label="On hold" value={social.onHold} icon="clock" tone="pale" />
+          <Stat label="No date yet" value={social.unscheduled} icon="calendar" tone="peach" alert={social.unscheduled > 0} />
+          <Stat label="No asset yet" value={social.needsAsset} icon="file" tone="peach" alert={social.needsAsset > 0} />
+        </div>
+
+        <Panel title="Posts per month" aside="Stacked by status">
           {social.byMonth.length === 0 ? (
-            <p className="muted small">No posts in this range.</p>
+            <Empty>No posts in this range.</Empty>
           ) : (
             <MonthlyPosts data={social.byMonth} statuses={social.monthStatuses} />
           )}
-        </div>
+        </Panel>
 
-        <div className="panel-grid">
-          <div className="panel">
-            <h3>By category</h3>
+        <div className="an-grid">
+          <Panel title="By category" aside="One bar per category">
             {social.byCategory.length === 0 ? (
-              <p className="muted small">No data.</p>
+              <Empty>No posts in this range.</Empty>
             ) : (
               <CategoryBars data={social.byCategory} unit="posts" />
             )}
-          </div>
-          <div className="panel">
-            <h3>By channel</h3>
+          </Panel>
+          <Panel title="By channel" aside="One bar per channel">
             {social.byChannel.length === 0 ? (
-              <p className="muted small">No data.</p>
+              <Empty>No posts in this range.</Empty>
             ) : (
               <CategoryBars data={social.byChannel} unit="posts" />
             )}
-          </div>
+          </Panel>
         </div>
-      </section>
+      </Section>
 
-      <section className="analytics-section">
-        <div className="section-head">
-          <h2>Campaigns</h2>
-          <span className="muted small">
-            {rangeCampaigns.length} running {rangeLabel === "All time" ? "in total" : rangeLabel}
-            , all teams
-          </span>
-        </div>
-
-        <div className="kpi-row">
-          <Kpi label="Live" value={campaignStats.live} variant="live" />
-          <Kpi label="Upcoming" value={campaignStats.upcoming} variant="planning" />
-          <Kpi label="Finished" value={campaignStats.finished} variant="completed" />
-          <Kpi label="Evergreen" value={campaignStats.evergreen} variant="paused" />
-          <Kpi
+      <Section
+        eyebrow={`${rangeLabel} · all teams`}
+        title="Campaigns"
+        summary={`${rangeCampaigns.length} campaign${rangeCampaigns.length === 1 ? "" : "s"} running in the range`}
+      >
+        <div className="an-stats">
+          <Stat label="Live" value={campaignStats.live} icon="rocket" tone="mint" />
+          <Stat label="Upcoming" value={campaignStats.upcoming} icon="calendar" tone="pale" />
+          <Stat label="Finished" value={campaignStats.finished} icon="checkmark" tone="sky" />
+          <Stat label="Evergreen" value={campaignStats.evergreen} icon="leaf" tone="mint" />
+          <Stat
             label="Overdue milestones"
             value={campaignStats.overdueMilestones}
-            variant="overdue"
+            icon="clock-circle"
+            tone="peach"
+            alert={campaignStats.overdueMilestones > 0}
           />
-          <CompletionKpi
+          <GaugeStat
             label="Milestones"
             done={campaignStats.milestonesDone}
             total={campaignStats.milestonesTotal}
@@ -672,110 +667,157 @@ export function Analytics({
           />
         </div>
 
-        <div className="panel-grid">
-          <div className="panel">
-            <h3>Milestones to watch</h3>
+        <div className="an-grid">
+          <Panel title="Milestones to watch" aside={`Overdue, or due in the next ${WATCH_DAYS} days`}>
             {campaignStats.watch.length === 0 ? (
-              <p className="muted small">
-                Nothing overdue or due in the next {WATCH_DAYS} days.
-              </p>
+              <Empty>Nothing overdue or due in the next {WATCH_DAYS} days.</Empty>
             ) : (
-              <ul className="watch-list">
+              <ul className="an-watch">
                 {campaignStats.watch.map(({ campaign, milestone, overdue }) => (
                   <li key={`${campaign.id}-${milestone.id}`}>
-                    <span
-                      className={`watch-date${overdue ? " overdue" : ""}`}
-                    >
+                    <span className={`an-watch-date mono ${overdue ? "late" : ""}`}>
                       {formatShort(milestone.date)}
                     </span>
-                    <span className="watch-label">
-                      {milestone.label}
-                      <span className="muted small">
-                        <BrandDot color={campaign.color || brandColor(campaign.brand)} />
+                    <span className="an-watch-main">
+                      <b>{milestone.label}</b>
+                      <span className="an-watch-camp">
+                        <Swatch color={campaign.color || brandColor(campaign.brand)} />
                         {campaign.name}
                       </span>
                     </span>
+                    {overdue ? (
+                      <StatusChip status="blocked">Overdue</StatusChip>
+                    ) : milestone.date === today ? (
+                      <StatusChip status="live">Today</StatusChip>
+                    ) : (
+                      <StatusChip status="scheduled">Soon</StatusChip>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
-          </div>
+          </Panel>
 
-          <div className="panel">
-            <h3>Campaign progress</h3>
+          <Panel title="Campaign progress" aside="Milestones done, projects linked">
             {rangeCampaigns.length === 0 ? (
-              <p className="muted small">No campaigns in this range.</p>
+              <Empty>No campaigns in this range.</Empty>
             ) : (
-              <table className="campaign-table">
-                <thead>
-                  <tr>
-                    <th>Campaign</th>
-                    <th>Dates</th>
-                    <th>Milestones</th>
-                    <th>Projects</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rangeCampaigns.map(({ campaign: c, phase }) => (
-                    <tr key={c.id}>
-                      <td>
-                        <BrandDot color={c.color || brandColor(c.brand)} />
-                        {c.name}
-                        <span className={`phase-tag phase-${phase}`}>
-                          {PHASE_LABEL[phase]}
-                        </span>
-                      </td>
-                      <td className="muted">
-                        {formatShort(c.startDate)} – {formatShort(c.endDate)}
-                      </td>
-                      <td>
-                        {c.milestones.filter((m) => m.done).length} /{" "}
-                        {c.milestones.length}
-                      </td>
-                      <td>{c.projectIds.length}</td>
+              <div className="an-table-wrap">
+                <table className="an-table">
+                  <thead>
+                    <tr>
+                      <th>Campaign</th>
+                      <th>Dates</th>
+                      <th className="n">Milestones</th>
+                      <th className="n">Projects</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {rangeCampaigns.map(({ campaign: c, phase }) => (
+                      <tr key={c.id}>
+                        <td>
+                          <span className="an-table-name">
+                            <Swatch color={c.color || brandColor(c.brand)} />
+                            <b>{c.name}</b>
+                            <StatusChip status={campaignPhaseTone(phase)}>{PHASE_LABEL[phase]}</StatusChip>
+                          </span>
+                        </td>
+                        <td className="mono muted">
+                          {c.evergreen
+                            ? `From ${formatShort(c.startDate)}`
+                            : `${formatShort(c.startDate)} – ${formatShort(c.endDate)}`}
+                        </td>
+                        <td className="n mono">
+                          {c.milestones.filter((m) => m.done).length}/{c.milestones.length}
+                        </td>
+                        <td className="n mono">{c.projectIds.length}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
-          </div>
+          </Panel>
         </div>
-      </section>
+      </Section>
     </div>
   );
 }
 
-function BrandDot({ color }: { color: string }) {
-  return <span className="brand-dot" style={{ background: color }} aria-hidden />;
-}
+// ── Page pieces ─────────────────────────────────────────────────────────
 
-function Kpi({
-  label,
-  value,
-  variant,
+function Section({
+  eyebrow,
+  title,
+  summary,
+  children,
 }: {
-  label: string;
-  value: number | string;
-  variant?:
-    | "urgent"
-    | "overdue"
-    | "duesoon"
-    | "planning"
-    // "live" rather than "active": the variant becomes a class on .kpi, and
-    // .active is the app's ubiquitous selected-state class.
-    | "live"
-    | "completed"
-    | "paused";
+  eyebrow: string;
+  title: string;
+  summary: string;
+  children: ReactNode;
 }) {
   return (
-    <div className={`kpi ${variant ?? ""}`}>
-      <p className="kpi-label">{label}</p>
-      <p className="kpi-value">{value}</p>
+    <section className="an-section">
+      <div className="an-section-head">
+        <div>
+          <div className="eyebrow">{eyebrow}</div>
+          <h2>{title}</h2>
+        </div>
+        <p className="an-summary">{summary}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Panel({ title, aside, children }: { title: string; aside?: string; children: ReactNode }) {
+  return (
+    <section className="an-panel">
+      <div className="an-panel-head">
+        <h3>{title}</h3>
+        {aside && <span className="an-panel-aside">{aside}</span>}
+      </div>
+      <div className="an-panel-body">{children}</div>
+    </section>
+  );
+}
+
+function Empty({ children }: { children: ReactNode }) {
+  return <p className="an-empty">{children}</p>;
+}
+
+function Swatch({ color }: { color: string }) {
+  return <span className="an-swatch" style={{ background: color }} aria-hidden />;
+}
+
+// A stat tile: an icon tile, a mono label and the number in DM Mono. The
+// number only changes colour when it's a problem (overdue, urgent, missing).
+function Stat({
+  label,
+  value,
+  icon,
+  tone,
+  alert,
+}: {
+  label: string;
+  value: number;
+  icon: IconName;
+  tone: IconTone;
+  alert?: boolean;
+}) {
+  return (
+    <div className={`an-stat ${alert ? "alert" : ""}`}>
+      <Icon name={icon} size={18} container="tile" tone={tone} />
+      <div className="an-stat-text">
+        <span className="an-stat-label">{label}</span>
+        <span className="an-stat-value">{value.toLocaleString()}</span>
+      </div>
     </div>
   );
 }
 
-function CompletionKpi({
+function GaugeStat({
   label,
   done,
   total,
@@ -788,44 +830,40 @@ function CompletionKpi({
 }) {
   const theme = useChartTheme();
   return (
-    <div className="kpi kpi-gauge">
-      <div>
-        <p className="kpi-label">{label}</p>
-        <p className="kpi-value">
-          {done}
-          <span className="kpi-sub"> / {total}</span>
-        </p>
-        <p className="muted small">{pct}% complete</p>
-      </div>
-      <div className="kpi-gauge-chart" aria-hidden>
+    <div className="an-stat an-stat-gauge">
+      <div className="an-gauge" aria-hidden>
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart
-            innerRadius="70%"
+            innerRadius="72%"
             outerRadius="100%"
             data={[{ value: pct, fill: theme.gaugeFill }]}
             startAngle={90}
             endAngle={-270}
           >
-            <PolarAngleAxis
-              type="number"
-              domain={[0, 100]}
-              tick={false}
-              axisLine={false}
-            />
-            <RadialBar
-              dataKey="value"
-              cornerRadius={8}
-              background={{ fill: theme.gaugeTrack }}
-            />
+            <PolarAngleAxis type="number" domain={[0, 100]} tick={false} axisLine={false} />
+            <RadialBar dataKey="value" cornerRadius={10} background={{ fill: theme.gaugeTrack }} />
           </RadialBarChart>
         </ResponsiveContainer>
+        <span className="an-gauge-pct mono">{pct}%</span>
+      </div>
+      <div className="an-stat-text">
+        <span className="an-stat-label">{label}</span>
+        <span className="an-stat-value">
+          {done.toLocaleString()}
+          <span className="an-stat-sub"> / {total.toLocaleString()}</span>
+        </span>
       </div>
     </div>
   );
 }
 
+// ── Charts ──────────────────────────────────────────────────────────────
+
 type MonthRow = { month: string } & Record<string, number | string>;
 
+// Posts per month, one stacked bar per month, one fixed colour per status.
+// A 2px gap in the surface colour separates the stacked segments; the
+// legend names every status in the stack.
 function MonthlyPosts({
   data,
   statuses,
@@ -835,18 +873,19 @@ function MonthlyPosts({
 }) {
   const theme = useChartTheme();
   return (
-    <div className="chart-wrap" style={{ height: 260 }}>
+    <div className="an-chart" style={{ height: 260 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: -16 }}>
+        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -18 }} barCategoryGap="28%">
+          <CartesianGrid vertical={false} stroke={theme.grid} />
           <XAxis
             dataKey="month"
-            tick={{ fontSize: 11, fill: theme.axisLabel }}
+            tick={{ fontSize: 11, fill: theme.axisTick, fontFamily: CHART_MONO }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             allowDecimals={false}
-            tick={{ fontSize: 11, fill: theme.axisTick }}
+            tick={{ fontSize: 11, fill: theme.axisTick, fontFamily: CHART_MONO }}
             axisLine={false}
             tickLine={false}
           />
@@ -856,14 +895,17 @@ function MonthlyPosts({
             labelStyle={theme.tooltipLabelStyle}
             itemStyle={theme.tooltipItemStyle}
           />
-          <Legend iconType="circle" wrapperStyle={theme.legendStyle} />
+          <Legend iconType="square" iconSize={8} wrapperStyle={theme.legendStyle} />
           {statuses.map((s, i) => (
             <Bar
               key={s.value}
               dataKey={s.value}
               name={s.label}
               stackId="posts"
-              fill={s.color}
+              fill={theme.statusSeries[s.value]}
+              stroke={theme.surface}
+              strokeWidth={2}
+              maxBarSize={28}
               radius={i === statuses.length - 1 ? [4, 4, 0, 0] : 0}
             />
           ))}
@@ -875,31 +917,29 @@ function MonthlyPosts({
 
 type CategoryRow = { label: string; count: number; color?: string };
 
+// Horizontal bars for a count per category: thin marks with rounded data
+// ends, the value written at the end of each bar instead of a numeric
+// axis, and the category's own colour where it has one.
 function CategoryBars({ data, unit }: { data: CategoryRow[]; unit: string }) {
-  const chartHeight = Math.max(180, data.length * 32);
+  const chartHeight = Math.max(120, data.length * 30 + 8);
   const theme = useChartTheme();
   return (
-    <div className="chart-wrap" style={{ height: chartHeight }}>
+    <div className="an-chart" style={{ height: chartHeight }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
           layout="vertical"
-          margin={{ top: 4, right: 20, bottom: 4, left: 8 }}
+          margin={{ top: 0, right: 40, bottom: 0, left: 0 }}
+          barCategoryGap="30%"
         >
-          <XAxis
-            type="number"
-            allowDecimals={false}
-            tick={{ fontSize: 11, fill: theme.axisTick }}
-            axisLine={false}
-            tickLine={false}
-          />
+          <XAxis type="number" hide allowDecimals={false} />
           <YAxis
             type="category"
             dataKey="label"
-            tick={{ fontSize: 12, fill: theme.axisLabel }}
+            tick={{ fontSize: 12, fill: theme.axisLabel, fontFamily: CHART_FONT }}
             axisLine={false}
             tickLine={false}
-            width={140}
+            width={150}
           />
           <Tooltip
             cursor={{ fill: theme.cursorFill }}
@@ -908,10 +948,16 @@ function CategoryBars({ data, unit }: { data: CategoryRow[]; unit: string }) {
             labelStyle={theme.tooltipLabelStyle}
             itemStyle={theme.tooltipItemStyle}
           />
-          <Bar dataKey="count" radius={[0, 6, 6, 0]}>
+          <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={14} minPointSize={2}>
             {data.map((row, i) => (
               <Cell key={i} fill={row.color ?? theme.bar} />
             ))}
+            <LabelList
+              dataKey="count"
+              position="right"
+              offset={8}
+              style={{ fill: theme.valueLabel, fontSize: 12, fontFamily: CHART_MONO }}
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

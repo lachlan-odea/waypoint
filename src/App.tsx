@@ -80,6 +80,7 @@ import {
 import "./App.css";
 import "./pages.css";
 import "./webinar.css";
+import "./analytics.css";
 
 const PRIORITY_ORDER: Record<string, number> = {
   Urgent: 0,

@@ -1,0 +1,359 @@
+/* Analytics (Reports): one filter row, then a block per data source with
+   stat tiles, chart panels, a watch list and a table. Built on the v3
+   tokens in App.css. Marks follow the dataviz method: thin bars, 4px data
+   ends, a 2px surface gap in stacks, recessive grid, text in text ink. */
+
+.an {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Filters */
+.an-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 20px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.an-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.an-filter .eyebrow {
+  color: var(--muted);
+}
+.an-filter select,
+.an-filter input {
+  font: inherit;
+  font-size: 13px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+.an-filter select:focus,
+.an-filter input:focus {
+  outline: none;
+  border-color: var(--wtg-cobalt);
+  box-shadow: var(--focus-ring);
+}
+.an-seg {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.an-seg button {
+  appearance: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink-700);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.an-seg button:hover {
+  border-color: var(--ink-300);
+}
+.an-seg button[aria-pressed="true"] {
+  background: var(--cobalt-050);
+  border-color: var(--wtg-cobalt);
+  color: var(--wtg-cobalt);
+}
+.an-seg button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.an-filter-actions {
+  flex-direction: row;
+  margin-left: auto;
+  gap: 8px;
+}
+
+/* Sections */
+.an-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.an-section + .an-section {
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.an-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.an-section-head h2 {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--wtg-blue);
+}
+.an-summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Stat tiles */
+.an-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(172px, 1fr));
+  gap: 12px;
+}
+.an-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.an-stat-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.an-stat-label {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.an-stat-value {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--wtg-blue);
+}
+.an-stat.alert .an-stat-value {
+  color: var(--wp-status-blocked-fg);
+}
+.an-stat-sub {
+  font-size: 14px;
+  color: var(--muted);
+}
+.an-gauge {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex: none;
+}
+.an-gauge-pct {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--wtg-blue);
+}
+
+/* Panels */
+.an-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.an-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.an-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.an-panel-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--wtg-blue);
+}
+.an-panel-aside {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+.an-panel-body {
+  padding: 14px 16px 12px;
+}
+.an-chart {
+  width: 100%;
+}
+.an-chart .recharts-legend-item-text {
+  color: var(--text) !important;
+}
+.an-empty {
+  margin: 0;
+  padding: 18px 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+.an-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* Watch list */
+.an-watch {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.an-watch li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.an-watch li:last-child {
+  border-bottom: 0;
+}
+.an-watch-date {
+  flex: 0 0 60px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.an-watch-date.late {
+  color: var(--wp-status-blocked-fg);
+}
+.an-watch-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.an-watch-main b {
+  font-weight: 600;
+}
+.an-watch-camp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Table */
+.an-table-wrap {
+  overflow-x: auto;
+  margin: -14px -16px -12px;
+}
+.an-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.an-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.an-table td {
+  padding: 0 16px;
+  height: 44px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.an-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.an-table tbody tr:hover {
+  background: var(--ink-50);
+}
+.an-table th.n,
+.an-table td.n {
+  text-align: right;
+}
+.an-table .mono {
+  font-size: 12px;
+}
+.an-table-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.an-table-name b {
+  font-weight: 600;
+}
+
+@media (max-width: 960px) {
+  .an-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .an-filter-actions {
+    margin-left: 0;
+  }
+}
+
+:root.dark-mode .an-section-head h2,
+:root.dark-mode .an-panel-head h3,
+:root.dark-mode .an-stat-value,
+:root.dark-mode .an-gauge-pct {
+  color: var(--wtg-periwinkle);
+}
+:root.dark-mode .an-stat.alert .an-stat-value {
+  color: #ff9cb8;
+}
+:root.dark-mode .an-watch-date.late {
+  color: #ff9cb8;
+}
+:root.dark-mode .an-seg button[aria-pressed="true"] {
+  background: rgba(183, 179, 255, 0.14);
+  border-color: var(--wtg-periwinkle);
+  color: var(--wtg-periwinkle);
+}
+:root.dark-mode .an-table tbody tr:hover {
+  background: var(--surface-2);
+}
