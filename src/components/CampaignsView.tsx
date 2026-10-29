@@ -21,6 +21,7 @@ import {
 import { CampaignModal } from "./CampaignModal";
 import { MilestonePostLink } from "./MilestonePostLink";
 import { ExportCsvModal } from "./ExportCsvModal";
+import { WebinarPipeline } from "./webinar/WebinarPipeline";
 import {
   MILESTONE_DRAG_MIME,
   readDraggedMilestone,
@@ -48,9 +49,11 @@ type Props = {
   projects: Project[];
   workspaces: Workspace[];
   onOpenProject: (projectId: string) => void;
-  // Open a campaign as its own page (hash route in App.tsx). Editing
-  // happens there; this view only creates.
-  onOpenCampaign: (campaignId: string) => void;
+  // Open a campaign as its own page (hash route in App.tsx), optionally
+  // on a tab or kit section. Editing happens there; this view only creates.
+  onOpenCampaign: (campaignId: string, tab?: string) => void;
+  // For "My webinars" and attribution on the webinar kit.
+  currentDesignerId: string;
   // Every social post, to show the status of the post each social
   // milestone created, and the way to open one.
   socialPosts: SocialPost[];
@@ -80,7 +83,7 @@ const NO_TYPE = "__none__";
 // Per-browser preference: the month's campaign cards, or the day grid of
 // their milestones.
 const VIEW_KEY = "waypoint.campaigns.view";
-type View = "cards" | "calendar";
+type View = "cards" | "calendar" | "webinars";
 
 function shiftMonth(month: string, delta: number): string {
   const [y, m] = month.split("-").map(Number);
@@ -126,6 +129,7 @@ export function CampaignsView({
   workspaces,
   onOpenProject,
   onOpenCampaign,
+  currentDesignerId,
   socialPosts,
   onOpenSocialPost,
   onSave,
@@ -151,7 +155,8 @@ export function CampaignsView({
   const [hoverCampaignId, setHoverCampaignId] = useState<string | null>(null);
   const [view, setViewState] = useState<View>(() => {
     try {
-      return localStorage.getItem(VIEW_KEY) === "calendar" ? "calendar" : "cards";
+      const saved = localStorage.getItem(VIEW_KEY);
+      return saved === "calendar" || saved === "webinars" ? saved : "cards";
     } catch {
       return "cards";
     }
@@ -361,6 +366,8 @@ export function CampaignsView({
   return (
     <section className="workspace-section soc camps">
       <div className="soc-toolbar">
+        {view !== "webinars" && (
+          <>
         <div className="soc-monthnav">
           <button
             className="btn-mini"
@@ -452,6 +459,8 @@ export function CampaignsView({
             Dated
           </button>
         </div>
+          </>
+        )}
 
         <div className="soc-toolbar-right">
           <div className="soc-tabs" role="tablist" aria-label="Cards or calendar">
@@ -471,10 +480,20 @@ export function CampaignsView({
             >
               Calendar
             </button>
+            <button
+              role="tab"
+              aria-selected={view === "webinars"}
+              className={view === "webinars" ? "active" : ""}
+              onClick={() => setView("webinars")}
+              title="The webinar pipeline: every Webinar campaign worked through the 2026 kit"
+            >
+              Webinars
+            </button>
           </div>
         </div>
       </div>
 
+      {view !== "webinars" && (
       <div className="soc-summary">
         <span className="muted small">
           {monthCampaigns.length === 0
@@ -491,6 +510,17 @@ export function CampaignsView({
           {" · open a card to edit it, tick a milestone when it's happened"}
         </span>
       </div>
+      )}
+
+      {view === "webinars" && (
+        <WebinarPipeline
+          campaigns={campaigns}
+          designers={designers}
+          currentDesignerId={currentDesignerId}
+          onOpen={onOpenCampaign}
+          onCreate={(c) => onSave(c)}
+        />
+      )}
 
       {view === "cards" && (
         <>
@@ -797,7 +827,7 @@ export function CampaignsView({
         </>
       )}
 
-      {upcoming.length > 0 && (
+      {view !== "webinars" && upcoming.length > 0 && (
         <div className="camps-upcoming">
           <div className="section-head">
             <h2>Coming up</h2>

@@ -356,7 +356,7 @@ export function DeskChecklist({
               onClick={() => setUndo(null)}
               aria-label="Dismiss"
             >
-              ✕
+              <Icon name="close" size={16} />
             </button>
           </div>
         )}
@@ -613,7 +613,7 @@ export function DeskChecklist({
                 <li key={item.id}>
                   <div className="desk-row">
                     <span className="desk-tickdone" aria-hidden="true">
-                      ✓
+                      <Icon name="checkmark" size={14} />
                     </span>
                     <div className="desk-body">
                       <span className="desk-text struck">{item.text}</span>
@@ -648,3 +648,5 @@ export function DeskChecklist({
     </div>
   );
 }
+
+import { Icon } from "./Icon";

@@ -25,6 +25,7 @@ import { setCampaignSharePointUrl, setCampaignShareToken } from "../firestore";
 import { SharePointGuideModal } from "./SharePointGuideModal";
 import { ProjectPicker } from "./ProjectPicker";
 import { AssigneePicker } from "./AssigneePicker";
+import { Icon } from "./Icon";
 
 type Props = {
   initial: Partial<Campaign>;
@@ -313,7 +314,7 @@ export function CampaignModal({
                     rel="noopener noreferrer"
                     title="Open the campaign's page on SharePoint"
                   >
-                    Open on SharePoint ↗
+                    Open on SharePoint <Icon name="external-link" size={12} />
                   </a>
                 )}
                 <button
@@ -328,7 +329,7 @@ export function CampaignModal({
             )}
             {!inline && (
               <button className="icon-btn" onClick={onCancel} aria-label="Close">
-                ✕
+                <Icon name="close" size={16} />
               </button>
             )}
           </div>
@@ -495,7 +496,7 @@ export function CampaignModal({
                     onClick={() => onOpenProject(p.id)}
                     title="Close this campaign and open the project"
                   >
-                    {p.title} ↗
+                    {p.title} <Icon name="external-link" size={12} />
                   </button>
                 ))}
               </div>

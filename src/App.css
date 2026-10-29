@@ -7680,3 +7680,1265 @@ a.share-btn {
   outline: none;
   box-shadow: var(--focus-ring);
 }
+
+/* ========================================================================
+   v3 component layer. The design system applied to every list view, card,
+   pill, table and window. Later rules win over the v2 rules above at the
+   same specificity; keep additions here rather than editing upwards.
+   ======================================================================== */
+
+/* ── Shared primitives ─────────────────────────────────────────────────── */
+.v3-eyebrow,
+.section-head .eyebrow,
+.mydesk-section-head .eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wtg-cobalt);
+}
+.mono,
+.card-due,
+.team-col-head .small,
+.soc-weekday,
+.activity-header,
+.campaign-table th,
+.ev-table th,
+.kpi-value,
+.metric-value,
+.soc-day,
+.item-counter {
+  font-family: var(--font-mono);
+}
+.mono-chip {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Topbar ───────────────────────────────────────────────────────────── */
+.topbar .muted.small,
+.topbar-sub {
+  font-size: 14px;
+  color: var(--muted);
+}
+.topbar-actions .search {
+  width: 220px;
+  height: 36px;
+  padding: 0 12px 0 34px;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235D6B82' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: 11px center;
+  background-size: 16px;
+}
+.topbar-actions .btn-mini {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid var(--ink-200);
+  color: var(--wtg-blue);
+}
+.topbar-actions .btn-mini:hover:not(:disabled) {
+  border-color: var(--wtg-cobalt);
+  color: var(--wtg-cobalt);
+}
+.topbar-actions .primary,
+.new-menu-primary > .primary {
+  min-height: 36px;
+  padding: 0 16px;
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--wtg-cobalt);
+  color: #fff;
+  border-radius: var(--radius);
+}
+.topbar-actions .primary:hover,
+.new-menu-primary > .primary:hover {
+  background: var(--primary-hover);
+}
+
+/* ── Board sections ───────────────────────────────────────────────────── */
+.workspace-section,
+.team-column,
+.mydesk-section,
+.dashboard-section,
+.panel,
+.metric-card,
+.kpi,
+.notification-card,
+.filter-bar,
+.camp-card,
+.ev-card,
+.project-card,
+.soc-card,
+.dashboard-activity-table,
+.modal {
+  box-shadow: none;
+}
+.section-head {
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.section-head h2 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--wtg-blue);
+  text-transform: none;
+}
+.section-head .muted.small {
+  font-size: 13px;
+  color: var(--muted);
+}
+.collapse-icon {
+  color: var(--wtg-cobalt);
+}
+.team-section > .section-head {
+  padding: 0 2px;
+}
+.team-column {
+  background: var(--ink-50);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.team-col-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ink-200);
+}
+.team-col-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.team-col-head .muted.small {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.team-col-cards .project-card {
+  background: var(--surface);
+}
+.drop-target.drop-over,
+.team-column.drop-over,
+.workspace-section.drop-over {
+  border-color: var(--wtg-cobalt);
+  background: var(--cobalt-050);
+}
+
+/* ── Project cards ────────────────────────────────────────────────────── */
+.project-card {
+  padding: 16px;
+  gap: 8px;
+  border: 1px solid var(--ink-200);
+  background: var(--surface);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.project-card:hover {
+  border-color: var(--ink-300);
+  transform: none;
+}
+.project-card.dragging {
+  opacity: 0.6;
+}
+.project-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.card-priority {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  line-height: 1.3;
+}
+.card-priority.urgent,
+.priority-badge.urgent,
+.task-priority.urgent {
+  background: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+}
+.card-priority.high,
+.priority-badge.high,
+.task-priority.high {
+  background: var(--wtg-peach);
+  color: var(--ink-900);
+}
+.card-priority.normal,
+.priority-badge.normal,
+.task-priority.normal {
+  background: var(--wtg-sky-100);
+  color: var(--wtg-blue);
+}
+.card-priority.low,
+.priority-badge.low,
+.task-priority.low {
+  background: var(--ink-100);
+  color: var(--ink-700);
+}
+.card-due {
+  font-size: 12px;
+  color: var(--muted);
+}
+.card-due.overdue {
+  color: var(--wp-status-blocked-fg);
+  font-weight: 500;
+}
+.card-overdue-chip {
+  background: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--wtg-blue);
+  line-height: 1.3;
+}
+.project-card.compact .card-title {
+  font-size: 14px;
+}
+.card-client {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.card-team-badge {
+  align-self: flex-start;
+  display: inline-block;
+  margin-top: 0;
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-600);
+}
+.card-next-milestone {
+  font-size: 13px;
+  color: var(--text);
+}
+.card-next-milestone-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--wtg-cobalt);
+}
+.card-brand {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.card-progress {
+  height: 4px;
+  border-radius: var(--radius);
+  background: var(--ink-100);
+}
+.card-progress-bar {
+  background: var(--wtg-cobalt);
+  border-radius: var(--radius);
+}
+.flag-indicator {
+  background: var(--wp-status-review-bg);
+  border: 0;
+  color: var(--wp-status-review-fg);
+  font-weight: 600;
+  font-size: 12px;
+  padding: 2px 10px 2px 8px;
+}
+.card-campaign {
+  font-size: 12px;
+}
+.card-assignee {
+  border: 2px solid var(--surface);
+}
+
+/* ── Buttons shared by views ──────────────────────────────────────────── */
+.btn-mini {
+  min-height: 28px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--ink-200);
+  background: var(--surface);
+  color: var(--wtg-blue);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.btn-mini:hover:not(:disabled) {
+  border-color: var(--wtg-cobalt);
+  color: var(--wtg-cobalt);
+  background: var(--surface);
+}
+.btn-mini.primary {
+  background: var(--wtg-cobalt);
+  border-color: var(--wtg-cobalt);
+  color: #fff;
+}
+.link-btn {
+  color: var(--wtg-cobalt);
+  font-weight: 600;
+}
+.share-btn {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ink-200);
+  background: var(--surface);
+  color: var(--wtg-blue);
+  font-size: 12px;
+  font-weight: 600;
+}
+.share-btn:hover {
+  border-color: var(--wtg-cobalt);
+  color: var(--wtg-cobalt);
+}
+.icon-btn {
+  border-radius: var(--radius);
+  color: var(--muted);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.icon-btn:hover {
+  background: var(--ink-100);
+  color: var(--wtg-blue);
+}
+.icon-btn:focus-visible,
+.btn-mini:focus-visible,
+.share-btn:focus-visible,
+.link-btn:focus-visible,
+.filter-quick button:focus-visible,
+.soc-tabs button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ── Filter pills and tabs ────────────────────────────────────────────── */
+.filter-quick button,
+.export-row button {
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.filter-quick button:hover,
+.export-row button:hover {
+  border-color: var(--ink-300);
+  background: var(--surface);
+}
+.filter-quick button.active,
+.filter-quick button.active:hover {
+  background: var(--cobalt-050);
+  border-color: var(--wtg-cobalt);
+  color: var(--wtg-cobalt);
+  font-weight: 600;
+}
+.soc-tabs {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+  gap: 2px;
+  border-bottom: 1px solid var(--ink-200);
+}
+.soc-tabs button {
+  position: relative;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius) var(--radius) 0 0;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.soc-tabs button:hover {
+  color: var(--text);
+  background: var(--ink-50);
+}
+.soc-tabs button.active {
+  background: transparent;
+  color: var(--wtg-blue);
+  border-bottom-color: var(--wtg-cobalt);
+  box-shadow: none;
+}
+
+/* ── Status pills everywhere ──────────────────────────────────────────── */
+/* .wp-status (from the token layer) carries the colour; these keep the
+   old classes' sizing where a pill sits inside a calendar cell or table. */
+.soc-status.wp-status {
+  min-height: 16px;
+  padding: 1px 7px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+.soc-card.detailed .soc-status.wp-status,
+.ev-table .soc-status.wp-status,
+.ev-card .soc-status.wp-status,
+.linked-post .soc-status.wp-status {
+  font-size: 11px;
+  min-height: 20px;
+  padding: 1px 9px;
+}
+.soc-status-dot {
+  display: none;
+}
+.activity-status-badge.wp-status {
+  border: 0;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: none;
+}
+/* Channel chips stay solid in the brand colour (they're dark swatches). */
+.soc-chip {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+}
+/* Category pills: outlined, coloured text, hairline border. */
+.soc-category {
+  background: transparent;
+  border-width: 1px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+:root.dark-mode .soc-category {
+  background: transparent;
+  filter: brightness(1.35);
+}
+.soc-type-pill {
+  background: var(--surface) !important;
+  border-color: color-mix(in srgb, var(--category) 60%, var(--ink-200)) !important;
+  color: var(--category) !important;
+}
+.soc-type-pill:hover {
+  background: color-mix(in srgb, var(--category) 8%, var(--surface)) !important;
+}
+.soc-type-pill.active,
+.soc-type-pill.active:hover {
+  background: color-mix(in srgb, var(--category) 16%, var(--surface)) !important;
+  border-color: var(--category) !important;
+  color: color-mix(in srgb, var(--category) 85%, var(--ink-900)) !important;
+  font-weight: 700;
+}
+:root.dark-mode .soc-type-pill.active,
+:root.dark-mode .soc-type-pill.active:hover {
+  color: #fff !important;
+}
+/* Campaign phase + analytics phase tags */
+.camp-phase,
+.phase-tag {
+  border: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  padding: 2px 9px;
+  background: var(--wp-status-planning-bg);
+  color: var(--wp-status-planning-fg);
+}
+.camp-phase.upcoming,
+.phase-tag.phase-upcoming {
+  background: var(--wp-status-planning-bg);
+  color: var(--wp-status-planning-fg);
+}
+.camp-phase.live,
+.phase-tag.phase-live {
+  background: var(--wp-status-live-bg);
+  color: var(--wp-status-live-fg);
+}
+.camp-phase.finished,
+.phase-tag.phase-finished {
+  background: var(--wp-status-complete-bg);
+  color: var(--wp-status-complete-fg);
+}
+.camp-phase.evergreen,
+.phase-tag.phase-evergreen {
+  background: var(--wp-status-in-progress-bg);
+  color: var(--wp-status-in-progress-fg);
+}
+:root.dark-mode .camp-phase.live,
+:root.dark-mode .phase-tag.phase-live {
+  background: var(--wp-status-live-bg);
+  color: var(--wp-status-live-fg);
+}
+.priority-badge {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+}
+.ev-tag {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--ink-200);
+  color: var(--ink-600);
+}
+.badge {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 12px;
+  background: var(--cobalt-050);
+  color: var(--wtg-cobalt);
+  padding: 2px 8px;
+}
+.notify-tag {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  background: var(--cobalt-050);
+  color: var(--wtg-cobalt);
+}
+.notify-tag.review {
+  background: var(--wp-status-review-bg);
+  color: var(--wp-status-review-fg);
+}
+.status-select {
+  font-weight: 600;
+  border: 1px solid var(--ink-200);
+}
+.status-select:focus {
+  border-color: var(--wtg-cobalt);
+  box-shadow: var(--focus-ring);
+}
+.status-select.status-active {
+  background-color: var(--wp-status-in-progress-bg);
+  border-color: var(--wp-status-in-progress-bg);
+  color: var(--wp-status-in-progress-fg);
+}
+.status-select.status-planning {
+  background-color: var(--wp-status-planning-bg);
+  border-color: var(--wp-status-planning-bg);
+  color: var(--wp-status-planning-fg);
+}
+.status-select.status-paused {
+  background-color: var(--wp-status-draft-bg);
+  border-color: var(--wp-status-draft-bg);
+  color: var(--wp-status-draft-fg);
+}
+.status-select.status-completed {
+  background-color: var(--wp-status-complete-bg);
+  border-color: var(--wp-status-complete-bg);
+  color: var(--wp-status-complete-fg);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 4.5 L6 7.5 L9 4.5' stroke='%23ffffff' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+}
+
+/* ── Modals ───────────────────────────────────────────────────────────── */
+.modal,
+.notifications-modal,
+.confirm-modal,
+.sp-guide {
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+.modal-head {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--ink-200);
+}
+.modal-title,
+.modal-title-static {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--wtg-blue);
+  line-height: 1.2;
+}
+.modal-sub {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.modal-sub select {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 26px;
+  border: 1px solid var(--ink-200);
+}
+.modal-body {
+  padding: 20px;
+  gap: 20px;
+}
+.modal-section h3,
+.ev-section h3,
+.settings-group-head h3,
+.panel h3,
+.preference-label,
+.it-section-head h3 {
+  margin: 12px 0 10px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wtg-cobalt);
+}
+.modal-section:first-child h3,
+.panel h3 {
+  margin-top: 0;
+}
+.field span,
+.field > span:first-child,
+.field label,
+.flabel,
+.asset-field > .field > span {
+  color: var(--ink-800);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.field span.field-hint,
+.soc-check-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.field span.field-hint.warn {
+  color: var(--wp-status-blocked-fg);
+}
+.field input,
+.field select,
+.field textarea,
+.modal-section textarea,
+.row input,
+.soc-search,
+.pin-input,
+.auth-form input,
+.desk-addrow input,
+.manage-users-search,
+.soc-copy-input,
+.ev-filter-select,
+.filter-fields input,
+.filter-fields select {
+  min-height: 36px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 7px 10px;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.field textarea,
+.modal-section textarea {
+  min-height: 72px;
+  line-height: 1.5;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.modal-section textarea:focus,
+.row input:focus,
+.soc-search:focus,
+.pin-input:focus,
+.auth-form input:focus,
+.desk-addrow input:focus,
+.manage-users-search:focus,
+.ev-filter-select:focus,
+.filter-fields input:focus,
+.filter-fields select:focus {
+  outline: none;
+  border-color: var(--wtg-cobalt);
+  box-shadow: var(--focus-ring);
+}
+.field input[type="checkbox"],
+.field input[type="radio"],
+.soc-check input,
+.csv-option input {
+  min-height: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--wtg-cobalt);
+}
+.modal-foot {
+  padding: 14px 20px;
+  background: var(--ink-50);
+  border-top: 1px solid var(--ink-200);
+}
+.modal-foot button {
+  min-height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--ink-200);
+  background: var(--surface);
+  color: var(--wtg-blue);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.modal-foot button:hover {
+  border-color: var(--ink-300);
+  background: var(--surface);
+}
+.modal-foot .primary,
+.modal-foot .primary:hover,
+.login-submit,
+.confirm-modal .primary {
+  background: var(--wtg-cobalt);
+  border-color: var(--wtg-cobalt);
+  color: #fff;
+}
+.modal-foot .primary:hover,
+.login-submit:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+.modal-foot .primary:disabled {
+  opacity: 0.5;
+}
+.modal-foot .danger,
+.danger {
+  background: var(--surface);
+  border-color: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+}
+.modal-foot .danger:hover,
+.danger:hover {
+  background: var(--wp-status-blocked-bg);
+  border-color: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+}
+.delete-confirm-prompt {
+  color: var(--wp-status-blocked-fg);
+}
+.modal-head .icon-btn {
+  background: transparent;
+  color: var(--muted);
+}
+.modal-head .icon-btn:hover {
+  background: var(--ink-100);
+  color: var(--wtg-blue);
+}
+.modal-grid {
+  gap: 14px;
+}
+.login-error {
+  color: var(--wp-status-blocked-fg);
+}
+
+/* ── My Desk, Dashboard, Analytics ───────────────────────────────────── */
+.mydesk-section,
+.dashboard-section,
+.panel,
+.metric-card,
+.kpi,
+.notification-card,
+.filter-bar,
+.dashboard-activity-table {
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.mydesk-section h3,
+.dashboard-section-head h3,
+.dashboard-section h3,
+.notification-card h3,
+.mydesk-greeting h2 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--wtg-blue);
+}
+.dashboard-section h3 .nav-icon,
+.dashboard-section h3 svg {
+  vertical-align: -3px;
+  margin-right: 4px;
+  color: var(--wp-status-blocked-fg);
+}
+.mydesk-greeting h2 {
+  font-size: 32px;
+  letter-spacing: -0.02em;
+}
+.metric-label,
+.kpi-label {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.metric-value,
+.kpi-value {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  color: var(--wtg-blue);
+}
+.kpi-sub {
+  font-size: 14px;
+  color: var(--muted);
+}
+.kpi.urgent .kpi-value,
+.kpi.overdue .kpi-value {
+  color: var(--wp-status-blocked-fg);
+}
+.kpi.duesoon .kpi-value {
+  color: #b4501f;
+}
+.kpi.planning .kpi-value,
+.kpi.live .kpi-value,
+.kpi.completed .kpi-value,
+.kpi.paused .kpi-value,
+.kpi.archived .kpi-value {
+  color: var(--wtg-blue);
+}
+.kpi.live .kpi-value {
+  color: var(--wp-status-live-fg);
+}
+.ev-kpi-btn.selected {
+  border-color: var(--wtg-cobalt);
+  background: var(--cobalt-050);
+  box-shadow: none;
+}
+.dashboard-section.dashboard-overdue {
+  border-color: var(--wp-status-blocked-bg);
+  background: var(--surface);
+}
+.dashboard-task-item,
+.dashboard-deadline-item,
+.project-item,
+.deadline-item,
+.notification-item {
+  border-radius: var(--radius);
+  border: 1px solid var(--ink-200);
+  background: var(--surface);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.dashboard-task-item:hover,
+.dashboard-deadline-item:hover,
+.project-item:hover,
+.deadline-item:hover {
+  border-color: var(--wtg-cobalt);
+  background: var(--cobalt-050);
+}
+.deadline-date {
+  background: var(--wtg-blue);
+  color: #fff;
+  border-radius: var(--radius);
+}
+.deadline-day,
+.deadline-month {
+  font-family: var(--font-mono);
+}
+/* Tables */
+.activity-header,
+.campaign-table th,
+.ev-table th {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface);
+  border-bottom: 1px solid var(--ink-200);
+}
+.activity-row,
+.campaign-table td,
+.ev-table td {
+  min-height: 44px;
+  font-size: 13px;
+  border-color: var(--ink-200);
+}
+.campaign-table td,
+.ev-table td {
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+.activity-row:hover,
+.campaign-table tbody tr:hover td,
+.ev-row:hover td {
+  background: var(--ink-50);
+}
+.ev-month-row th {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--wtg-blue);
+  border-bottom: 0;
+}
+.activity-due-date,
+.ev-td-dates,
+.ev-td-code,
+.watch-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* ── Social calendar ─────────────────────────────────────────────────── */
+.soc-month-title,
+.ev-year-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--wtg-blue);
+}
+.soc-weekday {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.soc-cell {
+  border: 1px solid var(--ink-200);
+  background: var(--surface);
+}
+.soc-cell.weekend {
+  background: var(--ink-50);
+}
+.soc-cell.today {
+  border-color: var(--ink-200);
+  border-top: 2px solid var(--wtg-cobalt);
+  box-shadow: none;
+}
+.soc-cell.today .soc-day {
+  color: var(--wtg-cobalt);
+  font-weight: 500;
+}
+.soc-day {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.soc-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--ink-200);
+  border-left-width: 3px;
+}
+.soc-card:hover {
+  transform: none;
+  border-color: var(--ink-300);
+}
+.soc-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.soc-card-title {
+  font-weight: 600;
+  color: var(--text);
+}
+.soc-tray {
+  background: var(--ink-50);
+  border: 1px dashed var(--ink-300);
+}
+.soc-legend-item.active {
+  border-color: var(--wtg-cobalt);
+  background: var(--cobalt-050);
+}
+.soc-legend-count,
+.soc-type-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.soc-filters-label {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+}
+
+/* ── Campaign and event cards ─────────────────────────────────────────── */
+.camp-card,
+.ev-card {
+  border: 1px solid var(--ink-200);
+  transition: border-color var(--dur) var(--ease);
+}
+.camp-card:hover,
+.ev-card:hover {
+  border-color: var(--ink-300);
+}
+.camp-card-title,
+.ev-name,
+.camp-mini-name,
+.camps-upcoming-name {
+  font-weight: 700;
+  color: var(--wtg-blue);
+  letter-spacing: -0.01em;
+}
+.camp-card-dates,
+.camp-card-ms-date,
+.camp-mini-when,
+.camp-mini-time,
+.ev-sub,
+.ev-card-stats .mono {
+  font-family: var(--font-mono);
+}
+.camp-card-type,
+.camps-list-head .muted,
+.ev-card-top .muted.small {
+  font-size: 12px;
+}
+.camp-card-progress,
+.ev-check-bar,
+.camp-mini-time-bar {
+  height: 4px;
+  border-radius: var(--radius);
+  background: var(--ink-100);
+}
+.camp-card-progress-bar,
+.ev-check-fill,
+.camp-mini-time-bar > * {
+  background: var(--wtg-cobalt);
+  border-radius: var(--radius);
+}
+.ev-check-fill.full {
+  background: var(--wtg-blue);
+}
+.ev-followup {
+  color: var(--wp-status-blocked-fg);
+}
+.ev-chip {
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--ev) 40%, var(--ink-200));
+  border-left: 3px solid var(--ev);
+  background: color-mix(in srgb, var(--ev) 10%, var(--surface));
+  color: var(--ink-900);
+  font-weight: 600;
+}
+:root.dark-mode .ev-chip {
+  color: var(--text);
+}
+.camp-ms-diamond {
+  background: var(--wtg-cobalt);
+}
+
+/* ── Login ────────────────────────────────────────────────────────────── */
+.login {
+  background: var(--ink-50);
+}
+.login-pattern {
+  color: var(--wtg-periwinkle);
+  opacity: 0.35;
+}
+.login-card {
+  border: 1px solid var(--ink-200);
+  background: var(--surface);
+}
+.login-title {
+  color: var(--wtg-blue);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.login-submit {
+  min-height: 44px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 15px;
+}
+.auth-tabs {
+  border-bottom: 1px solid var(--ink-200);
+}
+.auth-tab {
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+.auth-tab.active {
+  color: var(--wtg-blue);
+  border-bottom-color: var(--wtg-cobalt);
+}
+.login-tile {
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+}
+.login-tile:hover,
+.login-selected {
+  border-color: var(--wtg-cobalt);
+  background: var(--cobalt-050);
+}
+
+/* ── New menu ─────────────────────────────────────────────────────────── */
+.new-menu-list {
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+.new-menu-item:hover,
+.new-menu-item:focus-visible {
+  background: var(--cobalt-050);
+}
+.new-menu-label {
+  font-weight: 600;
+  color: var(--wtg-blue);
+}
+.new-menu-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Dark mode counterparts ───────────────────────────────────────────── */
+:root.dark-mode .section-head h2,
+:root.dark-mode .card-title,
+:root.dark-mode .modal-title,
+:root.dark-mode .modal-title-static,
+:root.dark-mode .mydesk-section h3,
+:root.dark-mode .dashboard-section-head h3,
+:root.dark-mode .dashboard-section h3,
+:root.dark-mode .notification-card h3,
+:root.dark-mode .metric-value,
+:root.dark-mode .kpi-value,
+:root.dark-mode .camp-card-title,
+:root.dark-mode .ev-name,
+:root.dark-mode .camp-mini-name,
+:root.dark-mode .camps-upcoming-name,
+:root.dark-mode .soc-month-title,
+:root.dark-mode .ev-year-title,
+:root.dark-mode .ev-month-row th,
+:root.dark-mode .team-col-name,
+:root.dark-mode .new-menu-label,
+:root.dark-mode .login-title,
+:root.dark-mode .mydesk-greeting h2 {
+  color: var(--text);
+}
+:root.dark-mode .kpi.planning .kpi-value,
+:root.dark-mode .kpi.completed .kpi-value,
+:root.dark-mode .kpi.paused .kpi-value,
+:root.dark-mode .kpi.archived .kpi-value {
+  color: var(--wtg-periwinkle);
+}
+:root.dark-mode .kpi.live .kpi-value {
+  color: var(--wtg-mint);
+}
+:root.dark-mode .kpi.urgent .kpi-value,
+:root.dark-mode .kpi.overdue .kpi-value {
+  color: #ffb3ad;
+}
+:root.dark-mode .kpi.duesoon .kpi-value {
+  color: var(--wtg-peach);
+}
+:root.dark-mode .modal-section h3,
+:root.dark-mode .ev-section h3,
+:root.dark-mode .settings-group-head h3,
+:root.dark-mode .panel h3,
+:root.dark-mode .preference-label,
+:root.dark-mode .it-section-head h3,
+:root.dark-mode .v3-eyebrow,
+:root.dark-mode .collapse-icon,
+:root.dark-mode .link-btn,
+:root.dark-mode .soc-cell.today .soc-day {
+  color: var(--wtg-periwinkle);
+}
+:root.dark-mode .soc-tabs button.active,
+:root.dark-mode .auth-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--wtg-periwinkle);
+}
+:root.dark-mode .filter-quick button.active,
+:root.dark-mode .filter-quick button.active:hover,
+:root.dark-mode .soc-legend-item.active,
+:root.dark-mode .ev-kpi-btn.selected,
+:root.dark-mode .new-menu-item:hover,
+:root.dark-mode .new-menu-item:focus-visible,
+:root.dark-mode .dashboard-task-item:hover,
+:root.dark-mode .dashboard-deadline-item:hover,
+:root.dark-mode .project-item:hover,
+:root.dark-mode .deadline-item:hover,
+:root.dark-mode .drop-target.drop-over,
+:root.dark-mode .team-column.drop-over,
+:root.dark-mode .login-tile:hover,
+:root.dark-mode .login-selected {
+  background: rgba(183, 179, 255, 0.14);
+  border-color: var(--wtg-periwinkle);
+  color: var(--text);
+}
+:root.dark-mode .team-column,
+:root.dark-mode .soc-cell.weekend,
+:root.dark-mode .soc-tray,
+:root.dark-mode .modal-foot,
+:root.dark-mode .login {
+  background: var(--ink-900);
+}
+:root.dark-mode .project-card,
+:root.dark-mode .team-col-cards .project-card,
+:root.dark-mode .soc-cell,
+:root.dark-mode .soc-card,
+:root.dark-mode .modal,
+:root.dark-mode .mydesk-section,
+:root.dark-mode .dashboard-section,
+:root.dark-mode .panel,
+:root.dark-mode .metric-card,
+:root.dark-mode .kpi,
+:root.dark-mode .camp-card,
+:root.dark-mode .ev-card,
+:root.dark-mode .login-card {
+  background: var(--surface);
+  border-color: var(--border);
+}
+:root.dark-mode .card-team-badge,
+:root.dark-mode .ev-tag {
+  color: var(--ink-300);
+  border-color: var(--border);
+}
+:root.dark-mode .modal-foot button,
+:root.dark-mode .btn-mini,
+:root.dark-mode .share-btn,
+:root.dark-mode .filter-quick button,
+:root.dark-mode .export-row button,
+:root.dark-mode .topbar-actions .btn-mini {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+:root.dark-mode .card-priority.high,
+:root.dark-mode .priority-badge.high,
+:root.dark-mode .task-priority.high {
+  background: var(--wtg-peach);
+  color: var(--ink-900);
+}
+:root.dark-mode .card-priority.normal,
+:root.dark-mode .priority-badge.normal,
+:root.dark-mode .task-priority.normal {
+  background: var(--wtg-sky-100);
+  color: var(--wtg-blue);
+}
+:root.dark-mode .card-priority.low,
+:root.dark-mode .priority-badge.low,
+:root.dark-mode .task-priority.low {
+  background: var(--ink-100);
+  color: var(--ink-700);
+}
+:root.dark-mode .deadline-date {
+  background: var(--wtg-periwinkle);
+  color: var(--ink-900);
+}

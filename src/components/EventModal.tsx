@@ -23,6 +23,7 @@ import {
 } from "../events";
 import { ProjectPicker } from "./ProjectPicker";
 import { ItineraryModal } from "./ItineraryModal";
+import { Icon } from "./Icon";
 
 type Props = {
   initial: Partial<MarketingEvent>;
@@ -283,7 +284,7 @@ export function EventModal({
                     rel="noopener noreferrer"
                     title="Open the itinerary's page on SharePoint"
                   >
-                    Itinerary on SharePoint ↗
+                    Itinerary on SharePoint <Icon name="external-link" size={12} />
                   </a>
                 )}
                 <button
@@ -298,7 +299,7 @@ export function EventModal({
             )}
             {!inline && (
               <button className="icon-btn" onClick={onCancel} aria-label="Close">
-                ✕
+                <Icon name="close" size={16} />
               </button>
             )}
           </div>
@@ -743,7 +744,7 @@ export function EventModal({
                       className="link-btn"
                       onClick={() => onOpenCampaign(linkedCampaign.id)}
                     >
-                      Open {linkedCampaign.name} ↗
+                      Open {linkedCampaign.name} <Icon name="external-link" size={12} />
                     </button>
                   </span>
                 )}
@@ -771,7 +772,7 @@ export function EventModal({
                       onClick={() => onOpenProject(p.id)}
                       title="Close this event and open the project"
                     >
-                      {p.title} ↗
+                      {p.title} <Icon name="external-link" size={12} />
                     </button>
                   ))}
                 </div>

@@ -17,6 +17,7 @@ import {
 import { LinkedInGlyph } from "./LinkedInGlyph";
 import { AssetPreview } from "./AssetPreview";
 import { ProjectPicker } from "./ProjectPicker";
+import { Icon } from "./Icon";
 
 type Props = {
   // Everything known about the post so far. For a new post this is whatever
@@ -217,7 +218,7 @@ export function SocialPostModal({
             )}
           </div>
           <button className="icon-btn" onClick={onCancel} aria-label="Close">
-            ✕
+            <Icon name="close" size={16} />
           </button>
         </header>
 
@@ -393,7 +394,7 @@ export function SocialPostModal({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Open link ↗
+                  Open link <Icon name="external-link" size={12} />
                 </a>
               )}
             </label>
@@ -434,7 +435,7 @@ export function SocialPostModal({
                     onClick={() => onOpenProject(projectId)}
                     title="Close this post and open the project"
                   >
-                    Open project ↗
+                    Open project <Icon name="external-link" size={12} />
                   </button>
                 )}
             </div>
@@ -511,7 +512,7 @@ export function SocialPostModal({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Open on LinkedIn ↗
+                  Open on LinkedIn <Icon name="external-link" size={12} />
                 </a>
               )}
             </label>

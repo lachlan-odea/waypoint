@@ -6,6 +6,7 @@ import type {
   SocialHashtag,
 } from "../types";
 import { normaliseHashtag } from "../socialPosts";
+import { Icon } from "./Icon";
 
 type Props = {
   // The live config (or the defaults, if none has been saved yet).
@@ -333,7 +334,7 @@ export function ManageSocialModal({
             </div>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
-            ✕
+            <Icon name="close" size={16} />
           </button>
         </header>
 

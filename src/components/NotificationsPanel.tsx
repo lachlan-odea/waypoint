@@ -44,7 +44,7 @@ export function NotificationsPanel({
             </div>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
-            ✕
+            <Icon name="close" size={16} />
           </button>
         </header>
 
@@ -99,3 +99,5 @@ export function NotificationsPanel({
     </div>
   );
 }
+
+import { Icon } from "./Icon";

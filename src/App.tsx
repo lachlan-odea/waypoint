@@ -79,6 +79,7 @@ import {
 } from "./constants";
 import "./App.css";
 import "./pages.css";
+import "./webinar.css";
 
 const PRIORITY_ORDER: Record<string, number> = {
   Urgent: 0,
@@ -805,8 +806,8 @@ export default function App() {
   function openEvent(eventId: string) {
     openItem("event", eventId);
   }
-  function openCampaign(campaignId: string) {
-    openItem("campaign", campaignId);
+  function openCampaign(campaignId: string, tab?: string) {
+    openItem("campaign", campaignId, tab);
   }
 
   // Which campaigns each project contributes to, for the flag on its card.
@@ -1097,6 +1098,9 @@ export default function App() {
               <CampaignPage
                 key={routedCampaign.id}
                 campaign={routedCampaign}
+                campaigns={campaigns}
+                currentDesignerId={currentDesigner.id}
+                onOpenCampaign={openCampaign}
                 categories={socialConfig.categories}
                 milestoneTypes={socialConfig.milestoneTypes}
                 designers={workspace.designers}
@@ -1405,6 +1409,7 @@ export default function App() {
             onSave={saveCampaign}
             onDelete={deleteCampaign}
             onOpenCampaign={openCampaign}
+            currentDesignerId={currentDesigner.id}
             createRequest={newCampaignRequest}
             onCreateHandled={() => setNewCampaignRequest(0)}
             exportRequest={exportRequest}

@@ -350,7 +350,121 @@ export type Campaign = {
   // Where that page lives on SharePoint, pasted back by whoever uploaded it
   // (SharePointGuideModal). Linked from the campaign's editor and card.
   sharePointUrl?: string;
+  // The webinar kit workspace, for a campaign of type Webinar: the nine
+  // kit sections with their status, due dates, fields, repeatable rows,
+  // files, notes and activity. See webinarKit.ts. Lives on the campaign
+  // document so one subscription brings the whole pipeline.
+  webinar?: WebinarKit;
   createdAt: string;
+};
+
+// ── The webinar kit ─────────────────────────────────────────────────────
+// A webinar is a campaign worked through the 2026 webinar kit: nine
+// sections from brief to results, each due a set number of weeks before
+// or after go-live. Definitions of the sections, their fields and the
+// schedule maths are in webinarKit.ts; this is just what's stored.
+
+export type KitSectionStatus = "todo" | "doing" | "review" | "done" | "blocked" | "na";
+
+export type KitStage =
+  | "proposed"
+  | "planning"
+  | "production"
+  | "promotion"
+  | "post"
+  | "complete"
+  | "hold"
+  | "cancelled";
+
+// A field value: text, a number, a flag, or a list of picked options.
+export type KitValue = string | number | boolean | string[];
+
+// One repeatable row (a speaker, a run-of-show segment, an email…).
+export type KitItem = {
+  id: string;
+  // KINDS key in webinarKit.ts: speaker, ros, runsheet, social…
+  kind: string;
+  // Sub-list within a kind, for checklists' extra items.
+  list?: string;
+  order: number;
+  d: Record<string, KitValue>;
+  by?: string;
+  at: string;
+};
+
+export type KitFile = {
+  id: string;
+  // Section key, or "" for the project as a whole.
+  section: string;
+  name: string;
+  url: string;
+  by?: string;
+  at: string;
+};
+
+export type KitNote = {
+  id: string;
+  section: string;
+  text: string;
+  by?: string;
+  at: string;
+};
+
+export type KitActivity = {
+  id: string;
+  section: string;
+  what: string;
+  detail?: string;
+  by?: string;
+  at: string;
+};
+
+export type KitSectionState = {
+  status?: KitSectionStatus;
+  // A due date set by hand, overriding the kit's schedule (YYYY-MM-DD).
+  due?: string;
+  // Designer id assigned to the section, overriding the role's team.
+  who?: string;
+  by?: string;
+  at?: string;
+};
+
+export type WebinarKit = {
+  stage: KitStage;
+  // TYPES key: tl, pdd, mpu.
+  type: string;
+  delivery: "live" | "prerecorded";
+  // FORMATS key: panel, keynote, fireside. Empty until confirmed.
+  format: string;
+  // PHASES key, or empty.
+  phase: string;
+  series: string;
+  ep?: number;
+  // The date every due date counts back from (YYYY-MM-DD).
+  goLive: string;
+  // For a pre-recorded webinar, production sections are due against this.
+  recordDate: string;
+  // Working title, final title, sessions and time zones, duration, folder.
+  wt: string;
+  ft: string;
+  sessions: string;
+  duration: string;
+  folder: string;
+  // Designer id of the project lead.
+  lead?: string;
+  // Designer ids per role (ROLES key in webinarKit.ts).
+  team: Record<string, string[]>;
+  sec: Record<string, KitSectionState>;
+  // Field values per section key, keyed by field key (composite keys like
+  // "approval|ok" for a field's parts).
+  values: Record<string, Record<string, KitValue>>;
+  items: KitItem[];
+  files: KitFile[];
+  notes: KitNote[];
+  activity: KitActivity[];
+  archived?: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 // The in-memory snapshot of everything App.tsx needs to render. Loaded

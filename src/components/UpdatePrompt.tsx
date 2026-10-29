@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { Icon } from "./Icon";
 
 // How often an open tab asks the server whether a newer build exists. Without
 // this the browser only checks on navigation, so a tab left open all day would
@@ -71,7 +72,7 @@ export default function UpdatePrompt() {
           onClick={() => setNeedRefresh(false)}
           aria-label="Dismiss"
         >
-          ✕
+          <Icon name="close" size={16} />
         </button>
       )}
     </div>

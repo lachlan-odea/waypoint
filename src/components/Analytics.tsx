@@ -70,14 +70,14 @@ function isLiveWork(p: Project): boolean {
 // Brand steps (CargoWise Blue, Sky, a navy grey, Mint/Pine green), kept
 // mid-tone so the same bars read on the white and the dark-mode panel.
 const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
-  planning: "#5b45f0",
-  active: "#2f7fc0",
-  paused: "#8486a3",
-  completed: "#2e9e68",
+  planning: "#a7cff8",
+  active: "#371ee1",
+  paused: "#8b96a8",
+  completed: "#1d1765",
 };
 
 // CargoWise Blue, lifted a step so it holds up on the dark panel too.
-const NEUTRAL_BAR = "#5b45f0";
+const NEUTRAL_BAR = "#371ee1";
 
 // How far ahead the campaign watch list looks for milestones still to do.
 const WATCH_DAYS = 14;
@@ -350,7 +350,7 @@ export function Analytics({
         count: n,
         color:
           label === "Uncategorised"
-            ? "#a3a6c2"
+            ? "#b9c0cc"
             : (socialCategoryMeta(label, socialCategories)?.color ?? NEUTRAL_BAR),
       }))
       .sort((a, b) => b.count - a.count);

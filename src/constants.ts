@@ -96,14 +96,14 @@ export const SOCIAL_POST_STATUSES: {
   label: string;
   color: string;
 }[] = [
-  { value: "draft", label: "Draft", color: "#6b6d88" },
+  { value: "draft", label: "Draft", color: "#8b96a8" },
   // Stored as "pending" — see the note on SocialPostStatus.
-  { value: "pending", label: "Ready to publish", color: "#c2335f" },
+  { value: "pending", label: "Ready to publish", color: "#6a5cd8" },
   { value: "scheduled", label: "Scheduled", color: "#b4501f" },
-  { value: "onHold", label: "On hold", color: "#371ee1" },
-  { value: "published", label: "Published", color: "#1f7a4d" },
-  { value: "cancelled", label: "Cancelled", color: "#651d32" },
-  { value: "backlog", label: "Backlog", color: "#3b4a66" },
+  { value: "onHold", label: "On hold", color: "#5d6b82" },
+  { value: "published", label: "Published", color: "#0c5a2e" },
+  { value: "cancelled", label: "Cancelled", color: "#8a1c16" },
+  { value: "backlog", label: "Backlog", color: "#3a4a66" },
 ];
 
 export function socialStatusMeta(status: SocialPostStatus | undefined) {
@@ -214,7 +214,7 @@ export function socialCategoryMeta(
     categories.find((c) => c.label === category) ?? {
       label: category,
       short: category,
-      color: "#6b6d88",
+      color: "#8b96a8",
     }
   );
 }
@@ -230,7 +230,7 @@ const BRAND_COLORS: Record<string, string> = {
   e2open: "#6a5cd8",
   Blume: "#a3294d",
   BorderWise: "#244349",
-  "No brand": "#6b6d88",
+  "No brand": "#8b96a8",
 };
 
 export function brandColor(brand: string): string {
@@ -259,7 +259,7 @@ const SOCIAL_CHANNEL_COLORS: Record<string, string> = {
 // Colour for a channel chip. Unknown channels fall back to a neutral grey
 // so a new channel is legible before anyone has picked it a colour.
 export function socialChannelColor(channel: string): string {
-  return SOCIAL_CHANNEL_COLORS[channel.trim().toLowerCase()] ?? "#6b6d88";
+  return SOCIAL_CHANNEL_COLORS[channel.trim().toLowerCase()] ?? "#8b96a8";
 }
 
 export const CONTENT_TYPES = [

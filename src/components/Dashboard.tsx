@@ -3,6 +3,7 @@ import type { Project, WorkspaceData } from "../types";
 import { ProjectCard } from "./ProjectCard";
 import { Avatar } from "./Avatar";
 import { projectStatusLabel } from "../constants";
+import { projectStatusTone } from "../statusTone";
 
 interface DashboardProps {
   workspace: WorkspaceData;
@@ -145,7 +146,7 @@ export function Dashboard({ workspace, currentDesignerId, onOpenProject }: Dashb
             {overdueTasks.length > 0 && (
               <section className="dashboard-section dashboard-overdue">
                 <div className="dashboard-section-head">
-                  <h3>⚠️ Overdue Tasks</h3>
+                  <h3><Icon name="clock-circle" size={16} /> Overdue tasks</h3>
                 </div>
                 <div className="dashboard-task-list">
                   {overdueTasks.map((p) => (
@@ -297,7 +298,7 @@ export function Dashboard({ workspace, currentDesignerId, onOpenProject }: Dashb
                     )}
                   </div>
                   <div className="activity-col-status">
-                    <span className="activity-status-badge">
+                    <span className={`activity-status-badge wp-status ${projectStatusTone(p.status)}`}>
                       {projectStatusLabel(p.status)}
                     </span>
                   </div>
@@ -317,3 +318,5 @@ export function Dashboard({ workspace, currentDesignerId, onOpenProject }: Dashb
     </div>
   );
 }
+
+import { Icon } from "./Icon";

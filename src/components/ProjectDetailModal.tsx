@@ -29,6 +29,8 @@ import { copyText, projectShareUrl } from "../share";
 import { projectContentTypes } from "../contentTypes";
 import { Avatar } from "./Avatar";
 import { AssigneePicker } from "./AssigneePicker";
+import { Icon } from "./Icon";
+import { socialStatusTone } from "../statusTone";
 
 type Props = {
   project: Project;
@@ -624,7 +626,7 @@ export function ProjectDetailModal({
             </select>
             {!inline && (
               <button className="icon-btn" onClick={onClose} aria-label="Close">
-                ✕
+                <Icon name="close" size={16} />
               </button>
             )}
           </div>
@@ -782,7 +784,7 @@ export function ProjectDetailModal({
               />
               {project.briefUrl && (
                 <a className="brief-link" href={project.briefUrl} target="_blank" rel="noreferrer">
-                  Open link ↗
+                  Open link <Icon name="external-link" size={12} />
                 </a>
               )}
             </Field>
@@ -1027,10 +1029,7 @@ export function ProjectDetailModal({
                         <span className="linked-post-date">
                           {p.date ? formatShort(p.date) : "Unscheduled"}
                         </span>
-                        <span
-                          className="soc-status"
-                          style={{ background: status.color }}
-                        >
+                        <span className={`soc-status wp-status ${socialStatusTone(p.status)}`}>
                           <span className="soc-status-label">{status.label}</span>
                         </span>
                       </button>

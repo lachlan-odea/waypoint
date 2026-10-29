@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import type { Project, Workspace } from "../types";
+import { Icon } from "./Icon";
 
 type Props = {
   projects: Project[];
@@ -123,7 +124,7 @@ export function ProjectPicker({
               aria-label={`Unlink ${p.title}`}
               tabIndex={-1}
             >
-              ×
+              <Icon name="close" size={12} />
             </button>
           </span>
         ))}
@@ -140,7 +141,7 @@ export function ProjectPicker({
               aria-label="Clear"
               tabIndex={-1}
             >
-              ×
+              <Icon name="close" size={12} />
             </button>
           </span>
         ))}

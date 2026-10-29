@@ -42,6 +42,7 @@ import {
   subscribeItineraryTravel,
 } from "../firestore";
 import { SharePointGuideModal } from "./SharePointGuideModal";
+import { Icon } from "./Icon";
 
 // Where itinerary pages are uploaded. The same Marketing library as the
 // campaign pages until the events team has a folder of its own.
@@ -496,7 +497,7 @@ export function ItineraryModal({ event, onClose, onSaved }: Props) {
                 rel="noopener noreferrer"
                 title="Open the itinerary's page on SharePoint"
               >
-                Open on SharePoint ↗
+                Open on SharePoint <Icon name="external-link" size={12} />
               </a>
             )}
             <button
@@ -509,7 +510,7 @@ export function ItineraryModal({ event, onClose, onSaved }: Props) {
               {url ? "Update SharePoint page" : "Put on SharePoint"}
             </button>
             <button className="icon-btn" onClick={requestClose} aria-label="Close">
-              ✕
+              <Icon name="close" size={16} />
             </button>
           </div>
         </header>
@@ -886,7 +887,7 @@ export function ItineraryModal({ event, onClose, onSaved }: Props) {
               {checks.map((c) => (
                 <li key={c.id} className={c.ok ? "ok" : "fail"}>
                   <span className="it-check-mark" aria-hidden>
-                    {c.ok ? "✓" : "✗"}
+                    {c.ok ? <Icon name="checkmark" size={14} /> : <Icon name="close" size={14} />}
                   </span>
                   <span>
                     {c.label}

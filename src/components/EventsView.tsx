@@ -31,6 +31,8 @@ import { ItineraryModal } from "./ItineraryModal";
 import { ExportCsvModal } from "./ExportCsvModal";
 import { csvFileName, downloadCsv, eventsCsv, eventsInRange } from "../csvExport";
 import { seedEventsIfMissing } from "../firestore";
+import { Icon } from "./Icon";
+import { eventStatusTone } from "../statusTone";
 
 type Props = {
   events: MarketingEvent[];
@@ -423,7 +425,7 @@ export function EventsView({
             onClick={() => goYear(year - 1)}
             aria-label="Previous year"
           >
-            ‹
+            <Icon name="chevron-left" size={16} />
           </button>
           <h2 className="soc-month-title ev-year-title">{year}</h2>
           <button
@@ -431,7 +433,7 @@ export function EventsView({
             onClick={() => goYear(year + 1)}
             aria-label="Next year"
           >
-            ›
+            <Icon name="chevron-right" size={16} />
           </button>
           {year !== thisYear && (
             <button className="btn-mini" onClick={() => goYear(thisYear)}>
@@ -678,7 +680,7 @@ export function EventsView({
               onClick={() => goMonth(shiftMonth(calMonth, -1))}
               aria-label="Previous month"
             >
-              ‹
+              <Icon name="chevron-left" size={16} />
             </button>
             <h2 className="soc-month-title">{calTitle}</h2>
             <button
@@ -686,7 +688,7 @@ export function EventsView({
               onClick={() => goMonth(shiftMonth(calMonth, 1))}
               aria-label="Next month"
             >
-              ›
+              <Icon name="chevron-right" size={16} />
             </button>
             {calMonth !== today.slice(0, 7) && (
               <button className="btn-mini" onClick={() => goMonth(today.slice(0, 7))}>
@@ -870,7 +872,7 @@ export function EventsView({
                               rel="noopener noreferrer"
                               onClick={(ev) => ev.stopPropagation()}
                             >
-                              On SharePoint ↗
+                              On SharePoint <Icon name="external-link" size={12} />
                             </a>
                           )}
                         </span>
@@ -880,7 +882,7 @@ export function EventsView({
                         {e.region ? ` · ${e.region}` : ""}
                       </td>
                       <td>
-                        <span className="soc-status" style={{ background: meta.color }}>
+                        <span className={`soc-status wp-status ${eventStatusTone(meta.value)}`}>
                           {meta.label}
                         </span>
                       </td>
@@ -927,7 +929,7 @@ export function EventsView({
                     <div className="ev-card-bar" />
                     <div className="ev-card-body">
                       <div className="ev-card-top">
-                        <span className="soc-status" style={{ background: meta.color }}>
+                        <span className={`soc-status wp-status ${eventStatusTone(meta.value)}`}>
                           {meta.label}
                         </span>
                         <span className="muted small">
@@ -1021,7 +1023,7 @@ export function EventsView({
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            Itinerary on SharePoint ↗
+                            Itinerary on SharePoint <Icon name="external-link" size={12} />
                           </a>
                         )}
                       </div>
