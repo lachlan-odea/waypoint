@@ -180,7 +180,15 @@
   display: flex;
   gap: 4px;
   border-bottom: 1px solid var(--border);
+  /* Scrolls sideways on narrow screens only. overflow-y stays hidden: the
+     active tab's underline overlaps the row's border by 1px, and with
+     "auto" the browser answered that pixel with a vertical scrollbar. */
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.item-tabs::-webkit-scrollbar {
+  display: none;
 }
 .item-tab {
   appearance: none;
