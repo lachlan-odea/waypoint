@@ -9037,3 +9037,9 @@ a.share-btn {
 :root.dark-mode .ev-cal-check i {
   background: var(--ink-700);
 }
+
+/* The user block and the footer sit on the field without rules above them. */
+.sidebar .sidebar-user,
+.sidebar .sidebar-foot {
+  border-color: transparent;
+}
