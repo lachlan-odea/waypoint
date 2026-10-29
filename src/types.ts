@@ -570,3 +570,22 @@ export type ItineraryAddition = {
   name: string;
   createdAt: string;
 };
+
+// An attendee's own travel and accommodation, entered on the itinerary's
+// SharePoint page so the team can see who arrives when and where everyone
+// is staying. Each attendee books their own; this is just the record of
+// it. Written and updated by the page through Firestore's REST API to
+// /itineraryPages/{token}/travel, free text throughout.
+export type ItineraryTravel = {
+  id: string;
+  name: string;
+  // "Mon 26 Oct, QF11 lands MIA 6:40pm"
+  arrive: string;
+  depart: string;
+  // Hotel name and address, and the nights if they differ from the event.
+  hotel: string;
+  mobile: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};

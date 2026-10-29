@@ -48,14 +48,16 @@ export function itemTypeLabel(type: ItineraryItemType): string {
   return ITINERARY_ITEM_TYPES.find((t) => t.value === type)?.label ?? type;
 }
 
-// The statement every itinerary carries, word for word.
+// The statement every itinerary carries. Travel stays off the day
+// timelines; the page has its own section where each attendee records
+// what they've booked, so the team can see who arrives when.
 export const TRAVEL_STATEMENT =
-  "Each attendee books and manages their own flights, accommodation and transfers.";
+  "Each attendee books and manages their own flights, accommodation and transfers, and records them in the Travel and accommodation section so the team knows who's arriving when and where everyone is staying.";
 
 // The notes under every itinerary page.
 export const ITINERARY_FOOTER = [
   "Built from the event program and the calendar invites. Where the two differ, this page follows the invites, which include later changes.",
-  "Travel and accommodation are booked by each attendee and aren’t covered here.",
+  "Travel and accommodation are booked by each attendee; the details on this page are what they’ve entered themselves.",
   "Plans move. Check the invite for the latest time.",
 ];
 
@@ -279,9 +281,11 @@ export function itineraryChecks(it: EventItinerary, event: MarketingEvent): Itin
     },
     {
       id: "travel",
-      label: "No travel or accommodation on the itinerary",
+      label: "No travel or accommodation on the day timelines",
       ok: travel.length === 0,
-      detail: travel.length ? `looks like travel: ${travel.join(", ")}` : "",
+      detail: travel.length
+        ? `looks like travel: ${travel.join(", ")} — attendees record theirs in the page's Travel section`
+        : "",
     },
     {
       id: "names",

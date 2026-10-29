@@ -6,6 +6,7 @@ import type {
   ItineraryItem,
   ItineraryItemType,
   ItineraryRow,
+  ItineraryTravel,
   MarketingEvent,
 } from "../types";
 import { formatLong, formatShort, timeAgo } from "../dates";
@@ -33,10 +34,12 @@ import {
 import { newShareToken } from "../campaignExport";
 import {
   deleteItineraryAddition,
+  deleteItineraryTravel,
   setEventItinerary,
   setEventItineraryShareToken,
   setEventItinerarySharePointUrl,
   subscribeItineraryAdditions,
+  subscribeItineraryTravel,
 } from "../firestore";
 import { SharePointGuideModal } from "./SharePointGuideModal";
 
@@ -146,6 +149,24 @@ export function ItineraryModal({ event, onClose, onSaved }: Props) {
   }, [token]);
   // Without a page there's nowhere additions could have come from.
   const additions = token ? rawAdditions : [];
+  // Attendees' travel and accommodation, entered on the page.
+  const [rawTravel, setTravel] = useState<ItineraryTravel[]>([]);
+  useEffect(() => {
+    if (!token) return;
+    return subscribeItineraryTravel(token, setTravel, (err) =>
+      console.warn("Couldn't load the itinerary page's travel entries", err),
+    );
+  }, [token]);
+  const travel = token ? rawTravel : [];
+
+  function removeTravel(t: ItineraryTravel) {
+    if (!token) return;
+    setTravel((cur) => cur.filter((x) => x.id !== t.id));
+    deleteItineraryTravel(token, t.id).catch((err) => {
+      console.warn("Couldn't remove the travel entry", err);
+      setError("Couldn't remove that travel entry from the page. Try again.");
+    });
+  }
   // Optional sections start folded until they have rows.
   const [open, setOpen] = useState<Set<RowSection>>(
     () =>
@@ -495,9 +516,9 @@ export function ItineraryModal({ event, onClose, onSaved }: Props) {
 
         <div className="modal-body it-body">
           <p className="it-travel">
-            <strong>Travel and accommodation aren't part of the itinerary.</strong>{" "}
-            {TRAVEL_STATEMENT} The page says so, and the checks below flag anything
-            that looks like a flight, hotel or transfer.
+            <strong>Travel and accommodation stay off the day timelines.</strong>{" "}
+            {TRAVEL_STATEMENT} The checks below flag anything on a day that looks
+            like a flight, hotel or transfer.
           </p>
 
           <div className="modal-grid">
@@ -811,6 +832,43 @@ export function ItineraryModal({ event, onClose, onSaved }: Props) {
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="modal-section ev-section">
+            <div className="it-section-head">
+              <h3>
+                Travel and accommodation
+                <span className="muted small"> · entered by attendees on the page</span>
+              </h3>
+            </div>
+            {!token ? (
+              <p className="muted small" style={{ margin: 0 }}>
+                Once the page is on SharePoint, each attendee adds their own flights,
+                hotel and contact number there, and they're listed here.
+              </p>
+            ) : travel.length === 0 ? (
+              <p className="muted small" style={{ margin: 0 }}>
+                Nobody has entered their travel on the page yet.
+              </p>
+            ) : (
+              <div className="it-travel-list">
+                {travel.map((t) => (
+                  <div key={t.id} className="it-travel-row">
+                    <strong>{t.name}</strong>
+                    <span>{t.arrive || <span className="muted">Arrival not given</span>}</span>
+                    <span>{t.depart || <span className="muted">Departure not given</span>}</span>
+                    <span>{t.hotel || <span className="muted">No hotel given</span>}</span>
+                    <span className="muted small">
+                      {t.mobile}
+                      {t.notes ? `${t.mobile ? " · " : ""}${t.notes}` : ""}
+                    </span>
+                    <button type="button" className="link-btn" onClick={() => removeTravel(t)}>
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="modal-section ev-section it-checks">

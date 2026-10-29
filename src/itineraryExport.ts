@@ -95,6 +95,16 @@ export function publishItineraryPage(event: MarketingEvent): Promise<void> {
   );
 }
 
+// Attendees' travel and accommodation entries, listed, added to and
+// corrected by readers through the same REST API.
+function itineraryTravelUrl(shareToken: string): string {
+  const { projectId, apiKey } = firebaseConfig;
+  return (
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
+    `/documents/itineraryPages/${shareToken}/travel?key=${apiKey}`
+  );
+}
+
 export function itineraryPageHtml(
   event: MarketingEvent,
   itinerary: EventItinerary,
@@ -106,6 +116,7 @@ export function itineraryPageHtml(
     __ITINERARY_SNAPSHOT__: snapshot,
     __ITINERARY_FEED_URL__: itineraryPageUrl(shareToken),
     __ITINERARY_ADDITIONS_URL__: itineraryAdditionsUrl(shareToken),
+    __ITINERARY_TRAVEL_URL__: itineraryTravelUrl(shareToken),
   };
   return template.replace(/__ITINERARY_[A-Z_]+__/g, (key) => fill[key] ?? key);
 }

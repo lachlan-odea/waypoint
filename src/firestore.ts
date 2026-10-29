@@ -21,6 +21,7 @@ import type {
   EventItinerary,
   Hub,
   ItineraryAddition,
+  ItineraryTravel,
   MarketingEvent,
   Notification,
   Project,
@@ -682,6 +683,35 @@ export async function deleteItineraryAddition(
   additionId: string,
 ): Promise<void> {
   await deleteDoc(doc(itineraryAdditionsCol(shareToken), additionId));
+}
+
+// Attendees' travel and accommodation entered on the page (see
+// ItineraryTravel). Read-only in Waypoint apart from removal.
+const itineraryTravelCol = (shareToken: string) =>
+  collection(doc(itineraryPagesCol(), shareToken), "travel");
+
+export function subscribeItineraryTravel(
+  shareToken: string,
+  onChange: (travel: ItineraryTravel[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    itineraryTravelCol(shareToken),
+    (snap) =>
+      onChange(
+        snap.docs
+          .map((d) => ({ ...(d.data() as Omit<ItineraryTravel, "id">), id: d.id }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      ),
+    onError,
+  );
+}
+
+export async function deleteItineraryTravel(
+  shareToken: string,
+  travelId: string,
+): Promise<void> {
+  await deleteDoc(doc(itineraryTravelCol(shareToken), travelId));
 }
 
 // Load the CargoWise Event Portal export (src/data/eventsSeed.json, made by

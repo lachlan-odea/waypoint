@@ -127,6 +127,16 @@
     font-size: 15px;
   }
   .travel strong { font-weight: 700; }
+  .travel-section { padding: clamp(28px, 4vw, 44px) 0 0; }
+  .travel-section .travel { margin-top: 0; margin-bottom: 14px; }
+  .travel-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; font-size: 15px; }
+  .travel-table th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--rule); }
+  .travel-table td { padding: 10px 14px; border-top: 1px solid var(--rule); vertical-align: top; }
+  .travel-table tr:first-child td { border-top: 0; }
+  .travel-table td.name { font-weight: 600; white-space: nowrap; }
+  .travel-table td.notes { color: var(--muted); font-size: 14px; }
+  .travel-table .edit { font: inherit; font-size: 13px; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+  .travel-add { margin-top: 12px; }
 
   /* ── Days: a timeline each ── */
   .day { padding: clamp(32px, 5vw, 52px) 0 0; scroll-margin-top: 20px; }
@@ -248,6 +258,11 @@
     .table td:first-child, .table td:last-child { width: auto; }
     .field { width: 100%; opacity: 0.25; }
     .add { margin-left: 28px; }
+    .travel-table thead { display: none; }
+    .travel-table tr { display: block; padding: 8px 0; border-top: 1px solid var(--rule); }
+    .travel-table td { display: block; border: 0; padding: 2px 14px; }
+    .travel-table td.name { padding-top: 8px; }
+    .travel-table td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); }
     .add-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .add-form .c3 { grid-column: span 2; }
   }
@@ -274,6 +289,8 @@
   // Where readers' additions to the days live: listed on every refresh,
   // added to with a plain POST. Empty disables adding.
   var ADDITIONS_URL = "__ITINERARY_ADDITIONS_URL__";
+  // Attendees' travel and accommodation: listed, added to, and corrected.
+  var TRAVEL_URL = "__ITINERARY_TRAVEL_URL__";
   var REFRESH_MS = 5 * 60 * 1000;
   var NAME_KEY = "itinerary.yourName";
 
@@ -385,6 +402,11 @@
   var sending = false;
   var formError = "";
   var canAdd = !!ADDITIONS_URL;
+  var travel = [];
+  // null, "new", or the id of the entry being corrected.
+  var openTravel = null;
+  var sendingTravel = false;
+  var travelError = "";
 
   function itemHtml(i, dayDate, today, now) {
     var state = "";
@@ -425,6 +447,55 @@
       (formError ? '<span class="err">' + esc(formError) + "</span>" : "") +
       '<span class="hint">Travel and accommodation don\'t go here.</span></div>');
     h.push("</form>");
+    return h.join("");
+  }
+
+  function travelFormHtml(entry) {
+    var e = entry || { name: savedName(), arrive: "", depart: "", hotel: "", mobile: "", notes: "" };
+    var h = ['<form class="add-form travel-form" data-travel-id="' + esc(entry ? entry.id : "") + '">'];
+    h.push("<h3>" + (entry ? "Correct " + esc(entry.name) + "'s travel" : "Your travel and accommodation") + "</h3>");
+    h.push('<label class="c3">Your name<input name="name" maxlength="80" required value="' + esc(e.name) + '"></label>');
+    h.push('<label class="c3">Mobile (optional)<input name="mobile" maxlength="40" value="' + esc(e.mobile) + '" placeholder="So the team can reach you on site"></label>');
+    h.push('<label class="c3">Arriving<input name="arrive" maxlength="200" value="' + esc(e.arrive) + '" placeholder="e.g. Mon 26 Oct, QF11 lands 6:40pm"></label>');
+    h.push('<label class="c3">Departing<input name="depart" maxlength="200" value="' + esc(e.depart) + '" placeholder="e.g. Fri 30 Oct, AA123 departs 9:15am"></label>');
+    h.push('<label class="c6">Staying at<input name="hotel" maxlength="200" value="' + esc(e.hotel) + '" placeholder="Hotel and address, and the nights if they differ from the event"></label>');
+    h.push('<label class="c6">Notes<input name="notes" maxlength="300" value="' + esc(e.notes) + '" placeholder="Anything else the team should know"></label>');
+    h.push('<div class="actions"><button type="submit" class="btn primary"' + (sendingTravel ? " disabled" : "") + ">" + (sendingTravel ? "Saving…" : "Save") + "</button>" +
+      '<button type="button" class="btn" data-travel-cancel>Cancel</button>' +
+      (travelError ? '<span class="err">' + esc(travelError) + "</span>" : "") +
+      '<span class="hint">Everyone with this page can see it.</span></div>');
+    h.push("</form>");
+    return h.join("");
+  }
+
+  function travelSectionHtml(it, adding) {
+    var h = ['<section class="travel-section" id="travel"><h2>Travel and accommodation</h2>'];
+    h.push('<p class="travel"><strong>Each attendee books their own.</strong> ' + esc(it.travel || "") + "</p>");
+    if (travel.length) {
+      h.push('<table class="travel-table"><thead><tr><th>Who</th><th>Arriving</th><th>Departing</th><th>Staying at</th><th>Contact / notes</th>' + (adding ? "<th></th>" : "") + "</tr></thead><tbody>");
+      travel.forEach(function (t) {
+        h.push("<tr>" +
+          '<td class="name">' + esc(t.name) + "</td>" +
+          '<td data-label="Arriving">' + esc(t.arrive || "—") + "</td>" +
+          '<td data-label="Departing">' + esc(t.depart || "—") + "</td>" +
+          '<td data-label="Staying at">' + esc(t.hotel || "—") + "</td>" +
+          '<td class="notes">' + esc([t.mobile, t.notes].filter(Boolean).join(" · ") || "—") + "</td>" +
+          (adding ? '<td><button type="button" class="edit" data-travel-edit="' + esc(t.id) + '">Correct</button></td>' : "") +
+          "</tr>");
+      });
+      h.push("</tbody></table>");
+    } else {
+      h.push('<p class="empty">Nobody has added their travel yet.</p>');
+    }
+    if (adding) {
+      var editing = openTravel && openTravel !== "new" ? travel.filter(function (t) { return t.id === openTravel; })[0] : null;
+      h.push('<div class="travel-add">' +
+        (openTravel === "new" ? travelFormHtml(null)
+          : editing ? travelFormHtml(editing)
+          : '<button type="button" class="add-btn" data-travel-add>+ Add your flights and accommodation</button>') +
+        "</div>");
+    }
+    h.push("</section>");
     return h.join("");
   }
 
@@ -482,7 +553,7 @@
     h.push(section("Stand shifts", it.standShifts));
     h.push("</div>");
     h.push(section("Shipping and collateral", it.shipping));
-    h.push('<p class="travel"><strong>Travel and accommodation:</strong> ' + esc(it.travel || "each attendee books and manages their own flights, accommodation and transfers.") + "</p>");
+    h.push(travelSectionHtml(it, adding));
 
     // Days
     if (!days.length) {
@@ -538,12 +609,15 @@
     if (openDate) {
       var first = document.querySelector('.add-form input[name="' + (savedName() ? "title" : "name") + '"]');
       if (first) first.focus();
+    } else if (openTravel) {
+      var firstTravel = document.querySelector('.travel-form input[name="' + (savedName() ? "arrive" : "name") + '"]');
+      if (firstTravel) firstTravel.focus();
     }
   }
 
   // Redraw now, unless someone is mid-form; then once the form closes.
   function redraw() {
-    if (openDate) pendingRedraw = true;
+    if (openDate || openTravel) pendingRedraw = true;
     else render();
   }
 
@@ -578,6 +652,80 @@
         }).sort(function (a, b) { return a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0; });
       })
       .catch(function () { /* keep what we had */ });
+  }
+
+  function loadTravel() {
+    if (!TRAVEL_URL) return Promise.resolve();
+    return fetch(TRAVEL_URL + "&pageSize=300", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (body) {
+        travel = (body.documents || []).map(function (doc) {
+          var f = doc.fields || {};
+          var parts = String(doc.name || "").split("/");
+          return {
+            id: parts[parts.length - 1],
+            name: str(f, "name"), arrive: str(f, "arrive"), depart: str(f, "depart"), hotel: str(f, "hotel"),
+            mobile: str(f, "mobile"), notes: str(f, "notes"), createdAt: str(f, "createdAt"), updatedAt: str(f, "updatedAt")
+          };
+        }).sort(function (a, b) { return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : a.name.toLowerCase() > b.name.toLowerCase() ? 1 : 0; });
+      })
+      .catch(function () { /* keep what we had */ });
+  }
+
+  // A new entry is a POST to the collection; a correction is a PATCH of
+  // the one document, replacing every field.
+  function submitTravel(form) {
+    var get = function (name) { var el = form.elements[name]; return el ? String(el.value || "").trim() : ""; };
+    var name = get("name");
+    if (!name) {
+      travelError = "Put your name in.";
+      render();
+      return;
+    }
+    rememberName(name);
+    var id = form.getAttribute("data-travel-id");
+    var existing = id ? travel.filter(function (t) { return t.id === id; })[0] : null;
+    var now = new Date().toISOString();
+    var data = {
+      name: name.slice(0, 80),
+      arrive: get("arrive").slice(0, 200),
+      depart: get("depart").slice(0, 200),
+      hotel: get("hotel").slice(0, 200),
+      mobile: get("mobile").slice(0, 40),
+      notes: get("notes").slice(0, 300),
+      createdAt: existing && existing.createdAt ? existing.createdAt : now,
+      updatedAt: now
+    };
+    var fields = {};
+    Object.keys(data).forEach(function (k) { fields[k] = { stringValue: data[k] }; });
+    var url = TRAVEL_URL;
+    if (id) {
+      var at = TRAVEL_URL.indexOf("?");
+      url = TRAVEL_URL.slice(0, at) + "/" + encodeURIComponent(id) + TRAVEL_URL.slice(at);
+    }
+    sendingTravel = true;
+    travelError = "";
+    render();
+    fetch(url, {
+      method: id ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields: fields })
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        sendingTravel = false;
+        openTravel = null;
+        return loadTravel();
+      })
+      .then(function () { render(); })
+      .catch(function () {
+        sendingTravel = false;
+        travelError = "Couldn't save it just now. Check you're online and try again.";
+        render();
+      });
   }
 
   function submitAddition(form) {
@@ -638,9 +786,36 @@
       openDate = null;
       formError = "";
       render();
+      return;
+    }
+    var travelAdd = e.target.closest ? e.target.closest("[data-travel-add]") : null;
+    if (travelAdd) {
+      openTravel = "new";
+      travelError = "";
+      render();
+      return;
+    }
+    var travelEdit = e.target.closest ? e.target.closest("[data-travel-edit]") : null;
+    if (travelEdit) {
+      openTravel = travelEdit.getAttribute("data-travel-edit");
+      travelError = "";
+      render();
+      return;
+    }
+    var travelCancel = e.target.closest ? e.target.closest("[data-travel-cancel]") : null;
+    if (travelCancel) {
+      openTravel = null;
+      travelError = "";
+      render();
     }
   });
   document.getElementById("app").addEventListener("submit", function (e) {
+    var travelForm = e.target.closest ? e.target.closest("form.travel-form") : null;
+    if (travelForm) {
+      e.preventDefault();
+      if (!sendingTravel) submitTravel(travelForm);
+      return;
+    }
     var form = e.target.closest ? e.target.closest("form.add-form") : null;
     if (!form) return;
     e.preventDefault();
@@ -668,7 +843,7 @@
       .catch(function () {
         status = { kind: "offline", note: asOf() };
       });
-    Promise.all([main, loadAdditions()]).then(redraw);
+    Promise.all([main, loadAdditions(), loadTravel()]).then(redraw);
   }
 
   status = { kind: "loading", note: asOf() + ". Checking for updates…" };

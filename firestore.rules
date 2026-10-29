@@ -109,6 +109,37 @@ service cloud.firestore {
         allow update: if false;
         allow delete: if request.auth != null;
       }
+
+      // Attendees' own travel and accommodation, entered on the page. The
+      // same anyone-with-the-token model, but updates are allowed too, so
+      // a flight change can be corrected by whoever's travelling; there's
+      // no sign-in to tell one attendee from another.
+      match /travel/{travelId} {
+        allow get, list: if true;
+        allow create, update: if token.matches('^[0-9a-f]{32}$')
+          && exists(/databases/$(database)/documents/itineraryPages/$(token))
+          && request.resource.data.keys().hasOnly([
+            'name', 'arrive', 'depart', 'hotel', 'mobile', 'notes', 'createdAt', 'updatedAt'
+          ])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 80
+          && request.resource.data.arrive is string
+          && request.resource.data.arrive.size() <= 200
+          && request.resource.data.depart is string
+          && request.resource.data.depart.size() <= 200
+          && request.resource.data.hotel is string
+          && request.resource.data.hotel.size() <= 200
+          && request.resource.data.mobile is string
+          && request.resource.data.mobile.size() <= 40
+          && request.resource.data.notes is string
+          && request.resource.data.notes.size() <= 300
+          && request.resource.data.createdAt is string
+          && request.resource.data.createdAt.size() <= 40
+          && request.resource.data.updatedAt is string
+          && request.resource.data.updatedAt.size() <= 40;
+        allow delete: if request.auth != null;
+      }
     }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any

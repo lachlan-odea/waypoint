@@ -7259,6 +7259,20 @@ a.share-btn {
 .it-day-stray {
   border-style: dashed;
 }
+.it-travel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.it-travel-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: baseline;
+  font-size: 13px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
 .it-check-list {
   list-style: none;
   margin: 0;
@@ -7321,7 +7335,8 @@ a.share-btn {
   .it-item-head {
     display: none;
   }
-  .it-addition {
+  .it-addition,
+  .it-travel-row {
     grid-template-columns: minmax(0, 1fr);
   }
   .ev-card-stats {
