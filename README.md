@@ -1,6 +1,6 @@
 # Waypoint
 
-Project management for the WiseTech Global creative teams — Design, Video, Marketing and Comms — plus the marketing team's social media calendar, campaign planning and events.
+Project management for the WiseTech Global creative teams — Design, Video, Marketing, Comms and Events — plus the marketing team's social media calendar, campaign planning and events.
 
 Live app: **https://lachlan-odea.github.io/waypoint/** (installable as a PWA). Sign in with your WiseTech email.
 
