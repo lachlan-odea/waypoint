@@ -18,6 +18,7 @@ import type {
   Campaign,
   DeskItem,
   Designer,
+  EventItinerary,
   Hub,
   MarketingEvent,
   Notification,
@@ -610,6 +611,46 @@ export async function setEvent(event: MarketingEvent): Promise<void> {
 
 export async function deleteEvent(id: string): Promise<void> {
   await deleteDoc(doc(eventsCol(), id));
+}
+
+// The itinerary on its own, written from the itinerary editor so the event
+// editor it may be open over isn't overwritten mid-edit.
+export async function setEventItinerary(
+  id: string,
+  itinerary: EventItinerary,
+): Promise<void> {
+  await updateDoc(doc(eventsCol(), id), { itinerary });
+}
+
+// Just the token, like setCampaignShareToken.
+export async function setEventItineraryShareToken(
+  id: string,
+  itineraryShareToken: string,
+): Promise<void> {
+  await updateDoc(doc(eventsCol(), id), { itineraryShareToken });
+}
+
+export async function setEventItinerarySharePointUrl(
+  id: string,
+  itinerarySharePointUrl: string,
+): Promise<void> {
+  await updateDoc(doc(eventsCol(), id), { itinerarySharePointUrl });
+}
+
+// ── Itinerary pages ────────────────────────────────────────────────────
+// The public copy of an event's itinerary behind its SharePoint page, at
+// /itineraryPages/{itineraryShareToken}. Same arrangement as campaign
+// pages: anyone with the exact token can read it, listing is refused, and
+// `json` is the page's data serialised by itineraryExport.ts.
+
+const itineraryPagesCol = () => collection(db, "itineraryPages");
+
+export async function setItineraryPage(shareToken: string, json: string): Promise<void> {
+  await setDoc(doc(itineraryPagesCol(), shareToken), { json });
+}
+
+export async function deleteItineraryPage(shareToken: string): Promise<void> {
+  await deleteDoc(doc(itineraryPagesCol(), shareToken));
 }
 
 // Load the CargoWise Event Portal export (src/data/eventsSeed.json, made by

@@ -7054,7 +7054,228 @@ a.share-btn {
   gap: 8px 16px;
 }
 
+/* ── Itinerary editor ─────────────────────────────────────────────────── */
+.modal.it-modal {
+  max-width: min(1040px, 96vw);
+}
+.it-travel {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(183, 179, 255, 0.22);
+  color: var(--brand-navy);
+  font-size: 13px;
+  line-height: 1.5;
+}
+:root.dark-mode .it-travel {
+  background: rgba(183, 179, 255, 0.14);
+  color: var(--brand-violet);
+}
+.it-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.it-section-head h3 {
+  margin: 0;
+}
+.it-cities {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.it-city {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.it-city input[type="color"] {
+  width: 40px;
+  height: 32px;
+  padding: 0 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.it-rows,
+.it-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.it-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 1.6fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.it-row-head,
+.it-item-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: -2px;
+}
+.it-city input:not([type="color"]),
+.it-row input,
+.it-item input,
+.it-item select,
+.it-day-head input,
+.it-day-head select,
+.it-day-note {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--surface);
+  color: inherit;
+  min-width: 0;
+}
+.it-city input:focus,
+.it-row input:focus,
+.it-item input:focus,
+.it-item select:focus,
+.it-day-head input:focus,
+.it-day-head select:focus,
+.it-day-note:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+.it-day {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface);
+}
+.it-day-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(120px, auto) auto;
+  gap: 8px;
+  align-items: center;
+}
+.it-day-head strong {
+  white-space: nowrap;
+}
+.it-day-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.it-day-add input[type="date"] {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 12px;
+  background: var(--surface);
+  color: inherit;
+}
+.it-item {
+  display: grid;
+  grid-template-columns: 104px 104px 150px minmax(0, 1fr) auto;
+  gap: 6px 8px;
+  align-items: center;
+  padding: 8px 0 10px;
+  border-top: 1px solid var(--border);
+}
+.it-item-head {
+  border-top: none;
+  padding: 0;
+}
+.it-item > .it-item-details {
+  grid-column: 1 / span 4;
+}
+.it-item > .it-item-who {
+  grid-column: 1 / span 2;
+}
+.it-item > .it-item-who + .it-item-who {
+  grid-column: 3 / span 2;
+}
+.it-day-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.it-item-adds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.it-day-note {
+  width: 100%;
+}
+.it-check-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.it-check-list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.it-check-mark {
+  font-weight: 700;
+  width: 14px;
+  flex: 0 0 auto;
+}
+.it-check-list li.ok .it-check-mark {
+  color: #1f7a4d;
+}
+.it-check-list li.fail .it-check-mark,
+.it-checks-failing {
+  color: #b4501f;
+}
+.it-check-detail {
+  color: var(--muted);
+}
+.ev-card-actions,
+.ev-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.ev-card-actions {
+  margin-top: 2px;
+}
+.ev-row-actions {
+  margin-top: 4px;
+}
+.ev-row-actions .btn-mini {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
 @media (max-width: 720px) {
+  .it-row,
+  .it-item,
+  .it-day-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .it-item > .it-item-details,
+  .it-item > .it-item-who,
+  .it-item > .it-item-who + .it-item-who {
+    grid-column: 1;
+  }
+  .it-row-head,
+  .it-item-head {
+    display: none;
+  }
   .ev-card-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

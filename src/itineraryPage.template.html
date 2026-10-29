@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>__ITINERARY_TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&display=swap" />
+<style>
+  :root {
+    /* CargoWise brand palette. */
+    --navy: #1d1765;
+    --blue: #371ee1;
+    --violet: #b7b3ff;
+    --mint: #c6ffd1;
+    --highlighter: #eafc88;
+    --peach: #ffbe98;
+    --cherry: #651d32;
+    --pine: #244349;
+    --midnight: #141e30;
+
+    --page: #f6f6fb;
+    --surface: #ffffff;
+    --rule: #e2e1ee;
+    --text: var(--midnight);
+    --muted: #5f6079;
+
+    --gutter: clamp(16px, 5vw, 56px);
+    --measure: 1040px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--page);
+    color: var(--text);
+    font-family: "DM Sans", "Segoe UI", ui-sans-serif, system-ui, -apple-system, Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+  .inner { max-width: var(--measure); margin: 0 auto; padding: 0 var(--gutter); }
+
+  .notice {
+    margin: 0;
+    padding: 10px var(--gutter);
+    font-size: 14px;
+    text-align: center;
+  }
+  .notice.warn { background: var(--highlighter); color: var(--navy); }
+  .notice.gone { background: var(--peach); color: var(--cherry); }
+
+  /* ── Hero: navy ground, the brand field pattern, the days as a strip ── */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    background: var(--navy);
+    color: #fff;
+    padding: clamp(32px, 6vw, 64px) 0 clamp(28px, 4vw, 40px);
+  }
+  .field {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: min(70%, 900px);
+    color: var(--violet);
+    opacity: 0.4;
+    -webkit-mask-image: linear-gradient(to left, #000 35%, transparent 95%);
+    mask-image: linear-gradient(to left, #000 35%, transparent 95%);
+    pointer-events: none;
+  }
+  .hero .inner { position: relative; }
+  .kicker { margin: 0 0 14px; color: var(--violet); font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  h1 {
+    margin: 0;
+    max-width: 22ch;
+    font-size: clamp(32px, 5.4vw, 56px);
+    line-height: 1.04;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  .sub { margin: 14px 0 0; color: var(--violet); font-size: 17px; }
+  .sub strong { color: #fff; font-weight: 600; }
+  .strip { display: flex; flex-wrap: wrap; gap: 8px; margin: clamp(28px, 4vw, 40px) 0 0; padding: 0; list-style: none; }
+  .strip a {
+    display: flex;
+    flex-direction: column;
+    min-width: 72px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(183, 179, 255, 0.4);
+    color: #fff;
+    text-decoration: none;
+    line-height: 1.2;
+    border-top: 3px solid var(--city, var(--violet));
+  }
+  .strip a:hover { background: rgba(255, 255, 255, 0.08); }
+  .strip a.today { background: var(--highlighter); color: var(--navy); border-color: var(--highlighter); }
+  .strip a.past { opacity: 0.55; }
+  .strip small { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; }
+  .strip b { font-size: 20px; font-weight: 700; }
+  .strip span { font-size: 12px; opacity: 0.85; }
+  .cities { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 16px 0 0; padding: 0; list-style: none; color: var(--violet); font-size: 14px; }
+  .cities li::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; background: var(--city); vertical-align: -1px; }
+
+  /* ── Tables: who, where, contacts ── */
+  .section { padding: clamp(28px, 4vw, 44px) 0 0; }
+  h2 { margin: 0 0 14px; font-size: 24px; line-height: 1.2; font-weight: 700; letter-spacing: -0.015em; }
+  .table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+  .table td { padding: 12px 16px; border-top: 1px solid var(--rule); vertical-align: top; font-size: 15px; }
+  .table tr:first-child td { border-top: 0; }
+  .table td:first-child { font-weight: 600; width: 28%; }
+  .table td:last-child { color: var(--muted); width: 34%; }
+  .table td.one { width: auto; }
+  .tnote { margin: 10px 0 0; color: var(--muted); font-size: 14px; font-style: italic; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 clamp(20px, 3vw, 40px); }
+
+  .travel {
+    margin-top: clamp(28px, 4vw, 44px);
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: rgba(183, 179, 255, 0.22);
+    color: var(--navy);
+    font-size: 15px;
+  }
+  .travel strong { font-weight: 700; }
+
+  /* ── Days: a timeline each ── */
+  .day { padding: clamp(32px, 5vw, 52px) 0 0; scroll-margin-top: 20px; }
+  .day-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; padding-left: 14px; border-left: 5px solid var(--city, var(--blue)); }
+  .day-head h2 { margin: 0; }
+  .day-head .where { color: var(--muted); font-size: 16px; }
+  .day-head .where b { color: var(--text); font-weight: 600; }
+  .day-note { margin: 14px 0 0; padding: 10px 14px; border-radius: 10px; background: var(--highlighter); color: var(--navy); font-size: 15px; }
+  .items { list-style: none; margin: 18px 0 0; padding: 0; position: relative; }
+  .items::before { content: ""; position: absolute; left: 131px; top: 12px; bottom: 12px; width: 2px; background: var(--rule); }
+  .item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 112px 40px minmax(0, 1fr);
+    gap: 0 12px;
+    padding: 12px 0;
+  }
+  .time { color: var(--muted); font-size: 15px; text-align: right; padding-top: 2px; white-space: nowrap; }
+  .mark { position: relative; z-index: 1; justify-self: center; width: 14px; height: 14px; margin-top: 6px; background: var(--page); border: 2px solid var(--city, var(--blue)); }
+  .mark.meeting { border-radius: 50%; background: var(--city, var(--blue)); }
+  .mark.stand { border-radius: 50%; }
+  .mark.meal { border-radius: 2px; background: var(--city, var(--blue)); }
+  .mark.session { transform: rotate(45deg); background: var(--highlighter); border-color: var(--navy); }
+  .item.now { background: rgba(234, 252, 136, 0.45); border-radius: 10px; }
+  .item.past .title { color: var(--muted); }
+  .title { font-size: 17px; font-weight: 600; }
+  .type { display: inline-block; margin-left: 10px; color: var(--muted); font-size: 13px; font-weight: 500; }
+  .details { margin: 3px 0 0; color: var(--text); font-size: 15px; line-height: 1.45; white-space: pre-wrap; }
+  .who { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  .who b { color: var(--text); font-weight: 600; }
+  .empty { margin: 14px 0 0; color: var(--muted); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: clamp(28px, 4vw, 40px) 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 14px; }
+  .legend .mark { display: inline-block; vertical-align: -2px; margin: 0 8px 0 0; --city: var(--blue); }
+
+  .foot { padding: clamp(28px, 4vw, 40px) 0 40px; color: var(--muted); font-size: 13px; }
+  .foot ul { margin: 0 0 12px; padding-left: 18px; }
+  .foot li { margin: 2px 0; }
+  .foot .live::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: #1f9d5c;
+    vertical-align: 1px;
+  }
+
+  @media (max-width: 720px) {
+    .grid2 { grid-template-columns: minmax(0, 1fr); }
+    .items::before { left: 7px; }
+    .item { grid-template-columns: 16px minmax(0, 1fr); }
+    .time { grid-column: 2; grid-row: 1; text-align: left; }
+    .mark { grid-column: 1; grid-row: 1 / span 2; margin-top: 4px; width: 12px; height: 12px; }
+    .body { grid-column: 2; }
+    .table td:first-child, .table td:last-child { width: auto; }
+    .field { width: 100%; opacity: 0.25; }
+  }
+  @media print {
+    .hero { background: #fff; color: var(--text); }
+    .field, .notice { display: none; }
+    .strip a { color: var(--text); border-color: var(--rule); }
+    .day { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <noscript>
+    <p class="notice warn">Turn on scripts in your browser to see this itinerary.</p>
+  </noscript>
+</div>
+<script type="application/json" id="itinerary-snapshot">__ITINERARY_SNAPSHOT__</script>
+<script>
+(function () {
+  "use strict";
+
+  var FEED_URL = "__ITINERARY_FEED_URL__";
+  var REFRESH_MS = 5 * 60 * 1000;
+
+  var TYPE_LABEL = { meeting: "Meeting", stand: "Stand & setup", meal: "Meal / networking", session: "Session / speaking" };
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function safeColor(c, fallback) {
+    return /^#[0-9a-fA-F]{3,8}$/.test(c || "") ? c : fallback;
+  }
+
+  function todayIso() {
+    var d = new Date();
+    var local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  function nowHm() {
+    var d = new Date();
+    return (d.getHours() < 10 ? "0" : "") + d.getHours() + ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+  }
+
+  function parse(iso) {
+    return new Date(iso + "T00:00:00");
+  }
+
+  function fmt(iso, opts) {
+    if (!iso) return "";
+    return parse(iso).toLocaleDateString(undefined, opts || { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function fmtTime(hhmm) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || "");
+    if (!m) return hhmm || "";
+    var h = Number(m[1]);
+    var hour12 = h % 12 === 0 ? 12 : h % 12;
+    return hour12 + ":" + m[2] + (h < 12 ? "am" : "pm");
+  }
+
+  function fmtRange(a, b) {
+    var x = fmtTime(a), y = fmtTime(b);
+    if (x && y) return x + "–" + y;
+    return x || y || "All day";
+  }
+
+  function cityColor(it, name) {
+    var c = null;
+    (it.cities || []).forEach(function (x) { if (x.name === name) c = x.color; });
+    return safeColor(c, "#371ee1");
+  }
+
+  // The brand "field", as on the campaign pages.
+  function fieldSvg() {
+    var lines = [];
+    var y = 50;
+    for (var row = 0; row < 20; row++) {
+      var hx = 1.5 * row + 0.5;
+      var hy = Math.max(0, 21 - 1.1 * row);
+      for (var col = 0; col < 19; col++) {
+        var x = 50 + 81.2 * col;
+        lines.push('<line x1="' + (x - hx).toFixed(1) + '" y1="' + (y + hy).toFixed(1) +
+          '" x2="' + (x + hx).toFixed(1) + '" y2="' + (y - hy).toFixed(1) + '"/>');
+      }
+      y += 82 - 2.55 * row;
+    }
+    return '<svg class="field" viewBox="0 0 1561 1201" preserveAspectRatio="xMaxYMid slice" aria-hidden="true" focusable="false">' +
+      '<g stroke="currentColor" stroke-width="3.2">' + lines.join("") + "</g></svg>";
+  }
+  var FIELD = fieldSvg();
+
+  function table(rows, oneColumn) {
+    var h = ['<table class="table">'];
+    rows.forEach(function (r) {
+      h.push("<tr><td>" + esc(r.label) + "</td>" +
+        (oneColumn ? "" : "<td>" + esc(r.value) + "</td>") +
+        '<td class="' + (oneColumn ? "one" : "") + '">' + esc(oneColumn ? (r.value ? r.value + (r.note ? " — " + r.note : "") : r.note) : r.note) + "</td></tr>");
+    });
+    h.push("</table>");
+    return h.join("");
+  }
+
+  function section(title, rows, note) {
+    if (!rows || !rows.length) return "";
+    return '<section class="section"><h2>' + esc(title) + "</h2>" + table(rows) +
+      (note ? '<p class="tnote">' + esc(note) + "</p>" : "") + "</section>";
+  }
+
+  function render(it, status) {
+    var today = todayIso();
+    var now = nowHm();
+    var h = [];
+
+    if (status.kind === "gone") {
+      h.push('<p class="notice gone" role="status">This itinerary has been removed. These are its details from when the page was last updated.</p>');
+    } else if (status.kind === "offline") {
+      h.push('<p class="notice warn" role="status">Couldn\'t load the latest details, so these may be out of date. Trying again in a few minutes.</p>');
+    }
+
+    var days = (it.days || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+
+    // Hero
+    h.push('<header class="hero">' + FIELD + '<div class="inner">');
+    h.push('<p class="kicker">Itinerary</p>');
+    h.push("<h1>" + esc(it.name || "Event") + "</h1>");
+    var when = it.startDate && it.endDate
+      ? (it.startDate === it.endDate ? fmt(it.startDate) : fmt(it.startDate) + " to " + fmt(it.endDate))
+      : "Dates to be confirmed";
+    h.push('<p class="sub"><strong>' + esc(when) + "</strong>" + (it.headerLine ? " · " + esc(it.headerLine) : "") + "</p>");
+    if (days.length) {
+      h.push('<ul class="strip" aria-label="Days">');
+      days.forEach(function (d) {
+        var cls = d.date === today ? " today" : d.date < today ? " past" : "";
+        h.push('<li><a href="#day-' + esc(d.date) + '" class="' + cls + '" style="--city:' + cityColor(it, d.city) + '">' +
+          "<small>" + esc(fmt(d.date, { weekday: "short" })) + "</small>" +
+          "<b>" + esc(fmt(d.date, { day: "numeric" })) + "</b>" +
+          "<span>" + esc(fmt(d.date, { month: "short" })) + (d.title ? " · " + esc(d.title) : "") + "</span></a></li>");
+      });
+      h.push("</ul>");
+    }
+    if ((it.cities || []).length > 1) {
+      h.push('<ul class="cities" aria-label="Cities">');
+      it.cities.forEach(function (c) {
+        h.push('<li style="--city:' + safeColor(c.color, "#b7b3ff") + '">' + esc(c.name) + "</li>");
+      });
+      h.push("</ul>");
+    }
+    h.push("</div></header>");
+
+    // People and venue
+    h.push('<div class="inner">');
+    h.push('<div class="grid2">');
+    h.push(section("Who’s attending", it.attendees, it.attendeesNote));
+    h.push(section("Venue and stand", it.venue));
+    h.push("</div>");
+    h.push('<div class="grid2">');
+    h.push(section("Key contacts", it.contacts));
+    h.push(section("Stand shifts", it.standShifts));
+    h.push("</div>");
+    h.push(section("Shipping and collateral", it.shipping));
+    h.push('<p class="travel"><strong>Travel and accommodation:</strong> ' + esc(it.travel || "each attendee books and manages their own flights, accommodation and transfers.") + "</p>");
+
+    // Days
+    if (!days.length) {
+      h.push('<p class="empty">No days planned yet.</p>');
+    }
+    days.forEach(function (d) {
+      var color = cityColor(it, d.city);
+      h.push('<section class="day" id="day-' + esc(d.date) + '" style="--city:' + color + '">');
+      h.push('<div class="day-head"><h2>' + esc(fmt(d.date, { weekday: "long", day: "numeric", month: "short" })) + "</h2>" +
+        '<span class="where">' + (d.city ? "<b>" + esc(d.city) + "</b>" : "") + (d.city && d.title ? ": " : "") + esc(d.title || "") + "</span></div>");
+      if (!d.items || !d.items.length) {
+        h.push('<p class="empty">Nothing planned on this day yet.</p>');
+      } else {
+        h.push('<ol class="items">');
+        d.items.forEach(function (i) {
+          var state = "";
+          if (d.date === today) {
+            var end = i.end || i.start;
+            if (i.start && end && i.start <= now && now <= end) state = " now";
+            else if (end && end < now) state = " past";
+          } else if (d.date < today) {
+            state = " past";
+          }
+          h.push('<li class="item' + state + '">' +
+            '<span class="time">' + esc(fmtRange(i.start, i.end)) + "</span>" +
+            '<span class="mark ' + esc(i.type || "meeting") + '" title="' + esc(TYPE_LABEL[i.type] || "") + '" aria-hidden="true"></span>' +
+            '<div class="body"><div class="title">' + esc(i.title || "Untitled") +
+              '<span class="type">' + esc(TYPE_LABEL[i.type] || "") + "</span></div>" +
+            (i.details ? '<p class="details">' + esc(i.details) + "</p>" : "") +
+            (i.attending ? '<p class="who"><b>Attending:</b> ' + esc(i.attending) + "</p>" : "") +
+            (i.also ? '<p class="who"><b>Also:</b> ' + esc(i.also) + "</p>" : "") +
+            "</div></li>");
+        });
+        h.push("</ol>");
+      }
+      if (d.note) h.push('<p class="day-note">' + esc(d.note) + "</p>");
+      h.push("</section>");
+    });
+
+    h.push('<ul class="legend" aria-label="Key">' +
+      '<li><span class="mark meeting"></span>Meeting</li>' +
+      '<li><span class="mark stand"></span>Stand & setup</li>' +
+      '<li><span class="mark meal"></span>Meal / networking</li>' +
+      '<li><span class="mark session"></span>Session / speaking</li></ul>');
+
+    h.push('<footer class="foot"><ul>');
+    (it.footer || []).forEach(function (line) { h.push("<li>" + esc(line) + "</li>"); });
+    h.push('</ul><span class="' + (status.kind === "live" ? "live" : "") + '">' + esc(status.note) + "</span></footer>");
+    h.push("</div>");
+
+    document.getElementById("app").innerHTML = h.join("");
+    document.title = (it.name || "Event") + " · Itinerary";
+  }
+
+  function timeNow() {
+    return new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
+
+  var latest = JSON.parse(document.getElementById("itinerary-snapshot").textContent);
+
+  function asOf() {
+    return "Details as of " + new Date(latest.updatedAt).toLocaleString();
+  }
+
+  render(latest, { kind: "loading", note: asOf() + ". Checking for updates…" });
+
+  function load() {
+    fetch(FEED_URL, { cache: "no-store" })
+      .then(function (res) {
+        if (res.status === 404) return { gone: true };
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json().then(function (doc) {
+          return JSON.parse(doc.fields.json.stringValue);
+        });
+      })
+      .then(function (data) {
+        if (data.gone) {
+          render(latest, { kind: "gone", note: asOf() });
+          return;
+        }
+        latest = data;
+        render(latest, { kind: "live", note: "Live. Updated at " + timeNow() });
+      })
+      .catch(function () {
+        render(latest, { kind: "offline", note: asOf() });
+      });
+  }
+
+  load();
+  setInterval(load, REFRESH_MS);
+})();
+</script>
+</body>
+</html>

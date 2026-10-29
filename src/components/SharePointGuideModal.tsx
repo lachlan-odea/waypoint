@@ -14,6 +14,11 @@ type Props = {
   onDownload: () => void;
   onSave: (url: string) => void;
   onCancel: () => void;
+  // What's being put up — "campaign" (the default) or "itinerary" — and
+  // where it goes. The campaigns library is the default folder.
+  subject?: string;
+  folderUrl?: string;
+  folderLabel?: string;
 };
 
 // Anything on SharePoint over https, so a stray paste (a Teams or Outlook
@@ -38,6 +43,9 @@ export function SharePointGuideModal({
   onDownload,
   onSave,
   onCancel,
+  subject = "campaign",
+  folderUrl = SHAREPOINT_CAMPAIGNS_FOLDER,
+  folderLabel = "Marketing › Campaigns",
 }: Props) {
   const [downloaded, setDownloaded] = useState(false);
   const [openedFolder, setOpenedFolder] = useState(false);
@@ -87,7 +95,7 @@ export function SharePointGuideModal({
         <header className="modal-head">
           <div>
             <h2 className="modal-title-static" id="sp-guide-title">
-              Put this campaign on SharePoint
+              Put this {subject} on SharePoint
             </h2>
             <div className="modal-sub">
               Four steps. The page keeps itself up to date once it's there.
@@ -128,12 +136,12 @@ export function SharePointGuideModal({
               <div className="sp-step-body">
                 <h3>Upload it to SharePoint</h3>
                 <p className="muted small">
-                  Opens the Marketing › Campaigns folder in a new tab. Drag the
+                  Opens the {folderLabel} folder in a new tab. Drag the
                   downloaded file in, or use Upload › Files.
                 </p>
                 <a
                   className={`sp-step-link ${downloaded && !openedFolder ? "primary" : "btn-mini"}`}
-                  href={SHAREPOINT_CAMPAIGNS_FOLDER}
+                  href={folderUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setOpenedFolder(true)}

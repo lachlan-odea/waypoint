@@ -62,6 +62,19 @@ service cloud.firestore {
         && request.resource.data.json.size() < 200000;
       allow delete: if request.auth != null;
     }
+    // Public copies of event itineraries shared as a SharePoint page, keyed
+    // by the event's itineraryShareToken (see src/itineraryExport.ts). The
+    // same arrangement as campaignPages.
+    match /itineraryPages/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if request.auth != null
+        && token.matches('^[0-9a-f]{32}$')
+        && request.resource.data.keys().hasOnly(['json'])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 200000;
+      allow delete: if request.auth != null;
+    }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any
     // signed-in user. Reads are constrained by the ownerId == uid filter the

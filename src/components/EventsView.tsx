@@ -27,6 +27,7 @@ import {
   monthTitle,
 } from "../events";
 import { EventModal } from "./EventModal";
+import { ItineraryModal } from "./ItineraryModal";
 import { ExportCsvModal } from "./ExportCsvModal";
 import { csvFileName, downloadCsv, eventsCsv, eventsInRange } from "../csvExport";
 import { seedEventsIfMissing } from "../firestore";
@@ -169,6 +170,8 @@ export function EventsView({
     }
   }
   const [editing, setEditing] = useState<Editing | null>(null);
+  // The event whose itinerary is open, from a card's or row's button.
+  const [itineraryFor, setItineraryFor] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -846,6 +849,35 @@ export function EventsView({
                       <td className="ev-td-name">
                         <span className="ev-name">{e.name}</span>
                         {e.location && <span className="ev-sub muted small">{e.location}</span>}
+                        <span className="ev-row-actions">
+                          <button
+                            type="button"
+                            className="btn-mini"
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              setItineraryFor(e.id);
+                            }}
+                            onKeyDown={(ev) => ev.stopPropagation()}
+                            title={
+                              e.itinerary
+                                ? "Open the attendee itinerary"
+                                : "Draft an attendee itinerary from this event"
+                            }
+                          >
+                            {e.itinerary ? "Itinerary" : "Generate itinerary"}
+                          </button>
+                          {e.itinerarySharePointUrl && (
+                            <a
+                              className="camp-card-sharepoint"
+                              href={e.itinerarySharePointUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(ev) => ev.stopPropagation()}
+                            >
+                              On SharePoint ↗
+                            </a>
+                          )}
+                        </span>
                       </td>
                       <td>
                         {e.division}
@@ -973,6 +1005,30 @@ export function EventsView({
                         </div>
                       </dl>
                       <ChecklistBar done={checklistDone(e)} missing={missing} />
+                      <div className="ev-card-actions">
+                        <button
+                          type="button"
+                          className="btn-mini"
+                          onClick={() => setItineraryFor(e.id)}
+                          title={
+                            e.itinerary
+                              ? "Open the attendee itinerary"
+                              : "Draft an attendee itinerary from this event"
+                          }
+                        >
+                          {e.itinerary ? "Itinerary" : "Generate itinerary"}
+                        </button>
+                        {e.itinerarySharePointUrl && (
+                          <a
+                            className="camp-card-sharepoint"
+                            href={e.itinerarySharePointUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Itinerary on SharePoint ↗
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </article>
                 );
@@ -1014,6 +1070,18 @@ export function EventsView({
           onDelete={() => remove(editing.event.id)}
         />
       )}
+      {itineraryFor && (() => {
+        const target = events.find((e) => e.id === itineraryFor);
+        return target ? (
+          <ItineraryModal
+            key={target.id}
+            event={target}
+            onClose={() => setItineraryFor(null)}
+            // The live subscription brings the saved itinerary back.
+            onSaved={() => {}}
+          />
+        ) : null;
+      })()}
       {exporting && (
         <ExportCsvModal
           title="Export events"

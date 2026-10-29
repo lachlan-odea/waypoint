@@ -39,6 +39,7 @@ import {
   deleteSocialPost as firestoreDeleteSocialPost,
   setEvent as firestoreSetEvent,
   deleteEvent as firestoreDeleteEvent,
+  deleteItineraryPage as firestoreDeleteItineraryPage,
   seedEventsIfMissing,
   subscribeEvents,
   subscribeCampaigns,
@@ -48,6 +49,7 @@ import {
 } from "./firestore";
 import { isSocialMilestone, milestoneSocialPost } from "./campaigns";
 import { publishCampaignPage } from "./campaignExport";
+import { publishItineraryPage } from "./itineraryExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetailModal } from "./components/ProjectDetailModal";
@@ -822,12 +824,25 @@ export default function App() {
     }
   }
 
+  // Saving an event also refreshes its itinerary's SharePoint page, if it
+  // has one, since the page shows the event's name and dates.
   function saveEvent(event: MarketingEvent) {
     firestoreSetEvent(event).catch(writeError);
+    publishItineraryPage(event).catch((err) =>
+      console.warn("Couldn't update the itinerary's SharePoint page", err),
+    );
   }
 
+  // The itinerary page's public copy goes with the event, so the page says
+  // the itinerary has been removed rather than showing it as it was.
   function deleteEvent(id: string) {
+    const token = events.find((e) => e.id === id)?.itineraryShareToken;
     firestoreDeleteEvent(id).catch(writeError);
+    if (token) {
+      firestoreDeleteItineraryPage(token).catch((err) =>
+        console.warn("Couldn't remove the itinerary's SharePoint page", err),
+      );
+    }
   }
 
   function addNotifications(notifs: Notification[]) {

@@ -22,6 +22,7 @@ import {
   toUsd,
 } from "../events";
 import { ProjectPicker } from "./ProjectPicker";
+import { ItineraryModal } from "./ItineraryModal";
 
 type Props = {
   initial: Partial<MarketingEvent>;
@@ -134,14 +135,24 @@ export function EventModal({
   });
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The itinerary, its page token and its SharePoint link are edited in
+  // their own window and written on their own; held here so this editor's
+  // save, which rewrites the whole event, carries the latest of each.
+  const [itinerary, setItinerary] = useState(initial.itinerary);
+  const [itineraryShareToken, setItineraryShareToken] = useState(initial.itineraryShareToken);
+  const [itinerarySharePointUrl, setItinerarySharePointUrl] = useState(
+    initial.itinerarySharePointUrl,
+  );
+  const [itineraryOpen, setItineraryOpen] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onCancel();
+      // The itinerary window handles its own Escape.
+      if (e.key === "Escape" && !itineraryOpen) onCancel();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
+  }, [onCancel, itineraryOpen]);
 
   const datesValid = tbc
     ? !!tbcMonth || /^\d{4}$/.test(year.trim())
@@ -223,6 +234,9 @@ export function EventModal({
       oppsBreakdown: textOrUndefined(oppsBreakdown),
       notes: textOrUndefined(notes),
       checklist,
+      itinerary,
+      itineraryShareToken,
+      itinerarySharePointUrl,
       createdAt: initial.createdAt ?? new Date().toISOString(),
       source: initial.source ?? "manual",
     };
@@ -255,6 +269,29 @@ export function EventModal({
             )}
           </div>
           <div className="modal-head-actions">
+            {mode === "edit" && initial.id && (
+              <>
+                {itinerarySharePointUrl && (
+                  <a
+                    className="share-btn"
+                    href={itinerarySharePointUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open the itinerary's page on SharePoint"
+                  >
+                    Itinerary on SharePoint ↗
+                  </a>
+                )}
+                <button
+                  type="button"
+                  className="share-btn"
+                  onClick={() => setItineraryOpen(true)}
+                  title="The attendee itinerary: stand shifts, sessions, meetings and meals, day by day. Drafted from the event, then put on SharePoint as a page that keeps itself up to date."
+                >
+                  {itinerary ? "Edit itinerary" : "Generate itinerary"}
+                </button>
+              </>
+            )}
             <button className="icon-btn" onClick={onCancel} aria-label="Close">
               ✕
             </button>
@@ -770,6 +807,11 @@ export function EventModal({
             )
           )}
           <button onClick={onCancel}>Cancel</button>
+          {mode === "create" && (
+            <span className="muted small" style={{ marginRight: "auto" }}>
+              Save the event, then open it to generate its itinerary.
+            </span>
+          )}
           <button
             className="primary"
             onClick={() => {
@@ -789,6 +831,22 @@ export function EventModal({
           </button>
         </footer>
       </div>
+      {itineraryOpen && initial.id && (
+        <ItineraryModal
+          event={{
+            ...(initial as MarketingEvent),
+            itinerary,
+            itineraryShareToken,
+            itinerarySharePointUrl,
+          }}
+          onClose={() => setItineraryOpen(false)}
+          onSaved={(patch) => {
+            setItinerary(patch.itinerary);
+            setItineraryShareToken(patch.itineraryShareToken);
+            setItinerarySharePointUrl(patch.itinerarySharePointUrl);
+          }}
+        />
+      )}
     </div>
   );
 }
