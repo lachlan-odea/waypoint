@@ -111,9 +111,10 @@ service cloud.firestore {
       }
 
       // Attendees' own travel and accommodation, entered on the page. The
-      // same anyone-with-the-token model, but updates are allowed too, so
-      // a flight change can be corrected by whoever's travelling; there's
-      // no sign-in to tell one attendee from another.
+      // same anyone-with-the-token model, but updates and deletes are
+      // allowed too, so a flight change can be corrected and a cancelled
+      // trip removed by whoever's travelling; there's no sign-in to tell
+      // one attendee from another.
       match /travel/{travelId} {
         allow get, list: if true;
         allow create, update: if token.matches('^[0-9a-f]{32}$')
@@ -138,7 +139,7 @@ service cloud.firestore {
           && request.resource.data.createdAt.size() <= 40
           && request.resource.data.updatedAt is string
           && request.resource.data.updatedAt.size() <= 40;
-        allow delete: if request.auth != null;
+        allow delete: if token.matches('^[0-9a-f]{32}$');
       }
     }
     // My Desk checklist items are private to one person, so unlike the

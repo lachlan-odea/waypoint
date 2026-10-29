@@ -136,6 +136,10 @@
   .travel-table td.name { font-weight: 600; white-space: nowrap; }
   .travel-table td.notes { color: var(--muted); font-size: 14px; }
   .travel-table .edit { font: inherit; font-size: 13px; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+  .travel-table .edit.remove { color: var(--cherry); margin-left: 10px; }
+  .travel-table td.acts { white-space: nowrap; }
+  .travel-table .confirm { font-size: 13px; color: var(--cherry); }
+  .travel-table .confirm .edit { margin-left: 8px; }
   .travel-add { margin-top: 12px; }
 
   /* ── Days: a timeline each ── */
@@ -407,6 +411,8 @@
   var openTravel = null;
   var sendingTravel = false;
   var travelError = "";
+  // The id of the entry whose Remove is awaiting a yes.
+  var confirmTravel = null;
 
   function itemHtml(i, dayDate, today, now) {
     var state = "";
@@ -480,7 +486,15 @@
           '<td data-label="Departing">' + esc(t.depart || "—") + "</td>" +
           '<td data-label="Staying at">' + esc(t.hotel || "—") + "</td>" +
           '<td class="notes">' + esc([t.mobile, t.notes].filter(Boolean).join(" · ") || "—") + "</td>" +
-          (adding ? '<td><button type="button" class="edit" data-travel-edit="' + esc(t.id) + '">Correct</button></td>' : "") +
+          (adding
+            ? '<td class="acts">' + (confirmTravel === t.id
+                ? '<span class="confirm">Remove ' + esc(t.name) + "'s entry?" +
+                  '<button type="button" class="edit remove" data-travel-remove-yes="' + esc(t.id) + '">Yes, remove</button>' +
+                  '<button type="button" class="edit" data-travel-remove-no>No</button></span>'
+                : '<button type="button" class="edit" data-travel-edit="' + esc(t.id) + '">Correct</button>' +
+                  '<button type="button" class="edit remove" data-travel-remove="' + esc(t.id) + '">Remove</button>') +
+              "</td>"
+            : "") +
           "</tr>");
       });
       h.push("</tbody></table>");
@@ -728,6 +742,24 @@
       });
   }
 
+  // Taking an entry off the page: a DELETE of the one document.
+  function removeTravel(id) {
+    var at = TRAVEL_URL.indexOf("?");
+    var url = TRAVEL_URL.slice(0, at) + "/" + encodeURIComponent(id) + TRAVEL_URL.slice(at);
+    confirmTravel = null;
+    fetch(url, { method: "DELETE" })
+      .then(function (res) {
+        if (!res.ok && res.status !== 404) throw new Error("HTTP " + res.status);
+        return loadTravel();
+      })
+      .then(function () { render(); })
+      .catch(function () {
+        travelError = "Couldn't remove it just now. Check you're online and try again.";
+        openTravel = id;
+        render();
+      });
+  }
+
   function submitAddition(form) {
     var get = function (name) { var el = form.elements[name]; return el ? String(el.value || "").trim() : ""; };
     var title = get("title");
@@ -806,6 +838,23 @@
     if (travelCancel) {
       openTravel = null;
       travelError = "";
+      render();
+      return;
+    }
+    var travelRemove = e.target.closest ? e.target.closest("[data-travel-remove]") : null;
+    if (travelRemove) {
+      confirmTravel = travelRemove.getAttribute("data-travel-remove");
+      render();
+      return;
+    }
+    var travelRemoveYes = e.target.closest ? e.target.closest("[data-travel-remove-yes]") : null;
+    if (travelRemoveYes) {
+      removeTravel(travelRemoveYes.getAttribute("data-travel-remove-yes"));
+      return;
+    }
+    var travelRemoveNo = e.target.closest ? e.target.closest("[data-travel-remove-no]") : null;
+    if (travelRemoveNo) {
+      confirmTravel = null;
       render();
     }
   });
