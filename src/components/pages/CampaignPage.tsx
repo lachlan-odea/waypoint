@@ -53,6 +53,7 @@ import {
   type WpStatus,
 } from "./ItemPage";
 import { countdownFor } from "./countdown";
+import { downloadWebinarBrief } from "../../webinarBrief";
 
 type Props = {
   campaign: Campaign;
@@ -231,6 +232,19 @@ function WebinarCampaignPage({
         actions={
           <>
             {hint}
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              title="Download a Word document of sections 01 Brief, 02 Core message, 04 Speakers, run of show & assets and 05 Runsheet & storyboard"
+              onClick={() => {
+                downloadWebinarBrief(campaign, kit, designers).catch((err) => {
+                  console.error("Couldn't build the briefing document", err);
+                  window.alert("Couldn't build the briefing document. Check the browser console for details.");
+                });
+              }}
+            >
+              <Icon name="download" size={14} /> Briefing document
+            </button>
             {campaign.sharePointUrl && (
               <a className="btn btn-ghost btn-sm" href={campaign.sharePointUrl} target="_blank" rel="noopener noreferrer">
                 <Icon name="external-link" size={14} /> Open on SharePoint
