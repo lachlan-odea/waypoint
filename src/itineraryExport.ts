@@ -21,6 +21,16 @@ function itineraryPageUrl(shareToken: string): string {
   );
 }
 
+// The page's additions collection, listed and added to by readers through
+// the same REST API. The rules take a create from anyone with the token.
+function itineraryAdditionsUrl(shareToken: string): string {
+  const { projectId, apiKey } = firebaseConfig;
+  return (
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
+    `/documents/itineraryPages/${shareToken}/additions?key=${apiKey}`
+  );
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -95,6 +105,7 @@ export function itineraryPageHtml(
     __ITINERARY_TITLE__: escapeHtml(`${event.name} · Itinerary`),
     __ITINERARY_SNAPSHOT__: snapshot,
     __ITINERARY_FEED_URL__: itineraryPageUrl(shareToken),
+    __ITINERARY_ADDITIONS_URL__: itineraryAdditionsUrl(shareToken),
   };
   return template.replace(/__ITINERARY_[A-Z_]+__/g, (key) => fill[key] ?? key);
 }

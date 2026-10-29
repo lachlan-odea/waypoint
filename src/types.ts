@@ -549,3 +549,24 @@ export type EventItinerary = {
   manualChecks: string[];
   updatedAt: string;
 };
+
+// Something a reader of the itinerary's SharePoint page added to one of its
+// days, without being signed in to anything. Written by the page through
+// Firestore's REST API to /itineraryPages/{token}/additions, where the
+// rules take a create from anyone who holds the token and nothing else.
+// Shown on the page straight away, marked as an addition, and listed in
+// the itinerary editor, where the organiser folds it into the day or
+// dismisses it. The same fields as an ItineraryItem, plus who added it.
+export type ItineraryAddition = {
+  id: string;
+  date: string;
+  start: string;
+  end: string;
+  type: ItineraryItemType;
+  title: string;
+  details: string;
+  attending: string;
+  // The reader's name, as they typed it.
+  name: string;
+  createdAt: string;
+};

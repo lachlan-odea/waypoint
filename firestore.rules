@@ -74,6 +74,41 @@ service cloud.firestore {
         && request.resource.data.json is string
         && request.resource.data.json.size() < 200000;
       allow delete: if request.auth != null;
+
+      // Additions readers of the page make to its days, without signing in.
+      // Anyone holding the token can add one and read them all (the path
+      // itself needs the token, so listing here leaks nothing); nobody can
+      // change one once written, and only signed-in users (the organiser,
+      // from the itinerary editor) can remove them. Every field is checked
+      // and capped so the worst a stray reader can do is leave a note.
+      match /additions/{additionId} {
+        allow get, list: if true;
+        allow create: if token.matches('^[0-9a-f]{32}$')
+          && exists(/databases/$(database)/documents/itineraryPages/$(token))
+          && request.resource.data.keys().hasOnly([
+            'date', 'start', 'end', 'type', 'title', 'details', 'attending', 'name', 'createdAt'
+          ])
+          && request.resource.data.date is string
+          && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.start is string
+          && request.resource.data.start.matches('^([0-9]{2}:[0-9]{2})?$')
+          && request.resource.data.end is string
+          && request.resource.data.end.matches('^([0-9]{2}:[0-9]{2})?$')
+          && request.resource.data.type in ['meeting', 'stand', 'meal', 'session']
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 120
+          && request.resource.data.details is string
+          && request.resource.data.details.size() <= 600
+          && request.resource.data.attending is string
+          && request.resource.data.attending.size() <= 200
+          && request.resource.data.name is string
+          && request.resource.data.name.size() <= 80
+          && request.resource.data.createdAt is string
+          && request.resource.data.createdAt.size() <= 40;
+        allow update: if false;
+        allow delete: if request.auth != null;
+      }
     }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any

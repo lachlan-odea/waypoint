@@ -115,7 +115,6 @@
   .table tr:first-child td { border-top: 0; }
   .table td:first-child { font-weight: 600; width: 28%; }
   .table td:last-child { color: var(--muted); width: 34%; }
-  .table td.one { width: auto; }
   .tnote { margin: 10px 0 0; color: var(--muted); font-size: 14px; font-style: italic; }
   .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 clamp(20px, 3vw, 40px); }
 
@@ -160,6 +159,68 @@
   .who b { color: var(--text); font-weight: 600; }
   .empty { margin: 14px 0 0; color: var(--muted); }
 
+  /* Something a reader added from this page: dashed mark, who added it. */
+  .item.added .mark { border-style: dashed; background: var(--page); }
+  .item.added .body { padding-left: 10px; border-left: 2px dashed var(--rule); }
+  .added-by { display: inline-block; margin-left: 10px; padding: 1px 8px; border-radius: 999px; background: var(--mint); color: var(--pine); font-size: 12px; font-weight: 600; }
+
+  /* ── Adding to a day ── */
+  .add { margin: 10px 0 0 152px; }
+  .add-btn {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--blue);
+    background: transparent;
+    border: 1px dashed rgba(55, 30, 225, 0.4);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+  }
+  .add-btn:hover { background: rgba(55, 30, 225, 0.06); border-color: var(--blue); }
+  .add-form {
+    margin: 12px 0 0;
+    padding: 16px;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .add-form h3 { grid-column: 1 / -1; margin: 0; font-size: 16px; }
+  .add-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .add-form input, .add-form select, .add-form textarea {
+    font: inherit;
+    font-size: 15px;
+    color: var(--text);
+    padding: 8px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--surface);
+    min-width: 0;
+  }
+  .add-form input:focus, .add-form select:focus, .add-form textarea:focus { outline: none; border-color: var(--blue); }
+  .add-form .c2 { grid-column: span 2; }
+  .add-form .c3 { grid-column: span 3; }
+  .add-form .c6 { grid-column: 1 / -1; }
+  .add-form .actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .add-form .hint { color: var(--muted); font-size: 13px; margin-left: auto; }
+  .add-form .err { color: var(--cherry); font-size: 14px; }
+  .btn {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .btn:disabled { opacity: 0.6; cursor: default; }
+
   .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: clamp(28px, 4vw, 40px) 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 14px; }
   .legend .mark { display: inline-block; vertical-align: -2px; margin: 0 8px 0 0; --city: var(--blue); }
 
@@ -186,10 +247,13 @@
     .body { grid-column: 2; }
     .table td:first-child, .table td:last-child { width: auto; }
     .field { width: 100%; opacity: 0.25; }
+    .add { margin-left: 28px; }
+    .add-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .add-form .c3 { grid-column: span 2; }
   }
   @media print {
     .hero { background: #fff; color: var(--text); }
-    .field, .notice { display: none; }
+    .field, .notice, .add { display: none; }
     .strip a { color: var(--text); border-color: var(--rule); }
     .day { break-inside: avoid; }
   }
@@ -207,9 +271,14 @@
   "use strict";
 
   var FEED_URL = "__ITINERARY_FEED_URL__";
+  // Where readers' additions to the days live: listed on every refresh,
+  // added to with a plain POST. Empty disables adding.
+  var ADDITIONS_URL = "__ITINERARY_ADDITIONS_URL__";
   var REFRESH_MS = 5 * 60 * 1000;
+  var NAME_KEY = "itinerary.yourName";
 
   var TYPE_LABEL = { meeting: "Meeting", stand: "Stand & setup", meal: "Meal / networking", session: "Session / speaking" };
+  var TYPES = ["meeting", "stand", "meal", "session"];
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -264,6 +333,13 @@
     return safeColor(c, "#371ee1");
   }
 
+  function savedName() {
+    try { return localStorage.getItem(NAME_KEY) || ""; } catch (e) { return ""; }
+  }
+  function rememberName(name) {
+    try { localStorage.setItem(NAME_KEY, name); } catch (e) { /* private window */ }
+  }
+
   // The brand "field", as on the campaign pages.
   function fieldSvg() {
     var lines = [];
@@ -283,12 +359,10 @@
   }
   var FIELD = fieldSvg();
 
-  function table(rows, oneColumn) {
+  function table(rows) {
     var h = ['<table class="table">'];
     rows.forEach(function (r) {
-      h.push("<tr><td>" + esc(r.label) + "</td>" +
-        (oneColumn ? "" : "<td>" + esc(r.value) + "</td>") +
-        '<td class="' + (oneColumn ? "one" : "") + '">' + esc(oneColumn ? (r.value ? r.value + (r.note ? " — " + r.note : "") : r.note) : r.note) + "</td></tr>");
+      h.push("<tr><td>" + esc(r.label) + "</td><td>" + esc(r.value) + "</td><td>" + esc(r.note) + "</td></tr>");
     });
     h.push("</table>");
     return h.join("");
@@ -300,10 +374,66 @@
       (note ? '<p class="tnote">' + esc(note) + "</p>" : "") + "</section>";
   }
 
-  function render(it, status) {
+  // ── State ────────────────────────────────────────────────────────────
+  var latest = JSON.parse(document.getElementById("itinerary-snapshot").textContent);
+  var additions = [];
+  var status = { kind: "loading", note: "" };
+  // The day whose add form is open. While it is, refreshes don't redraw,
+  // so nothing typed is lost; the redraw happens when it closes.
+  var openDate = null;
+  var pendingRedraw = false;
+  var sending = false;
+  var formError = "";
+  var canAdd = !!ADDITIONS_URL;
+
+  function itemHtml(i, dayDate, today, now) {
+    var state = "";
+    if (dayDate === today) {
+      var end = i.end || i.start;
+      if (i.start && end && i.start <= now && now <= end) state = " now";
+      else if (end && end < now) state = " past";
+    } else if (dayDate < today) {
+      state = " past";
+    }
+    return '<li class="item' + state + (i.addedBy !== undefined ? " added" : "") + '">' +
+      '<span class="time">' + esc(fmtRange(i.start, i.end)) + "</span>" +
+      '<span class="mark ' + esc(TYPES.indexOf(i.type) >= 0 ? i.type : "meeting") + '" title="' + esc(TYPE_LABEL[i.type] || "") + '" aria-hidden="true"></span>' +
+      '<div class="body"><div class="title">' + esc(i.title || "Untitled") +
+        '<span class="type">' + esc(TYPE_LABEL[i.type] || "") + "</span>" +
+        (i.addedBy !== undefined ? '<span class="added-by">Added' + (i.addedBy ? " by " + esc(i.addedBy) : "") + "</span>" : "") +
+      "</div>" +
+      (i.details ? '<p class="details">' + esc(i.details) + "</p>" : "") +
+      (i.attending ? '<p class="who"><b>Attending:</b> ' + esc(i.attending) + "</p>" : "") +
+      (i.also ? '<p class="who"><b>Also:</b> ' + esc(i.also) + "</p>" : "") +
+      "</div></li>";
+  }
+
+  function addFormHtml(d) {
+    var h = ['<form class="add-form" data-date="' + esc(d.date) + '">'];
+    h.push("<h3>Add to " + esc(fmt(d.date, { weekday: "long", day: "numeric", month: "short" })) + "</h3>");
+    h.push('<label class="c2">Your name<input name="name" maxlength="80" value="' + esc(savedName()) + '" placeholder="So people know who added it"></label>');
+    h.push('<label>From<input name="start" type="time"></label>');
+    h.push('<label>To<input name="end" type="time"></label>');
+    h.push('<label class="c2">Type<select name="type">');
+    TYPES.forEach(function (t) { h.push('<option value="' + t + '">' + TYPE_LABEL[t] + "</option>"); });
+    h.push("</select></label>");
+    h.push('<label class="c6">What\'s happening<input name="title" maxlength="120" required placeholder="e.g. Meeting with Sample Freight, meeting room 2"></label>');
+    h.push('<label class="c6">Details<textarea name="details" rows="2" maxlength="600" placeholder="Where, who\'s hosting, what to bring"></textarea></label>');
+    h.push('<label class="c6">Attending<input name="attending" maxlength="200" placeholder="Names, comma-separated"></label>');
+    h.push('<div class="actions"><button type="submit" class="btn primary"' + (sending ? " disabled" : "") + ">" + (sending ? "Adding…" : "Add to the day") + "</button>" +
+      '<button type="button" class="btn" data-cancel>Cancel</button>' +
+      (formError ? '<span class="err">' + esc(formError) + "</span>" : "") +
+      '<span class="hint">Travel and accommodation don\'t go here.</span></div>');
+    h.push("</form>");
+    return h.join("");
+  }
+
+  function render() {
+    var it = latest;
     var today = todayIso();
     var now = nowHm();
     var h = [];
+    var adding = canAdd && status.kind !== "gone";
 
     if (status.kind === "gone") {
       h.push('<p class="notice gone" role="status">This itinerary has been removed. These are its details from when the page was last updated.</p>');
@@ -363,32 +493,29 @@
       h.push('<section class="day" id="day-' + esc(d.date) + '" style="--city:' + color + '">');
       h.push('<div class="day-head"><h2>' + esc(fmt(d.date, { weekday: "long", day: "numeric", month: "short" })) + "</h2>" +
         '<span class="where">' + (d.city ? "<b>" + esc(d.city) + "</b>" : "") + (d.city && d.title ? ": " : "") + esc(d.title || "") + "</span></div>");
-      if (!d.items || !d.items.length) {
+      // The day's items and anything readers added to it, in time order.
+      var list = (d.items || []).slice();
+      additions.forEach(function (a) {
+        if (a.date === d.date) {
+          list.push({ start: a.start, end: a.end, type: a.type, title: a.title, details: a.details, attending: a.attending, also: "", addedBy: a.name || "" });
+        }
+      });
+      list.sort(function (a, b) { var x = a.start || "00:00", y = b.start || "00:00"; return x < y ? -1 : x > y ? 1 : 0; });
+      if (!list.length) {
         h.push('<p class="empty">Nothing planned on this day yet.</p>');
       } else {
         h.push('<ol class="items">');
-        d.items.forEach(function (i) {
-          var state = "";
-          if (d.date === today) {
-            var end = i.end || i.start;
-            if (i.start && end && i.start <= now && now <= end) state = " now";
-            else if (end && end < now) state = " past";
-          } else if (d.date < today) {
-            state = " past";
-          }
-          h.push('<li class="item' + state + '">' +
-            '<span class="time">' + esc(fmtRange(i.start, i.end)) + "</span>" +
-            '<span class="mark ' + esc(i.type || "meeting") + '" title="' + esc(TYPE_LABEL[i.type] || "") + '" aria-hidden="true"></span>' +
-            '<div class="body"><div class="title">' + esc(i.title || "Untitled") +
-              '<span class="type">' + esc(TYPE_LABEL[i.type] || "") + "</span></div>" +
-            (i.details ? '<p class="details">' + esc(i.details) + "</p>" : "") +
-            (i.attending ? '<p class="who"><b>Attending:</b> ' + esc(i.attending) + "</p>" : "") +
-            (i.also ? '<p class="who"><b>Also:</b> ' + esc(i.also) + "</p>" : "") +
-            "</div></li>");
-        });
+        list.forEach(function (i) { h.push(itemHtml(i, d.date, today, now)); });
         h.push("</ol>");
       }
       if (d.note) h.push('<p class="day-note">' + esc(d.note) + "</p>");
+      if (adding) {
+        h.push('<div class="add">' +
+          (openDate === d.date
+            ? addFormHtml(d)
+            : '<button type="button" class="add-btn" data-add="' + esc(d.date) + '">+ Add to this day</button>') +
+          "</div>");
+      }
       h.push("</section>");
     });
 
@@ -396,7 +523,9 @@
       '<li><span class="mark meeting"></span>Meeting</li>' +
       '<li><span class="mark stand"></span>Stand & setup</li>' +
       '<li><span class="mark meal"></span>Meal / networking</li>' +
-      '<li><span class="mark session"></span>Session / speaking</li></ul>');
+      '<li><span class="mark session"></span>Session / speaking</li>' +
+      (adding ? '<li><span class="added-by">Added</span> by a reader of this page; the organiser folds these into the plan.</li>' : "") +
+      "</ul>");
 
     h.push('<footer class="foot"><ul>');
     (it.footer || []).forEach(function (line) { h.push("<li>" + esc(line) + "</li>"); });
@@ -405,22 +534,122 @@
 
     document.getElementById("app").innerHTML = h.join("");
     document.title = (it.name || "Event") + " · Itinerary";
+    pendingRedraw = false;
+    if (openDate) {
+      var first = document.querySelector('.add-form input[name="' + (savedName() ? "title" : "name") + '"]');
+      if (first) first.focus();
+    }
+  }
+
+  // Redraw now, unless someone is mid-form; then once the form closes.
+  function redraw() {
+    if (openDate) pendingRedraw = true;
+    else render();
   }
 
   function timeNow() {
     return new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   }
 
-  var latest = JSON.parse(document.getElementById("itinerary-snapshot").textContent);
-
   function asOf() {
     return "Details as of " + new Date(latest.updatedAt).toLocaleString();
   }
 
-  render(latest, { kind: "loading", note: asOf() + ". Checking for updates…" });
+  // ── Readers' additions ───────────────────────────────────────────────
+  function str(fields, key) {
+    return fields && fields[key] && typeof fields[key].stringValue === "string" ? fields[key].stringValue : "";
+  }
 
+  function loadAdditions() {
+    if (!ADDITIONS_URL) return Promise.resolve();
+    return fetch(ADDITIONS_URL + "&pageSize=300", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (body) {
+        additions = (body.documents || []).map(function (doc) {
+          var f = doc.fields || {};
+          return {
+            date: str(f, "date"), start: str(f, "start"), end: str(f, "end"), type: str(f, "type"),
+            title: str(f, "title"), details: str(f, "details"), attending: str(f, "attending"),
+            name: str(f, "name"), createdAt: str(f, "createdAt")
+          };
+        }).sort(function (a, b) { return a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0; });
+      })
+      .catch(function () { /* keep what we had */ });
+  }
+
+  function submitAddition(form) {
+    var get = function (name) { var el = form.elements[name]; return el ? String(el.value || "").trim() : ""; };
+    var title = get("title");
+    if (!title) {
+      formError = "Say what's happening.";
+      render();
+      return;
+    }
+    var name = get("name");
+    rememberName(name);
+    var data = {
+      date: form.getAttribute("data-date"),
+      start: get("start"),
+      end: get("end"),
+      type: TYPES.indexOf(get("type")) >= 0 ? get("type") : "meeting",
+      title: title.slice(0, 120),
+      details: get("details").slice(0, 600),
+      attending: get("attending").slice(0, 200),
+      name: name.slice(0, 80),
+      createdAt: new Date().toISOString()
+    };
+    var fields = {};
+    Object.keys(data).forEach(function (k) { fields[k] = { stringValue: data[k] }; });
+    sending = true;
+    formError = "";
+    render();
+    fetch(ADDITIONS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields: fields })
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        sending = false;
+        openDate = null;
+        return loadAdditions();
+      })
+      .then(function () { render(); })
+      .catch(function () {
+        sending = false;
+        formError = "Couldn't add it just now. Check you're online and try again.";
+        render();
+      });
+  }
+
+  document.getElementById("app").addEventListener("click", function (e) {
+    var addBtn = e.target.closest ? e.target.closest("[data-add]") : null;
+    if (addBtn) {
+      openDate = addBtn.getAttribute("data-add");
+      formError = "";
+      render();
+      return;
+    }
+    var cancel = e.target.closest ? e.target.closest("[data-cancel]") : null;
+    if (cancel) {
+      openDate = null;
+      formError = "";
+      render();
+    }
+  });
+  document.getElementById("app").addEventListener("submit", function (e) {
+    var form = e.target.closest ? e.target.closest("form.add-form") : null;
+    if (!form) return;
+    e.preventDefault();
+    if (!sending) submitAddition(form);
+  });
+
+  // ── Loading ──────────────────────────────────────────────────────────
   function load() {
-    fetch(FEED_URL, { cache: "no-store" })
+    var main = fetch(FEED_URL, { cache: "no-store" })
       .then(function (res) {
         if (res.status === 404) return { gone: true };
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -430,17 +659,20 @@
       })
       .then(function (data) {
         if (data.gone) {
-          render(latest, { kind: "gone", note: asOf() });
+          status = { kind: "gone", note: asOf() };
           return;
         }
         latest = data;
-        render(latest, { kind: "live", note: "Live. Updated at " + timeNow() });
+        status = { kind: "live", note: "Live. Updated at " + timeNow() };
       })
       .catch(function () {
-        render(latest, { kind: "offline", note: asOf() });
+        status = { kind: "offline", note: asOf() };
       });
+    Promise.all([main, loadAdditions()]).then(redraw);
   }
 
+  status = { kind: "loading", note: asOf() + ". Checking for updates…" };
+  render();
   load();
   setInterval(load, REFRESH_MS);
 })();

@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import type {
   EventItinerary,
+  ItineraryAddition,
   ItineraryDay,
   ItineraryItem,
   ItineraryItemType,
   ItineraryRow,
   MarketingEvent,
 } from "../types";
-import { formatLong, formatShort } from "../dates";
+import { formatLong, formatShort, timeAgo } from "../dates";
 import {
   CITY_COLORS,
   ITINERARY_ITEM_TYPES,
@@ -17,6 +18,8 @@ import {
   eachDay,
   emptyItem,
   emptyRow,
+  formatTimeRange,
+  itemTypeLabel,
   itineraryChecks,
   itinerarySummary,
   newItineraryId,
@@ -29,9 +32,11 @@ import {
 } from "../itineraryExport";
 import { newShareToken } from "../campaignExport";
 import {
+  deleteItineraryAddition,
   setEventItinerary,
   setEventItineraryShareToken,
   setEventItinerarySharePointUrl,
+  subscribeItineraryAdditions,
 } from "../firestore";
 import { SharePointGuideModal } from "./SharePointGuideModal";
 
@@ -130,6 +135,17 @@ export function ItineraryModal({ event, onClose, onSaved }: Props) {
   const [guideOpen, setGuideOpen] = useState(false);
   const [confirmingClose, setConfirmingClose] = useState(false);
   const [newDay, setNewDay] = useState("");
+  // What readers of the SharePoint page have added to the days, live
+  // while this is open. Nothing until the page exists (no token).
+  const [rawAdditions, setAdditions] = useState<ItineraryAddition[]>([]);
+  useEffect(() => {
+    if (!token) return;
+    return subscribeItineraryAdditions(token, setAdditions, (err) =>
+      console.warn("Couldn't load the itinerary page's additions", err),
+    );
+  }, [token]);
+  // Without a page there's nowhere additions could have come from.
+  const additions = token ? rawAdditions : [];
   // Optional sections start folded until they have rows.
   const [open, setOpen] = useState<Set<RowSection>>(
     () =>
@@ -270,6 +286,85 @@ export function ItineraryModal({ event, onClose, onSaved }: Props) {
       ),
     }));
   }
+
+  // Fold a reader's addition into its day as an ordinary item (adding the
+  // day if it isn't in the plan), then take the addition off the page. The
+  // item lands unsaved like any other edit; the page shows it again once
+  // the itinerary is saved.
+  function acceptAddition(a: ItineraryAddition) {
+    update((cur) => {
+      const item: ItineraryItem = {
+        ...emptyItem(a.type),
+        start: a.start,
+        end: a.end,
+        title: a.title,
+        details: a.details,
+        attending: a.attending,
+      };
+      const hasDay = cur.days.some((d) => d.date === a.date);
+      const days = hasDay
+        ? cur.days.map((d) => (d.date === a.date ? { ...d, items: [...d.items, item] } : d))
+        : [
+            ...cur.days,
+            { date: a.date, city: cur.cities[0]?.name ?? "", title: "", note: "", items: [item] },
+          ].sort((x, y) => x.date.localeCompare(y.date));
+      return { ...cur, days };
+    });
+    dismissAddition(a);
+  }
+
+  function dismissAddition(a: ItineraryAddition) {
+    if (!token) return;
+    // Drop it locally straight away; the subscription confirms.
+    setAdditions((cur) => cur.filter((x) => x.id !== a.id));
+    deleteItineraryAddition(token, a.id).catch((err) => {
+      console.warn("Couldn't remove the addition", err);
+      setError("Couldn't remove that addition from the page. It may come back; try again.");
+    });
+  }
+
+  function additionsHtml(list: ItineraryAddition[]) {
+    return (
+      <div className="it-additions">
+        <div className="it-additions-head">
+          Added from the SharePoint page
+          <span className="muted small">
+            {" "}
+            · fold each into the day, or dismiss it
+          </span>
+        </div>
+        {list.map((a) => (
+          <div key={a.id} className="it-addition">
+            <span className="it-addition-time">{formatTimeRange(a.start, a.end)}</span>
+            <div className="it-addition-body">
+              <span className="it-addition-title">
+                {a.title}
+                <span className="muted small"> · {itemTypeLabel(a.type)}</span>
+              </span>
+              {a.details && <span className="small">{a.details}</span>}
+              {a.attending && (
+                <span className="muted small">Attending: {a.attending}</span>
+              )}
+              <span className="muted small">
+                {a.name ? `Added by ${a.name}` : "Added anonymously"}
+                {a.createdAt ? ` · ${timeAgo(a.createdAt)}` : ""}
+              </span>
+            </div>
+            <div className="it-addition-actions">
+              <button type="button" className="btn-mini primary" onClick={() => acceptAddition(a)}>
+                Add to day
+              </button>
+              <button type="button" className="link-btn" onClick={() => dismissAddition(a)}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const strayAdditions = additions.filter((a) => !it.days.some((d) => d.date === a.date));
 
   function toggleManual(id: string) {
     update((cur) => ({
@@ -568,7 +663,18 @@ export function ItineraryModal({ event, onClose, onSaved }: Props) {
               A timeline for each day: stand shifts, sessions and speaking slots,
               meetings, meals and networking. Nothing about getting there or
               where anyone's staying.
+              {token
+                ? " Anyone reading the SharePoint page can add to a day; their additions show up here under it."
+                : " Once the page is on SharePoint, anyone reading it can add to a day, and those additions show up here."}
             </p>
+            {strayAdditions.length > 0 && (
+              <div className="it-day it-day-stray">
+                <div className="it-day-head">
+                  <strong>Added to days not in the plan</strong>
+                </div>
+                {additionsHtml(strayAdditions)}
+              </div>
+            )}
             {it.days.length === 0 && (
               <p className="muted small" style={{ margin: 0 }}>
                 No days yet.
@@ -679,6 +785,8 @@ export function ItineraryModal({ event, onClose, onSaved }: Props) {
                     ))}
                   </div>
                 )}
+                {additions.some((a) => a.date === d.date) &&
+                  additionsHtml(additions.filter((a) => a.date === d.date))}
                 <div className="it-day-foot">
                   <div className="it-item-adds">
                     {ITINERARY_ITEM_TYPES.map((t) => (

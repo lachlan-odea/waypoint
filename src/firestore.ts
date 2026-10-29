@@ -20,6 +20,7 @@ import type {
   Designer,
   EventItinerary,
   Hub,
+  ItineraryAddition,
   MarketingEvent,
   Notification,
   Project,
@@ -651,6 +652,36 @@ export async function setItineraryPage(shareToken: string, json: string): Promis
 
 export async function deleteItineraryPage(shareToken: string): Promise<void> {
   await deleteDoc(doc(itineraryPagesCol(), shareToken));
+}
+
+// What readers of the page have added to its days (see ItineraryAddition).
+// Subscribed by the itinerary editor while it's open.
+const itineraryAdditionsCol = (shareToken: string) =>
+  collection(doc(itineraryPagesCol(), shareToken), "additions");
+
+export function subscribeItineraryAdditions(
+  shareToken: string,
+  onChange: (additions: ItineraryAddition[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    itineraryAdditionsCol(shareToken),
+    (snap) =>
+      onChange(
+        snap.docs
+          .map((d) => ({ ...(d.data() as Omit<ItineraryAddition, "id">), id: d.id }))
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+      ),
+    onError,
+  );
+}
+
+// Once an addition has been folded into the itinerary, or dismissed.
+export async function deleteItineraryAddition(
+  shareToken: string,
+  additionId: string,
+): Promise<void> {
+  await deleteDoc(doc(itineraryAdditionsCol(shareToken), additionId));
 }
 
 // Load the CargoWise Event Portal export (src/data/eventsSeed.json, made by
