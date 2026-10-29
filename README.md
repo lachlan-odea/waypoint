@@ -1,6 +1,6 @@
 # Waypoint
 
-Project management for the WiseTech Global creative teams — Design, Video, Marketing and Comms — plus the marketing team's social media calendar.
+Project management for the WiseTech Global creative teams — Design, Video, Marketing and Comms — plus the marketing team's social media calendar, campaigns and events.
 
 Live app: **https://lachlan-odea.github.io/waypoint/** (installable as a PWA). Sign in with your WiseTech email.
 
@@ -31,6 +31,16 @@ Ticking **Evergreen campaign** in the editor makes a campaign always on: its dat
 ### Campaign milestones
 Each milestone on a campaign is one of a fixed list of types: Organic Social Post, Sponsored Social Post, EDM, Landing Page, Press Release (`CAMPAIGN_MILESTONE_TYPES` in `src/campaigns.ts`). Saving a campaign with a new **social post** milestone puts a draft post on the Social calendar on the milestone's day. The post has no category, channel "Other", and the campaign's name as its topic. The milestone then links to that post from the campaign card and the editor, with the post's status. Moving the milestone's date moves the post with it. Removing the milestone asks whether to delete its post too, and that happens when the campaign is saved. Deleting the post from the calendar leaves the milestone, showing "Post deleted".
 
+### Events
+The events team's view of every trade show, conference and industry meeting — the CargoWise Event Portal's two year sheets (CargoWise and Landside) brought into Waypoint. One event is a `MarketingEvent` in `src/types.ts`, stored in `/events`; the page is `src/components/EventsView.tsx`, the editor `EventModal.tsx`, the helpers `src/events.ts`.
+
+- The page shows one **year** at a time, as a **List** (a table grouped by month: dates, place, status, leads, campaign code, spend, comms, opps and checklist progress), as **Cards** by month, or as a **Calendar** month grid with a chip on every day an event runs. The choice is remembered per browser.
+- **Status** is Prospect → Planning → Confirmed → Live → Done, or Cancelled. The stored status is what the team set; a confirmed event shows as Live while it's on and Done once it's over, by its dates (`eventPhase`). Filter by status, division (CargoWise / Landside), region and marketing lead; search matches names, places, people and campaign codes.
+- A **KPI strip** sums the year: upcoming, live now, done, needs follow-up, spend in US dollars (converted at the portal's fixed rates, cancelled events excluded) and comms → opps with the cost per opp. The Live and Needs follow-up tiles are buttons that set the matching filter.
+- Each event has a ten-step **checklist** (budget, booth, campaign code, travel, collateral, book-with-me link, lead scanning, feedback form, report, comms & opps logged). A past event missing any of the last three is flagged **needs follow-up**, which is also a filter.
+- Dates can be a run, a month only ("Feb 2026, TBC") or fully TBC; TBC events are listed under their month or at the end of their year. Spend is entered in its own currency and shown in US dollars; results (comms, opps and opps by tier) are logged after the event. An event can link a Waypoint campaign and the board projects doing work for it.
+- Export CSV downloads every event touching a date range, one row each, with its checklist and results.
+
 ### Settings
 Dark mode, text size, profile photo, password. Super users also manage users (roles, team membership, locations), office locations and their time zones (which drive the live clocks in the sidebar), and the Social calendar's categories and company hashtags.
 
@@ -49,7 +59,7 @@ Dark mode, text size, profile photo, password. Super users also manage users (ro
 | Backend | Firebase Cloud Functions v2 (`functions/`): Teams ingest, reviewer-assigned emails via the Trigger Email extension |
 | Hosting | GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to `main` |
 
-Firestore collections: `designers`, `workspaces`, `projects`, `notifications`, `hubs`, `deskItems` (private per owner), `socialPosts`, `socialConfig`, `campaigns`, `campaignPages` (public copies behind SharePoint pages). Types for every document live in `src/types.ts`; every read and write goes through `src/firestore.ts`.
+Firestore collections: `designers`, `workspaces`, `projects`, `notifications`, `hubs`, `deskItems` (private per owner), `socialPosts`, `socialConfig`, `campaigns`, `campaignPages` (public copies behind SharePoint pages), `events`. Types for every document live in `src/types.ts`; every read and write goes through `src/firestore.ts`.
 
 ## Running it locally
 
@@ -93,7 +103,7 @@ firebase deploy --only functions
 
 SharePoint viewers aren't signed in to Waypoint, so the page can't read `/campaigns`. The first download gives the campaign a random `shareToken`. From then on, every save of the campaign also writes a public copy of the fields the page shows (a fixed allow-list, no contributing projects) to `/campaignPages/{shareToken}`, and deleting the campaign deletes it. The page reads that document through Firestore's REST API. The rules let anyone read a `campaignPages` document by its exact token but refuse listing, so anyone holding the page can read that one campaign and nothing else. No Cloud Function is involved. The site has to allow custom scripts for SharePoint to render an uploaded `.aspx` with its script, rather than offer it as a download.
 
-**Seeding.** On first sign-in the app creates anything missing: the seed teams (`SEED_WORKSPACES`), the seed locations (`SEED_HUBS`), and — only if the collection is completely empty — the 2026 social calendar from `src/data/socialPostsSeed.json`. Edits and deletions after that stick. The social seed is also available from the empty-state Import button on the calendar.
+**Seeding.** On first sign-in the app creates anything missing: the seed teams (`SEED_WORKSPACES`), the seed locations (`SEED_HUBS`), and — only if the collection is completely empty — the 2026 social calendar from `src/data/socialPostsSeed.json` and the events from `src/data/eventsSeed.json`. Edits and deletions after that stick. Both seeds are also available from the empty-state Import button on their page.
 
 ## Regenerating the social calendar seed
 
@@ -105,6 +115,16 @@ python scripts/social-calendar-xlsx-to-seed.py "path/to/Social Media Calendar 20
 ```
 
 The script's docstring explains how the sheet is read (the coloured cell is the publish day; undated rows take a date from their Notes where one is written). Document ids are derived from sheet and row, so re-running is idempotent.
+
+## Regenerating the events seed
+
+`scripts/event-portal-md-to-seed.py` converts a CargoWise Event Portal export (the Markdown file the portal produces) into `src/data/eventsSeed.json`. Standard library only:
+
+```bash
+python scripts/event-portal-md-to-seed.py "path/to/CargoWise-Event-Portal-Export.md"
+```
+
+It reads the per-event detail tables, turns the portal's date wordings into `startDate`/`endDate`, a `tbcMonth` or just a year, and the checklist line into the ten booleans. Email addresses are stripped from the partner-attendee field, since the seed is committed. Document ids are derived from the year and the event name, so re-running is idempotent. Remember the seed only loads into an empty `/events` collection; to replace what's there, delete the collection first.
 
 ## Conventions
 

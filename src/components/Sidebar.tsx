@@ -10,6 +10,7 @@ export type SidebarView =
   | "executiveDashboard"
   | "board"
   | "campaigns"
+  | "events"
   | "socialCalendar"
   | "analytics"
   | "archived";
@@ -29,7 +30,7 @@ type Props = {
   onDropProjectOnWorkspace: (projectId: string, workspaceId: string) => void;
   onToggleCollapsed: () => void;
   onSelectView: (view: SidebarView) => void;
-  // The + New menu: a project, a campaign or a social post.
+  // The + New menu: a project, a campaign, an event or a social post.
   onNew: (kind: NewKind) => void;
   onOpenNotifications: () => void;
   onOpenSettings: () => void;
@@ -170,6 +171,15 @@ function FlagGlyph() {
   return (
     <svg {...navGlyphProps}>
       <path d="M4 22V4a1 1 0 0 1 1-1h12l-2 4 2 4H5" />
+    </svg>
+  );
+}
+
+function PinGlyph() {
+  return (
+    <svg {...navGlyphProps}>
+      <path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z" />
+      <circle cx="12" cy="10" r="2.5" />
     </svg>
   );
 }
@@ -366,6 +376,18 @@ export function Sidebar({
                 <FlagGlyph />
               </span>
               {!collapsed && <span className="designer-name">Campaigns</span>}
+            </button>
+          </li>
+          <li>
+            <button
+              className={`designer-btn ${view === "events" ? "active" : ""}`}
+              onClick={() => onSelectView("events")}
+              title="Events"
+            >
+              <span className="dot-avatar nav-tile" style={{ background: "var(--brand-cherry)" }}>
+                <PinGlyph />
+              </span>
+              {!collapsed && <span className="designer-name">Events</span>}
             </button>
           </li>
           <li>

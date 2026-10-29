@@ -19,6 +19,7 @@ import type {
   DeskItem,
   Designer,
   Hub,
+  MarketingEvent,
   Notification,
   Project,
   SocialConfig,
@@ -36,6 +37,7 @@ const hubsCol = () => collection(db, "hubs");
 const socialPostsCol = () => collection(db, "socialPosts");
 const socialConfigDoc = () => doc(collection(db, "socialConfig"), "default");
 const campaignsCol = () => collection(db, "campaigns");
+const eventsCol = () => collection(db, "events");
 
 // Backfill missing workspaceId on legacy docs that predate the multi-
 // workspace feature. They all belonged to the original Design workspace.
@@ -585,6 +587,56 @@ export async function setCampaignSharePointUrl(
 
 export async function deleteCampaign(id: string): Promise<void> {
   await deleteDoc(doc(campaignsCol(), id));
+}
+
+// ── Events ─────────────────────────────────────────────────────────────
+// Trade shows and conferences, for the Events page. Its own subscription,
+// like campaigns: a hundred or so documents a year, all needed at once.
+
+export function subscribeEvents(
+  onChange: (events: MarketingEvent[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    eventsCol(),
+    (snap) => onChange(snap.docs.map((d) => d.data() as MarketingEvent)),
+    onError,
+  );
+}
+
+export async function setEvent(event: MarketingEvent): Promise<void> {
+  await setDoc(doc(eventsCol(), event.id), event);
+}
+
+export async function deleteEvent(id: string): Promise<void> {
+  await deleteDoc(doc(eventsCol(), id));
+}
+
+// Load the CargoWise Event Portal export (src/data/eventsSeed.json, made by
+// scripts/event-portal-md-to-seed.py) into an empty /events collection.
+// Same rules as the social posts seed: only into an empty collection, so a
+// deleted event stays deleted; checked against the server, so an offline
+// first boot fails quietly rather than queueing a re-import; and loaded
+// on demand, so the seed only downloads on the visit that needs it.
+export async function seedEventsIfMissing(): Promise<number> {
+  const existing = await getDocsFromServer(eventsCol());
+  if (!existing.empty) return 0;
+  const { default: seed } = await import("./data/eventsSeed.json");
+  const createdAt = new Date().toISOString();
+  const CHUNK = 400;
+  for (let i = 0; i < seed.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    seed.slice(i, i + CHUNK).forEach((e) => {
+      const event: MarketingEvent = {
+        ...(e as unknown as Omit<MarketingEvent, "createdAt" | "source">),
+        createdAt,
+        source: "import",
+      };
+      batch.set(doc(eventsCol(), event.id), event);
+    });
+    await batch.commit();
+  }
+  return seed.length;
 }
 
 // ── Social calendar configuration ──────────────────────────────────────

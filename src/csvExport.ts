@@ -1,6 +1,16 @@
-import type { Campaign, SocialPost } from "./types";
+import type { Campaign, MarketingEvent, SocialPost } from "./types";
 import { socialStatusMeta } from "./constants";
 import { campaignOverlaps, spanDays } from "./campaigns";
+import {
+  EVENT_CHECKLIST,
+  checklistDone,
+  eventOverlaps,
+  eventPhase,
+  eventSortKey,
+  eventStatusMeta,
+  fiscalYear,
+  followUpMissing,
+} from "./events";
 
 // CSV downloads of the Social calendar and the Campaigns calendar over a
 // chosen date range. Written for Excel first, since that's where the
@@ -221,6 +231,110 @@ export function milestonesCsv(
       c.owner,
       c.startDate,
       c.evergreen ? "Evergreen" : c.endDate,
+    ]),
+  );
+}
+
+// ── Events ───────────────────────────────────────────────────────────────
+
+// Events touching the range: dated ones by their run, month-only ones by
+// their month. Events with no date at all belong to no stretch of the
+// calendar, so they never come along.
+export function eventsInRange(
+  events: MarketingEvent[],
+  from: string,
+  to: string,
+): MarketingEvent[] {
+  return events
+    .filter((e) => eventOverlaps(e, from, to))
+    .sort(
+      (a, b) =>
+        eventSortKey(a).localeCompare(eventSortKey(b)) || a.name.localeCompare(b.name),
+    );
+}
+
+// One row per event, the way the portal lays its sheets out: dates and
+// place first, then who, then money, then results, then the checklist.
+export function eventsCsv(events: MarketingEvent[], today: string): string {
+  const yesNo = (v: boolean | undefined) => (v === undefined ? "" : v ? "Yes" : "No");
+  return toCsv(
+    [
+      "Event",
+      "Status",
+      "Start date",
+      "End date",
+      "Dates TBC",
+      "Dates as published",
+      "Financial year",
+      "Division",
+      "Region",
+      "Location",
+      "Audience",
+      "Sponsor",
+      "Sponsor note",
+      "Booth",
+      "Booth note",
+      "Attend & sell",
+      "Speaking opportunity",
+      "Marketing lead",
+      "Sales lead",
+      "Sales attendees (n)",
+      "Sales attendees",
+      "WiseTech Academy attendee",
+      "Partner attendees",
+      "Campaign code",
+      "Investment",
+      "Currency",
+      "Investment (USD)",
+      "Cost details",
+      "Comms",
+      "Opps",
+      "Opps breakdown",
+      "Presentation",
+      "Feedback",
+      "Checklist done",
+      ...EVENT_CHECKLIST.map((item) => item.label),
+      "Needs follow-up",
+      "Notes",
+    ],
+    events.map((e) => [
+      e.name,
+      eventStatusMeta(eventPhase(e, today)).label,
+      e.startDate,
+      e.endDate,
+      e.startDate ? "" : e.tbcMonth ? `${e.tbcMonth} (month only)` : String(e.year),
+      e.datesAsPublished ?? "",
+      fiscalYear(e.startDate || (e.tbcMonth ? `${e.tbcMonth}-01` : "")),
+      e.division,
+      e.region ?? "",
+      e.location ?? "",
+      e.audience ?? "",
+      yesNo(e.sponsor),
+      e.sponsorNote ?? "",
+      yesNo(e.booth),
+      e.boothNote ?? "",
+      yesNo(e.attendAndSell),
+      e.speakingOpportunity ?? "",
+      e.marketingLead ?? "",
+      e.salesLead ?? "",
+      e.salesAttendeeCount,
+      e.salesAttendees ?? "",
+      e.academyAttendee ?? "",
+      e.partnerAttendees ?? "",
+      e.campaignCode ?? "",
+      e.investment,
+      e.investment === undefined ? "" : (e.currency ?? "USD"),
+      e.investmentUsd,
+      e.costDetails ?? "",
+      e.comms,
+      e.opps,
+      e.oppsBreakdown ?? "",
+      e.presentation ?? "",
+      e.feedbackDoc ?? "",
+      `${checklistDone(e)} of ${EVENT_CHECKLIST.length}`,
+      ...EVENT_CHECKLIST.map((item) => (e.checklist?.[item.key] ? "Yes" : "No")),
+      followUpMissing(e, today).join(", "),
+      e.notes ?? "",
     ]),
   );
 }
