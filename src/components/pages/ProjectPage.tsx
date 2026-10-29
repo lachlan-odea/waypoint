@@ -141,6 +141,9 @@ export function ProjectPage({
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [newTask, setNewTask] = useState("");
+  // The task being renamed in place, and its draft text.
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [taskDraft, setTaskDraft] = useState("");
 
   function toggleTask(id: string) {
     onChange((p) => ({
@@ -159,6 +162,33 @@ export function ProjectPage({
   }
   function removeTask(id: string) {
     onChange((p) => ({ ...p, milestones: p.milestones.filter((m) => m.id !== id) }));
+    if (editingTaskId === id) setEditingTaskId(null);
+  }
+  function startEditTask(id: string, label: string) {
+    setEditingTaskId(id);
+    setTaskDraft(label);
+  }
+  function saveEditTask() {
+    const id = editingTaskId;
+    if (!id) return;
+    const label = taskDraft.trim();
+    if (label) {
+      onChange((p) => ({
+        ...p,
+        milestones: p.milestones.map((m) => (m.id === id ? { ...m, label } : m)),
+      }));
+    }
+    setEditingTaskId(null);
+  }
+  function moveTask(id: string, dir: -1 | 1) {
+    onChange((p) => {
+      const list = p.milestones.slice();
+      const i = list.findIndex((m) => m.id === id);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= list.length) return p;
+      [list[i], list[j]] = [list[j], list[i]];
+      return { ...p, milestones: list };
+    });
   }
 
   const reqs: [string, boolean][] = [
@@ -318,7 +348,7 @@ export function ProjectPage({
                 <EmptyNote>No tasks yet. Add the steps this project goes through.</EmptyNote>
               ) : (
                 <ul className="item-tasks">
-                  {tasks.map((m) => (
+                  {tasks.map((m, i) => (
                     <li key={m.id} className={m.done ? "done" : ""}>
                       <button
                         type="button"
@@ -329,15 +359,70 @@ export function ProjectPage({
                       >
                         {m.done && <Icon name="checkmark" size={12} />}
                       </button>
-                      <span className="item-task-label">{m.label}</span>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => removeTask(m.id)}
-                        aria-label={`Remove ${m.label}`}
-                      >
-                        Remove
-                      </button>
+                      {editingTaskId === m.id ? (
+                        <input
+                          className="item-task-edit"
+                          autoFocus
+                          value={taskDraft}
+                          aria-label="Task"
+                          onChange={(e) => setTaskDraft(e.target.value)}
+                          onBlur={saveEditTask}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              saveEditTask();
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              setEditingTaskId(null);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className="item-task-label item-task-edit-btn"
+                          title="Click to edit"
+                          onClick={() => startEditTask(m.id, m.label)}
+                        >
+                          {m.label}
+                        </button>
+                      )}
+                      <span className="item-task-tools">
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          aria-label={`Move ${m.label} up`}
+                          disabled={i === 0}
+                          onClick={() => moveTask(m.id, -1)}
+                        >
+                          <Icon name="chevron-down" size={14} className="flip" />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          aria-label={`Move ${m.label} down`}
+                          disabled={i === tasks.length - 1}
+                          onClick={() => moveTask(m.id, 1)}
+                        >
+                          <Icon name="chevron-down" size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => startEditTask(m.id, m.label)}
+                          aria-label={`Edit ${m.label}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => removeTask(m.id)}
+                          aria-label={`Remove ${m.label}`}
+                        >
+                          Remove
+                        </button>
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -359,7 +444,7 @@ export function ProjectPage({
                   Add task
                 </button>
               </form>
-              <p className="item-hint">Reorder tasks on the Details tab.</p>
+              <p className="item-hint">Click a task to rename it. Enter saves, Escape cancels.</p>
             </SideCard>
           }
           sideTop={
