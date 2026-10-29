@@ -830,11 +830,23 @@ export default function App() {
   // social milestones don't create posts on the Social calendar.
   function duplicateCampaign(id: string) {
     const c = campaigns.find((x) => x.id === id);
-    if (!c) return;
-    const copy = copyCampaign(c, sessionDesignerId ?? undefined);
-    firestoreSetCampaign(copy).catch(writeError);
-    setToast({ message: `Created "${copy.name}"` });
-    openItem("campaign", copy.id);
+    if (!c) {
+      setToast({ message: "That campaign isn't loaded yet. Try again in a moment." });
+      return;
+    }
+    try {
+      const copy = copyCampaign(c, sessionDesignerId ?? undefined);
+      firestoreSetCampaign(copy)
+        .then(() => setToast({ message: `Created "${copy.name}" — you're now looking at the copy.` }))
+        .catch((err) => {
+          writeError(err);
+          setToast({ message: `Couldn't save the copy: ${err instanceof Error ? err.message : String(err)}` });
+        });
+      openItem("campaign", copy.id);
+    } catch (err) {
+      console.error("Couldn't duplicate the campaign", err);
+      setToast({ message: `Couldn't duplicate: ${err instanceof Error ? err.message : String(err)}` });
+    }
   }
 
   function deleteCampaign(id: string) {
