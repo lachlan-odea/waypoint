@@ -29,9 +29,11 @@ type Props = {
   onOpenSocialPost: (id: string) => void;
   onOpenBoard: (workspaceId: string) => void;
   onOpenView: (view: SidebarView) => void;
+  // The Campaigns page, already on its Webinars view.
+  onOpenWebinars: () => void;
 };
 
-export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCampaign, onOpenEvent, onOpenSocialPost, onOpenBoard, onOpenView }: Props) {
+export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCampaign, onOpenEvent, onOpenSocialPost, onOpenBoard, onOpenView, onOpenWebinars }: Props) {
   const today = todayIso();
   const in7 = shiftIso(today, 7);
   const in30 = shiftIso(today, 30);
@@ -123,7 +125,7 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
         <Stat label="Due in 7 days" value={dueWeekProjects.length} icon="calendar" tone="pale" />
         <Stat label="Awaiting review" value={reviewProjects.length} icon="checkmark" tone="violet" />
         <Stat label="Live campaigns" value={liveCampaigns.length} icon="target" tone="mint" onClick={() => onOpenView("campaigns")} />
-        <Stat label="Webinars in flight" value={activeWebinars.length} icon="presentation-board-chart-graph" tone="violet" onClick={() => onOpenView("campaigns")} />
+        <Stat label="Webinars in flight" value={activeWebinars.length} icon="presentation-board-chart-graph" tone="violet" onClick={onOpenWebinars} />
         <Stat label="Events in 30 days" value={upcomingEvents.length + liveEvents.length} icon="calendar" tone="sky" onClick={() => onOpenView("events")} />
         <Stat label="Posts this week" value={postsThisWeek.length} icon="message-chat" tone="pale" onClick={() => onOpenView("socialCalendar")} />
       </div>
@@ -146,7 +148,17 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
             )}
           </Panel>
 
-          <Panel title="Webinars" aside={nextGoLive ? `Next go-live ${formatShort(nextGoLive.kit.goLive)}` : "No go-live scheduled"}>
+          <Panel
+            title="Webinars"
+            aside={
+              <>
+                {nextGoLive ? `Next go-live ${formatShort(nextGoLive.kit.goLive)} · ` : ""}
+                <button type="button" className="link-btn" onClick={onOpenWebinars}>
+                  All webinars
+                </button>
+              </>
+            }
+          >
             {activeWebinars.length === 0 ? (
               <Empty>No webinars in flight.</Empty>
             ) : (
@@ -297,14 +309,26 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
           </Panel>
           <Panel title="Project status" aside={`${live.length} live · ${urgentProjects.length} urgent · ${unassigned.length} unassigned`}>
             <div className="ex-statusbar" role="img" aria-label="Projects by status">
-              {statusMix.map(({ s, n }) =>
-                n ? (
-                  <span key={s.value} className={`ex-statusbar-seg wp-status ${projectStatusTone(s.value)}`} style={{ flex: n }} title={`${n} ${projectStatusLabel(s.value)}`}>
-                    {n} {s.label}
+              {statusMix.map(({ s, n }) => {
+                if (!n) return null;
+                const share = projects.length ? n / projects.length : 0;
+                return (
+                  <span key={s.value} className={`ex-statusbar-seg wp-status ${projectStatusTone(s.value)}`} style={{ flex: n }} title={`${n} ${projectStatusLabel(s.value)} · ${Math.round(share * 100)}%`}>
+                    {share >= 0.12 ? `${n} ${s.label}` : n}
                   </span>
-                ) : null,
-              )}
+                );
+              })}
             </div>
+            <ul className="ex-statusbar-legend">
+              {statusMix.map(({ s, n }) => (
+                <li key={s.value}>
+                  <StatusChip status={projectStatusTone(s.value)}>{s.label}</StatusChip>
+                  <span className="mono">
+                    {n} · {projects.length ? Math.round((n / projects.length) * 100) : 0}%
+                  </span>
+                </li>
+              ))}
+            </ul>
             <div className="ex-minis">
               <Mini label="Overdue" value={String(overdueProjects.length)} alert={overdueProjects.length > 0} />
               <Mini label="Due in 7 days" value={String(dueWeekProjects.length)} />

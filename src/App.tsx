@@ -363,6 +363,8 @@ export default function App() {
   const [newEventRequest, setNewEventRequest] = useState(0);
   const [newPostRequest, setNewPostRequest] = useState(0);
   const [exportRequest, setExportRequest] = useState(0);
+  // The dashboard opens the Campaigns page straight onto its Webinars view.
+  const [campaignsViewRequest, setCampaignsViewRequest] = useState<{ view: "cards" | "calendar" | "webinars"; seq: number } | undefined>();
   const requestSeq = useRef(0);
   const nextRequest = () => ++requestSeq.current;
 
@@ -907,6 +909,11 @@ export default function App() {
   }
   function openEvent(eventId: string, tab?: string) {
     openItem("event", eventId, tab);
+  }
+  function openWebinars() {
+    closeItem();
+    setCampaignsViewRequest({ view: "webinars", seq: nextRequest() });
+    setView("campaigns");
   }
   function openCampaign(campaignId: string, tab?: string) {
     openItem("campaign", campaignId, tab);
@@ -1535,6 +1542,7 @@ export default function App() {
               setView("board");
             }}
             onOpenView={setView}
+            onOpenWebinars={openWebinars}
           />
         ) : view === "socialCalendar" ? (
           <SocialCalendar
@@ -1591,6 +1599,7 @@ export default function App() {
             onCreateHandled={() => setNewCampaignRequest(0)}
             exportRequest={exportRequest}
             onExportHandled={() => setExportRequest(0)}
+            viewRequest={campaignsViewRequest}
           />
         ) : view === "board" ? (
           <>

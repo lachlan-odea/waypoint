@@ -76,6 +76,9 @@ type Props = {
   onCreateHandled?: () => void;
   exportRequest?: number;
   onExportHandled?: () => void;
+  // Another page asking for a particular view (the dashboard opens the
+  // Webinars view directly). A fresh seq per request.
+  viewRequest?: { view: "cards" | "calendar" | "webinars"; seq: number };
 };
 
 type Editing = { mode: "create"; initial: Partial<Campaign> };
@@ -147,6 +150,7 @@ export function CampaignsView({
   onCreateHandled,
   exportRequest,
   onExportHandled,
+  viewRequest,
 }: Props) {
   const today = todayIso();
   const [month, setMonth] = useState(() => today.slice(0, 7));
@@ -213,6 +217,11 @@ export function CampaignsView({
       },
     });
     queueMicrotask(() => onCreateHandled?.());
+  }
+  const [handledView, setHandledView] = useState(0);
+  if (viewRequest && viewRequest.seq !== handledView) {
+    setHandledView(viewRequest.seq);
+    setView(viewRequest.view);
   }
   const [handledExport, setHandledExport] = useState(0);
   if (exportRequest && exportRequest !== handledExport) {
