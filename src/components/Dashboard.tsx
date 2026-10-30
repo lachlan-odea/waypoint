@@ -8,7 +8,6 @@ import { STAGE_LABEL, kitName, kitOf, kitState } from "../webinarKit";
 import { socialPostTitle } from "../socialPosts";
 import { formatShort, shiftIso, todayIso } from "../dates";
 import { campaignPhaseTone, eventStatusTone, projectStatusTone, socialStatusTone } from "../statusTone";
-import { Avatar } from "./Avatar";
 import { Icon, type IconName, type IconTone } from "./Icon";
 import { StatusChip } from "./pages/ItemPage";
 
@@ -112,19 +111,6 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
     [workspaces, projects, today, in7],
   );
   const maxActive = Math.max(1, ...teamRows.map((t) => t.active));
-
-  const workload = useMemo(
-    () =>
-      designers
-        .map((d) => {
-          const mine = live.filter((p) => p.assigneeIds.includes(d.id));
-          return { d, count: mine.length, overdue: mine.filter((p) => p.dueDate && p.dueDate < today).length, urgent: mine.filter((p) => p.priority === "Urgent").length };
-        })
-        .filter((r) => r.count > 0)
-        .sort((a, b) => b.count - a.count || a.d.name.localeCompare(b.d.name)),
-    [designers, live, today],
-  );
-  const maxLoad = Math.max(1, ...workload.map((r) => r.count));
 
   const statusMix = PROJECT_STATUSES.map((s) => ({ s, n: projects.filter((p) => (p.status ?? "active") === s.value).length }));
 
@@ -304,7 +290,7 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
 
       {/* ── Teams ─────────────────────────────────────────────────────── */}
       <Section eyebrow="Across the teams" title="Teams" summary={`${live.length} live project${live.length === 1 ? "" : "s"} across ${workspaces.length} team${workspaces.length === 1 ? "" : "s"}`}>
-        <div className="an-grid">
+        <div className="an-grid ex-grid-1">
           <Panel title="By team" aside="Click a team to open its board">
             <div className="an-table-wrap">
               <table className="an-table ex-teams">
@@ -345,40 +331,6 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
                 </tbody>
               </table>
             </div>
-          </Panel>
-          <Panel title="Workload" aside="Live projects per person">
-            {workload.length === 0 ? (
-              <Empty>No live projects assigned.</Empty>
-            ) : (
-              <ul className="ex-load">
-                {workload.slice(0, 10).map((r) => (
-                  <li key={r.d.id}>
-                    <Avatar designer={r.d} size={24} />
-                    <span className="ex-load-name">{r.d.name}</span>
-                    <span className="ex-bar">
-                      <i style={{ width: `${(r.count / maxLoad) * 100}%` }} />
-                      <span className="mono">{r.count}</span>
-                    </span>
-                    <span className="ex-load-flags">
-                      {r.overdue > 0 && <StatusChip status="blocked">{r.overdue} overdue</StatusChip>}
-                      {r.urgent > 0 && <StatusChip status="scheduled">{r.urgent} urgent</StatusChip>}
-                    </span>
-                  </li>
-                ))}
-                {unassigned.length > 0 && (
-                  <li className="ex-load-unassigned">
-                    <span className="dot-avatar" style={{ width: 24, height: 24, fontSize: 10, background: "var(--ink-300)" }}>
-                      ??
-                    </span>
-                    <span className="ex-load-name">Unassigned</span>
-                    <span className="ex-bar">
-                      <i className="muted-bar" style={{ width: `${(unassigned.length / maxLoad) * 100}%` }} />
-                      <span className="mono">{unassigned.length}</span>
-                    </span>
-                  </li>
-                )}
-              </ul>
-            )}
           </Panel>
         </div>
       </Section>

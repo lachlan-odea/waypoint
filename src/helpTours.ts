@@ -49,7 +49,7 @@ const TOURS: Record<string, Tour> = {
       { target: ".ex-stats", title: "The numbers", body: "Across every team and programme: live projects, overdue, due this week, awaiting review, live campaigns, webinars in flight, events in the next 30 days and posts this week. Tiles with a pointer open the page behind them." },
       { target: ".ex-grid-3", title: "Programmes", body: "Live and launching campaigns with their next milestone, webinars by stage with each one's health, and events: the year's spend, conversations and opportunities, follow-ups owed, and what's on or coming up with checklist progress. Every row opens the item." },
       { target: ".ex-statusbar", title: "This month", body: "The Social calendar's month by status with what's going out this week, beside every project on the boards by status — the bar, the counts, and overdue, due, review, urgent and unassigned at a glance." },
-      { target: ".ex-teams", title: "Teams", body: "One row per team: live work, overdue, due this week, in review, planning, on hold, done, and live projects per person. Click a team to open its board. Workload beside it shows who is carrying what." },
+      { target: ".ex-teams", title: "Teams", body: "One row per team: live work, overdue, due this week, in review, planning, on hold, done, and live projects per person. Click a team to open its board." },
       NEW,
     ],
   },
