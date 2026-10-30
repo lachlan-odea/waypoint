@@ -122,7 +122,7 @@ export function SharePointGuideModal({
                 </p>
                 <button
                   type="button"
-                  className={downloaded ? "btn-mini" : "primary"}
+                  className={downloaded ? "btn btn-secondary btn-sm" : "btn btn-primary"}
                   onClick={download}
                 >
                   {downloaded ? "Download again" : "Download page"}
@@ -141,13 +141,13 @@ export function SharePointGuideModal({
                   downloaded file in, or use Upload › Files.
                 </p>
                 <a
-                  className={`sp-step-link ${downloaded && !openedFolder ? "primary" : "btn-mini"}`}
+                  className={`sp-step-link btn ${downloaded && !openedFolder ? "btn-primary" : "btn-secondary btn-sm"}`}
                   href={folderUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setOpenedFolder(true)}
                 >
-                  Click here to go to SharePoint <Icon name="external-link" size={12} />
+                  Open the SharePoint folder <Icon name="external-link" size={14} />
                 </a>
               </div>
             </li>
@@ -211,7 +211,7 @@ export function SharePointGuideModal({
             </span>
           )}
           {canClose && <button onClick={onCancel}>Cancel</button>}
-          <button className="primary" onClick={save} disabled={!valid}>
+          <button className="btn btn-primary" onClick={save} disabled={!valid}>
             Save link
           </button>
         </footer>
