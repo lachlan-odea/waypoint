@@ -719,12 +719,12 @@ textarea {
   text-overflow: ellipsis;
 }
 .sidebar-foot {
-  /* Sits directly under the signed-in block as one unit, so no rule. */
-  padding: 2px 12px 14px;
+  border-top: 1px solid var(--border);
+  padding: 10px 12px;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -752,14 +752,11 @@ textarea {
   box-sizing: border-box;
 }
 /* Pinned at the bottom, above the footer actions. */
-/* Who is signed in: photo above name above location, centred over the
-   notification, settings and log-out buttons. */
 .sidebar-user {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 10px;
-  padding: 18px 14px 10px;
+  padding: 12px 14px;
   border-top: 1px solid var(--border);
   margin-top: auto;
 }
@@ -770,11 +767,7 @@ textarea {
 .sidebar-user-info {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
   min-width: 0;
-  max-width: 100%;
-  text-align: center;
 }
 .sidebar-user-name {
   font-size: 14px;
@@ -782,7 +775,6 @@ textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
 }
 
 /* Sidebar in Midnight, the same in light and dark mode (§9 Shell). It
