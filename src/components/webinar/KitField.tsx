@@ -22,6 +22,7 @@ import { formatShort, shiftIso } from "../../dates";
 import { Icon } from "../Icon";
 import { Avatar } from "../Avatar";
 import type { KitApi } from "./kitApi";
+import { Headshot } from "./SpeakerDirectory";
 
 // One field of a kit section, from its FieldSpec. Text is held locally
 // while typing and written on blur (or Enter); selects, dates, ticks and
@@ -643,6 +644,29 @@ function Group({ f, sec, api, bare }: { f: FieldSpec; sec: string; api: KitApi; 
             <Icon name="add-plus" size={14} /> {K.add}
           </button>
         )}
+        {!readOnly && f.kind === "speaker" && api.speakers.length > 0 && (
+          <select
+            className="kit-directory-pick"
+            value=""
+            aria-label="Add a speaker from the directory"
+            onChange={(e) => {
+              const sp = api.speakers.find((s) => s.id === e.target.value);
+              if (!sp) return;
+              api.addItem("speaker", f.list, { name: sp.name, title: sp.title, bio: sp.bio, headshot: sp.headshot, speakerId: sp.id }, sec);
+            }}
+          >
+            <option value="">Add from the speaker directory…</option>
+            {api.speakers
+              .filter((s) => !list.some((it) => it.d.speakerId === s.id))
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                  {s.title ? ` · ${s.title}` : ""}
+                </option>
+              ))}
+          </select>
+        )}
         {!readOnly && f.template === "runsheet" && !list.length && (
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => api.addMany("runsheet", RUNSHEET_ROWS.map((s) => ({ slide: s })), sec)}>
             Start from the kit’s 8 storyboard rows
@@ -694,7 +718,13 @@ function GroupItem({
     <div className="kit-gitem">
       <div className="kit-gitem-head">
         <div className="kit-gitem-title">
+          {it.kind === "speaker" && <Headshot speaker={{ name: String(it.d.name ?? ""), headshot: String(it.d.headshot ?? "") }} size={28} />}
           <span>{K.title(it.d, idx)}</span>
+          {it.kind === "speaker" && it.d.speakerId && api.speakers.some((s) => s.id === it.d.speakerId) && (
+            <span className="kit-chip brand" title="Linked to the speaker directory">
+              Directory
+            </span>
+          )}
           {by && (
             <span className="kit-stamp">
               {by.name} · {formatShort(it.at.slice(0, 10))}
@@ -703,6 +733,16 @@ function GroupItem({
         </div>
         {!api.readOnly && (
           <div className="kit-gitem-tools">
+            {it.kind === "speaker" && String(it.d.name ?? "").trim() && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                title={it.d.speakerId && api.speakers.some((s) => s.id === it.d.speakerId) ? "Update the directory with this row's name, title, bio and headshot" : "Save this speaker to the directory for other webinars"}
+                onClick={() => api.saveSpeakerFromItem(it)}
+              >
+                <Icon name="user-profile" size={14} /> {it.d.speakerId && api.speakers.some((s) => s.id === it.d.speakerId) ? "Update directory" : "Save to directory"}
+              </button>
+            )}
             {count > 1 && (
               <>
                 <button type="button" className="btn btn-ghost btn-sm" aria-label="Move up" disabled={idx === 0} onClick={() => api.moveItem(it.id, -1)}>

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
   Campaign,
   MarketingEvent,
   Notification,
+  Speaker,
   Project,
   ProjectStatus,
   SocialConfig,
@@ -42,6 +43,9 @@ import {
   deleteItineraryPage as firestoreDeleteItineraryPage,
   seedEventsIfMissing,
   subscribeEvents,
+  subscribeSpeakers,
+  setSpeaker as firestoreSetSpeaker,
+  deleteSpeaker as firestoreDeleteSpeaker,
   subscribeCampaigns,
   subscribeSocialConfig,
   subscribeSocialPosts,
@@ -283,6 +287,16 @@ export default function App() {
     return subscribeEvents(setEvents, (err) => {
       console.warn("Couldn't load events", err);
       setStatus(`Sync error: ${err.message}`);
+    });
+  }, [sessionDesignerId]);
+
+  // The webinar speaker directory, for the Webinars view and the speaker
+  // rows on every webinar's page.
+  const [speakers, setSpeakers] = useState<Speaker[]>([]);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeSpeakers(setSpeakers, (err) => {
+      console.warn("Couldn't load speakers", err);
     });
   }, [sessionDesignerId]);
 
@@ -849,6 +863,13 @@ export default function App() {
     }
   }
 
+  const saveSpeaker = useCallback((speaker: Speaker) => {
+    firestoreSetSpeaker(speaker).catch(writeError);
+  }, []);
+  function deleteSpeaker(id: string) {
+    firestoreDeleteSpeaker(id).catch(writeError);
+  }
+
   function deleteCampaign(id: string) {
     closeItem();
     const token = campaigns.find((c) => c.id === id)?.shareToken;
@@ -1124,6 +1145,8 @@ export default function App() {
                 campaign={routedCampaign}
                 campaigns={campaigns}
                 currentDesignerId={currentDesigner.id}
+                speakers={speakers}
+                onSaveSpeaker={saveSpeaker}
                 onOpenCampaign={openCampaign}
                 categories={socialConfig.categories}
                 milestoneTypes={socialConfig.milestoneTypes}
@@ -1435,6 +1458,9 @@ export default function App() {
             onDelete={deleteCampaign}
             onOpenCampaign={openCampaign}
             currentDesignerId={currentDesigner.id}
+            speakers={speakers}
+            onSaveSpeaker={saveSpeaker}
+            onDeleteSpeaker={deleteSpeaker}
             createRequest={newCampaignRequest}
             onCreateHandled={() => setNewCampaignRequest(0)}
             exportRequest={exportRequest}

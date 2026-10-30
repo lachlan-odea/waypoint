@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { Campaign, Designer, KitItem, KitSectionState, KitValue, WebinarKit } from "../../types";
+import type { Campaign, Designer, KitItem, KitSectionState, KitValue, Speaker, WebinarKit } from "../../types";
 import {
   KINDS,
   SEC_BY_KEY,
@@ -40,6 +40,14 @@ export type KitApi = {
   removeNote: (id: string) => void;
   setLead: (id: string | undefined) => void;
   setTeam: (role: string, ids: string[]) => void;
+  // The speaker directory, and saving a webinar's speaker row into it.
+  speakers: Speaker[];
+  saveSpeakerFromItem: (item: KitItem) => void;
+};
+
+export type KitExtras = {
+  speakers: Speaker[];
+  saveSpeaker: (speaker: Speaker) => void;
 };
 
 export function useKitApi(
@@ -49,7 +57,9 @@ export function useKitApi(
   me: string,
   onSave: (campaign: Campaign) => void,
   readOnly = false,
+  extras: KitExtras = { speakers: [], saveSpeaker: () => {} },
 ): KitApi {
+  const { speakers, saveSpeaker } = extras;
   return useMemo(() => {
     const update: KitApi["update"] = (fn, what, detail, section = "") => {
       let next = fn(kit);
@@ -173,9 +183,37 @@ export function useKitApi(
       removeNote: (id) => update((k) => ({ ...k, notes: k.notes.filter((n) => n.id !== id) })),
       setLead: (id) => update((k) => ({ ...k, lead: id }), id ? "set the project lead" : "cleared the project lead"),
       setTeam: (role, ids) => update((k) => ({ ...k, team: { ...k.team, [role]: ids } }), "updated the team", role),
+      speakers,
+      saveSpeakerFromItem: (item) => {
+        const str = (v: KitValue | undefined) => (typeof v === "string" ? v : "");
+        const existingId = str(item.d.speakerId);
+        const existing = speakers.find((s) => s.id === existingId);
+        const now = new Date().toISOString();
+        const speaker: Speaker = {
+          id: existing?.id ?? `spk-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+          name: str(item.d.name).trim(),
+          title: str(item.d.title).trim(),
+          bio: str(item.d.bio),
+          headshot: str(item.d.headshot).trim(),
+          linkedin: existing?.linkedin,
+          email: existing?.email,
+          notes: existing?.notes,
+          createdAt: existing?.createdAt ?? now,
+          updatedAt: now,
+        };
+        if (!speaker.name) return;
+        saveSpeaker(speaker);
+        if (existingId !== speaker.id) {
+          update(
+            (k) => ({ ...k, items: k.items.map((i) => (i.id === item.id ? { ...i, d: { ...i.d, speakerId: speaker.id } } : i)) }),
+            existing ? "updated the directory entry for" : "saved to the speaker directory",
+            speaker.name,
+          );
+        }
+      },
     };
     return api;
-  }, [campaign, kit, designers, me, onSave, readOnly]);
+  }, [campaign, kit, designers, me, onSave, readOnly, speakers, saveSpeaker]);
 }
 
 export const statusLabel = (st: keyof typeof STATUS) => STATUS[st];

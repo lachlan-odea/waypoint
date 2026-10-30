@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Campaign, Designer, WebinarKit } from "../../types";
+import type { Campaign, Designer, Speaker, WebinarKit } from "../../types";
 import {
   ROLES,
   STAGES,
@@ -28,6 +28,7 @@ import { Icon } from "../Icon";
 import { EmptyNote, StatusChip } from "../pages/ItemPage";
 import { KIT_STATUS_CHIP, pad } from "./kitUi";
 import { NewWebinarModal } from "./NewWebinarModal";
+import { SpeakerDirectory } from "./SpeakerDirectory";
 
 // The Webinars tab of the Campaigns page: the pipeline of webinar
 // campaigns by stage, the cross-webinar tracker and the results table.
@@ -38,9 +39,13 @@ type Props = {
   currentDesignerId: string;
   onOpen: (campaignId: string, tab?: string) => void;
   onCreate: (campaign: Campaign) => void;
+  // The speaker directory.
+  speakers: Speaker[];
+  onSaveSpeaker: (speaker: Speaker) => void;
+  onDeleteSpeaker: (id: string) => void;
 };
 
-type Sub = "pipeline" | "tracker" | "results";
+type Sub = "pipeline" | "tracker" | "results" | "speakers";
 
 const UI_KEY = "waypoint.webinars.ui";
 type Ui = { sub: Sub; q: string; type: string; mine: boolean; parked: boolean; group: "stage" | "series"; team: string; trMine: boolean; trDone: boolean };
@@ -54,7 +59,7 @@ function loadUi(): Ui {
   }
 }
 
-export function WebinarPipeline({ campaigns, designers, currentDesignerId, onOpen, onCreate }: Props) {
+export function WebinarPipeline({ campaigns, designers, currentDesignerId, onOpen, onCreate, speakers, onSaveSpeaker, onDeleteSpeaker }: Props) {
   const [ui, setUiState] = useState<Ui>(loadUi);
   const setUi = (patch: Partial<Ui>) =>
     setUiState((cur) => {
@@ -85,21 +90,24 @@ export function WebinarPipeline({ campaigns, designers, currentDesignerId, onOpe
         <div>
           <div className="eyebrow">CargoWise &amp; WiseTech Global · 2026</div>
           <h2>
-            {ui.sub === "pipeline" ? "Webinar pipeline" : ui.sub === "tracker" ? "Tracker" : "Results"}
+            {ui.sub === "pipeline" ? "Webinar pipeline" : ui.sub === "tracker" ? "Tracker" : ui.sub === "results" ? "Results" : "Speakers"}
           </h2>
           <p className="muted">
             {ui.sub === "pipeline"
               ? "Every webinar from proposal to results. Due dates follow the 2026 webinar kit, counted back from each go-live date."
               : ui.sub === "tracker"
                 ? "What is due, by whom, across every webinar in flight. Filter by team to see your hand-offs."
-                : "Compare webinars on the same measures, against the targets set in each brief."}
+                : ui.sub === "results"
+                  ? "Compare webinars on the same measures, against the targets set in each brief."
+                  : "The people who present. Saved once, added to any webinar from its speaker list."}
           </p>
         </div>
         <div className="wb-head-right">
           <div className="item-tabs wb-subtabs" role="tablist" aria-label="Webinar views">
-            {(["pipeline", "tracker", "results"] as Sub[]).map((s) => (
+            {(["pipeline", "tracker", "results", "speakers"] as Sub[]).map((s) => (
               <button key={s} type="button" role="tab" aria-selected={ui.sub === s} className={`item-tab ${ui.sub === s ? "active" : ""}`} onClick={() => setUi({ sub: s })}>
-                {s === "pipeline" ? "Pipeline" : s === "tracker" ? "Tracker" : "Results"}
+                {s === "pipeline" ? "Pipeline" : s === "tracker" ? "Tracker" : s === "results" ? "Results" : "Speakers"}
+                {s === "speakers" && speakers.length > 0 && <span className="item-tab-count">{speakers.length}</span>}
               </button>
             ))}
           </div>
@@ -114,6 +122,7 @@ export function WebinarPipeline({ campaigns, designers, currentDesignerId, onOpe
       )}
       {ui.sub === "tracker" && <Tracker active={active} states={states} ui={ui} setUi={setUi} designers={designers} me={currentDesignerId} onOpen={onOpen} />}
       {ui.sub === "results" && <Results webinars={webinars} onOpen={onOpen} />}
+      {ui.sub === "speakers" && <SpeakerDirectory speakers={speakers} campaigns={campaigns} onSave={onSaveSpeaker} onDelete={onDeleteSpeaker} />}
 
       {creating && (
         <NewWebinarModal

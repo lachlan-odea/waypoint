@@ -6,6 +6,7 @@ import type {
   Project,
   SocialCategory,
   SocialPost,
+  Speaker,
   Workspace,
 } from "../types";
 import { brandColor, socialCategoryMeta } from "../constants";
@@ -54,6 +55,10 @@ type Props = {
   onOpenCampaign: (campaignId: string, tab?: string) => void;
   // For "My webinars" and attribution on the webinar kit.
   currentDesignerId: string;
+  // The webinar speaker directory, for the Webinars view.
+  speakers: Speaker[];
+  onSaveSpeaker: (speaker: Speaker) => void;
+  onDeleteSpeaker: (id: string) => void;
   // Every social post, to show the status of the post each social
   // milestone created, and the way to open one.
   socialPosts: SocialPost[];
@@ -130,6 +135,9 @@ export function CampaignsView({
   onOpenProject,
   onOpenCampaign,
   currentDesignerId,
+  speakers,
+  onSaveSpeaker,
+  onDeleteSpeaker,
   socialPosts,
   onOpenSocialPost,
   onSave,
@@ -519,6 +527,9 @@ export function CampaignsView({
           currentDesignerId={currentDesignerId}
           onOpen={onOpenCampaign}
           onCreate={(c) => onSave(c)}
+          speakers={speakers}
+          onSaveSpeaker={onSaveSpeaker}
+          onDeleteSpeaker={onDeleteSpeaker}
         />
       )}
 

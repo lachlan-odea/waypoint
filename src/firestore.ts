@@ -29,6 +29,7 @@ import type {
   SocialPost,
   Workspace,
   WorkspaceData,
+  Speaker,
 } from "./types";
 
 const designersCol = () => collection(db, "designers");
@@ -41,6 +42,7 @@ const socialPostsCol = () => collection(db, "socialPosts");
 const socialConfigDoc = () => doc(collection(db, "socialConfig"), "default");
 const campaignsCol = () => collection(db, "campaigns");
 const eventsCol = () => collection(db, "events");
+const speakersCol = () => collection(db, "speakers");
 
 // Backfill missing workspaceId on legacy docs that predate the multi-
 // workspace feature. They all belonged to the original Design workspace.
@@ -830,4 +832,26 @@ export async function seedWorkspacesIfMissing(): Promise<void> {
     batch.set(doc(workspacesCol(), w.id), { id: w.id, name: w.name }),
   );
   await batch.commit();
+}
+
+// ── Speakers ───────────────────────────────────────────────────────────
+// The webinar speaker directory. Small and shared, so one subscription.
+
+export function subscribeSpeakers(
+  onChange: (speakers: Speaker[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    speakersCol(),
+    (snap) => onChange(snap.docs.map((d) => d.data() as Speaker)),
+    onError,
+  );
+}
+
+export async function setSpeaker(speaker: Speaker): Promise<void> {
+  await setDoc(doc(speakersCol(), speaker.id), speaker);
+}
+
+export async function deleteSpeaker(id: string): Promise<void> {
+  await deleteDoc(doc(speakersCol(), id));
 }

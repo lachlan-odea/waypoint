@@ -1320,3 +1320,108 @@
 :root.dark-mode .kit-warnbox {
   color: var(--ink-900);
 }
+
+/* ── Speaker directory ─────────────────────────────────────────────── */
+.sp {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+.sp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+.sp-card-top {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.sp-card-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sp-card h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--wtg-blue);
+}
+.sp-title {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.sp-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+.sp-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--wtg-cobalt);
+}
+.sp-bio {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.sp-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.sp-headshot {
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--ink-100);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sp-headshot-initials {
+  background: var(--wtg-sky-100);
+  color: var(--wtg-blue);
+  font-weight: 700;
+}
+.sp-form {
+  margin: 0;
+}
+.kit-directory-pick {
+  font: inherit;
+  font-size: 13px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--wtg-cobalt);
+  font-weight: 600;
+  max-width: 320px;
+}
+.kit-directory-pick:focus {
+  outline: none;
+  border-color: var(--wtg-cobalt);
+  box-shadow: var(--focus-ring);
+}
+:root.dark-mode .sp-card h4 {
+  color: var(--wtg-periwinkle);
+}

@@ -467,6 +467,26 @@ export type WebinarKit = {
   updatedAt: string;
 };
 
+// A webinar speaker, saved once in /speakers so they can be added to any
+// webinar's speaker list. A webinar's speaker row keeps its own copy of
+// the details (so a brief reads as it did when it was written) and the
+// speaker's id in `d.speakerId`, which links it back here.
+export type Speaker = {
+  id: string;
+  name: string;
+  // Title and organisation, as they appear on a landing page.
+  title: string;
+  bio: string;
+  // A link to the high-res headshot: SharePoint, IntelligenceBank or a
+  // direct image link.
+  headshot: string;
+  linkedin?: string;
+  email?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 // The in-memory snapshot of everything App.tsx needs to render. Loaded
 // progressively via the Firestore subscriptions in firestore.ts.
 export type WorkspaceData = {

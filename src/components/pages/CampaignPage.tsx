@@ -6,6 +6,7 @@ import type {
   Project,
   SocialCategory,
   SocialPost,
+  Speaker,
   Workspace,
 } from "../../types";
 import { brandColor } from "../../constants";
@@ -66,6 +67,9 @@ type Props = {
   workspaces: Workspace[];
   socialPosts: SocialPost[];
   currentDesignerId: string;
+  // The webinar speaker directory.
+  speakers: Speaker[];
+  onSaveSpeaker: (speaker: Speaker) => void;
   tab: string;
   onTab: (tab: string) => void;
   onBack: () => void;
@@ -86,13 +90,14 @@ const PHASE_CHIP: Record<CampaignPhase, WpStatus> = {
 };
 
 export function CampaignPage(props: Props) {
-  const { campaign, designers, currentDesignerId, onSave } = props;
+  const { campaign, designers, currentDesignerId, onSave, speakers, onSaveSpeaker } = props;
   const stored = kitOf(campaign);
   // The kit the API works on: the stored one, or a fresh one for a Webinar
   // campaign saved before the kit existed (written on the first edit).
   const kit = useMemo(() => stored ?? emptyKit(campaign), [stored, campaign]);
   const save = useMemo(() => (c: Campaign) => onSave(c), [onSave]);
-  const api = useKitApi(campaign, kit, designers, currentDesignerId, save);
+  const extras = useMemo(() => ({ speakers, saveSpeaker: onSaveSpeaker }), [speakers, onSaveSpeaker]);
+  const api = useKitApi(campaign, kit, designers, currentDesignerId, save, false, extras);
   if (stored) return <WebinarCampaignPage {...props} api={api} />;
   return <PlainCampaignPage {...props} />;
 }
