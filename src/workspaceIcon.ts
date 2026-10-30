@@ -7,7 +7,7 @@ import type { Workspace } from "./types";
 const TEAM_ICONS: Record<string, IconName> = {
   comms: "message-chat",
   design: "edit",
-  events: "calendar",
+  events: "ticket",
   marketing: "rocket",
   video: "clapperboard",
 };
