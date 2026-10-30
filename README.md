@@ -11,7 +11,7 @@ Version 3.0 is the Waypoint design system release: the Waypoint logo, the WiseTe
 ### Team boards
 Each team has a board. Your own work sits at the top, then a column per teammate; drag a card between columns to reassign it, or onto a team in the sidebar to move it across. Projects carry a client, brand, content types, priority, due date, a brief link, milestones and a comment thread with @-mentions and likes. Sections below the board collect Planning, On hold and Completed work; the Archive spans every team.
 
-The **+ New** menu in the header creates a project, a campaign, an event or a social post.
+The **+ New** menu in the header creates a project, a campaign, an event or a social post. Beside it, **Help** opens a guided tour of the page on screen: each step spotlights a part of the page and explains it, with the page still live underneath (`src/components/HelpTour.tsx`; the steps per page are in `src/helpTours.ts`).
 
 ### Pages
 A project, a campaign or an event opens as its own page, at `#project/<id>/<tab>`, `#campaign/<id>/<tab>` or `#event/<id>/<tab>` (`src/router.ts`). Each page has the same shape (`src/components/pages/ItemPage.tsx`): breadcrumbs, a header band with the name, a countdown to the key date and the facts that matter, tabs, a stage strip, then the body as a main column with side cards for **Status & schedule**, **Ready when** (what has to be true before the item is done, with progress), **Links** and **Manage**.

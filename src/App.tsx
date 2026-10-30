@@ -72,6 +72,10 @@ import { ProjectPage } from "./components/pages/ProjectPage";
 import { CampaignPage } from "./components/pages/CampaignPage";
 import { EventPage } from "./components/pages/EventPage";
 import { closeItem, openItem, replaceItemTab, useItemRoute } from "./router";
+import { HelpTour } from "./components/HelpTour";
+import { tourFor } from "./helpTours";
+import { kitOf } from "./webinarKit";
+import { Icon } from "./components/Icon";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
@@ -83,6 +87,7 @@ import {
 } from "./constants";
 import "./App.css";
 import "./pages.css";
+import "./help.css";
 import "./webinar.css";
 import "./analytics.css";
 
@@ -121,6 +126,12 @@ export default function App() {
   const [view, setView] = useState<SidebarView>("myDesk");
   // The project, campaign or event open as a page, from the address bar.
   const route = useItemRoute();
+  // The Help button's guided tour of the page on screen. Closes when the
+  // page changes under it.
+  const [tourOpen, setTourOpen] = useState(false);
+  useEffect(() => {
+    setTourOpen(false);
+  }, [route?.kind, route?.id, view]);
   const mainRef = useRef<HTMLElement>(null);
   useEffect(() => {
     mainRef.current?.scrollTo(0, 0);
@@ -1022,6 +1033,12 @@ export default function App() {
     : view;
   const listFor = (kind: "project" | "campaign" | "event"): SidebarView =>
     kind === "project" ? "board" : kind === "campaign" ? "campaigns" : "events";
+  const tourKey = route
+    ? route.kind === "campaign" && routedCampaign && kitOf(routedCampaign)
+      ? "webinar"
+      : route.kind
+    : view;
+  const tour = tourFor(tourKey);
 
   const unassigned = activeProjects
     .filter((p) => p.assigneeIds.length === 0)
@@ -1102,6 +1119,7 @@ export default function App() {
               </button>
               <span className="topbar-item-kind">{route.kind}</span>
               <div className="topbar-actions">
+                <HelpButton onClick={() => setTourOpen(true)} />
                 <NewMenu variant="primary" onPick={startNew} />
               </div>
             </header>
@@ -1305,6 +1323,7 @@ export default function App() {
                 Export CSV
               </button>
             )}
+            <HelpButton onClick={() => setTourOpen(true)} />
             <NewMenu variant="primary" onPick={startNew} />
           </div>
         </header>
@@ -1803,6 +1822,10 @@ export default function App() {
         />
       )}
 
+      {tourOpen && tour && (
+        <HelpTour key={tourKey} title={tour.title} steps={tour.steps} onClose={() => setTourOpen(false)} />
+      )}
+
       {toast && (
         <div className="toast" role="status">
           <span>{toast.message}</span>
@@ -1821,5 +1844,14 @@ export default function App() {
         </div>
       )}
     </div>
+  );
+}
+
+// The Help button beside + New: opens the guided tour of the page on screen.
+function HelpButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="btn btn-secondary help-btn" onClick={onClick} title="How to use this page">
+      <Icon name="lightbulb" size={16} /> Help
+    </button>
   );
 }

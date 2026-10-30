@@ -1,0 +1,132 @@
+/* The Help button and the guided tour it opens. */
+
+.help-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.help-btn svg {
+  color: var(--wtg-cobalt);
+}
+
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: none;
+}
+.tour-scrim {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+.tour-card {
+  position: fixed;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  pointer-events: auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: tour-in var(--dur) var(--ease);
+}
+@keyframes tour-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tour-card[style*="translate(-50%"] {
+  animation: none;
+}
+.tour-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tour-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--wtg-blue);
+}
+.tour-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.tour-note {
+  font-size: 12px !important;
+  color: var(--muted);
+}
+.tour-close {
+  width: 28px;
+  height: 28px;
+}
+.tour-dots {
+  display: flex;
+  gap: 4px;
+  padding-top: 2px;
+}
+.tour-dots i {
+  width: 16px;
+  height: 4px;
+  border-radius: var(--radius);
+  background: var(--ink-200);
+}
+.tour-dots i.done {
+  background: var(--wtg-periwinkle);
+}
+.tour-dots i.on {
+  background: var(--wtg-cobalt);
+}
+.tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+.tour-actions .link-btn {
+  font-size: 13px;
+  padding: 0;
+}
+.tour-spacer {
+  flex: 1;
+}
+/* A small pointer towards the spotlight, above or below the card. */
+.tour-card.arrow-up::before,
+.tour-card.arrow-down::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  transform: translateX(-50%) rotate(45deg);
+}
+.tour-card.arrow-up::before {
+  top: -7px;
+}
+.tour-card.arrow-down::before {
+  bottom: -7px;
+  transform: translateX(-50%) rotate(225deg);
+}
+
+:root.dark-mode .tour-card h3 {
+  color: var(--wtg-periwinkle);
+}
+:root.dark-mode .help-btn svg {
+  color: var(--wtg-periwinkle);
+}
