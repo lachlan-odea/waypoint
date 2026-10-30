@@ -2,7 +2,7 @@ import type { Campaign, Designer, Project, ProjectStatus, Workspace } from "../t
 import { PROJECT_STATUSES, projectStatusLabel } from "../constants";
 import { projectContentTypes } from "../contentTypes";
 import { formatShort, todayIso } from "../dates";
-import { priorityClassName, projectStatusTone } from "../statusTone";
+import { priorityClassName } from "../statusTone";
 import { Avatar } from "./Avatar";
 
 // My work as a table: one dense row per project, every status, so the most
@@ -74,7 +74,7 @@ export function MyWorkTable({ projects, designers, workspaces, campaignsByProjec
                 </td>
                 <td>
                   <select
-                    className={`status-select status-${status} wp-status ${projectStatusTone(status)}`}
+                    className={`status-select status-${status}`}
                     value={status}
                     aria-label={`Status of ${p.title}`}
                     title={projectStatusLabel(status)}

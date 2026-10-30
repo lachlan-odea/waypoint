@@ -9278,8 +9278,10 @@ a.share-btn {
 }
 .mywork-table .status-select {
   min-height: 28px;
-  padding: 2px 24px 2px 8px;
+  padding: 2px 28px 2px 10px;
   font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .mywork-strip {
   min-width: 120px;
