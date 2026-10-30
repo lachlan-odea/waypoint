@@ -69,6 +69,7 @@ export function ProjectCard({
   const overdue =
     isPastDue(project.dueDate) &&
     project.status !== "completed" &&
+    project.status !== "cancelled" &&
     project.status !== "planning" &&
     !project.archived;
   return (

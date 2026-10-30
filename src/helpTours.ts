@@ -36,8 +36,8 @@ const TOURS: Record<string, Tour> = {
     steps: [
       { target: ".topbar .search", title: "Find a project", body: "Search by title, client, brand or content type. The board filters as you type." },
       { target: ".camps-panel", title: "Campaigns this team feeds", body: "The campaigns any of this team's live projects contribute to, with their next milestone. Open one to see the whole campaign." },
-      { target: ".drop-target.workspace-section", title: "My work", body: "Your projects, high priority first. Drop a card here to claim it. Click a card to open the project as a page with its tasks, comments and links." },
-      { target: ".team-section", title: "The team", body: "A column per teammate. Drag a card between columns to reassign it, or into Unassigned to free it up. Cards show the priority, due date, brand, the next task and who's on it." },
+      { target: ".drop-target.workspace-section", title: "My work", body: "Your projects, high priority first. Drop a card here to claim it. Switch to Kanban to see everything assigned to you by status — Planning, Active, On hold, Completed, Cancelled — and drag a card between columns to change its status. Click a card to open the project." },
+      { target: ".team-section", title: "The team", body: "A column per teammate. Drag a card between columns to reassign it, or into Unassigned to free it up. Collapse the section with the arrow to focus on your own work; it stays collapsed until you open it again." },
       { target: ".planning-section", title: "Planning, On hold, Completed", body: "Below the board, work that isn't live yet, work that's paused and work that's done. Collapse the ones you don't need; open a project to move it between stages." },
       NEW,
       NAV,

@@ -9116,3 +9116,90 @@ a.share-btn {
     border-color: var(--cobalt-050);
   }
 }
+
+.status-select.status-cancelled {
+  background-color: var(--wp-status-blocked-bg);
+  border-color: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+}
+
+/* My work as a kanban by status, and the Grid / Kanban switch. */
+.view-seg {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 12px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.view-seg button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+}
+.view-seg button[aria-pressed="true"] {
+  background: var(--cobalt-050);
+  color: var(--wtg-cobalt);
+}
+.view-seg button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.kanban-col {
+  background: var(--ink-50);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.kanban-col.drop-over {
+  border-color: var(--wtg-cobalt);
+  background: var(--cobalt-050);
+}
+.kanban-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kanban-col-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.kanban-col-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kanban-empty {
+  margin: 6px 0;
+  text-align: center;
+}
+.team-section.collapsed > .section-head {
+  margin-bottom: 0;
+}
+.cancelled-section .section-head h2 {
+  color: var(--muted);
+}
+:root.dark-mode .kanban-col {
+  background: var(--surface-2);
+}

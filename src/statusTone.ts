@@ -65,6 +65,8 @@ export function projectStatusTone(status: ProjectStatus | undefined): WpTone {
       return "draft";
     case "completed":
       return "complete";
+    case "cancelled":
+      return "blocked";
     case "active":
     default:
       return "in-progress";

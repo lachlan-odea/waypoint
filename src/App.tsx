@@ -82,10 +82,12 @@ import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
 import { contentTypesSearchText } from "./contentTypes";
 import {
+  PROJECT_STATUSES,
   resolveSocialConfig,
   DEFAULT_WORKSPACE_ID,
   SUPER_USER_EMAILS,
 } from "./constants";
+import { projectStatusTone } from "./statusTone";
 import "./App.css";
 import "./pages.css";
 import "./help.css";
@@ -167,6 +169,41 @@ export default function App() {
   );
   const [pausedExpanded, setPausedExpanded] = useState(true);
   const [completedExpanded, setCompletedExpanded] = useState(true);
+  const [cancelledExpanded, setCancelledExpanded] = useState(false);
+  // The Team section folds away so the board is just your own work.
+  // Per-browser, like the other view preferences.
+  const [teamCollapsed, setTeamCollapsedState] = useState(() => {
+    try {
+      return localStorage.getItem("waypoint.board.teamCollapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
+  function setTeamCollapsed(next: boolean) {
+    setTeamCollapsedState(next);
+    try {
+      localStorage.setItem("waypoint.board.teamCollapsed", next ? "1" : "0");
+    } catch {
+      // per-browser preference only
+    }
+  }
+  // My work as a grid of your active projects, or a kanban of everything
+  // assigned to you by status.
+  const [myWorkView, setMyWorkViewState] = useState<"grid" | "kanban">(() => {
+    try {
+      return localStorage.getItem("waypoint.board.myWorkView") === "kanban" ? "kanban" : "grid";
+    } catch {
+      return "grid";
+    }
+  });
+  function setMyWorkView(next: "grid" | "kanban") {
+    setMyWorkViewState(next);
+    try {
+      localStorage.setItem("waypoint.board.myWorkView", next);
+    } catch {
+      // per-browser preference only
+    }
+  }
   const [darkMode, setDarkMode] = useState(() =>
     localStorage.getItem("waypoint.darkMode") === "true"
   );
@@ -600,6 +637,14 @@ export default function App() {
     [nonArchived],
   );
 
+  const cancelledProjects = useMemo(
+    () =>
+      nonArchived
+        .filter((p) => p.status === "cancelled")
+        .sort(sortByPriorityThenDue),
+    [nonArchived],
+  );
+
   // The Archive is deliberately global rather than scoped to the board you
   // came in from. Archived work is a reference library, and having to
   // remember which team a finished project lived on before you can find it
@@ -663,6 +708,15 @@ export default function App() {
     return workspace.projects
       .filter((p) => p.assigneeIds.includes(sessionDesignerId))
       .filter((p) => (p.status ?? "active") === "active")
+      .filter((p) => !p.archived)
+      .sort(sortByPriorityThenDue);
+  }, [workspace, sessionDesignerId]);
+
+  // Everything assigned to me, whatever its status, for the kanban.
+  const myAllProjects = useMemo(() => {
+    if (!workspace || !sessionDesignerId) return [];
+    return workspace.projects
+      .filter((p) => p.assigneeIds.includes(sessionDesignerId))
       .filter((p) => !p.archived)
       .sort(sortByPriorityThenDue);
   }, [workspace, sessionDesignerId]);
@@ -774,6 +828,18 @@ export default function App() {
     // behind the modal.
     if (view !== "board") setView("board");
     openItem("project", project.id);
+  }
+
+  // Dropping a card on a kanban column sets its status; a card that isn't
+  // mine yet is claimed on the way, since the kanban is My work.
+  function dropProjectOntoStatus(projectId: string, status: ProjectStatus) {
+    const project = findProject(projectId);
+    if (!project || !sessionDesignerId) return;
+    const assigneeIds = project.assigneeIds.includes(sessionDesignerId)
+      ? project.assigneeIds
+      : [...project.assigneeIds, sessionDesignerId];
+    if ((project.status ?? "active") === status && assigneeIds === project.assigneeIds) return;
+    firestoreSetProject({ ...project, status, assigneeIds }).catch(writeError);
   }
 
   // Drop semantics: dropping a card on a designer's column adds them as an
@@ -1050,6 +1116,26 @@ export default function App() {
   const unassigned = activeProjects
     .filter((p) => p.assigneeIds.length === 0)
     .sort(sortByPriorityThenDue);
+
+  function statusDropHandlers(status: ProjectStatus) {
+    const key = `status:${status}`;
+    return {
+      onDragOver: (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "move";
+        setDropOverColumn(key);
+      },
+      onDragLeave: () => setDropOverColumn((cur) => (cur === key ? null : cur)),
+      onDrop: (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDropOverColumn(null);
+        const pid = readDraggedProjectId(e);
+        if (pid) dropProjectOntoStatus(pid, status);
+      },
+    };
+  }
 
   function dropHandlers(targetId: string | null) {
     return {
@@ -1512,12 +1598,60 @@ export default function App() {
               {...dropHandlers(sessionDesignerId)}
             >
               <div className="section-head">
-                <h2>My work</h2>
+                <div className="section-head-title">
+                  <h2>My work</h2>
+                  <div className="view-seg" role="group" aria-label="My work layout">
+                    <button type="button" aria-pressed={myWorkView === "grid"} onClick={() => setMyWorkView("grid")}>
+                      Grid
+                    </button>
+                    <button type="button" aria-pressed={myWorkView === "kanban"} onClick={() => setMyWorkView("kanban")}>
+                      Kanban
+                    </button>
+                  </div>
+                </div>
                 <span className="muted small">
-                  High priority first · drop cards here to claim
+                  {myWorkView === "kanban"
+                    ? "Everything assigned to you, by status · drag a card between columns to change its status"
+                    : "High priority first · drop cards here to claim"}
                 </span>
               </div>
-              {myProjects.length === 0 ? (
+              {myWorkView === "kanban" ? (
+                <div className="kanban">
+                  {PROJECT_STATUSES.map((s) => {
+                    const cards = myAllProjects.filter((p) => (p.status ?? "active") === s.value);
+                    return (
+                      <div
+                        key={s.value}
+                        className={`kanban-col drop-target ${dropOverColumn === `status:${s.value}` ? "drop-over" : ""}`}
+                        {...statusDropHandlers(s.value)}
+                      >
+                        <header className="kanban-col-head">
+                          <span className={`wp-status ${projectStatusTone(s.value)}`}>{s.label}</span>
+                          <span className="kanban-col-count">{cards.length}</span>
+                        </header>
+                        <div className="kanban-col-cards">
+                          {cards.length === 0 && <p className="muted small kanban-empty">Drop a card here</p>}
+                          {cards.map((p) => (
+                            <ProjectCard
+                              key={p.id}
+                              project={p}
+                              designers={workspace.designers}
+                              campaigns={campaignsByProject.get(p.id)}
+                              onClick={() => openProject(p.id)}
+                              compact
+                              teamBadge={
+                                p.workspaceId !== currentWorkspaceId
+                                  ? availableWorkspaces.find((w) => w.id === p.workspaceId)?.name
+                                  : undefined
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : myProjects.length === 0 ? (
                 <p className="muted">
                   Nothing assigned to you yet. Hit + New → Project, drag a card from a teammate,
                   or wait for an Outlook brief to arrive.
@@ -1574,11 +1708,26 @@ export default function App() {
               </section>
             )}
 
-            <section className="team-section">
+            <section className={`team-section ${teamCollapsed ? "collapsed" : ""}`}>
               <div className="section-head">
-                <h2>Team</h2>
-                <span className="muted small">Drag a card to reassign it</span>
+                <div className="section-head-title">
+                  <button
+                    className="collapse-toggle"
+                    onClick={() => setTeamCollapsed(!teamCollapsed)}
+                    title={teamCollapsed ? "Show the team" : "Hide the team"}
+                    aria-expanded={!teamCollapsed}
+                  >
+                    <span className={`collapse-icon ${teamCollapsed ? "" : "expanded"}`}>▶</span>
+                  </button>
+                  <h2>Team</h2>
+                </div>
+                <span className="muted small">
+                  {teamCollapsed
+                    ? `${otherDesigners.length} teammate${otherDesigners.length === 1 ? "" : "s"} · ${activeProjects.length} active project${activeProjects.length === 1 ? "" : "s"} · expand to reassign`
+                    : "Drag a card to reassign it"}
+                </span>
               </div>
+              {!teamCollapsed && (
               <div className="team-columns">
                 {otherDesigners.map((d) => {
                   const projects = activeProjects
@@ -1654,6 +1803,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
+              )}
             </section>
 
             {planningProjects.length > 0 && (
@@ -1747,6 +1897,40 @@ export default function App() {
                 {completedExpanded && (
                   <div className="workspace-grid workspace-grid-scrollable">
                     {completedProjects.map((p) => (
+                      <ProjectCard
+                        key={p.id}
+                        project={p}
+                        designers={workspace.designers}
+                        campaigns={campaignsByProject.get(p.id)}
+                        onClick={() => openProject(p.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {cancelledProjects.length > 0 && (
+              <section className="workspace-section cancelled-section">
+                <div className="section-head">
+                  <div className="section-head-title">
+                    <button
+                      className="collapse-toggle"
+                      onClick={() => setCancelledExpanded(!cancelledExpanded)}
+                      title={cancelledExpanded ? "Collapse" : "Expand"}
+                    >
+                      <span className={`collapse-icon ${cancelledExpanded ? "expanded" : ""}`}>▶</span>
+                    </button>
+                    <h2>Cancelled</h2>
+                  </div>
+                  <span className="muted small">
+                    {cancelledProjects.length} project
+                    {cancelledProjects.length === 1 ? "" : "s"} stopped before completion
+                  </span>
+                </div>
+                {cancelledExpanded && (
+                  <div className="workspace-grid workspace-grid-scrollable">
+                    {cancelledProjects.map((p) => (
                       <ProjectCard
                         key={p.id}
                         project={p}

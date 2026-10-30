@@ -6,7 +6,9 @@ export type Priority = "Urgent" | "High" | "Normal" | "Low";
 // where any missed doc would fall through the `?? "active"` default and
 // silently reappear as active work. Always render these through
 // projectStatusLabel() in constants.ts rather than printing the raw value.
-export type ProjectStatus = "planning" | "active" | "paused" | "completed";
+// "cancelled" (added Oct 2026) is work that stopped before it was done:
+// off the board's live columns like completed work, in its own section.
+export type ProjectStatus = "planning" | "active" | "paused" | "completed" | "cancelled";
 
 // An office location and the time zone it keeps. Managed by super users in
 // Settings → Locations & time zones, and shared by everyone: adding one puts

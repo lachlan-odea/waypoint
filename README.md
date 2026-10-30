@@ -9,7 +9,7 @@ Version 3.0 is the Waypoint design system release: the Waypoint logo, the WiseTe
 ## What it does
 
 ### Team boards
-Each team has a board. Your own work sits at the top, then a column per teammate; drag a card between columns to reassign it, or onto a team in the sidebar to move it across. Projects carry a client, brand, content types, priority, due date, a brief link, milestones and a comment thread with @-mentions and likes. Sections below the board collect Planning, On hold and Completed work; the Archive spans every team.
+Each team has a board. Your own work sits at the top, then a column per teammate; drag a card between columns to reassign it, or onto a team in the sidebar to move it across. Projects carry a client, brand, content types, priority, due date, a brief link, milestones and a comment thread with @-mentions and likes. **My work** shows as a grid of your active projects or, with the Kanban switch, as columns for every status (Planning, Active, On hold, Completed, Cancelled) holding everything assigned to you; dragging a card between columns changes its status. The **Team** section collapses with the arrow beside its heading, and stays collapsed per browser. Sections below the board collect Planning, On hold, Completed and Cancelled work; the Archive spans every team.
 
 The **+ New** menu in the header creates a project, a campaign, an event or a social post. Beside it, **Help** opens a guided tour of the page on screen: each step spotlights a part of the page and explains it, with the page still live underneath (`src/components/HelpTour.tsx`; the steps per page are in `src/helpTours.ts`).
 

@@ -15,6 +15,7 @@ export const PROJECT_STATUSES: { value: ProjectStatus; label: string }[] = [
   { value: "active", label: "Active" },
   { value: "paused", label: "On hold" },
   { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 // A project with no status set predates the field and is treated as active.

@@ -215,6 +215,7 @@ const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
   active: "#371ee1",
   paused: "#8b96a8",
   completed: "#1d1765",
+  cancelled: "#651d32",
 };
 
 export function Analytics({

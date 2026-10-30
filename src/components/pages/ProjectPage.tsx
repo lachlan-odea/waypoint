@@ -69,6 +69,7 @@ const STATUS_CHIP: Record<ProjectStatus, WpStatus> = {
   active: "in-progress",
   paused: "draft",
   completed: "complete",
+  cancelled: "blocked",
 };
 
 const PRIORITIES: Priority[] = ["Urgent", "High", "Normal", "Low"];
@@ -120,10 +121,13 @@ export function ProjectPage({
   const tasks = project.milestones;
   const tasksDone = tasks.filter((m) => m.done).length;
   const openTasks = tasks.filter((m) => !m.done);
-  const days = status === "completed" ? null : daysUntil(project.dueDate || undefined);
+  const closed = status === "completed" || status === "cancelled";
+  const days = closed ? null : daysUntil(project.dueDate || undefined);
   const overdue = days !== null && days < 0;
   const countdown =
-    status === "completed"
+    status === "cancelled"
+      ? { value: "Off", label: "project cancelled" }
+      : status === "completed"
       ? { value: "Done", label: "project completed" }
       : countdownFor(days, {
           none: "no due date",
@@ -643,7 +647,7 @@ export function ProjectPage({
                             aria-label="Due date"
                           />
                           {overdue && <StatusChip status="blocked">Overdue by {-days!} day{-days! === 1 ? "" : "s"}</StatusChip>}
-                          {!overdue && days !== null && days <= 7 && status !== "completed" && (
+                          {!overdue && days !== null && days <= 7 && !closed && (
                             <StatusChip status="scheduled">{days === 0 ? "Due today" : `Due in ${days} day${days === 1 ? "" : "s"}`}</StatusChip>
                           )}
                         </span>
@@ -788,7 +792,7 @@ export function ProjectPage({
   );
 
   function completeAction() {
-    if (status === "completed") return null;
+    if (closed) return null;
     return (
       <button type="button" className="btn btn-primary btn-sm" onClick={() => onStatusChange("completed")}>
         <Icon name="checkmark" size={14} /> Mark completed
