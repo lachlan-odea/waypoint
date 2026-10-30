@@ -1,5 +1,6 @@
 import type { Campaign, CampaignMilestone, Designer, MarketingEvent, SocialPost } from "./types";
 import template from "./activityPage.template.html?raw";
+import appIconSvg from "../public/logos/waypoint-app-icon.svg?raw";
 import { firebaseConfig } from "./firebase";
 import { setActivityPage } from "./firestore";
 import { eventPhase, eventStatusMeta, formatEventDates } from "./events";
@@ -189,6 +190,9 @@ export function activityPageHtml(shareToken: string, data: ActivityPageData): st
     __ACTIVITY_TITLE__: escapeHtml("Marketing activity"),
     __ACTIVITY_SNAPSHOT__: snapshot,
     __ACTIVITY_FEED_URL__: activityPageUrl(shareToken),
+    // The app icon, inline, so the tab shows the mark wherever the file
+    // is hosted.
+    __ACTIVITY_FAVICON__: "data:image/svg+xml," + encodeURIComponent(appIconSvg.trim()),
   };
   return template.replace(/__ACTIVITY_[A-Z_]+__/g, (key) => fill[key] ?? key);
 }

@@ -31,7 +31,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.png', 'hero.png', 'app-icon.png', 'logos/waypoint-app-icon.svg'],
+      includeAssets: ['favicon.png', 'hero.png', 'app-icon.png', 'app-icon-maskable.png', 'apple-touch-icon.png', 'logos/waypoint-app-icon.svg'],
       manifest: {
         // Stable identity for the installed app. Without it the browser keys
         // the install off start_url, so changing start_url later would look
@@ -71,10 +71,12 @@ export default defineConfig({
             type: 'image/png',
           },
           {
-            src: 'app-icon.png',
+            // Full-bleed art for launchers that apply their own mask; the
+            // mark sits inside the central safe zone.
+            src: 'app-icon-maskable.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'maskable',
           },
         ],
       },
