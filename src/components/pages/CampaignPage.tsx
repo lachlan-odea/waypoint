@@ -137,6 +137,8 @@ function WebinarCampaignPage({
     after: "days since go-live",
   });
   const [iterating, setIterating] = useState(false);
+  // "Show all" on the episode strip stacks every episode on the schedule.
+  const [showAllEpisodes, setShowAllEpisodes] = useState(false);
   const eps = kit.series
     ? campaigns
         .filter((c) => kitOf(c)?.series === kit.series && !kitOf(c)?.archived)
@@ -222,6 +224,18 @@ function WebinarCampaignPage({
                     {kitOf(q)!.ep ? `Ep ${kitOf(q)!.ep}` : kitName(q)}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  className="kit-epnav-all"
+                  aria-pressed={showAllEpisodes}
+                  title="Stack every episode's schedule on the chart"
+                  onClick={() => {
+                    setShowAllEpisodes((v) => !v);
+                    if (here !== "overview") onTab("overview");
+                  }}
+                >
+                  {showAllEpisodes ? "This episode only" : "Show all"}
+                </button>
               </nav>
             )}
           </>
@@ -297,7 +311,14 @@ function WebinarCampaignPage({
         ) : here === "activity" ? (
           <KitActivityTab api={api} />
         ) : (
-          <KitOverview api={api} onSection={onTab} onTab={onTab} manage={<KitManage api={api} onDelete={onDelete} onDuplicate={() => setIterating(true)} onCopy={onDuplicate} />} />
+          <KitOverview
+            api={api}
+            onSection={onTab}
+            onTab={onTab}
+            manage={<KitManage api={api} onDelete={onDelete} onDuplicate={() => setIterating(true)} onCopy={onDuplicate} />}
+            episodes={showAllEpisodes && eps.length > 1 ? eps.map((q) => ({ campaign: q, kit: q.id === campaign.id ? kit : kitOf(q)!, current: q.id === campaign.id })) : undefined}
+            onOpenEpisode={(id, section) => onOpenCampaign(id, section)}
+          />
         )}
       </ItemPage>
       {iterating && (

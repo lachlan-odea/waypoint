@@ -1425,3 +1425,57 @@
 :root.dark-mode .sp-card h4 {
   color: var(--wtg-periwinkle);
 }
+
+/* Stacked episodes on the schedule */
+.kit-epnav-all {
+  margin-left: 6px;
+  border-style: dashed !important;
+}
+.kit-epnav-all[aria-pressed="true"] {
+  background: var(--wtg-periwinkle) !important;
+  border-color: var(--wtg-periwinkle) !important;
+  border-style: solid !important;
+  color: var(--wtg-blue) !important;
+}
+.kit-gantt.stacked .kit-g-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.kit-gantt.stacked .kit-g-block:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+.kit-g-ep-name {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-weight: 700;
+  color: var(--wtg-blue);
+  font-size: 13px;
+  text-align: left;
+  padding: 0;
+  min-width: 0;
+}
+.kit-g-ep-name small {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+.kit-g-block.current .kit-g-ep-name {
+  color: var(--wtg-cobalt);
+}
+.kit-gantt.stacked .kit-g-block:not(.current) .kit-g-bar {
+  opacity: 0.75;
+}
+:root.dark-mode .kit-g-ep-name {
+  color: var(--wtg-periwinkle);
+}
