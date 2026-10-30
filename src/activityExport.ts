@@ -1,10 +1,10 @@
-import type { Campaign, CampaignMilestone, Designer, MarketingEvent, Project, SocialPost } from "./types";
+import type { Campaign, CampaignMilestone, Designer, MarketingEvent, SocialPost } from "./types";
 import template from "./activityPage.template.html?raw";
 import { firebaseConfig } from "./firebase";
 import { setActivityPage } from "./firestore";
-import { EVENT_CHECKLIST, eventPhase, eventStatusMeta, formatEventDates } from "./events";
+import { eventPhase, eventStatusMeta, formatEventDates } from "./events";
 import { campaignPhase } from "./campaigns";
-import { DELIVERY, FORMATS, KINDS, STAGE_LABEL, STATUS, TYPES, kitOf, kitState } from "./webinarKit";
+import { DELIVERY, FORMATS, STAGE_LABEL, TYPES, kitOf, kitState } from "./webinarKit";
 import { newShareToken } from "./campaignExport";
 
 // Every piece of marketing activity — campaigns, webinars and events — as
@@ -17,6 +17,11 @@ import { newShareToken } from "./campaignExport";
 // campaign or event save (publishActivityPage, from App) and readable by
 // anyone holding the exact token. The token and the page's SharePoint link
 // are kept in /settings/activityPage.
+//
+// The page is for people outside the marketing team: dates, assets and
+// who to talk to. Internal working detail (projects, checklists, section
+// statuses, spend, notes, SharePoint working pages) is left out here, so
+// it never reaches the public copy.
 //
 // The page stands alone, so nothing in the template names Waypoint.
 
@@ -49,12 +54,10 @@ export function activityPageData(
   campaigns: Campaign[],
   events: MarketingEvent[],
   posts: SocialPost[],
-  projects: Project[],
   designers: Designer[],
 ) {
   const today = new Date().toISOString().slice(0, 10);
   const name = (id?: string) => (id ? (designers.find((d) => d.id === id)?.name ?? "") : "");
-  const titles = (ids: string[]) => ids.map((id) => projects.find((p) => p.id === id)?.title).filter((t): t is string => !!t);
 
   const campaignRows = campaigns.map((c) => {
     const kit = kitOf(c);
@@ -71,8 +74,6 @@ export function activityPageData(
       evergreen: !!c.evergreen,
       phase: campaignPhase(c, today),
       color: c.color,
-      sharePointUrl: c.sharePointUrl ?? "",
-      projects: titles(c.projectIds),
       milestones: c.milestones
         .slice()
         .sort((a, b) => a.date.localeCompare(b.date))
@@ -87,7 +88,6 @@ export function activityPageData(
         name: str(i.d.name),
         title: str(i.d.title),
         role: str(i.d.role),
-        status: str(i.d.status),
         bio: str(i.d.bio),
         headshot: str(i.d.headshot),
       }))
@@ -115,22 +115,14 @@ export function activityPageData(
         learn: str(landing.learn),
         audience: Array.isArray(brief.audience) ? brief.audience : [],
         landingLink: str(landing.landingLink),
-        health: st.health?.label ?? "",
-        done: st.done,
-        total: st.total,
+        // The kit's sections as key dates only: title, due, done or not.
         sections: st.infos.map((i) => ({
           n: i.s.n,
           title: i.s.title,
-          short: i.s.short,
-          status: i.st,
-          statusLabel: STATUS[i.st],
-          start: i.start,
           due: i.due,
-          late: i.late,
-          owner: i.s.owner,
+          done: i.st === "done",
         })),
         speakers,
-        speakerNoun: KINDS.speaker.noun,
       },
     };
   });
@@ -166,18 +158,10 @@ export function activityPageData(
       salesAttendeeCount: e.salesAttendeeCount ?? null,
       academy: e.academyAttendee ?? "",
       partners: e.partnerAttendees ?? "",
-      campaignCode: e.campaignCode ?? "",
       campaignId: linked?.id ?? "",
       campaignName: linked?.name ?? "",
-      projects: titles(e.projectIds),
-      investment: e.investment ?? null,
-      currency: e.currency ?? "",
-      investmentUsd: e.investmentUsd ?? null,
       comms: e.comms ?? null,
       opps: e.opps ?? null,
-      oppsBreakdown: e.oppsBreakdown ?? "",
-      notes: e.notes ?? "",
-      checklist: EVENT_CHECKLIST.map((item) => ({ label: item.label, done: !!e.checklist?.[item.key], afterEvent: !!item.followUp })),
       itinerarySharePointUrl: e.itinerarySharePointUrl ?? "",
     };
   });
@@ -193,11 +177,10 @@ export function publishActivityPage(
   campaigns: Campaign[],
   events: MarketingEvent[],
   posts: SocialPost[],
-  projects: Project[],
   designers: Designer[],
 ): Promise<void> {
   if (!shareToken) return Promise.resolve();
-  return setActivityPage(shareToken, JSON.stringify(activityPageData(campaigns, events, posts, projects, designers)));
+  return setActivityPage(shareToken, JSON.stringify(activityPageData(campaigns, events, posts, designers)));
 }
 
 export function activityPageHtml(shareToken: string, data: ActivityPageData): string {

@@ -931,7 +931,7 @@ export default function App() {
   // event changes. Nothing is written until the page has a token.
   function republishActivity(nextCampaigns: Campaign[], nextEvents: MarketingEvent[]) {
     if (!activityShare.shareToken || !workspace) return;
-    publishActivityPage(activityShare.shareToken, nextCampaigns, nextEvents, socialPostsForUsage, workspace.projects, workspace.designers).catch((err) =>
+    publishActivityPage(activityShare.shareToken, nextCampaigns, nextEvents, socialPostsForUsage, workspace.designers).catch((err) =>
       console.warn("Couldn't update the marketing activity page", err),
     );
   }
@@ -2169,12 +2169,12 @@ export default function App() {
             // Mint the token on the first download and publish before the
             // file goes out, so the page has something to fetch.
             const token = activityShare.shareToken ?? newShareToken();
-            const data = activityPageData(campaigns, events, socialPostsForUsage, workspace.projects, workspace.designers);
+            const data = activityPageData(campaigns, events, socialPostsForUsage, workspace.designers);
             if (!activityShare.shareToken) {
               setActivityShare((cur) => ({ ...cur, shareToken: token }));
               firestoreSetActivityShare({ shareToken: token }).catch(writeError);
             }
-            publishActivityPage(token, campaigns, events, socialPostsForUsage, workspace.projects, workspace.designers).catch(writeError);
+            publishActivityPage(token, campaigns, events, socialPostsForUsage, workspace.designers).catch(writeError);
             downloadActivityPage(token, data);
           }}
           onSave={(url) => {

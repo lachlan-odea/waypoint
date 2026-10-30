@@ -19,7 +19,6 @@
     --mint: #c6ffd1;
     --lime: #eafc88;
     --maroon: #651d32;
-    --teal: #244349;
     --ink-900: #0e1726;
     --ink-700: #243450;
     --ink-600: #3a4a66;
@@ -101,6 +100,22 @@
   .st.complete { background: var(--blue); color: #fff; }
   .st.blocked { background: #ffdad6; color: #8a1c16; }
 
+  /* Home: three doors */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; padding: 32px 0 8px; }
+  .tile {
+    display: flex; flex-direction: column; gap: 4px; min-height: 190px;
+    padding: 22px 22px 18px; background: #fff; border: 1px solid var(--ink-200); border-top: 4px solid var(--cobalt); border-radius: var(--radius);
+    color: inherit; text-decoration: none; transition: border-color 160ms cubic-bezier(0.2, 0, 0.1, 1);
+  }
+  .tile.webinars { border-top-color: var(--violet); }
+  .tile.events { border-top-color: var(--sky); }
+  .tile:hover { border-color: var(--cobalt); border-top-color: var(--cobalt); }
+  .tile .eyebrow { color: var(--ink-500); }
+  .tile b { font-family: var(--mono); font-weight: 400; font-size: 48px; line-height: 1; color: var(--blue); margin: 10px 0 6px; }
+  .tile .sub { font-size: 14px; color: var(--ink-600); }
+  .tile .go { margin-top: auto; padding-top: 14px; font-size: 14px; font-weight: 600; color: var(--cobalt); }
+  .home-note { margin: 18px 0 0; font-size: 14px; color: var(--ink-500); max-width: 64ch; }
+
   /* Toolbar */
   .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 18px 0 6px; }
   .seg { display: inline-flex; gap: 4px; flex-wrap: wrap; }
@@ -133,7 +148,6 @@
   .strip .segs { flex: 1; display: grid; gap: 3px; }
   .strip .segs i { display: block; height: 6px; border-radius: var(--radius); background: var(--ink-200); }
   .strip .segs i.on { background: var(--cobalt); }
-  .strip .segs i.late { outline: 1.5px solid #8a1c16; outline-offset: 1px; }
   .strip .n { font-family: var(--mono); font-size: 11px; color: var(--ink-500); }
   .card .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--ink-200); font-size: 12.5px; color: var(--ink-600); }
   .empty { padding: 32px 0; text-align: center; color: var(--ink-500); }
@@ -148,7 +162,7 @@
   .panel .head .hint { font-size: 12px; color: var(--ink-500); }
   .panel .body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
   .prose { white-space: pre-wrap; line-height: 1.55; margin: 0; }
-  .kv { margin: 0; display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px 12px; font-size: 13px; }
+  .kv { margin: 0; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 8px 12px; font-size: 13px; }
   .kv dt { color: var(--ink-500); }
   .kv dd { margin: 0; overflow-wrap: anywhere; }
   .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -159,20 +173,9 @@
   .list .main-text b { font-weight: 600; }
   .list .main-text small { font-size: 12px; color: var(--ink-500); }
   .list .main-text a { font-size: 12px; }
-  .list li.done .main-text b { color: var(--ink-500); text-decoration: line-through; }
   .tick { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--ink-300); flex: none; display: inline-flex; align-items: center; justify-content: center; }
   .tick.on { background: var(--cobalt); border-color: var(--cobalt); }
   .tick.on::after { content: ""; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
-  .sections { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; }
-  .sections li { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 8px; border: 1px solid var(--ink-200); border-radius: var(--radius); }
-  .sections .n { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--ink-500); }
-  .sections .l { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sections .d { font-family: var(--mono); font-size: 11px; color: var(--ink-500); }
-  .sections .d.late { color: #8a1c16; }
-  .sections .bar { margin-top: 4px; height: 4px; border-radius: var(--radius); background: var(--ink-100); }
-  .sections li.done .bar { background: var(--cobalt); }
-  .sections li.doing .bar, .sections li.review .bar { background: var(--violet); }
-  .sections li.late .bar { background: #8a1c16; }
   .speakers { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
   .speakers li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); }
   .speakers img, .speakers .initials { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; background: var(--sky-100); color: var(--blue); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
@@ -210,8 +213,15 @@
   var DAY_MS = 86400000;
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+  // The three sections. Each is a hash route and a filter on the data.
+  var SECTIONS = {
+    campaigns: { kind: "campaign", title: "Campaigns", one: "campaign", lede: "Product and brand campaigns: when each runs, what it delivers and when, and where to find the live assets." },
+    webinars: { kind: "webinar", title: "Webinars", one: "webinar", lede: "Webinars and series: go-live dates, speakers, what each session covers and the milestones on the way." },
+    events: { kind: "event", title: "Events", one: "event", lede: "Conferences, trade shows and customer events: dates, locations, our presence and who is attending." },
+  };
+
   var data = null;
-  var ui = { kind: "all", when: "all", q: "" };
+  var ui = { when: "all", q: "" };
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -226,17 +236,17 @@
   function monthTitle(ym) { var p = ym.split("-"); return new Date(+p[0], +p[1] - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" }); }
   function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
   function initials(name) { var w = String(name || "").trim().split(/\s+/).filter(Boolean); return w.slice(0, 2).map(function (x) { return x[0]; }).join("").toUpperCase() || "?"; }
+  function updatedLine(cls) { return '<p class="updated ' + (cls || "") + '">Updated ' + (data && data.updatedAt ? new Date(data.updatedAt).toLocaleString() : "—") + "</p>"; }
 
-  // ── Status mapping onto the eight pills ─────────────────────────────
+  // ── Status mapping onto the pills ──────────────────────────────────
   function campaignPhase(c, today) {
     if (c.evergreen) return "evergreen";
     if (c.endDate < today) return "finished";
     if (c.startDate > today) return "upcoming";
     return "live";
   }
-  var PHASE = { live: ["live", "Live"], upcoming: ["planning", "Upcoming"], finished: ["complete", "Finished"], evergreen: ["progress", "Evergreen"] };
+  var PHASE = { live: ["live", "Live"], upcoming: ["planning", "Upcoming"], finished: ["complete", "Finished"], evergreen: ["progress", "Always on"] };
   var EVENT_ST = { prospect: "draft", planning: "planning", confirmed: "scheduled", live: "live", done: "complete", cancelled: "blocked" };
-  var KIT_ST = { todo: "draft", doing: "progress", review: "review", done: "complete", blocked: "blocked", na: "draft" };
   var STAGE_ST = { proposed: "draft", planning: "planning", production: "progress", promotion: "scheduled", post: "review", complete: "complete", hold: "draft", cancelled: "blocked" };
 
   function statusOf(item, today) {
@@ -244,11 +254,10 @@
     if (item.kind === "webinar") return { cls: STAGE_ST[item.webinar.stage] || "draft", label: item.webinar.stageLabel };
     var p = PHASE[campaignPhase(item, today)]; return { cls: p[0], label: p[1] };
   }
-  // Live / coming up / done, for the When filter.
+  // Live / coming up / finished, for the When filter and the counts.
   function whenOf(item, today) {
     if (item.kind === "event") {
-      if (item.status === "cancelled") return "done";
-      if (item.status === "done") return "done";
+      if (item.status === "cancelled" || item.status === "done") return "done";
       if (item.status === "live") return "live";
       return "upcoming";
     }
@@ -272,6 +281,7 @@
     if (!data) return [];
     return (data.campaigns || []).concat(data.events || []);
   }
+  function itemsOf(kind) { return allItems().filter(function (it) { return it.kind === kind; }); }
   function findItem(key) {
     var parts = key.split("-"); var kind = parts[0]; var id = parts.slice(1).join("-");
     var pool = kind === "e" ? (data.events || []) : (data.campaigns || []);
@@ -279,32 +289,32 @@
     return null;
   }
   function keyOf(item) { return (item.kind === "event" ? "e-" : "c-") + item.id; }
+  function sectionOf(item) { return item.kind === "event" ? "events" : item.kind === "webinar" ? "webinars" : "campaigns"; }
 
   function stripHtml(segs) {
     if (!segs.length) return "";
-    var cells = segs.map(function (s) { return '<i class="' + (s.on ? "on" : "") + (s.late ? " late" : "") + '"></i>'; }).join("");
+    var cells = segs.map(function (s) { return '<i class="' + (s.on ? "on" : "") + '"></i>'; }).join("");
     var on = segs.filter(function (s) { return s.on; }).length;
     return '<div class="strip"><div class="segs" style="grid-template-columns: repeat(' + segs.length + ', 1fr)">' + cells + '</div><span class="n">' + on + "/" + segs.length + "</span></div>";
   }
 
   function cardHtml(item, today) {
     var st = statusOf(item, today);
-    var color = item.kind === "event" ? (item.division && /landside/i.test(item.division) ? "#2f6fb0" : "#371ee1") : safeColor(item.color);
+    var color = item.kind === "event" ? "#a7cff8" : item.kind === "webinar" ? "#b7b3ff" : safeColor(item.color);
     var kindLabel = item.kind === "event" ? "Event · " + esc(item.division || "") : item.kind === "webinar" ? "Webinar · " + esc(item.webinar.typeLabel) : "Campaign · " + esc(item.brand || "");
     var meta = "", segs = [], foot = "";
     if (item.kind === "event") {
       meta = '<span class="mono">' + esc(item.datesText) + "</span>" + (item.location ? "<span>" + esc(item.location) + (item.region ? " · " + esc(item.region) : "") + "</span>" : "");
-      segs = item.checklist.map(function (c) { return { on: c.done }; });
-      foot = (item.marketingLead ? "Lead " + esc(item.marketingLead) : "") + (item.investmentUsd ? '<span class="mono">US$' + Number(item.investmentUsd).toLocaleString() + "</span>" : "");
+      foot = (item.marketingLead ? "Marketing lead " + esc(item.marketingLead) : "") + (item.audience ? "<span>" + esc(item.audience) + "</span>" : "");
     } else if (item.kind === "webinar") {
       var w = item.webinar;
-      meta = '<span class="mono">' + (w.goLive ? "Go-live " + fmt(w.goLive) : "Go-live not set") + (w.recordDate ? " · recording " + fmt(w.recordDate) : "") + "</span>" + (w.series ? "<span>" + esc(w.series) + (w.episode ? " · Episode " + w.episode : "") + "</span>" : "");
-      segs = w.sections.map(function (s) { return { on: s.status === "done", late: s.late }; });
-      foot = (w.lead ? "Lead " + esc(w.lead) : "") + (w.health ? "<span>" + esc(w.health) + "</span>" : "");
+      meta = '<span class="mono">' + (w.goLive ? "Go-live " + fmt(w.goLive) : "Go-live to be confirmed") + (w.recordDate ? " · recording " + fmt(w.recordDate) : "") + "</span>" + (w.series ? "<span>" + esc(w.series) + (w.episode ? " · Episode " + w.episode : "") + "</span>" : "");
+      segs = w.sections.map(function (s) { return { on: s.done }; });
+      foot = (w.lead ? "Lead " + esc(w.lead) : "") + (w.formatLabel ? "<span>" + esc(w.formatLabel) + "</span>" : "");
     } else {
       meta = '<span class="mono">' + (item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)) + "</span>" + (item.category ? "<span>" + esc(item.category) + "</span>" : "");
-      segs = item.milestones.map(function (m) { return { on: m.done, late: !m.done && m.date < today }; });
-      foot = (item.owner ? "Owner " + esc(item.owner) : "") + (item.projects.length ? "<span>" + plural(item.projects.length, "project") + "</span>" : "");
+      segs = item.milestones.map(function (m) { return { on: m.done }; });
+      foot = item.owner ? "Owner " + esc(item.owner) : "";
     }
     return '<a class="card" href="#' + keyOf(item) + '" style="border-left-color:' + color + '">' +
       '<div class="top"><div><div class="kind">' + kindLabel + "</div><h3>" + esc(item.name) + "</h3></div>" +
@@ -315,23 +325,44 @@
       "</a>";
   }
 
-  // ── List view ──────────────────────────────────────────────────────
-  function renderList() {
+  // ── Home: three doors ──────────────────────────────────────────────
+  function tileHtml(key, today) {
+    var s = SECTIONS[key];
+    var items = itemsOf(s.kind);
+    var live = items.filter(function (it) { return whenOf(it, today) === "live"; }).length;
+    var up = items.filter(function (it) { return whenOf(it, today) === "upcoming"; }).length;
+    var sub = [live ? live + (s.kind === "campaign" ? " live" : " on now") : "", up ? up + " coming up" : ""].filter(Boolean).join(" · ") || "Nothing scheduled";
+    return '<a class="tile ' + key + '" href="#' + key + '"><span class="eyebrow">' + esc(s.title) + "</span><b>" + items.length + '</b><span class="sub">' + esc(sub) + '</span><span class="go">See all ' + esc(s.title.toLowerCase()) + ' <span aria-hidden="true">→</span></span></a>';
+  }
+  function renderHome() {
     var today = todayIso();
-    var items = allItems().filter(function (it) {
-      if (ui.kind !== "all" && it.kind !== ui.kind) return false;
+    var html = '<header class="hero"><div class="inner">' +
+      '<div class="eyebrow">Marketing activity</div><h1>Campaigns, webinars and events</h1>' +
+      '<p class="lede">What the marketing team has running, planned and finished. Choose a section, then open any activity for its dates, assets and people.</p>' +
+      "</div></header>";
+    html += '<div class="inner"><div class="tiles">' + tileHtml("campaigns", today) + tileHtml("webinars", today) + tileHtml("events", today) + "</div>" +
+      '<p class="home-note">This page updates itself from the marketing team\'s planning tool, so what you see here is current.</p>' +
+      updatedLine() + "</div>";
+    document.getElementById("app").innerHTML = html;
+  }
+
+  // ── Section list ───────────────────────────────────────────────────
+  function renderList(key) {
+    var s = SECTIONS[key];
+    var today = todayIso();
+    var all = itemsOf(s.kind);
+    var items = all.filter(function (it) {
       if (ui.when !== "all" && whenOf(it, today) !== ui.when) return false;
       if (ui.q) {
         var q = ui.q.toLowerCase();
-        var hay = [it.name, it.brand, it.category, it.owner, it.location, it.region, it.division, it.marketingLead, it.webinar && it.webinar.series].join(" ").toLowerCase();
+        var hay = [it.name, it.brand, it.category, it.owner, it.location, it.region, it.division, it.marketingLead, it.webinar && it.webinar.series, it.webinar && it.webinar.lead].join(" ").toLowerCase();
         if (hay.indexOf(q) < 0) return false;
       }
       return true;
     });
-    var counts = { campaign: 0, webinar: 0, event: 0 };
-    allItems().forEach(function (it) { counts[it.kind]++; });
-    var live = allItems().filter(function (it) { return whenOf(it, today) === "live"; }).length;
-    var upcoming = allItems().filter(function (it) { return whenOf(it, today) === "upcoming"; }).length;
+    var live = all.filter(function (it) { return whenOf(it, today) === "live"; }).length;
+    var upcoming = all.filter(function (it) { return whenOf(it, today) === "upcoming"; }).length;
+    var done = all.length - live - upcoming;
 
     var groups = {}; var evergreen = []; var tbc = {};
     items.forEach(function (it) {
@@ -339,22 +370,21 @@
       var d = sortDate(it);
       if (!d) { (tbc["Dates to be confirmed"] = tbc["Dates to be confirmed"] || []).push(it); return; }
       var ym = d.slice(0, 7);
-      if (/-(32|13)$/.test(d)) { var k = d.length === 10 && d.slice(5, 7) !== "13" ? monthTitle(ym) + " (dates TBC)" : d.slice(0, 4) + " (dates TBC)"; (tbc[k] = tbc[k] || []).push(it); return; }
+      if (/-(32|13)$/.test(d)) { var k = d.length === 10 && d.slice(5, 7) !== "13" ? monthTitle(ym) + " (dates to be confirmed)" : d.slice(0, 4) + " (dates to be confirmed)"; (tbc[k] = tbc[k] || []).push(it); return; }
       (groups[ym] = groups[ym] || []).push(it);
     });
     var keys = Object.keys(groups).sort();
     var thisMonth = today.slice(0, 7);
     var html = "";
-    html += '<header class="hero"><div class="inner">' +
-      '<div class="eyebrow">Marketing activity</div><h1>Campaigns, webinars and events</h1>' +
-      '<p class="lede">Everything the marketing team has on, planned and finished, in one place. Open any activity for its full page.</p>' +
-      '<div class="facts"><span>Campaigns <b>' + counts.campaign + "</b></span><span>Webinars <b>" + counts.webinar + "</b></span><span>Events <b>" + counts.event + "</b></span><span>Live now <b>" + live + "</b></span><span>Coming up <b>" + upcoming + "</b></span></div>" +
+    html += '<header class="hero"><div class="inner"><a class="back" href="#"><span aria-hidden="true">←</span> All marketing activity</a>' +
+      '<div class="eyebrow">Marketing activity</div><h1>' + esc(s.title) + "</h1>" +
+      '<p class="lede">' + esc(s.lede) + "</p>" +
+      '<div class="facts"><span>Total <b>' + all.length + "</b></span><span>Live now <b>" + live + "</b></span><span>Coming up <b>" + upcoming + "</b></span><span>Finished <b>" + done + "</b></span></div>" +
       "</div></header>";
     html += '<div class="inner"><div class="toolbar">' +
-      '<div class="seg" role="group" aria-label="Kind">' + segBtn("kind", "all", "All") + segBtn("kind", "campaign", "Campaigns") + segBtn("kind", "webinar", "Webinars") + segBtn("kind", "event", "Events") + "</div>" +
       '<div class="seg" role="group" aria-label="When">' + segBtn("when", "all", "Any time") + segBtn("when", "live", "Live now") + segBtn("when", "upcoming", "Coming up") + segBtn("when", "done", "Finished") + "</div>" +
-      '<input type="search" id="q" placeholder="Search" aria-label="Search" value="' + esc(ui.q) + '" />' +
-      '<span class="count">' + plural(items.length, "activity").replace("activitys", "activities") + "</span></div>";
+      '<input type="search" id="q" placeholder="Search ' + esc(s.title.toLowerCase()) + '" aria-label="Search" value="' + esc(ui.q) + '" />' +
+      '<span class="count">' + plural(items.length, s.one) + "</span></div>";
     if (!items.length) html += '<p class="empty">Nothing matches.</p>';
     keys.forEach(function (ym) {
       var list = groups[ym].sort(function (a, b) { return sortDate(a).localeCompare(sortDate(b)); });
@@ -364,14 +394,14 @@
       html += '<section class="group"><h2>' + esc(k) + " <span>· " + tbc[k].length + "</span></h2><div class=\"cards\">" + tbc[k].map(function (it) { return cardHtml(it, today); }).join("") + "</div></section>";
     });
     if (evergreen.length) html += '<section class="group"><h2>Always on <span>· ' + evergreen.length + "</span></h2><div class=\"cards\">" + evergreen.map(function (it) { return cardHtml(it, today); }).join("") + "</div></section>";
-    html += '<p class="updated">Updated ' + (data && data.updatedAt ? new Date(data.updatedAt).toLocaleString() : "—") + "</p></div>";
+    html += updatedLine() + "</div>";
     var app = document.getElementById("app");
     app.innerHTML = html;
     app.querySelectorAll(".seg button").forEach(function (b) {
-      b.addEventListener("click", function () { ui[b.getAttribute("data-k")] = b.getAttribute("data-v"); renderList(); });
+      b.addEventListener("click", function () { ui[b.getAttribute("data-k")] = b.getAttribute("data-v"); renderList(key); });
     });
     var q = document.getElementById("q");
-    q.addEventListener("input", function () { ui.q = q.value; var pos = q.selectionStart; renderList(); var q2 = document.getElementById("q"); q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (e) {} });
+    q.addEventListener("input", function () { ui.q = q.value; var pos = q.selectionStart; renderList(key); var q2 = document.getElementById("q"); q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (e) {} });
   }
   function segBtn(k, v, label) {
     return '<button type="button" data-k="' + k + '" data-v="' + v + '" aria-pressed="' + (ui[k] === v) + '">' + label + "</button>";
@@ -379,72 +409,73 @@
 
   // ── Detail view ────────────────────────────────────────────────────
   function kv(rows) {
-    return '<dl class="kv">' + rows.filter(function (r) { return r[1] !== "" && r[1] != null; }).map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + r[1] + "</dd>"; }).join("") + "</dl>";
+    var out = rows.filter(function (r) { return r[1] !== "" && r[1] != null; });
+    return out.length ? '<dl class="kv">' + out.map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + r[1] + "</dd>"; }).join("") + "</dl>" : "";
   }
   function panel(title, body, hint) {
+    if (!body) return "";
     return '<section class="panel"><div class="head"><h3>' + esc(title) + "</h3>" + (hint ? '<span class="hint">' + hint + "</span>" : "") + '</div><div class="body">' + body + "</div></section>";
   }
   function linkBtn(url, label) { url = safeUrl(url); return url ? '<a class="btn" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(label) + ' <span aria-hidden="true">↗</span></a>' : ""; }
 
+  // Milestones read as a dated list of assets. Done ones get a tick, not a
+  // strike: the name and its link still matter to whoever is reading.
   function milestonesHtml(ms, today) {
-    if (!ms.length) return '<p class="empty" style="padding:12px 0">No milestones.</p>';
+    if (!ms.length) return '<p class="empty" style="padding:12px 0">No milestones yet.</p>';
     return '<ul class="list">' + ms.map(function (m) {
-      var late = !m.done && m.date < today;
-      var when = m.done ? "Done" : late ? "Overdue by " + plural(days(m.date, today), "day") : m.date === today ? "Today" : "In " + plural(days(today, m.date), "day");
+      var pill = m.done ? ["complete", "Done"] : m.date === today ? ["live", "Today"] : m.date > today ? ["scheduled", "In " + plural(days(today, m.date), "day")] : ["draft", "Pending"];
       var link = safeUrl(m.url) ? '<a href="' + esc(m.url) + '" target="_blank" rel="noopener noreferrer">' + esc(m.linkText || "Open link") + " ↗</a>" : "";
-      return '<li class="' + (m.done ? "done" : "") + '"><span class="tick ' + (m.done ? "on" : "") + '"></span><span class="date">' + fmt(m.date) + '</span><span class="main-text"><b>' + esc(m.label) + "</b>" + (m.description ? "<small>" + esc(m.description) + "</small>" : "") + link + '</span><span class="st ' + (m.done ? "complete" : late ? "blocked" : m.date === today ? "live" : "scheduled") + '">' + esc(when) + "</span></li>";
+      return '<li><span class="tick ' + (m.done ? "on" : "") + '"></span><span class="date">' + fmt(m.date) + '</span><span class="main-text"><b>' + esc(m.label) + "</b>" + (m.description ? "<small>" + esc(m.description) + "</small>" : "") + link + '</span><span class="st ' + pill[0] + '">' + esc(pill[1]) + "</span></li>";
     }).join("") + "</ul>";
   }
 
   function renderDetail(item) {
     var today = todayIso();
     var st = statusOf(item, today);
+    var section = sectionOf(item);
     var tags = "", h1 = esc(item.name), lede = "", facts = [], main = "", side = "";
     if (item.kind === "event") {
       tags = '<li class="tag kind">Event</li><li class="tag line">' + esc(item.division || "") + "</li>" + (item.region ? '<li class="tag line">' + esc(item.region) + "</li>" : "") + '<li class="st ' + st.cls + '">' + esc(st.label) + "</li>";
       lede = item.audience ? esc(item.audience) : "";
-      facts = [["Dates", esc(item.datesText)], ["Where", esc(item.location || "—")], ["Lead", esc(item.marketingLead || "—")], ["Checklist", item.checklist.filter(function (c) { return c.done; }).length + "/" + item.checklist.length], ["Spend", item.investmentUsd ? "US$" + Number(item.investmentUsd).toLocaleString() : "—"]];
-      var presence = [item.sponsor ? "Sponsor" + (item.sponsorNote ? " · " + esc(item.sponsorNote) : "") : "", item.booth ? "Booth" + (item.boothNote ? " · " + esc(item.boothNote) : "") : "", item.attendAndSell ? "Attend and sell" : "", item.speaking ? "Speaking · " + esc(item.speaking) : ""].filter(Boolean);
-      main += panel("About", kv([["Audience", esc(item.audience)], ["Our presence", presence.join("<br>")], ["Dates as published", esc(item.datesAsPublished)], ["Campaign code", item.campaignCode ? '<span class="mono">' + esc(item.campaignCode) + "</span>" : ""], ["Campaign", item.campaignName ? '<a href="#c-' + esc(item.campaignId) + '">' + esc(item.campaignName) + "</a>" : ""], ["Projects", item.projects.map(esc).join("<br>")]]) + (item.notes ? '<p class="prose">' + esc(item.notes) + "</p>" : ""));
+      facts = [["Dates", esc(item.datesText)], ["Where", esc(item.location || "To be confirmed")], ["Marketing lead", esc(item.marketingLead || "—")]];
+      var presence = [item.sponsor ? "Sponsor" + (item.sponsorNote ? " · " + esc(item.sponsorNote) : "") : "", item.booth ? "Booth" + (item.boothNote ? " · " + esc(item.boothNote) : "") : "", item.attendAndSell ? "Attending" : "", item.speaking ? "Speaking · " + esc(item.speaking) : ""].filter(Boolean);
+      main += panel("About", kv([["Audience", esc(item.audience)], ["Our presence", presence.join("<br>")], ["Dates as published", esc(item.datesAsPublished)], ["Campaign", item.campaignName ? '<a href="#c-' + esc(item.campaignId) + '">' + esc(item.campaignName) + "</a>" : ""]]));
       main += panel("Who's going", kv([["Marketing lead", esc(item.marketingLead)], ["Sales lead", esc(item.salesLead)], ["Sales attendees", esc(item.salesAttendees) + (item.salesAttendeeCount ? " (" + item.salesAttendeeCount + ")" : "")], ["Academy", esc(item.academy)], ["Partners", esc(item.partners)]]));
-      main += panel("Results", '<div class="stats"><div class="stat"><b>' + (item.comms != null ? Number(item.comms).toLocaleString() : "—") + "</b><span>Conversations</span></div><div class=\"stat\"><b>" + (item.opps != null ? Number(item.opps).toLocaleString() : "—") + "</b><span>Opportunities</span></div><div class=\"stat\"><b>" + (item.investment != null ? esc(item.currency || "") + " " + Number(item.investment).toLocaleString() : "—") + "</b><span>Investment</span></div></div>" + (item.oppsBreakdown ? '<p class="prose">' + esc(item.oppsBreakdown) + "</p>" : ""));
-      side += panel("Checklist", '<ul class="list">' + item.checklist.map(function (c) { return '<li class="' + (c.done ? "done" : "") + '"><span class="tick ' + (c.done ? "on" : "") + '"></span><span class="main-text"><b>' + esc(c.label) + "</b>" + (c.afterEvent ? "<small>After the event</small>" : "") + "</span></li>"; }).join("") + "</ul>", item.checklist.filter(function (c) { return c.done; }).length + " of " + item.checklist.length);
+      if (item.comms != null || item.opps != null) main += panel("Results", '<div class="stats"><div class="stat"><b>' + (item.comms != null ? Number(item.comms).toLocaleString() : "—") + "</b><span>Conversations</span></div><div class=\"stat\"><b>" + (item.opps != null ? Number(item.opps).toLocaleString() : "—") + "</b><span>Opportunities</span></div></div>");
+      side += panel("When and where", kv([["Starts", item.startDate ? fmtLong(item.startDate) : esc(item.datesText)], ["Ends", item.endDate && item.endDate !== item.startDate ? fmtLong(item.endDate) : ""], ["Location", esc(item.location)], ["Region", esc(item.region)], ["Division", esc(item.division)]]));
       if (item.itinerarySharePointUrl) side += panel("Itinerary", linkBtn(item.itinerarySharePointUrl, "Open the attendee itinerary"));
     } else if (item.kind === "webinar") {
       var w = item.webinar;
-      tags = '<li class="tag kind">Webinar</li><li class="tag brand">' + esc(item.brand || "") + '</li><li class="tag line">' + esc(w.typeLabel) + (w.deliveryLabel ? " · " + esc(w.deliveryLabel) : "") + '</li><li class="st ' + st.cls + '">' + esc(st.label) + "</li>" + (w.health ? '<li class="st ' + (/overdue/i.test(w.health) ? "blocked" : /risk/i.test(w.health) ? "scheduled" : "live") + '">' + esc(w.health) + "</li>" : "");
+      tags = '<li class="tag kind">Webinar</li><li class="tag brand">' + esc(item.brand || "") + '</li><li class="tag line">' + esc(w.typeLabel) + (w.deliveryLabel ? " · " + esc(w.deliveryLabel) : "") + '</li><li class="st ' + st.cls + '">' + esc(st.label) + "</li>";
       if (w.finalTitle && w.finalTitle !== item.name) lede = esc(w.finalTitle); else if (w.workingTitle && w.workingTitle !== item.name) lede = esc(w.workingTitle);
-      facts = [["Go-live", w.goLive ? fmtLong(w.goLive) : "Not set"]];
+      facts = [["Go-live", w.goLive ? fmtLong(w.goLive) : "To be confirmed"]];
       if (w.recordDate) facts.push(["Recording", fmtLong(w.recordDate)]);
-      facts.push(["Sections", w.done + "/" + w.total], ["Lead", esc(w.lead || "—")], ["Format", esc(w.formatLabel || "—")]);
+      facts.push(["Lead", esc(w.lead || "—")]);
+      if (w.formatLabel) facts.push(["Format", esc(w.formatLabel)]);
       if (w.series) facts.push(["Series", esc(w.series) + (w.episode ? " · Episode " + w.episode : "")]);
-      main += panel("The kit", '<ul class="sections">' + w.sections.map(function (s) {
-        return '<li class="' + s.status + (s.late ? " late" : "") + '"><span class="n">' + String(s.n).padStart(2, "0") + "<span>" + esc(s.statusLabel) + '</span></span><span class="l">' + esc(s.short) + '</span><span class="d ' + (s.late ? "late" : "") + '">' + (s.due ? (s.late ? "Late · " : "") + fmt(s.due) : "No date") + '</span><span class="bar"></span></li>';
-      }).join("") + "</ul>", w.done + " of " + w.total + " sections done");
-      if (w.summary || w.learn || w.audience.length) main += panel("About", (w.summary ? '<p class="prose">' + esc(w.summary) + "</p>" : "") + kv([["Audience", w.audience.map(esc).join(", ")], ["What you'll learn", esc(w.learn).replace(/\n/g, "<br>")], ["Sessions", esc(w.sessions).replace(/\n/g, "<br>")], ["Duration", esc(w.duration)]]) + linkBtn(w.landingLink, "Landing page"));
+      main += panel("About", (w.summary ? '<p class="prose">' + esc(w.summary) + "</p>" : "") + kv([["Audience", w.audience.map(esc).join(", ")], ["What you'll learn", esc(w.learn).replace(/\n/g, "<br>")], ["Sessions", esc(w.sessions).replace(/\n/g, "<br>")], ["Duration", esc(w.duration)]]) + linkBtn(w.landingLink, "Registration page"));
       if (w.speakers.length) main += panel("Speakers", '<ul class="speakers">' + w.speakers.map(function (s) {
         var img = safeUrl(s.headshot) && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(s.headshot) ? '<img src="' + esc(s.headshot) + '" alt="" />' : '<span class="initials">' + esc(initials(s.name)) + "</span>";
-        return "<li>" + img + "<div><b>" + esc(s.name) + "</b><small>" + esc([s.title, s.role, s.status].filter(Boolean).join(" · ")) + "</small>" + (s.bio ? "<p>" + esc(s.bio) + "</p>" : "") + "</div></li>";
+        return "<li>" + img + "<div><b>" + esc(s.name) + "</b><small>" + esc([s.title, s.role].filter(Boolean).join(" · ")) + "</small>" + (s.bio ? "<p>" + esc(s.bio) + "</p>" : "") + "</div></li>";
       }).join("") + "</ul>");
-      side += panel("Milestones", milestonesHtml(item.milestones, today));
-      if (item.description) side += panel("Notes", '<p class="prose">' + esc(item.description) + "</p>");
-      if (item.projects.length) side += panel("Projects", "<ul class=\"list\">" + item.projects.map(function (t) { return '<li><span class="main-text"><b>' + esc(t) + "</b></span></li>"; }).join("") + "</ul>");
-      if (item.sharePointUrl) side += panel("Campaign page", linkBtn(item.sharePointUrl, "Open the campaign page"));
+      main += panel("Milestones", milestonesHtml(item.milestones, today));
+      var dated = w.sections.filter(function (s) { return s.due; });
+      if (dated.length) side += panel("Schedule", '<ul class="list">' + dated.map(function (s) {
+        return '<li><span class="tick ' + (s.done ? "on" : "") + '"></span><span class="date">' + fmt(s.due) + '</span><span class="main-text"><b>' + esc(s.title) + "</b></span></li>";
+      }).join("") + "</ul>", "Key dates");
     } else {
       tags = '<li class="tag kind">Campaign</li><li class="tag brand">' + esc(item.brand || "") + "</li>" + (item.category ? '<li class="tag line">' + esc(item.category) + "</li>" : "") + '<li class="st ' + st.cls + '">' + esc(st.label) + "</li>";
       lede = item.description ? esc(item.description) : "";
-      var done = item.milestones.filter(function (m) { return m.done; }).length;
-      facts = [["Start", fmtLong(item.startDate)], ["End", item.evergreen ? "No end" : fmtLong(item.endDate)], ["Milestones", done + "/" + item.milestones.length], ["Owner", esc(item.owner || "—")]];
-      main += panel("Milestones", milestonesHtml(item.milestones, today), done + " of " + item.milestones.length + " done");
-      if (item.projects.length) side += panel("Projects", "<ul class=\"list\">" + item.projects.map(function (t) { return '<li><span class="main-text"><b>' + esc(t) + "</b></span></li>"; }).join("") + "</ul>");
-      if (item.sharePointUrl) side += panel("Campaign page", linkBtn(item.sharePointUrl, "Open the campaign page"));
-      if (!side) side = panel("Status", kv([["Phase", '<span class="st ' + st.cls + '">' + esc(st.label) + "</span>"], ["Runs", item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)]]));
+      var doneCount = item.milestones.filter(function (m) { return m.done; }).length;
+      facts = [["Start", fmtLong(item.startDate)], ["End", item.evergreen ? "Always on" : fmtLong(item.endDate)], ["Milestones", doneCount + "/" + item.milestones.length], ["Owner", esc(item.owner || "—")]];
+      main += panel("Milestones", milestonesHtml(item.milestones, today), doneCount + " of " + item.milestones.length + " delivered");
+      side += panel("Details", kv([["Status", '<span class="st ' + st.cls + '">' + esc(st.label) + "</span>"], ["Runs", item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)], ["Brand", esc(item.brand)], ["Type", esc(item.category)], ["Owner", esc(item.owner)]]));
     }
-    var html = '<header class="hero"><div class="inner"><a class="back" href="#"><span aria-hidden="true">←</span> All marketing activity</a>' +
+    var html = '<header class="hero"><div class="inner"><a class="back" href="#' + section + '"><span aria-hidden="true">←</span> ' + esc(SECTIONS[section].title) + "</a>" +
       '<ul class="tags">' + tags + "</ul><h1>" + h1 + "</h1>" + (lede ? '<p class="lede">' + lede + "</p>" : "") +
       '<div class="facts">' + facts.map(function (f) { return "<span>" + esc(f[0]) + " <b>" + f[1] + "</b></span>"; }).join("") + "</div></div></header>" +
       '<div class="inner"><div class="detail"><div class="main">' + main + '</div><div class="side">' + side + "</div></div>" +
-      '<p class="updated detail-foot">Updated ' + (data && data.updatedAt ? new Date(data.updatedAt).toLocaleString() : "—") + "</p></div>";
+      updatedLine("detail-foot") + "</div>";
     document.getElementById("app").innerHTML = html;
     window.scrollTo(0, 0);
   }
@@ -452,9 +483,10 @@
   function render() {
     if (!data) return;
     var key = (location.hash || "").replace(/^#/, "");
+    if (SECTIONS[key]) { renderList(key); document.title = SECTIONS[key].title + " · Marketing activity"; return; }
     var item = key ? findItem(key) : null;
     if (item) { renderDetail(item); document.title = item.name + " · Marketing activity"; }
-    else { renderList(); document.title = "Marketing activity"; }
+    else { renderHome(); document.title = "Marketing activity"; }
   }
 
   // ── Data: the snapshot in the file, then the live copy ─────────────
