@@ -1,7 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Notification, Project } from "../types";
 import { timeAgo } from "../dates";
 import { describeNotification, sortNotifications } from "../notifications";
+import {
+  desktopAlertsEnabled,
+  desktopAlertsPermission,
+  desktopAlertsSupported,
+  enableDesktopAlerts,
+  setDesktopAlertsPreference,
+} from "../desktopNotifications";
 
 type Props = {
   notifications: Notification[];
@@ -27,6 +34,21 @@ export function NotificationsPanel({
   }, [onClose]);
 
   const sorted = sortNotifications(notifications);
+  // Desktop alerts: the browser permission plus a per-browser preference.
+  const [alertsOn, setAlertsOn] = useState(desktopAlertsEnabled());
+  const [alertsBusy, setAlertsBusy] = useState(false);
+  const permission = desktopAlertsPermission();
+  async function toggleAlerts() {
+    if (alertsOn) {
+      setDesktopAlertsPreference(false);
+      setAlertsOn(false);
+      return;
+    }
+    setAlertsBusy(true);
+    const ok = await enableDesktopAlerts();
+    setAlertsOn(ok);
+    setAlertsBusy(false);
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -49,6 +71,29 @@ export function NotificationsPanel({
         </header>
 
         <div className="modal-body">
+          {desktopAlertsSupported() && (
+            <div className="notif-alerts">
+              <div>
+                <b>Desktop alerts</b>
+                <span className="muted small">
+                  {permission === "denied"
+                    ? "Blocked by the browser. Allow notifications for this site in its settings to turn them on."
+                    : alertsOn
+                      ? "A Windows notification when someone mentions you, replies to you, likes your comment or hands you a task while Waypoint is open. Click one to jump to the project."
+                      : "Get a Windows notification when someone mentions you while Waypoint is open."}
+                </span>
+              </div>
+              <button
+                type="button"
+                className={`btn btn-sm ${alertsOn ? "btn-secondary" : "btn-primary"}`}
+                onClick={toggleAlerts}
+                disabled={alertsBusy || permission === "denied"}
+                aria-pressed={alertsOn}
+              >
+                {alertsOn ? "Turn off" : "Turn on"}
+              </button>
+            </div>
+          )}
           {sorted.length === 0 ? (
             <p className="muted">
               You'll see a notification here when someone @-mentions you.

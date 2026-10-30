@@ -74,6 +74,7 @@ import { CampaignPage } from "./components/pages/CampaignPage";
 import { EventPage } from "./components/pages/EventPage";
 import { closeItem, openItem, replaceItemTab, useItemRoute } from "./router";
 import { HelpTour } from "./components/HelpTour";
+import { showDesktopAlert } from "./desktopNotifications";
 import { tourFor } from "./helpTours";
 import { allSeries, kitOf } from "./webinarKit";
 import { NewWebinarModal } from "./components/webinar/NewWebinarModal";
@@ -747,6 +748,31 @@ export default function App() {
   );
 
   const unreadNotifications = myNotifications.length;
+
+  // Desktop alerts for notifications that arrive while the app is open.
+  // The first batch after sign-in is what was already waiting, so it's
+  // recorded, not announced; after that, anything new gets an alert.
+  const seenNotificationIds = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    seenNotificationIds.current = null;
+  }, [sessionDesignerId]);
+  useEffect(() => {
+    if (!sessionDesignerId || !workspace) return;
+    const ids = new Set(myNotifications.map((n) => n.id));
+    const seen = seenNotificationIds.current;
+    seenNotificationIds.current = ids;
+    if (!seen) return;
+    for (const n of myNotifications) {
+      if (seen.has(n.id)) continue;
+      const project = workspace.projects.find((p) => p.id === n.projectId);
+      showDesktopAlert(n, project, () => {
+        firestoreDeleteNotification(n.id).catch(writeError);
+        setNotificationsOpen(false);
+        openItem("project", n.projectId, "comments");
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myNotifications, sessionDesignerId]);
 
   // Super users are admins: they manage teams, manage super users and
   // reviewers, and see the by-designer analytics chart. SUPER_USER_EMAILS

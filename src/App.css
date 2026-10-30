@@ -9321,3 +9321,29 @@ a.share-btn {
 :root.dark-mode .mywork-open {
   color: var(--wtg-periwinkle);
 }
+
+/* Desktop alerts switch in the notifications panel */
+.notif-alerts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  margin-bottom: 14px;
+}
+.notif-alerts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.notif-alerts b {
+  font-size: 14px;
+  color: var(--wtg-blue);
+}
+.notif-alerts .btn {
+  flex: none;
+}
