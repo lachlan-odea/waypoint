@@ -26,7 +26,7 @@ Tab changes replace the history entry, so Back always closes the page and return
 A personal start page: your assigned projects, anything flagged for your review, your notifications, and a private checklist. Unticked items roll forward each day (and say how many times they've rolled), reminders surface when their time arrives, and completed items sweep themselves out after a fortnight.
 
 ### Executive Dashboard and Analytics
-The **Executive Dashboard** is a read-only view across every team — deadlines, recent activity, overdue work.
+The **Executive Dashboard** is the head of marketing's one page (`src/components/Dashboard.tsx`): stat tiles across every team and programme; **Needs attention** (overdue projects, late campaign milestones and webinar sections, events owing follow-up, posts ready but unpublished, unassigned live work); **The next 14 days** day by day across projects, campaigns, webinars, events and posts; a **Teams** table and per-person **Workload**; **Programmes** (campaigns live and launching, webinars by stage with health, events with spend, results and follow-ups); the Social calendar's month; recent comments and webinar activity; and the project status mix. Every row opens the thing it describes.
 
 **Analytics** charts the work in three groups: Projects (by status, brand and content type), the Social calendar (posts per month, by category and by channel), and Campaigns (milestones to watch, campaign progress). Filter by team and date range, and export the filtered rows as CSV.
 

@@ -92,6 +92,7 @@ import { projectStatusTone } from "./statusTone";
 import "./App.css";
 import "./pages.css";
 import "./help.css";
+import "./exec.css";
 import "./webinar.css";
 import "./analytics.css";
 
@@ -904,8 +905,8 @@ export default function App() {
   function openProject(projectId: string) {
     openItem("project", projectId);
   }
-  function openEvent(eventId: string) {
-    openItem("event", eventId);
+  function openEvent(eventId: string, tab?: string) {
+    openItem("event", eventId, tab);
   }
   function openCampaign(campaignId: string, tab?: string) {
     openItem("campaign", campaignId, tab);
@@ -1376,7 +1377,7 @@ export default function App() {
                   : view === "myDesk"
                     ? "Focus on your assigned projects, deadlines, and priorities"
                     : view === "executiveDashboard"
-                      ? "View all projects, deadlines, and recent activity"
+                      ? "Every team and programme on one page: what needs attention, the next fortnight, how teams are tracking and what moved"
                       : view === "socialCalendar"
                         ? "Plan and track posts across the CargoWise and WiseTech channels"
                         : view === "campaigns"
@@ -1521,8 +1522,19 @@ export default function App() {
         ) : view === "executiveDashboard" ? (
           <Dashboard
             workspace={workspace}
+            campaigns={campaigns}
+            events={events}
+            socialPosts={socialPostsForUsage}
             currentDesignerId={sessionDesignerId}
             onOpenProject={openProject}
+            onOpenCampaign={openCampaign}
+            onOpenEvent={openEvent}
+            onOpenSocialPost={openSocialPost}
+            onOpenBoard={(id) => {
+              setCurrentWorkspaceId(id);
+              setView("board");
+            }}
+            onOpenView={setView}
           />
         ) : view === "socialCalendar" ? (
           <SocialCalendar
