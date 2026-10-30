@@ -129,8 +129,8 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
       </div>
 
       {/* ── Programmes ────────────────────────────────────────────────── */}
-      <Section eyebrow="Campaigns, webinars and events" title="Programmes" summary="What's live, what's next, and what's owed">
-        <div className="an-grid ex-grid-3">
+      <Section eyebrow="Campaigns, webinars, events and social" title="Programmes" summary={`What's live, what's next, and what's owed · ${monthPosts.length} post${monthPosts.length === 1 ? "" : "s"} planned this month, ${socialByStatus.get("published") ?? 0} published (${lastMonthPublished} all of last month)`}>
+        <div className="an-grid ex-grid-4">
           <Panel title="Campaigns" aside={<button type="button" className="link-btn" onClick={() => onOpenView("campaigns")}>All campaigns</button>}>
             {liveCampaigns.length === 0 && upcomingCampaigns.length === 0 ? (
               <Empty>No campaigns live or launching in the next 30 days.</Empty>
@@ -216,12 +216,6 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
               </ul>
             )}
           </Panel>
-        </div>
-      </Section>
-
-      {/* ── Social and project status ─────────────────────────────────── */}
-      <Section eyebrow="Social and projects" title="This month" summary={`${monthPosts.length} post${monthPosts.length === 1 ? "" : "s"} planned · ${socialByStatus.get("published") ?? 0} published so far (${lastMonthPublished} all of last month) · ${projects.length} project${projects.length === 1 ? "" : "s"} on the boards`}>
-        <div className="an-grid">
           <Panel title="Social calendar" aside={<button type="button" className="link-btn" onClick={() => onOpenView("socialCalendar")}>Open the calendar</button>}>
             <div className="ex-minis">
               <Mini label="Published" value={String(socialByStatus.get("published") ?? 0)} />
@@ -254,43 +248,12 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
               </ul>
             )}
           </Panel>
-
-          <Panel title="Project status" aside={`${live.length} live · ${urgentProjects.length} urgent · ${unassigned.length} unassigned`}>
-            <div className="ex-statusbar" role="img" aria-label="Projects by status">
-              {statusMix.map(({ s, n }) =>
-                n ? (
-                  <span key={s.value} className={`ex-statusbar-seg wp-status ${projectStatusTone(s.value)}`} style={{ flex: n }} title={`${n} ${projectStatusLabel(s.value)}`}>
-                    {n} {s.label}
-                  </span>
-                ) : null,
-              )}
-            </div>
-            <ul className="ex-status-rows">
-              {statusMix.map(({ s, n }) => (
-                <li key={s.value}>
-                  <StatusChip status={projectStatusTone(s.value)}>{s.label}</StatusChip>
-                  <span className="ex-bar">
-                    <i style={{ width: `${projects.length ? (n / projects.length) * 100 : 0}%` }} />
-                    <span className="mono">{n}</span>
-                  </span>
-                  <span className="ex-status-pct mono">{projects.length ? Math.round((n / projects.length) * 100) : 0}%</span>
-                </li>
-              ))}
-            </ul>
-            <div className="ex-minis">
-              <Mini label="Overdue" value={String(overdueProjects.length)} alert={overdueProjects.length > 0} />
-              <Mini label="Due in 7 days" value={String(dueWeekProjects.length)} />
-              <Mini label="In review" value={String(reviewProjects.length)} />
-              <Mini label="Urgent" value={String(urgentProjects.length)} alert={urgentProjects.length > 0} />
-              <Mini label="Unassigned" value={String(unassigned.length)} alert={unassigned.length > 0} />
-            </div>
-          </Panel>
         </div>
       </Section>
 
       {/* ── Teams ─────────────────────────────────────────────────────── */}
-      <Section eyebrow="Across the teams" title="Teams" summary={`${live.length} live project${live.length === 1 ? "" : "s"} across ${workspaces.length} team${workspaces.length === 1 ? "" : "s"}`}>
-        <div className="an-grid ex-grid-1">
+      <Section eyebrow="Across the teams" title="Teams and projects" summary={`${live.length} live project${live.length === 1 ? "" : "s"} across ${workspaces.length} team${workspaces.length === 1 ? "" : "s"} · ${projects.length} on the boards in all`}>
+        <div className="an-grid">
           <Panel title="By team" aside="Click a team to open its board">
             <div className="an-table-wrap">
               <table className="an-table ex-teams">
@@ -330,6 +293,24 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
                   ))}
                 </tbody>
               </table>
+            </div>
+          </Panel>
+          <Panel title="Project status" aside={`${live.length} live · ${urgentProjects.length} urgent · ${unassigned.length} unassigned`}>
+            <div className="ex-statusbar" role="img" aria-label="Projects by status">
+              {statusMix.map(({ s, n }) =>
+                n ? (
+                  <span key={s.value} className={`ex-statusbar-seg wp-status ${projectStatusTone(s.value)}`} style={{ flex: n }} title={`${n} ${projectStatusLabel(s.value)}`}>
+                    {n} {s.label}
+                  </span>
+                ) : null,
+              )}
+            </div>
+            <div className="ex-minis">
+              <Mini label="Overdue" value={String(overdueProjects.length)} alert={overdueProjects.length > 0} />
+              <Mini label="Due in 7 days" value={String(dueWeekProjects.length)} />
+              <Mini label="In review" value={String(reviewProjects.length)} />
+              <Mini label="Urgent" value={String(urgentProjects.length)} alert={urgentProjects.length > 0} />
+              <Mini label="Unassigned" value={String(unassigned.length)} alert={unassigned.length > 0} />
             </div>
           </Panel>
         </div>

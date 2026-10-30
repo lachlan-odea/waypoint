@@ -375,3 +375,16 @@
 .ex-grid-1 {
   grid-template-columns: minmax(0, 1fr);
 }
+.ex-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1500px) {
+  .ex-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 960px) {
+  .ex-grid-4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
