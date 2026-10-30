@@ -540,7 +540,6 @@
       main += panel("Who's going", kv([["Marketing lead", esc(item.marketingLead)], ["Sales lead", esc(item.salesLead)], ["Sales attendees", esc(item.salesAttendees) + (item.salesAttendeeCount ? " (" + item.salesAttendeeCount + ")" : "")], ["Academy", esc(item.academy)], ["Partners", esc(item.partners)]]));
       if (item.comms != null || item.opps != null) main += panel("Results", '<div class="stats"><div class="stat"><b>' + (item.comms != null ? Number(item.comms).toLocaleString() : "—") + "</b><span>Conversations</span></div><div class=\"stat\"><b>" + (item.opps != null ? Number(item.opps).toLocaleString() : "—") + "</b><span>Opportunities</span></div></div>");
       side += panel("When and where", kv([["Starts", item.startDate ? fmtLong(item.startDate) : esc(item.datesText)], ["Ends", item.endDate && item.endDate !== item.startDate ? fmtLong(item.endDate) : ""], ["Location", esc(item.location)], ["Region", esc(item.region)], ["Division", esc(item.division)]]));
-      if (item.itinerarySharePointUrl) side += panel("Itinerary", linkBtn(item.itinerarySharePointUrl, "Open the attendee itinerary"));
     } else if (item.kind === "webinar") {
       var w = item.webinar;
       tags = '<li class="tag kind">Webinar</li><li class="tag brand">' + esc(item.brand || "") + '</li><li class="tag line">' + esc(w.typeLabel) + (w.deliveryLabel ? " · " + esc(w.deliveryLabel) : "") + '</li><li class="st ' + st.cls + '">' + esc(st.label) + "</li>";

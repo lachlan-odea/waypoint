@@ -163,7 +163,6 @@ export function activityPageData(
       campaignName: linked?.name ?? "",
       comms: e.comms ?? null,
       opps: e.opps ?? null,
-      itinerarySharePointUrl: e.itinerarySharePointUrl ?? "",
     };
   });
 
