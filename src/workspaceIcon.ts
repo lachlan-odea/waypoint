@@ -8,8 +8,8 @@ const TEAM_ICONS: Record<string, IconName> = {
   comms: "message-chat",
   design: "edit",
   events: "calendar",
-  marketing: "target",
-  video: "monitor",
+  marketing: "rocket",
+  video: "clapperboard",
 };
 
 export function workspaceIcon(w: Pick<Workspace, "id" | "icon">): IconName {
