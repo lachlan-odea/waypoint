@@ -9203,3 +9203,119 @@ a.share-btn {
 :root.dark-mode .kanban-col {
   background: var(--surface-2);
 }
+
+/* My work as a table */
+.mywork-table-wrap {
+  overflow-x: auto;
+  margin: 0 -4px;
+}
+.mywork-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.mywork-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.mywork-table td {
+  padding: 6px 10px;
+  height: 44px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  cursor: pointer;
+}
+.mywork-table td:has(select),
+.mywork-table td:has(.mywork-camps) {
+  cursor: default;
+}
+.mywork-table tbody tr:hover {
+  background: var(--ink-50);
+}
+.mywork-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.mywork-table tr.closed .mywork-open,
+.mywork-table tr.closed .mywork-sub {
+  color: var(--muted);
+}
+.mywork-table .mono {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mywork-table .mono.late {
+  color: var(--wp-status-blocked-fg);
+}
+.mywork-late {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mywork-title {
+  min-width: 220px;
+}
+.mywork-open {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--wtg-blue);
+  padding: 0;
+  text-align: left;
+}
+.mywork-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.mywork-table .status-select {
+  min-height: 28px;
+  padding: 2px 24px 2px 8px;
+  font-size: 12px;
+}
+.mywork-strip {
+  min-width: 120px;
+}
+.mywork-next {
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mywork-people {
+  display: inline-flex;
+  gap: 2px;
+}
+.mywork-people .dot-avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 9px;
+}
+.mywork-camps {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.mywork-camps .link-btn {
+  font-size: 12px;
+  padding: 0;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.dark-mode .mywork-table tbody tr:hover {
+  background: var(--surface-2);
+}
+:root.dark-mode .mywork-open {
+  color: var(--wtg-periwinkle);
+}

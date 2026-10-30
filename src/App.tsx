@@ -56,6 +56,7 @@ import { publishCampaignPage } from "./campaignExport";
 import { publishItineraryPage } from "./itineraryExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
+import { MyWorkTable } from "./components/MyWorkTable";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { CreateProjectModal } from "./components/CreateProjectModal";
 import { SettingsModal } from "./components/SettingsModal";
@@ -189,14 +190,15 @@ export default function App() {
   }
   // My work as a grid of your active projects, or a kanban of everything
   // assigned to you by status.
-  const [myWorkView, setMyWorkViewState] = useState<"grid" | "kanban">(() => {
+  const [myWorkView, setMyWorkViewState] = useState<"grid" | "kanban" | "list">(() => {
     try {
-      return localStorage.getItem("waypoint.board.myWorkView") === "kanban" ? "kanban" : "grid";
+      const saved = localStorage.getItem("waypoint.board.myWorkView");
+      return saved === "kanban" || saved === "list" ? saved : "grid";
     } catch {
       return "grid";
     }
   });
-  function setMyWorkView(next: "grid" | "kanban") {
+  function setMyWorkView(next: "grid" | "kanban" | "list") {
     setMyWorkViewState(next);
     try {
       localStorage.setItem("waypoint.board.myWorkView", next);
@@ -1607,12 +1609,17 @@ export default function App() {
                     <button type="button" aria-pressed={myWorkView === "kanban"} onClick={() => setMyWorkView("kanban")}>
                       Kanban
                     </button>
+                    <button type="button" aria-pressed={myWorkView === "list"} onClick={() => setMyWorkView("list")}>
+                      List
+                    </button>
                   </div>
                 </div>
                 <span className="muted small">
                   {myWorkView === "kanban"
                     ? "Everything assigned to you, by status · drag a card between columns to change its status"
-                    : "High priority first · drop cards here to claim"}
+                    : myWorkView === "list"
+                      ? "Everything assigned to you, one line each · change a status in place, click a row to open it"
+                      : "High priority first · drop cards here to claim"}
                 </span>
               </div>
               {myWorkView === "kanban" ? (
@@ -1651,6 +1658,16 @@ export default function App() {
                     );
                   })}
                 </div>
+              ) : myWorkView === "list" ? (
+                <MyWorkTable
+                  projects={myAllProjects}
+                  designers={workspace.designers}
+                  workspaces={availableWorkspaces}
+                  campaignsByProject={campaignsByProject}
+                  onOpen={openProject}
+                  onStatusChange={setProjectStatus}
+                  onOpenCampaign={openCampaign}
+                />
               ) : myProjects.length === 0 ? (
                 <p className="muted">
                   Nothing assigned to you yet. Hit + New → Project, drag a card from a teammate,
