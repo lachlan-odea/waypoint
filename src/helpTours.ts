@@ -47,11 +47,9 @@ const TOURS: Record<string, Tour> = {
     title: "Executive Dashboard",
     steps: [
       { target: ".ex-stats", title: "The numbers", body: "Across every team and programme: live projects, overdue, due this week, awaiting review, live campaigns, webinars in flight, events in the next 30 days and posts this week. Tiles with a pointer open the page behind them." },
-      { target: ".ex-attention, .ex-grid-wide", title: "Needs attention", body: "Everything overdue or owed, in one list: late projects, late campaign milestones and webinar sections, events missing their follow-up, posts ready but not published, live work nobody is assigned to. Click a row to go and fix it." },
-      { target: ".ex-agenda", title: "The next 14 days", body: "Every dated thing coming up, day by day: project due dates, campaign milestones and launches, webinar go-lives, event starts and social posts." },
+      { target: ".ex-grid-3", title: "Programmes", body: "Live and launching campaigns with their next milestone, webinars by stage with each one's health, and events: the year's spend, conversations and opportunities, follow-ups owed, and what's on or coming up with checklist progress. Every row opens the item." },
+      { target: ".ex-statusbar", title: "This month", body: "The Social calendar's month by status with what's going out this week, beside every project on the boards by status — the bar, the counts, and overdue, due, review, urgent and unassigned at a glance." },
       { target: ".ex-teams", title: "Teams", body: "One row per team: live work, overdue, due this week, in review, planning, on hold, done, and live projects per person. Click a team to open its board. Workload beside it shows who is carrying what." },
-      { target: ".ex-grid-3", title: "Programmes", body: "Live and launching campaigns with their next milestone, webinars by stage with health, and events: spend, conversations and opportunities for the year, follow-ups owed, and what's on or coming up." },
-      { target: ".ex-statusbar", title: "This month and the status mix", body: "Above: the Social calendar's month and the latest comments and webinar activity. Here: every project on the boards by status, in one bar." },
       NEW,
     ],
   },
