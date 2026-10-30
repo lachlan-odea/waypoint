@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Designer, Hub, Workspace } from "../types";
+import { workspaceIcon } from "../workspaceIcon";
 import { Avatar } from "./Avatar";
 import { HubClocks } from "./HubClocks";
 import { Icon, type IconName } from "./Icon";
@@ -157,7 +158,7 @@ export function Sidebar({
                   }}
                   title={w.name}
                 >
-                  <NavIcon name="folder" />
+                  <NavIcon name={workspaceIcon(w)} />
                   {!collapsed && <span className="designer-name">{w.name}</span>}
                 </button>
               </li>

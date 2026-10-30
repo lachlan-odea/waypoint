@@ -63,6 +63,8 @@ export type Workspace = {
   id: string;
   name: string;
   memberIds?: string[];
+  // Sidebar icon, an Icon name; see src/workspaceIcon.ts for the defaults.
+  icon?: import("./components/Icon").IconName;
 };
 
 export type Milestone = {

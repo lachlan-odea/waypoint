@@ -57,7 +57,8 @@ export const SEED_WORKSPACES = [
   // seedWorkspacesIfMissing creates any id listed here that isn't in
   // /workspaces yet, so a new team is a one-line addition here plus, for the
   // Teams ingest, ALLOWED_WORKSPACE_IDS in functions/src/index.ts. The
-  // sidebar lists teams alphabetically with the same folder icon for each.
+  // sidebar lists teams alphabetically; give the new team an icon in
+  // src/workspaceIcon.ts or it gets the folder.
   { id: "comms", name: "Comms" },
   // Added Oct 2026: the events team, who run the trade shows and conferences
   // on the Events page and need a board for the work around them.
