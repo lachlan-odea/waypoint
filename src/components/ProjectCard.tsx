@@ -151,11 +151,24 @@ export function ProjectCard({
         )}
       </div>
       {project.milestones.length > 0 && (
-        <div className="card-progress">
+        <div
+          className="card-mstrip-row"
+          role="img"
+          aria-label={`${doneCount} of ${project.milestones.length} tasks done`}
+          title={`${doneCount} of ${project.milestones.length} tasks done`}
+        >
+          {/* One segment per task, like the webinar cards' section strip. */}
           <div
-            className="card-progress-bar"
-            style={{ width: `${(doneCount / project.milestones.length) * 100}%` }}
-          />
+            className="card-mstrip"
+            style={{ gridTemplateColumns: `repeat(${project.milestones.length}, 1fr)` }}
+          >
+            {project.milestones.map((m) => (
+              <i key={m.id} className={m.done ? "done" : ""} />
+            ))}
+          </div>
+          <span className="card-mstrip-count">
+            {doneCount}/{project.milestones.length}
+          </span>
         </div>
       )}
       {(project.reviewerIds?.length ?? 0) > 0 && (

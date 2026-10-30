@@ -9043,3 +9043,38 @@ a.share-btn {
 .sidebar .sidebar-foot {
   border-color: transparent;
 }
+
+/* Project card task strip: one segment per task, like the webinar cards. */
+.card-mstrip-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-mstrip {
+  flex: 1;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.card-mstrip i {
+  display: block;
+  height: 6px;
+  min-width: 0;
+  border-radius: var(--radius);
+  background: var(--ink-200);
+}
+.card-mstrip i.done {
+  background: var(--wtg-cobalt);
+}
+.card-mstrip-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  flex: none;
+}
+:root.dark-mode .card-mstrip i {
+  background: var(--ink-600);
+}
+:root.dark-mode .card-mstrip i.done {
+  background: var(--wtg-periwinkle);
+}
