@@ -13,6 +13,7 @@ import type {
   WorkspaceData,
 } from "./types";
 import { auth, observeAuth, signOut as fbSignOut } from "./firebase";
+import { APP_VERSION, markSessionEpoch, sessionEpochChanged } from "./version";
 import {
   deleteNotification as firestoreDeleteNotification,
   deleteNotificationsForRecipient as firestoreDeleteNotificationsForRecipient,
@@ -258,8 +259,23 @@ export default function App() {
   // UID (which is also their Designer doc id) when signed in, or null when
   // signed out. The Login screen calls signIn/signUp directly and the
   // resulting auth change flows back through here.
+  //
+  // A release can ask everyone to sign in again (SESSION_EPOCH in
+  // version.ts). The first time this browser boots on such a build with a
+  // restored user, that user is signed out and the login page says why.
+  const [signedOutForUpdate, setSignedOutForUpdate] = useState(false);
   useEffect(() => {
     return observeAuth((user) => {
+      if (user && sessionEpochChanged()) {
+        markSessionEpoch();
+        setSignedOutForUpdate(true);
+        fbSignOut().catch((err) => {
+          console.error(err);
+          setSessionDesignerId(user.uid);
+        });
+        return;
+      }
+      markSessionEpoch();
       setSessionDesignerId(user ? user.uid : null);
     });
   }, []);
@@ -1132,7 +1148,15 @@ export default function App() {
   }
 
   if (!sessionDesignerId) {
-    return <Login onSignedIn={() => { /* auth state listener does the rest */ }} />;
+    return (
+      <Login
+        notice={signedOutForUpdate ? `Waypoint has been updated to version ${APP_VERSION}. Please sign in again.` : undefined}
+        onSignedIn={() => {
+          setSignedOutForUpdate(false);
+          /* auth state listener does the rest */
+        }}
+      />
+    );
   }
 
   if (profileSetupNeeded && workspace && !designerExists) {

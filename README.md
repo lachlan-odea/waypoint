@@ -4,6 +4,8 @@ Project management for the WiseTech Global creative teams — Design, Video, Mar
 
 Live app: **https://lachlan-odea.github.io/waypoint/** (installable as a PWA). Sign in with your WiseTech email.
 
+When a new build is deployed, every open tab shows a toast and applies the update after a 30-second countdown (or on **Refresh now**), holding off while a modal is open or a field has focus (`src/components/UpdatePrompt.tsx`). A release that should start everyone from the login page bumps `SESSION_EPOCH` in `src/version.ts`; the first boot on such a build signs the restored user out and the login page says why.
+
 Version 3.0 is the Waypoint design system release: the Waypoint logo, the WiseTech palette and type, and projects, campaigns and events that open as full pages rather than windows.
 
 ## What it does
