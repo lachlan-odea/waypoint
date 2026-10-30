@@ -74,7 +74,8 @@ import { EventPage } from "./components/pages/EventPage";
 import { closeItem, openItem, replaceItemTab, useItemRoute } from "./router";
 import { HelpTour } from "./components/HelpTour";
 import { tourFor } from "./helpTours";
-import { kitOf } from "./webinarKit";
+import { allSeries, kitOf } from "./webinarKit";
+import { NewWebinarModal } from "./components/webinar/NewWebinarModal";
 import { Icon } from "./components/Icon";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Avatar } from "./components/Avatar";
@@ -129,6 +130,8 @@ export default function App() {
   // The Help button's guided tour of the page on screen. Closes when the
   // page changes under it.
   const [tourOpen, setTourOpen] = useState(false);
+  // + New → Campaign → Webinar: the Start a webinar form, from anywhere.
+  const [newWebinarOpen, setNewWebinarOpen] = useState(false);
   useEffect(() => {
     setTourOpen(false);
   }, [route?.kind, route?.id, view]);
@@ -331,6 +334,10 @@ export default function App() {
     if (kind === "project") {
       setCreateInitial({ workspaceId: currentWorkspaceId });
       setCreating(true);
+      return;
+    }
+    if (kind === "webinar") {
+      setNewWebinarOpen(true);
       return;
     }
     closeItem();
@@ -1819,6 +1826,20 @@ export default function App() {
             setNotificationsOpen(false);
           }}
           onClearAll={clearAllNotifications}
+        />
+      )}
+
+      {newWebinarOpen && (
+        <NewWebinarModal
+          designers={workspace.designers}
+          currentDesignerId={currentDesigner.id}
+          series={allSeries(campaigns)}
+          onCancel={() => setNewWebinarOpen(false)}
+          onCreate={(c) => {
+            saveCampaign(c);
+            setNewWebinarOpen(false);
+            openItem("campaign", c.id, "brief");
+          }}
         />
       )}
 
