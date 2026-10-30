@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
   Campaign,
+  ActivityShare,
   MarketingEvent,
   Notification,
   Speaker,
@@ -44,6 +45,8 @@ import {
   seedEventsIfMissing,
   subscribeEvents,
   subscribeSpeakers,
+  subscribeActivityShare,
+  setActivityShare as firestoreSetActivityShare,
   setSpeaker as firestoreSetSpeaker,
   deleteSpeaker as firestoreDeleteSpeaker,
   subscribeCampaigns,
@@ -53,6 +56,8 @@ import {
 } from "./firestore";
 import { duplicateCampaign as copyCampaign, isSocialMilestone, milestoneSocialPost } from "./campaigns";
 import { publishCampaignPage } from "./campaignExport";
+import { ACTIVITY_PAGE_FILE_NAME, activityPageData, downloadActivityPage, newShareToken, publishActivityPage } from "./activityExport";
+import { SharePointGuideModal } from "./components/SharePointGuideModal";
 import { publishItineraryPage } from "./itineraryExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
@@ -352,6 +357,16 @@ export default function App() {
     if (!sessionDesignerId) return;
     return subscribeSpeakers(setSpeakers, (err) => {
       console.warn("Couldn't load speakers", err);
+    });
+  }, [sessionDesignerId]);
+
+  // The marketing activity page on SharePoint: its token and link.
+  const [activityShare, setActivityShare] = useState<ActivityShare>({});
+  const [activityGuideOpen, setActivityGuideOpen] = useState(false);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeActivityShare(setActivityShare, (err) => {
+      console.warn("Couldn't load the activity page settings", err);
     });
   }, [sessionDesignerId]);
 
@@ -896,6 +911,15 @@ export default function App() {
   // milestone's date changes. A post someone has since deleted is left
   // deleted rather than recreated. `deletePostIds` are posts whose
   // milestones were removed in the editor with "delete the post too".
+  // Refresh the marketing activity page's public copy after a campaign or
+  // event changes. Nothing is written until the page has a token.
+  function republishActivity(nextCampaigns: Campaign[], nextEvents: MarketingEvent[]) {
+    if (!activityShare.shareToken || !workspace) return;
+    publishActivityPage(activityShare.shareToken, nextCampaigns, nextEvents, socialPostsForUsage, workspace.projects, workspace.designers).catch((err) =>
+      console.warn("Couldn't update the marketing activity page", err),
+    );
+  }
+
   function saveCampaign(campaign: Campaign, deletePostIds: string[] = []) {
     deletePostIds.forEach((id) => firestoreDeleteSocialPost(id).catch(writeError));
     const before = campaigns.find((c) => c.id === campaign.id);
@@ -920,6 +944,7 @@ export default function App() {
     publishCampaignPage(saved, socialPostsForUsage).catch((err) =>
       console.warn("Couldn't update the campaign's SharePoint page", err),
     );
+    republishActivity(campaigns.some((c) => c.id === saved.id) ? campaigns.map((c) => (c.id === saved.id ? saved : c)) : [...campaigns, saved], events);
   }
 
   // Jump to the Social calendar with one post's editor open.
@@ -994,6 +1019,7 @@ export default function App() {
     closeItem();
     const token = campaigns.find((c) => c.id === id)?.shareToken;
     firestoreDeleteCampaign(id).catch(writeError);
+    republishActivity(campaigns.filter((c) => c.id !== id), events);
     if (token) {
       firestoreDeleteCampaignPage(token).catch((err) =>
         console.warn("Couldn't remove the campaign's SharePoint page", err),
@@ -1008,6 +1034,7 @@ export default function App() {
     publishItineraryPage(event).catch((err) =>
       console.warn("Couldn't update the itinerary's SharePoint page", err),
     );
+    republishActivity(campaigns, events.some((e) => e.id === event.id) ? events.map((e) => (e.id === event.id ? event : e)) : [...events, event]);
   }
 
   // The itinerary page's public copy goes with the event, so the page says
@@ -1021,6 +1048,7 @@ export default function App() {
         console.warn("Couldn't remove the itinerary's SharePoint page", err),
       );
     }
+    republishActivity(campaigns, events.filter((e) => e.id !== id));
   }
 
   function addNotifications(notifs: Notification[]) {
@@ -1451,6 +1479,23 @@ export default function App() {
               >
                 Export CSV
               </button>
+            )}
+            {view === "executiveDashboard" && (
+              <>
+                {activityShare.sharePointUrl && (
+                  <a className="btn btn-secondary" href={activityShare.sharePointUrl} target="_blank" rel="noopener noreferrer" title="The marketing activity page on SharePoint">
+                    <Icon name="external-link" size={14} /> Activity page
+                  </a>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setActivityGuideOpen(true)}
+                  title="A single page for SharePoint showing every campaign, webinar and event, each opening to its own information page. It keeps itself up to date."
+                >
+                  <Icon name="browser" size={14} /> {activityShare.sharePointUrl ? "Update activity page" : "Put activity on SharePoint"}
+                </button>
+              </>
             )}
             <HelpButton onClick={() => setTourOpen(true)} />
             <NewMenu variant="primary" onPick={startNew} />
@@ -2088,6 +2133,31 @@ export default function App() {
             setNewWebinarOpen(false);
             openItem("campaign", c.id, "brief");
           }}
+        />
+      )}
+
+      {activityGuideOpen && (
+        <SharePointGuideModal
+          fileName={ACTIVITY_PAGE_FILE_NAME}
+          initialUrl={activityShare.sharePointUrl}
+          subject="marketing activity page"
+          onDownload={() => {
+            // Mint the token on the first download and publish before the
+            // file goes out, so the page has something to fetch.
+            const token = activityShare.shareToken ?? newShareToken();
+            const data = activityPageData(campaigns, events, socialPostsForUsage, workspace.projects, workspace.designers);
+            if (!activityShare.shareToken) {
+              setActivityShare((cur) => ({ ...cur, shareToken: token }));
+              firestoreSetActivityShare({ shareToken: token }).catch(writeError);
+            }
+            publishActivityPage(token, campaigns, events, socialPostsForUsage, workspace.projects, workspace.designers).catch(writeError);
+            downloadActivityPage(token, data);
+          }}
+          onSave={(url) => {
+            firestoreSetActivityShare({ sharePointUrl: url }).catch(writeError);
+            setActivityGuideOpen(false);
+          }}
+          onCancel={() => setActivityGuideOpen(false)}
         />
       )}
 

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>__ACTIVITY_TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400..700&display=swap" />
+<style>
+  :root {
+    --blue: #1d1765;
+    --cobalt: #371ee1;
+    --midnight: #141e30;
+    --sky: #a7cff8;
+    --sky-100: #d7e6fa;
+    --violet: #b7b3ff;
+    --peach: #ffbf98;
+    --mint: #c6ffd1;
+    --lime: #eafc88;
+    --maroon: #651d32;
+    --teal: #244349;
+    --ink-900: #0e1726;
+    --ink-700: #243450;
+    --ink-600: #3a4a66;
+    --ink-500: #5d6b82;
+    --ink-400: #8b96a8;
+    --ink-300: #b9c0cc;
+    --ink-200: #dde1e8;
+    --ink-100: #eef0f4;
+    --ink-50: #f7f8fb;
+    --radius: 10px;
+    --sans: "DM Sans", "Segoe UI", ui-sans-serif, system-ui, -apple-system, Roboto, sans-serif;
+    --mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
+    --gutter: clamp(16px, 5vw, 56px);
+    --measure: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--ink-50);
+    color: var(--midnight);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--cobalt); }
+  .inner { max-width: var(--measure); margin: 0 auto; padding: 0 var(--gutter); }
+  .mono { font-family: var(--mono); }
+  .eyebrow { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; }
+
+  .notice { margin: 0; padding: 10px var(--gutter); font-size: 14px; text-align: center; }
+  .notice.warn { background: var(--lime); color: var(--blue); }
+  .notice.gone { background: var(--peach); color: var(--maroon); }
+
+  /* Hero: the brand field, a faint 48px grid fading to the right */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    background: var(--blue);
+    color: #fff;
+    padding: clamp(28px, 5vw, 52px) 0 clamp(22px, 3vw, 32px);
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 48px 48px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 120% at 25% 50%, #000 30%, transparent 80%);
+    mask-image: radial-gradient(ellipse 80% 120% at 25% 50%, #000 30%, transparent 80%);
+    pointer-events: none;
+  }
+  .hero .inner { position: relative; }
+  .hero .eyebrow { color: var(--violet); }
+  .hero h1 { margin: 6px 0 0; font-size: clamp(30px, 4.6vw, 48px); line-height: 1.06; letter-spacing: -0.02em; font-weight: 700; max-width: 24ch; text-wrap: balance; }
+  .hero .lede { margin: 12px 0 0; max-width: 64ch; color: rgba(255, 255, 255, 0.84); font-size: 16px; }
+  .hero .facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 18px 0 0; padding: 14px 0 0; border-top: 1px solid rgba(255, 255, 255, 0.16); font-size: 13px; color: rgba(255, 255, 255, 0.72); }
+  .hero .facts b { color: #fff; font-weight: 500; font-family: var(--mono); font-size: 13px; }
+  .back { display: inline-flex; align-items: center; gap: 6px; color: #fff; text-decoration: none; font-size: 13px; opacity: 0.85; margin-bottom: 14px; }
+  .back:hover { opacity: 1; text-decoration: underline; }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; padding: 0; list-style: none; }
+  .tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--radius); font-size: 12px; font-weight: 600; line-height: 20px; }
+  .tag.kind { background: rgba(255, 255, 255, 0.14); color: #fff; }
+  .tag.brand { background: var(--violet); color: var(--ink-900); }
+  .tag.line { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); color: #fff; }
+
+  /* Status pills: light background, dark ink */
+  .st { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: var(--radius); font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .st.draft { background: var(--ink-100); color: var(--ink-700); }
+  .st.planning { background: var(--sky-100); color: var(--blue); }
+  .st.progress { background: #ecebff; color: var(--cobalt); }
+  .st.review { background: var(--violet); color: var(--ink-900); }
+  .st.scheduled { background: var(--peach); color: var(--ink-900); }
+  .st.live { background: var(--mint); color: #0c5a2e; }
+  .st.complete { background: var(--blue); color: #fff; }
+  .st.blocked { background: #ffdad6; color: #8a1c16; }
+
+  /* Toolbar */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 18px 0 6px; }
+  .seg { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .seg button, .toolbar input {
+    font: inherit; font-size: 13px; font-weight: 600; min-height: 34px; padding: 0 12px;
+    border: 1px solid var(--ink-200); border-radius: var(--radius); background: #fff; color: var(--ink-700); cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: #ecebff; border-color: var(--cobalt); color: var(--cobalt); }
+  .toolbar input { font-weight: 400; min-width: 220px; cursor: text; color: var(--midnight); }
+  .toolbar input:focus, .seg button:focus-visible { outline: none; border-color: var(--cobalt); box-shadow: 0 0 0 3px rgba(55, 30, 225, 0.35); }
+  .toolbar .count { margin-left: auto; font-size: 13px; color: var(--ink-500); }
+
+  /* Month groups and cards */
+  .group { margin: 22px 0 0; }
+  .group h2 { margin: 0 0 10px; font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-500); display: flex; gap: 10px; align-items: baseline; }
+  .group h2 span { color: var(--ink-400); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .card {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 14px 16px; background: #fff; border: 1px solid var(--ink-200); border-left-width: 3px; border-radius: var(--radius);
+    color: inherit; text-decoration: none; min-width: 0; transition: border-color 160ms cubic-bezier(0.2, 0, 0.1, 1);
+  }
+  .card:hover { border-color: var(--cobalt); }
+  .card .top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .card .kind { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-500); }
+  .card h3 { margin: 2px 0 0; font-size: 16px; line-height: 1.25; font-weight: 700; color: var(--blue); }
+  .card .meta { font-size: 12.5px; color: var(--ink-500); display: flex; flex-direction: column; gap: 2px; }
+  .card .meta .mono { font-size: 12px; }
+  .strip { display: flex; align-items: center; gap: 8px; }
+  .strip .segs { flex: 1; display: grid; gap: 3px; }
+  .strip .segs i { display: block; height: 6px; border-radius: var(--radius); background: var(--ink-200); }
+  .strip .segs i.on { background: var(--cobalt); }
+  .strip .segs i.late { outline: 1.5px solid #8a1c16; outline-offset: 1px; }
+  .strip .n { font-family: var(--mono); font-size: 11px; color: var(--ink-500); }
+  .card .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--ink-200); font-size: 12.5px; color: var(--ink-600); }
+  .empty { padding: 32px 0; text-align: center; color: var(--ink-500); }
+
+  /* Detail */
+  .detail { padding: 22px 0 64px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px 22px; align-items: start; }
+  .detail .main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .detail .side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .panel { background: #fff; border: 1px solid var(--ink-200); border-radius: var(--radius); }
+  .panel .head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--ink-200); }
+  .panel .head h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--blue); }
+  .panel .head .hint { font-size: 12px; color: var(--ink-500); }
+  .panel .body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .prose { white-space: pre-wrap; line-height: 1.55; margin: 0; }
+  .kv { margin: 0; display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px 12px; font-size: 13px; }
+  .kv dt { color: var(--ink-500); }
+  .kv dd { margin: 0; overflow-wrap: anywhere; }
+  .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--ink-200); font-size: 14px; }
+  .list li:last-child { border-bottom: 0; }
+  .list .date { font-family: var(--mono); font-size: 12px; color: var(--ink-500); width: 64px; flex: none; }
+  .list .main-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .list .main-text b { font-weight: 600; }
+  .list .main-text small { font-size: 12px; color: var(--ink-500); }
+  .list .main-text a { font-size: 12px; }
+  .list li.done .main-text b { color: var(--ink-500); text-decoration: line-through; }
+  .tick { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--ink-300); flex: none; display: inline-flex; align-items: center; justify-content: center; }
+  .tick.on { background: var(--cobalt); border-color: var(--cobalt); }
+  .tick.on::after { content: ""; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+  .sections { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; }
+  .sections li { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 8px; border: 1px solid var(--ink-200); border-radius: var(--radius); }
+  .sections .n { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--ink-500); }
+  .sections .l { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sections .d { font-family: var(--mono); font-size: 11px; color: var(--ink-500); }
+  .sections .d.late { color: #8a1c16; }
+  .sections .bar { margin-top: 4px; height: 4px; border-radius: var(--radius); background: var(--ink-100); }
+  .sections li.done .bar { background: var(--cobalt); }
+  .sections li.doing .bar, .sections li.review .bar { background: var(--violet); }
+  .sections li.late .bar { background: #8a1c16; }
+  .speakers { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .speakers li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); }
+  .speakers img, .speakers .initials { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; background: var(--sky-100); color: var(--blue); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+  .speakers b { display: block; font-size: 14px; }
+  .speakers small { display: block; font-size: 12px; color: var(--ink-500); }
+  .speakers p { margin: 6px 0 0; font-size: 13px; line-height: 1.45; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+  .stat { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); background: var(--ink-50); }
+  .stat b { font-family: var(--mono); font-weight: 400; font-size: 20px; color: var(--blue); }
+  .stat span { font-size: 12px; color: var(--ink-500); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; height: 36px; border-radius: var(--radius); border: 1px solid var(--ink-200); background: #fff; color: var(--blue); font-weight: 600; font-size: 13px; text-decoration: none; }
+  .btn:hover { border-color: var(--ink-500); background: var(--ink-50); }
+  .updated { padding: 24px 0 48px; font-size: 12px; color: var(--ink-500); text-align: center; }
+  .updated.detail-foot { padding: 0 0 48px; }
+
+  @media (max-width: 900px) {
+    .detail { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media print {
+    .toolbar, .back, .notice { display: none; }
+    .hero { background: var(--blue) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<div id="notice" class="notice" hidden></div>
+<main id="app"></main>
+<script type="application/json" id="activity-snapshot">__ACTIVITY_SNAPSHOT__</script>
+<script>
+(function () {
+  "use strict";
+
+  var FEED_URL = "__ACTIVITY_FEED_URL__";
+  var REFRESH_MS = 5 * 60 * 1000;
+  var DAY_MS = 86400000;
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  var data = null;
+  var ui = { kind: "all", when: "all", q: "" };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function safeColor(c) { return /^#[0-9a-fA-F]{3,8}$/.test(c || "") ? c : "#371ee1"; }
+  function safeUrl(u) { return /^https?:\/\//i.test(u || "") ? u : ""; }
+  function todayIso() { var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+  function parse(iso) { return new Date(iso + "T00:00:00"); }
+  function days(from, to) { return Math.round((parse(to).getTime() - parse(from).getTime()) / DAY_MS); }
+  function fmt(iso) { if (!iso) return "—"; var d = parse(iso); return d.getDate() + " " + MONTHS[d.getMonth()]; }
+  function fmtLong(iso) { if (!iso) return "—"; return parse(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" }); }
+  function monthTitle(ym) { var p = ym.split("-"); return new Date(+p[0], +p[1] - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" }); }
+  function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
+  function initials(name) { var w = String(name || "").trim().split(/\s+/).filter(Boolean); return w.slice(0, 2).map(function (x) { return x[0]; }).join("").toUpperCase() || "?"; }
+
+  // ── Status mapping onto the eight pills ─────────────────────────────
+  function campaignPhase(c, today) {
+    if (c.evergreen) return "evergreen";
+    if (c.endDate < today) return "finished";
+    if (c.startDate > today) return "upcoming";
+    return "live";
+  }
+  var PHASE = { live: ["live", "Live"], upcoming: ["planning", "Upcoming"], finished: ["complete", "Finished"], evergreen: ["progress", "Evergreen"] };
+  var EVENT_ST = { prospect: "draft", planning: "planning", confirmed: "scheduled", live: "live", done: "complete", cancelled: "blocked" };
+  var KIT_ST = { todo: "draft", doing: "progress", review: "review", done: "complete", blocked: "blocked", na: "draft" };
+  var STAGE_ST = { proposed: "draft", planning: "planning", production: "progress", promotion: "scheduled", post: "review", complete: "complete", hold: "draft", cancelled: "blocked" };
+
+  function statusOf(item, today) {
+    if (item.kind === "event") return { cls: EVENT_ST[item.status] || "draft", label: item.statusLabel || item.status };
+    if (item.kind === "webinar") return { cls: STAGE_ST[item.webinar.stage] || "draft", label: item.webinar.stageLabel };
+    var p = PHASE[campaignPhase(item, today)]; return { cls: p[0], label: p[1] };
+  }
+  // Live / coming up / done, for the When filter.
+  function whenOf(item, today) {
+    if (item.kind === "event") {
+      if (item.status === "cancelled") return "done";
+      if (item.status === "done") return "done";
+      if (item.status === "live") return "live";
+      return "upcoming";
+    }
+    if (item.kind === "webinar") {
+      if (item.webinar.stage === "complete" || item.webinar.stage === "cancelled") return "done";
+      if (item.webinar.goLive && item.webinar.goLive === today) return "live";
+      return item.webinar.goLive && item.webinar.goLive < today ? "done" : "upcoming";
+    }
+    var ph = campaignPhase(item, today);
+    return ph === "finished" ? "done" : ph === "upcoming" ? "upcoming" : "live";
+  }
+  // The date an item is filed under on the timeline.
+  function sortDate(item) {
+    if (item.kind === "event") return item.startDate || (item.tbcMonth ? item.tbcMonth + "-32" : item.year + "-13");
+    if (item.kind === "webinar" && item.webinar.goLive) return item.webinar.goLive;
+    return item.startDate;
+  }
+
+  // ── Items ──────────────────────────────────────────────────────────
+  function allItems() {
+    if (!data) return [];
+    return (data.campaigns || []).concat(data.events || []);
+  }
+  function findItem(key) {
+    var parts = key.split("-"); var kind = parts[0]; var id = parts.slice(1).join("-");
+    var pool = kind === "e" ? (data.events || []) : (data.campaigns || []);
+    for (var i = 0; i < pool.length; i++) if (pool[i].id === id) return pool[i];
+    return null;
+  }
+  function keyOf(item) { return (item.kind === "event" ? "e-" : "c-") + item.id; }
+
+  function stripHtml(segs) {
+    if (!segs.length) return "";
+    var cells = segs.map(function (s) { return '<i class="' + (s.on ? "on" : "") + (s.late ? " late" : "") + '"></i>'; }).join("");
+    var on = segs.filter(function (s) { return s.on; }).length;
+    return '<div class="strip"><div class="segs" style="grid-template-columns: repeat(' + segs.length + ', 1fr)">' + cells + '</div><span class="n">' + on + "/" + segs.length + "</span></div>";
+  }
+
+  function cardHtml(item, today) {
+    var st = statusOf(item, today);
+    var color = item.kind === "event" ? (item.division && /landside/i.test(item.division) ? "#2f6fb0" : "#371ee1") : safeColor(item.color);
+    var kindLabel = item.kind === "event" ? "Event · " + esc(item.division || "") : item.kind === "webinar" ? "Webinar · " + esc(item.webinar.typeLabel) : "Campaign · " + esc(item.brand || "");
+    var meta = "", segs = [], foot = "";
+    if (item.kind === "event") {
+      meta = '<span class="mono">' + esc(item.datesText) + "</span>" + (item.location ? "<span>" + esc(item.location) + (item.region ? " · " + esc(item.region) : "") + "</span>" : "");
+      segs = item.checklist.map(function (c) { return { on: c.done }; });
+      foot = (item.marketingLead ? "Lead " + esc(item.marketingLead) : "") + (item.investmentUsd ? '<span class="mono">US$' + Number(item.investmentUsd).toLocaleString() + "</span>" : "");
+    } else if (item.kind === "webinar") {
+      var w = item.webinar;
+      meta = '<span class="mono">' + (w.goLive ? "Go-live " + fmt(w.goLive) : "Go-live not set") + (w.recordDate ? " · recording " + fmt(w.recordDate) : "") + "</span>" + (w.series ? "<span>" + esc(w.series) + (w.episode ? " · Episode " + w.episode : "") + "</span>" : "");
+      segs = w.sections.map(function (s) { return { on: s.status === "done", late: s.late }; });
+      foot = (w.lead ? "Lead " + esc(w.lead) : "") + (w.health ? "<span>" + esc(w.health) + "</span>" : "");
+    } else {
+      meta = '<span class="mono">' + (item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)) + "</span>" + (item.category ? "<span>" + esc(item.category) + "</span>" : "");
+      segs = item.milestones.map(function (m) { return { on: m.done, late: !m.done && m.date < today }; });
+      foot = (item.owner ? "Owner " + esc(item.owner) : "") + (item.projects.length ? "<span>" + plural(item.projects.length, "project") + "</span>" : "");
+    }
+    return '<a class="card" href="#' + keyOf(item) + '" style="border-left-color:' + color + '">' +
+      '<div class="top"><div><div class="kind">' + kindLabel + "</div><h3>" + esc(item.name) + "</h3></div>" +
+      '<span class="st ' + st.cls + '">' + esc(st.label) + "</span></div>" +
+      '<div class="meta">' + meta + "</div>" +
+      stripHtml(segs) +
+      (foot ? '<div class="foot">' + foot + "</div>" : "") +
+      "</a>";
+  }
+
+  // ── List view ──────────────────────────────────────────────────────
+  function renderList() {
+    var today = todayIso();
+    var items = allItems().filter(function (it) {
+      if (ui.kind !== "all" && it.kind !== ui.kind) return false;
+      if (ui.when !== "all" && whenOf(it, today) !== ui.when) return false;
+      if (ui.q) {
+        var q = ui.q.toLowerCase();
+        var hay = [it.name, it.brand, it.category, it.owner, it.location, it.region, it.division, it.marketingLead, it.webinar && it.webinar.series].join(" ").toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    var counts = { campaign: 0, webinar: 0, event: 0 };
+    allItems().forEach(function (it) { counts[it.kind]++; });
+    var live = allItems().filter(function (it) { return whenOf(it, today) === "live"; }).length;
+    var upcoming = allItems().filter(function (it) { return whenOf(it, today) === "upcoming"; }).length;
+
+    var groups = {}; var evergreen = []; var tbc = {};
+    items.forEach(function (it) {
+      if (it.kind === "campaign" && it.evergreen) { evergreen.push(it); return; }
+      var d = sortDate(it);
+      if (!d) { (tbc["Dates to be confirmed"] = tbc["Dates to be confirmed"] || []).push(it); return; }
+      var ym = d.slice(0, 7);
+      if (/-(32|13)$/.test(d)) { var k = d.length === 10 && d.slice(5, 7) !== "13" ? monthTitle(ym) + " (dates TBC)" : d.slice(0, 4) + " (dates TBC)"; (tbc[k] = tbc[k] || []).push(it); return; }
+      (groups[ym] = groups[ym] || []).push(it);
+    });
+    var keys = Object.keys(groups).sort();
+    var thisMonth = today.slice(0, 7);
+    var html = "";
+    html += '<header class="hero"><div class="inner">' +
+      '<div class="eyebrow">Marketing activity</div><h1>Campaigns, webinars and events</h1>' +
+      '<p class="lede">Everything the marketing team has on, planned and finished, in one place. Open any activity for its full page.</p>' +
+      '<div class="facts"><span>Campaigns <b>' + counts.campaign + "</b></span><span>Webinars <b>" + counts.webinar + "</b></span><span>Events <b>" + counts.event + "</b></span><span>Live now <b>" + live + "</b></span><span>Coming up <b>" + upcoming + "</b></span></div>" +
+      "</div></header>";
+    html += '<div class="inner"><div class="toolbar">' +
+      '<div class="seg" role="group" aria-label="Kind">' + segBtn("kind", "all", "All") + segBtn("kind", "campaign", "Campaigns") + segBtn("kind", "webinar", "Webinars") + segBtn("kind", "event", "Events") + "</div>" +
+      '<div class="seg" role="group" aria-label="When">' + segBtn("when", "all", "Any time") + segBtn("when", "live", "Live now") + segBtn("when", "upcoming", "Coming up") + segBtn("when", "done", "Finished") + "</div>" +
+      '<input type="search" id="q" placeholder="Search" aria-label="Search" value="' + esc(ui.q) + '" />' +
+      '<span class="count">' + plural(items.length, "activity").replace("activitys", "activities") + "</span></div>";
+    if (!items.length) html += '<p class="empty">Nothing matches.</p>';
+    keys.forEach(function (ym) {
+      var list = groups[ym].sort(function (a, b) { return sortDate(a).localeCompare(sortDate(b)); });
+      html += '<section class="group"><h2>' + esc(monthTitle(ym)) + (ym === thisMonth ? " <span>· this month</span>" : "") + " <span>· " + list.length + "</span></h2><div class=\"cards\">" + list.map(function (it) { return cardHtml(it, today); }).join("") + "</div></section>";
+    });
+    Object.keys(tbc).sort().forEach(function (k) {
+      html += '<section class="group"><h2>' + esc(k) + " <span>· " + tbc[k].length + "</span></h2><div class=\"cards\">" + tbc[k].map(function (it) { return cardHtml(it, today); }).join("") + "</div></section>";
+    });
+    if (evergreen.length) html += '<section class="group"><h2>Always on <span>· ' + evergreen.length + "</span></h2><div class=\"cards\">" + evergreen.map(function (it) { return cardHtml(it, today); }).join("") + "</div></section>";
+    html += '<p class="updated">Updated ' + (data && data.updatedAt ? new Date(data.updatedAt).toLocaleString() : "—") + "</p></div>";
+    var app = document.getElementById("app");
+    app.innerHTML = html;
+    app.querySelectorAll(".seg button").forEach(function (b) {
+      b.addEventListener("click", function () { ui[b.getAttribute("data-k")] = b.getAttribute("data-v"); renderList(); });
+    });
+    var q = document.getElementById("q");
+    q.addEventListener("input", function () { ui.q = q.value; var pos = q.selectionStart; renderList(); var q2 = document.getElementById("q"); q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (e) {} });
+  }
+  function segBtn(k, v, label) {
+    return '<button type="button" data-k="' + k + '" data-v="' + v + '" aria-pressed="' + (ui[k] === v) + '">' + label + "</button>";
+  }
+
+  // ── Detail view ────────────────────────────────────────────────────
+  function kv(rows) {
+    return '<dl class="kv">' + rows.filter(function (r) { return r[1] !== "" && r[1] != null; }).map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + r[1] + "</dd>"; }).join("") + "</dl>";
+  }
+  function panel(title, body, hint) {
+    return '<section class="panel"><div class="head"><h3>' + esc(title) + "</h3>" + (hint ? '<span class="hint">' + hint + "</span>" : "") + '</div><div class="body">' + body + "</div></section>";
+  }
+  function linkBtn(url, label) { url = safeUrl(url); return url ? '<a class="btn" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(label) + ' <span aria-hidden="true">↗</span></a>' : ""; }
+
+  function milestonesHtml(ms, today) {
+    if (!ms.length) return '<p class="empty" style="padding:12px 0">No milestones.</p>';
+    return '<ul class="list">' + ms.map(function (m) {
+      var late = !m.done && m.date < today;
+      var when = m.done ? "Done" : late ? "Overdue by " + plural(days(m.date, today), "day") : m.date === today ? "Today" : "In " + plural(days(today, m.date), "day");
+      var link = safeUrl(m.url) ? '<a href="' + esc(m.url) + '" target="_blank" rel="noopener noreferrer">' + esc(m.linkText || "Open link") + " ↗</a>" : "";
+      return '<li class="' + (m.done ? "done" : "") + '"><span class="tick ' + (m.done ? "on" : "") + '"></span><span class="date">' + fmt(m.date) + '</span><span class="main-text"><b>' + esc(m.label) + "</b>" + (m.description ? "<small>" + esc(m.description) + "</small>" : "") + link + '</span><span class="st ' + (m.done ? "complete" : late ? "blocked" : m.date === today ? "live" : "scheduled") + '">' + esc(when) + "</span></li>";
+    }).join("") + "</ul>";
+  }
+
+  function renderDetail(item) {
+    var today = todayIso();
+    var st = statusOf(item, today);
+    var tags = "", h1 = esc(item.name), lede = "", facts = [], main = "", side = "";
+    if (item.kind === "event") {
+      tags = '<li class="tag kind">Event</li><li class="tag line">' + esc(item.division || "") + "</li>" + (item.region ? '<li class="tag line">' + esc(item.region) + "</li>" : "") + '<li class="st ' + st.cls + '">' + esc(st.label) + "</li>";
+      lede = item.audience ? esc(item.audience) : "";
+      facts = [["Dates", esc(item.datesText)], ["Where", esc(item.location || "—")], ["Lead", esc(item.marketingLead || "—")], ["Checklist", item.checklist.filter(function (c) { return c.done; }).length + "/" + item.checklist.length], ["Spend", item.investmentUsd ? "US$" + Number(item.investmentUsd).toLocaleString() : "—"]];
+      var presence = [item.sponsor ? "Sponsor" + (item.sponsorNote ? " · " + esc(item.sponsorNote) : "") : "", item.booth ? "Booth" + (item.boothNote ? " · " + esc(item.boothNote) : "") : "", item.attendAndSell ? "Attend and sell" : "", item.speaking ? "Speaking · " + esc(item.speaking) : ""].filter(Boolean);
+      main += panel("About", kv([["Audience", esc(item.audience)], ["Our presence", presence.join("<br>")], ["Dates as published", esc(item.datesAsPublished)], ["Campaign code", item.campaignCode ? '<span class="mono">' + esc(item.campaignCode) + "</span>" : ""], ["Campaign", item.campaignName ? '<a href="#c-' + esc(item.campaignId) + '">' + esc(item.campaignName) + "</a>" : ""], ["Projects", item.projects.map(esc).join("<br>")]]) + (item.notes ? '<p class="prose">' + esc(item.notes) + "</p>" : ""));
+      main += panel("Who's going", kv([["Marketing lead", esc(item.marketingLead)], ["Sales lead", esc(item.salesLead)], ["Sales attendees", esc(item.salesAttendees) + (item.salesAttendeeCount ? " (" + item.salesAttendeeCount + ")" : "")], ["Academy", esc(item.academy)], ["Partners", esc(item.partners)]]));
+      main += panel("Results", '<div class="stats"><div class="stat"><b>' + (item.comms != null ? Number(item.comms).toLocaleString() : "—") + "</b><span>Conversations</span></div><div class=\"stat\"><b>" + (item.opps != null ? Number(item.opps).toLocaleString() : "—") + "</b><span>Opportunities</span></div><div class=\"stat\"><b>" + (item.investment != null ? esc(item.currency || "") + " " + Number(item.investment).toLocaleString() : "—") + "</b><span>Investment</span></div></div>" + (item.oppsBreakdown ? '<p class="prose">' + esc(item.oppsBreakdown) + "</p>" : ""));
+      side += panel("Checklist", '<ul class="list">' + item.checklist.map(function (c) { return '<li class="' + (c.done ? "done" : "") + '"><span class="tick ' + (c.done ? "on" : "") + '"></span><span class="main-text"><b>' + esc(c.label) + "</b>" + (c.afterEvent ? "<small>After the event</small>" : "") + "</span></li>"; }).join("") + "</ul>", item.checklist.filter(function (c) { return c.done; }).length + " of " + item.checklist.length);
+      if (item.itinerarySharePointUrl) side += panel("Itinerary", linkBtn(item.itinerarySharePointUrl, "Open the attendee itinerary"));
+    } else if (item.kind === "webinar") {
+      var w = item.webinar;
+      tags = '<li class="tag kind">Webinar</li><li class="tag brand">' + esc(item.brand || "") + '</li><li class="tag line">' + esc(w.typeLabel) + (w.deliveryLabel ? " · " + esc(w.deliveryLabel) : "") + '</li><li class="st ' + st.cls + '">' + esc(st.label) + "</li>" + (w.health ? '<li class="st ' + (/overdue/i.test(w.health) ? "blocked" : /risk/i.test(w.health) ? "scheduled" : "live") + '">' + esc(w.health) + "</li>" : "");
+      if (w.finalTitle && w.finalTitle !== item.name) lede = esc(w.finalTitle); else if (w.workingTitle && w.workingTitle !== item.name) lede = esc(w.workingTitle);
+      facts = [["Go-live", w.goLive ? fmtLong(w.goLive) : "Not set"]];
+      if (w.recordDate) facts.push(["Recording", fmtLong(w.recordDate)]);
+      facts.push(["Sections", w.done + "/" + w.total], ["Lead", esc(w.lead || "—")], ["Format", esc(w.formatLabel || "—")]);
+      if (w.series) facts.push(["Series", esc(w.series) + (w.episode ? " · Episode " + w.episode : "")]);
+      main += panel("The kit", '<ul class="sections">' + w.sections.map(function (s) {
+        return '<li class="' + s.status + (s.late ? " late" : "") + '"><span class="n">' + String(s.n).padStart(2, "0") + "<span>" + esc(s.statusLabel) + '</span></span><span class="l">' + esc(s.short) + '</span><span class="d ' + (s.late ? "late" : "") + '">' + (s.due ? (s.late ? "Late · " : "") + fmt(s.due) : "No date") + '</span><span class="bar"></span></li>';
+      }).join("") + "</ul>", w.done + " of " + w.total + " sections done");
+      if (w.summary || w.learn || w.audience.length) main += panel("About", (w.summary ? '<p class="prose">' + esc(w.summary) + "</p>" : "") + kv([["Audience", w.audience.map(esc).join(", ")], ["What you'll learn", esc(w.learn).replace(/\n/g, "<br>")], ["Sessions", esc(w.sessions).replace(/\n/g, "<br>")], ["Duration", esc(w.duration)]]) + linkBtn(w.landingLink, "Landing page"));
+      if (w.speakers.length) main += panel("Speakers", '<ul class="speakers">' + w.speakers.map(function (s) {
+        var img = safeUrl(s.headshot) && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(s.headshot) ? '<img src="' + esc(s.headshot) + '" alt="" />' : '<span class="initials">' + esc(initials(s.name)) + "</span>";
+        return "<li>" + img + "<div><b>" + esc(s.name) + "</b><small>" + esc([s.title, s.role, s.status].filter(Boolean).join(" · ")) + "</small>" + (s.bio ? "<p>" + esc(s.bio) + "</p>" : "") + "</div></li>";
+      }).join("") + "</ul>");
+      side += panel("Milestones", milestonesHtml(item.milestones, today));
+      if (item.description) side += panel("Notes", '<p class="prose">' + esc(item.description) + "</p>");
+      if (item.projects.length) side += panel("Projects", "<ul class=\"list\">" + item.projects.map(function (t) { return '<li><span class="main-text"><b>' + esc(t) + "</b></span></li>"; }).join("") + "</ul>");
+      if (item.sharePointUrl) side += panel("Campaign page", linkBtn(item.sharePointUrl, "Open the campaign page"));
+    } else {
+      tags = '<li class="tag kind">Campaign</li><li class="tag brand">' + esc(item.brand || "") + "</li>" + (item.category ? '<li class="tag line">' + esc(item.category) + "</li>" : "") + '<li class="st ' + st.cls + '">' + esc(st.label) + "</li>";
+      lede = item.description ? esc(item.description) : "";
+      var done = item.milestones.filter(function (m) { return m.done; }).length;
+      facts = [["Start", fmtLong(item.startDate)], ["End", item.evergreen ? "No end" : fmtLong(item.endDate)], ["Milestones", done + "/" + item.milestones.length], ["Owner", esc(item.owner || "—")]];
+      main += panel("Milestones", milestonesHtml(item.milestones, today), done + " of " + item.milestones.length + " done");
+      if (item.projects.length) side += panel("Projects", "<ul class=\"list\">" + item.projects.map(function (t) { return '<li><span class="main-text"><b>' + esc(t) + "</b></span></li>"; }).join("") + "</ul>");
+      if (item.sharePointUrl) side += panel("Campaign page", linkBtn(item.sharePointUrl, "Open the campaign page"));
+      if (!side) side = panel("Status", kv([["Phase", '<span class="st ' + st.cls + '">' + esc(st.label) + "</span>"], ["Runs", item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)]]));
+    }
+    var html = '<header class="hero"><div class="inner"><a class="back" href="#"><span aria-hidden="true">←</span> All marketing activity</a>' +
+      '<ul class="tags">' + tags + "</ul><h1>" + h1 + "</h1>" + (lede ? '<p class="lede">' + lede + "</p>" : "") +
+      '<div class="facts">' + facts.map(function (f) { return "<span>" + esc(f[0]) + " <b>" + f[1] + "</b></span>"; }).join("") + "</div></div></header>" +
+      '<div class="inner"><div class="detail"><div class="main">' + main + '</div><div class="side">' + side + "</div></div>" +
+      '<p class="updated detail-foot">Updated ' + (data && data.updatedAt ? new Date(data.updatedAt).toLocaleString() : "—") + "</p></div>";
+    document.getElementById("app").innerHTML = html;
+    window.scrollTo(0, 0);
+  }
+
+  function render() {
+    if (!data) return;
+    var key = (location.hash || "").replace(/^#/, "");
+    var item = key ? findItem(key) : null;
+    if (item) { renderDetail(item); document.title = item.name + " · Marketing activity"; }
+    else { renderList(); document.title = "Marketing activity"; }
+  }
+
+  // ── Data: the snapshot in the file, then the live copy ─────────────
+  function notice(cls, text) {
+    var el = document.getElementById("notice");
+    if (!text) { el.hidden = true; return; }
+    el.className = "notice " + cls; el.textContent = text; el.hidden = false;
+  }
+  function load() {
+    fetch(FEED_URL, { cache: "no-store" }).then(function (r) {
+      if (r.status === 404) { notice("gone", "This page is no longer being updated. The activity shown is from when the file was last downloaded."); return null; }
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (doc) {
+      if (!doc) return;
+      var json = doc.fields && doc.fields.json && doc.fields.json.stringValue;
+      if (!json) throw new Error("No data");
+      data = JSON.parse(json); notice("", ""); render();
+    }).catch(function (err) {
+      notice("warn", "Couldn't refresh just now; showing the last copy. " + (err && err.message ? "(" + err.message + ")" : ""));
+    });
+  }
+
+  try { data = JSON.parse(document.getElementById("activity-snapshot").textContent || "null"); } catch (e) { data = null; }
+  render();
+  load();
+  setInterval(load, REFRESH_MS);
+  window.addEventListener("hashchange", render);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
+})();
+</script>
+</body>
+</html>

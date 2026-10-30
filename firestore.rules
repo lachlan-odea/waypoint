@@ -46,6 +46,25 @@ service cloud.firestore {
     match /events/{eventId} {
       allow read, write: if request.auth != null;
     }
+    // The one marketing-activity page for SharePoint: every campaign,
+    // webinar and event as a single JSON string, readable by anyone with
+    // the exact token (see src/activityExport.ts). Larger than a campaign
+    // page, so a higher size cap; Firestore's own limit is 1 MiB.
+    match /activityPages/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if request.auth != null
+        && token.matches('^[0-9a-f]{32}$')
+        && request.resource.data.keys().hasOnly(['json'])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 950000;
+      allow delete: if request.auth != null;
+    }
+    // App-wide settings documents, such as the activity page's token and
+    // SharePoint link. Signed-in users only.
+    match /settings/{settingId} {
+      allow read, write: if request.auth != null;
+    }
     // The webinar speaker directory, shared by every signed-in user.
     match /speakers/{speakerId} {
       allow read, write: if request.auth != null;

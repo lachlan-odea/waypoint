@@ -30,6 +30,7 @@ import type {
   Workspace,
   WorkspaceData,
   Speaker,
+  ActivityShare,
 } from "./types";
 
 const designersCol = () => collection(db, "designers");
@@ -854,4 +855,35 @@ export async function setSpeaker(speaker: Speaker): Promise<void> {
 
 export async function deleteSpeaker(id: string): Promise<void> {
   await deleteDoc(doc(speakersCol(), id));
+}
+
+// ── The marketing activity page ────────────────────────────────────────
+// One public copy of every campaign, webinar and event for the SharePoint
+// page (src/activityExport.ts), at /activityPages/{shareToken}, plus the
+// token and SharePoint link in /settings/activityPage.
+
+const activityPagesCol = () => collection(db, "activityPages");
+const activityShareDoc = () => doc(collection(db, "settings"), "activityPage");
+
+export async function setActivityPage(shareToken: string, json: string): Promise<void> {
+  await setDoc(doc(activityPagesCol(), shareToken), { json });
+}
+
+export async function deleteActivityPage(shareToken: string): Promise<void> {
+  await deleteDoc(doc(activityPagesCol(), shareToken));
+}
+
+export function subscribeActivityShare(
+  onChange: (share: ActivityShare) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    activityShareDoc(),
+    (snap) => onChange((snap.data() as ActivityShare | undefined) ?? {}),
+    onError,
+  );
+}
+
+export async function setActivityShare(patch: ActivityShare): Promise<void> {
+  await setDoc(activityShareDoc(), { ...patch, updatedAt: new Date().toISOString() }, { merge: true });
 }

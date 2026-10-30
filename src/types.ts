@@ -360,6 +360,15 @@ export type Campaign = {
   createdAt: string;
 };
 
+// The one marketing-activity page on SharePoint (src/activityExport.ts):
+// its random token (the public copy is /activityPages/{shareToken}) and
+// where the page lives. One document, /settings/activityPage.
+export type ActivityShare = {
+  shareToken?: string;
+  sharePointUrl?: string;
+  updatedAt?: string;
+};
+
 // ── The webinar kit ─────────────────────────────────────────────────────
 // A webinar is a campaign worked through the 2026 webinar kit: nine
 // sections from brief to results, each due a set number of weeks before
