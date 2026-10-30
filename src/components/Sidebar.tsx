@@ -185,7 +185,7 @@ export function Sidebar({
 
       {/* The signed-in user, pinned at the bottom (§9 Shell). */}
       <div className="sidebar-user">
-        <Avatar designer={currentDesigner} />
+        <Avatar designer={currentDesigner} size={collapsed ? 32 : 60} />
         {!collapsed && (
           <div className="sidebar-user-info">
             <div className="sidebar-user-name">{currentDesigner.name}</div>

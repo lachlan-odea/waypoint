@@ -719,12 +719,12 @@ textarea {
   text-overflow: ellipsis;
 }
 .sidebar-foot {
-  border-top: 1px solid var(--border);
-  padding: 10px 12px;
+  /* Sits directly under the signed-in block as one unit, so no rule. */
+  padding: 2px 12px 14px;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -758,8 +758,8 @@ textarea {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 16px 14px 12px;
+  gap: 10px;
+  padding: 18px 14px 10px;
   border-top: 1px solid var(--border);
   margin-top: auto;
 }
@@ -771,7 +771,7 @@ textarea {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
   max-width: 100%;
   text-align: center;
