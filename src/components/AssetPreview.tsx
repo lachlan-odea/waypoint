@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { assetKindLabel, parseAssetLinks, type AssetLink } from "../assetLinks";
+import { Icon } from "./Icon";
 
 type Props = {
   // The raw Asset / Screenshot field text. May hold several links.
@@ -91,7 +92,7 @@ function LinkPreview({ link }: { link: AssetLink }) {
             {link.label}
           </span>
           <a href={link.url} target="_blank" rel="noreferrer">
-            Open ↗
+            Open <Icon name="external-link" size={12} />
           </a>
         </figcaption>
       </figure>
@@ -112,7 +113,7 @@ function LinkPreview({ link }: { link: AssetLink }) {
             {link.label}
           </span>
           <a href={link.url} target="_blank" rel="noreferrer">
-            Open ↗
+            Open <Icon name="external-link" size={12} />
           </a>
         </figcaption>
       </figure>
@@ -131,7 +132,7 @@ function LinkPreview({ link }: { link: AssetLink }) {
             Hide
           </button>
           <a href={link.url} target="_blank" rel="noreferrer">
-            Open ↗
+            Open <Icon name="external-link" size={12} />
           </a>
         </figcaption>
       </figure>
@@ -183,7 +184,7 @@ function LinkPreview({ link }: { link: AssetLink }) {
           target="_blank"
           rel="noreferrer"
         >
-          Open ↗
+          Open <Icon name="external-link" size={12} />
         </a>
       )}
     </div>

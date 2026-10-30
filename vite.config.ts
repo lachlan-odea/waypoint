@@ -31,7 +31,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.png', 'hero.png', 'app-icon.png'],
+      includeAssets: ['favicon.png', 'hero.png', 'app-icon.png', 'app-icon-maskable.png', 'apple-touch-icon.png', 'logos/waypoint-app-icon.svg'],
       manifest: {
         // Stable identity for the installed app. Without it the browser keys
         // the install off start_url, so changing start_url later would look
@@ -39,9 +39,9 @@ export default defineConfig({
         id: '/waypoint/',
         name: 'Waypoint',
         short_name: 'Waypoint',
-        description: 'Project management for the Design team.',
-        theme_color: '#4f46e5',
-        background_color: '#f5f6fa',
+        description: 'Plan. Launch. Track — marketing work management for campaigns, projects, events and tasks',
+        theme_color: '#1D1765',
+        background_color: '#F7F8FB',
         display: 'standalone',
         start_url: '/waypoint/',
         // Shared project links look like /waypoint/?project=<id>, which is
@@ -71,10 +71,12 @@ export default defineConfig({
             type: 'image/png',
           },
           {
-            src: 'app-icon.png',
+            // Full-bleed art for launchers that apply their own mask; the
+            // mark sits inside the central safe zone.
+            src: 'app-icon-maskable.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'maskable',
           },
         ],
       },

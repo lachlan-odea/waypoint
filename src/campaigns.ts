@@ -49,6 +49,42 @@ export function campaignOverlaps(c: Campaign, from: string, to: string): boolean
 
 // The last day the campaign occupies on a calendar. An evergreen one never
 // ends, so it gets a date past any month anyone will scroll to.
+// An exact copy of a campaign under a new id, for testing or as a starting
+// point: "(copy)" after the name, fresh ids on milestones and on the
+// webinar kit's rows, files and notes, and nothing shared with the
+// original — no social post links (a copy mustn't move the original's
+// posts), no SharePoint token or page. Written with setCampaign directly,
+// not saveCampaign, so social milestones don't spawn new draft posts.
+export function duplicateCampaign(c: Campaign, by?: string): Campaign {
+  const now = new Date().toISOString();
+  const id = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+  const copy: Campaign = {
+    ...c,
+    id: id("camp"),
+    name: `${c.name} (copy)`,
+    milestones: c.milestones.map((m) => {
+      const rest = { ...m, id: id("ms") };
+      delete rest.socialPostId;
+      return rest;
+    }),
+    createdAt: now,
+  };
+  delete copy.shareToken;
+  delete copy.sharePointUrl;
+  if (c.webinar) {
+    copy.webinar = {
+      ...c.webinar,
+      items: c.webinar.items.map((i) => ({ ...i, id: id("i") })),
+      files: c.webinar.files.map((f) => ({ ...f, id: id("f") })),
+      notes: c.webinar.notes.map((n) => ({ ...n, id: id("n") })),
+      activity: [{ id: id("a"), section: "", what: "duplicated from", detail: c.name, by, at: now }],
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+  return copy;
+}
+
 export const NO_END = "9999-12-31";
 export function campaignEnd(c: Campaign): string {
   return c.evergreen ? NO_END : c.endDate;

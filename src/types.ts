@@ -6,7 +6,9 @@ export type Priority = "Urgent" | "High" | "Normal" | "Low";
 // where any missed doc would fall through the `?? "active"` default and
 // silently reappear as active work. Always render these through
 // projectStatusLabel() in constants.ts rather than printing the raw value.
-export type ProjectStatus = "planning" | "active" | "paused" | "completed";
+// "cancelled" (added Oct 2026) is work that stopped before it was done:
+// off the board's live columns like completed work, in its own section.
+export type ProjectStatus = "planning" | "active" | "paused" | "completed" | "cancelled";
 
 // An office location and the time zone it keeps. Managed by super users in
 // Settings → Locations & time zones, and shared by everyone: adding one puts
@@ -61,6 +63,8 @@ export type Workspace = {
   id: string;
   name: string;
   memberIds?: string[];
+  // Sidebar icon, an Icon name; see src/workspaceIcon.ts for the defaults.
+  icon?: import("./components/Icon").IconName;
 };
 
 export type Milestone = {
@@ -350,7 +354,150 @@ export type Campaign = {
   // Where that page lives on SharePoint, pasted back by whoever uploaded it
   // (SharePointGuideModal). Linked from the campaign's editor and card.
   sharePointUrl?: string;
+  // The webinar kit workspace, for a campaign of type Webinar: the nine
+  // kit sections with their status, due dates, fields, repeatable rows,
+  // files, notes and activity. See webinarKit.ts. Lives on the campaign
+  // document so one subscription brings the whole pipeline.
+  webinar?: WebinarKit;
   createdAt: string;
+};
+
+// The one marketing-activity page on SharePoint (src/activityExport.ts):
+// its random token (the public copy is /activityPages/{shareToken}) and
+// where the page lives. One document, /settings/activityPage.
+export type ActivityShare = {
+  shareToken?: string;
+  sharePointUrl?: string;
+  updatedAt?: string;
+};
+
+// ── The webinar kit ─────────────────────────────────────────────────────
+// A webinar is a campaign worked through the 2026 webinar kit: nine
+// sections from brief to results, each due a set number of weeks before
+// or after go-live. Definitions of the sections, their fields and the
+// schedule maths are in webinarKit.ts; this is just what's stored.
+
+export type KitSectionStatus = "todo" | "doing" | "review" | "done" | "blocked" | "na";
+
+export type KitStage =
+  | "proposed"
+  | "planning"
+  | "production"
+  | "promotion"
+  | "post"
+  | "complete"
+  | "hold"
+  | "cancelled";
+
+// A field value: text, a number, a flag, or a list of picked options.
+export type KitValue = string | number | boolean | string[];
+
+// One repeatable row (a speaker, a run-of-show segment, an email…).
+export type KitItem = {
+  id: string;
+  // KINDS key in webinarKit.ts: speaker, ros, runsheet, social…
+  kind: string;
+  // Sub-list within a kind, for checklists' extra items.
+  list?: string;
+  order: number;
+  d: Record<string, KitValue>;
+  by?: string;
+  at: string;
+};
+
+export type KitFile = {
+  id: string;
+  // Section key, or "" for the project as a whole.
+  section: string;
+  name: string;
+  url: string;
+  by?: string;
+  at: string;
+};
+
+export type KitNote = {
+  id: string;
+  section: string;
+  text: string;
+  by?: string;
+  at: string;
+};
+
+export type KitActivity = {
+  id: string;
+  section: string;
+  what: string;
+  detail?: string;
+  by?: string;
+  at: string;
+};
+
+export type KitSectionState = {
+  status?: KitSectionStatus;
+  // A due date set by hand, overriding the kit's schedule (YYYY-MM-DD).
+  due?: string;
+  // Designer id assigned to the section, overriding the role's team.
+  who?: string;
+  by?: string;
+  at?: string;
+};
+
+export type WebinarKit = {
+  stage: KitStage;
+  // TYPES key: tl, pdd, mpu.
+  type: string;
+  delivery: "live" | "prerecorded";
+  // FORMATS key: panel, keynote, fireside. Empty until confirmed.
+  format: string;
+  // PHASES key, or empty.
+  phase: string;
+  series: string;
+  ep?: number;
+  // The date every due date counts back from (YYYY-MM-DD).
+  goLive: string;
+  // For a pre-recorded webinar, production sections are due against this.
+  recordDate: string;
+  // Working title, final title, sessions and time zones, duration, folder.
+  wt: string;
+  ft: string;
+  sessions: string;
+  duration: string;
+  folder: string;
+  // Designer id of the project lead.
+  lead?: string;
+  // Designer ids per role (ROLES key in webinarKit.ts).
+  team: Record<string, string[]>;
+  sec: Record<string, KitSectionState>;
+  // Field values per section key, keyed by field key (composite keys like
+  // "approval|ok" for a field's parts).
+  values: Record<string, Record<string, KitValue>>;
+  items: KitItem[];
+  files: KitFile[];
+  notes: KitNote[];
+  activity: KitActivity[];
+  archived?: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// A webinar speaker, saved once in /speakers so they can be added to any
+// webinar's speaker list. A webinar's speaker row keeps its own copy of
+// the details (so a brief reads as it did when it was written) and the
+// speaker's id in `d.speakerId`, which links it back here.
+export type Speaker = {
+  id: string;
+  name: string;
+  // Title and organisation, as they appear on a landing page.
+  title: string;
+  bio: string;
+  // A link to the high-res headshot: SharePoint, IntelligenceBank or a
+  // direct image link.
+  headshot: string;
+  linkedin?: string;
+  email?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 // The in-memory snapshot of everything App.tsx needs to render. Loaded

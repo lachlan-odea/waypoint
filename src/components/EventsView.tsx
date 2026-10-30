@@ -27,10 +27,13 @@ import {
   monthTitle,
 } from "../events";
 import { EventModal } from "./EventModal";
+import { EventCalendarCard } from "./EventCalendarCard";
 import { ItineraryModal } from "./ItineraryModal";
 import { ExportCsvModal } from "./ExportCsvModal";
 import { csvFileName, downloadCsv, eventsCsv, eventsInRange } from "../csvExport";
 import { seedEventsIfMissing } from "../firestore";
+import { Icon } from "./Icon";
+import { eventStatusTone } from "../statusTone";
 
 type Props = {
   events: MarketingEvent[];
@@ -43,6 +46,9 @@ type Props = {
   workspaces: Workspace[];
   onOpenProject: (projectId: string) => void;
   onOpenCampaign: (campaignId: string) => void;
+  // Open an event as its own page (hash route in App.tsx). Editing
+  // happens there; this view only creates.
+  onOpenEvent: (eventId: string) => void;
   onSave: (event: MarketingEvent) => void;
   onDelete: (id: string) => void;
   // The header's + New → Event and Export CSV, as request numbers that
@@ -53,9 +59,7 @@ type Props = {
   onExportHandled?: () => void;
 };
 
-type Editing =
-  | { mode: "create"; initial: Partial<MarketingEvent> }
-  | { mode: "edit"; event: MarketingEvent };
+type Editing = { mode: "create"; initial: Partial<MarketingEvent> };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -133,8 +137,8 @@ export function EventsView({
   workspaces,
   onOpenProject,
   onOpenCampaign,
+  onOpenEvent,
   onSave,
-  onDelete,
   createRequest,
   onCreateHandled,
   exportRequest,
@@ -342,7 +346,7 @@ export function EventsView({
   }
 
   function openEdit(e: MarketingEvent) {
-    setEditing({ mode: "edit", event: e });
+    onOpenEvent(e.id);
   }
 
   // Follow a saved event to its year (and, on the Calendar tab, its month)
@@ -354,11 +358,6 @@ export function EventsView({
       goYear(event.startDate ? Number(event.startDate.slice(0, 4)) : event.year);
     }
     if (event.startDate && view === "calendar") setCalMonth(event.startDate.slice(0, 7));
-  }
-
-  function remove(id: string) {
-    onDelete(id);
-    setEditing(null);
   }
 
   function openProject(projectId: string) {
@@ -427,7 +426,7 @@ export function EventsView({
             onClick={() => goYear(year - 1)}
             aria-label="Previous year"
           >
-            ‹
+            <Icon name="chevron-left" size={16} />
           </button>
           <h2 className="soc-month-title ev-year-title">{year}</h2>
           <button
@@ -435,7 +434,7 @@ export function EventsView({
             onClick={() => goYear(year + 1)}
             aria-label="Next year"
           >
-            ›
+            <Icon name="chevron-right" size={16} />
           </button>
           {year !== thisYear && (
             <button className="btn-mini" onClick={() => goYear(thisYear)}>
@@ -682,7 +681,7 @@ export function EventsView({
               onClick={() => goMonth(shiftMonth(calMonth, -1))}
               aria-label="Previous month"
             >
-              ‹
+              <Icon name="chevron-left" size={16} />
             </button>
             <h2 className="soc-month-title">{calTitle}</h2>
             <button
@@ -690,7 +689,7 @@ export function EventsView({
               onClick={() => goMonth(shiftMonth(calMonth, 1))}
               aria-label="Next month"
             >
-              ›
+              <Icon name="chevron-right" size={16} />
             </button>
             {calMonth !== today.slice(0, 7) && (
               <button className="btn-mini" onClick={() => goMonth(today.slice(0, 7))}>
@@ -738,24 +737,20 @@ export function EventsView({
                     </button>
                   </div>
                   {dayEvents.length > 0 && (
-                    <div className="ev-cell-list">
-                      {dayEvents.map((e) => {
-                        const ph = eventPhase(e, today);
-                        return (
-                          <button
-                            key={e.id}
-                            type="button"
-                            className={`ev-chip ${ph} ${iso !== e.startDate ? "cont" : ""}`}
-                            style={{ ["--ev" as string]: eventStatusMeta(ph).color } as React.CSSProperties}
-                            onClick={() => openEdit(e)}
-                            title={`${e.name} · ${formatEventDates(e)}${
-                              e.location ? ` · ${e.location}` : ""
-                            } · ${eventStatusMeta(ph).label}`}
-                          >
-                            {e.name}
-                          </button>
-                        );
-                      })}
+                    <div className="soc-cell-posts ev-cell-list">
+                      {dayEvents.map((e) => (
+                        <EventCalendarCard
+                          key={e.id}
+                          event={e}
+                          day={iso}
+                          today={today}
+                          campaign={e.campaignId ? campaigns.find((c) => c.id === e.campaignId) : undefined}
+                          onClick={() => openEdit(e)}
+                          // The full card on the run's first day, or on the first of the
+                          // month for a run that started earlier; later days compact.
+                          compact={iso !== e.startDate && iso !== `${calMonth}-01`}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
@@ -874,7 +869,7 @@ export function EventsView({
                               rel="noopener noreferrer"
                               onClick={(ev) => ev.stopPropagation()}
                             >
-                              On SharePoint ↗
+                              On SharePoint <Icon name="external-link" size={12} />
                             </a>
                           )}
                         </span>
@@ -884,7 +879,7 @@ export function EventsView({
                         {e.region ? ` · ${e.region}` : ""}
                       </td>
                       <td>
-                        <span className="soc-status" style={{ background: meta.color }}>
+                        <span className={`soc-status wp-status ${eventStatusTone(meta.value)}`}>
                           {meta.label}
                         </span>
                       </td>
@@ -931,7 +926,7 @@ export function EventsView({
                     <div className="ev-card-bar" />
                     <div className="ev-card-body">
                       <div className="ev-card-top">
-                        <span className="soc-status" style={{ background: meta.color }}>
+                        <span className={`soc-status wp-status ${eventStatusTone(meta.value)}`}>
                           {meta.label}
                         </span>
                         <span className="muted small">
@@ -1025,7 +1020,7 @@ export function EventsView({
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            Itinerary on SharePoint ↗
+                            Itinerary on SharePoint <Icon name="external-link" size={12} />
                           </a>
                         )}
                       </div>
@@ -1051,23 +1046,6 @@ export function EventsView({
           onOpenCampaign={openCampaign}
           onCancel={() => setEditing(null)}
           onSave={save}
-        />
-      )}
-      {editing && editing.mode === "edit" && (
-        <EventModal
-          key={editing.event.id}
-          mode="edit"
-          initial={editing.event}
-          events={events}
-          campaigns={campaigns}
-          designers={designers}
-          projects={projects}
-          workspaces={workspaces}
-          onOpenProject={openProject}
-          onOpenCampaign={openCampaign}
-          onCancel={() => setEditing(null)}
-          onSave={save}
-          onDelete={() => remove(editing.event.id)}
         />
       )}
       {itineraryFor && (() => {

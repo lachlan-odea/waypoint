@@ -10,12 +10,12 @@ export const EVENT_STATUSES: {
   label: string;
   color: string;
 }[] = [
-  { value: "prospect", label: "Prospect", color: "#6b6d88" },
-  { value: "planning", label: "Planning", color: "#6a5cd8" },
+  { value: "prospect", label: "Prospect", color: "#8b96a8" },
+  { value: "planning", label: "Planning", color: "#2f6fb0" },
   { value: "confirmed", label: "Confirmed", color: "#371ee1" },
-  { value: "live", label: "Live", color: "#1f7a4d" },
-  { value: "done", label: "Done", color: "#244349" },
-  { value: "cancelled", label: "Cancelled", color: "#651d32" },
+  { value: "live", label: "Live", color: "#0c5a2e" },
+  { value: "done", label: "Done", color: "#1d1765" },
+  { value: "cancelled", label: "Cancelled", color: "#8a1c16" },
 ];
 
 export function eventStatusMeta(status: EventStatus | undefined) {

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ActivityPortalLink } from "./ActivityPortalLink";
 import type {
   Campaign,
   Designer,
@@ -6,6 +7,7 @@ import type {
   Project,
   SocialCategory,
   SocialPost,
+  Speaker,
   Workspace,
 } from "../types";
 import { brandColor, socialCategoryMeta } from "../constants";
@@ -21,6 +23,7 @@ import {
 import { CampaignModal } from "./CampaignModal";
 import { MilestonePostLink } from "./MilestonePostLink";
 import { ExportCsvModal } from "./ExportCsvModal";
+import { WebinarPipeline } from "./webinar/WebinarPipeline";
 import {
   MILESTONE_DRAG_MIME,
   readDraggedMilestone,
@@ -48,6 +51,15 @@ type Props = {
   projects: Project[];
   workspaces: Workspace[];
   onOpenProject: (projectId: string) => void;
+  // Open a campaign as its own page (hash route in App.tsx), optionally
+  // on a tab or kit section. Editing happens there; this view only creates.
+  onOpenCampaign: (campaignId: string, tab?: string) => void;
+  // For "My webinars" and attribution on the webinar kit.
+  currentDesignerId: string;
+  // The webinar speaker directory, for the Webinars view.
+  speakers: Speaker[];
+  onSaveSpeaker: (speaker: Speaker) => void;
+  onDeleteSpeaker: (id: string) => void;
   // Every social post, to show the status of the post each social
   // milestone created, and the way to open one.
   socialPosts: SocialPost[];
@@ -65,11 +77,12 @@ type Props = {
   onCreateHandled?: () => void;
   exportRequest?: number;
   onExportHandled?: () => void;
+  // Another page asking for a particular view (the dashboard opens the
+  // Webinars view directly). A fresh seq per request.
+  viewRequest?: { view: "cards" | "calendar" | "webinars"; seq: number };
 };
 
-type Editing =
-  | { mode: "create"; initial: Partial<Campaign> }
-  | { mode: "edit"; campaign: Campaign };
+type Editing = { mode: "create"; initial: Partial<Campaign> };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -79,7 +92,7 @@ const NO_TYPE = "__none__";
 // Per-browser preference: the month's campaign cards, or the day grid of
 // their milestones.
 const VIEW_KEY = "waypoint.campaigns.view";
-type View = "cards" | "calendar";
+type View = "cards" | "calendar" | "webinars";
 
 function shiftMonth(month: string, delta: number): string {
   const [y, m] = month.split("-").map(Number);
@@ -124,16 +137,21 @@ export function CampaignsView({
   projects,
   workspaces,
   onOpenProject,
+  onOpenCampaign,
+  currentDesignerId,
+  speakers,
+  onSaveSpeaker,
+  onDeleteSpeaker,
   socialPosts,
   onOpenSocialPost,
   onSave,
-  onDelete,
   focusCampaignId,
   onFocusHandled,
   createRequest,
   onCreateHandled,
   exportRequest,
   onExportHandled,
+  viewRequest,
 }: Props) {
   const today = todayIso();
   const [month, setMonth] = useState(() => today.slice(0, 7));
@@ -150,7 +168,8 @@ export function CampaignsView({
   const [hoverCampaignId, setHoverCampaignId] = useState<string | null>(null);
   const [view, setViewState] = useState<View>(() => {
     try {
-      return localStorage.getItem(VIEW_KEY) === "calendar" ? "calendar" : "cards";
+      const saved = localStorage.getItem(VIEW_KEY);
+      return saved === "calendar" || saved === "webinars" ? saved : "cards";
     } catch {
       return "cards";
     }
@@ -181,7 +200,7 @@ export function CampaignsView({
     setHandledFocus(focusCampaignId);
     if (c) {
       setMonth(c.startDate.slice(0, 7));
-      setEditing({ mode: "edit", campaign: c });
+      onOpenCampaign(c.id);
     }
     // Let the parent clear its request after this render commits.
     queueMicrotask(() => onFocusHandled?.());
@@ -199,6 +218,11 @@ export function CampaignsView({
       },
     });
     queueMicrotask(() => onCreateHandled?.());
+  }
+  const [handledView, setHandledView] = useState(0);
+  if (viewRequest && viewRequest.seq !== handledView) {
+    setHandledView(viewRequest.seq);
+    setView(viewRequest.view);
   }
   const [handledExport, setHandledExport] = useState(0);
   if (exportRequest && exportRequest !== handledExport) {
@@ -264,11 +288,6 @@ export function CampaignsView({
     if (!campaignOverlaps(campaign, from, to)) {
       setMonth(campaign.startDate.slice(0, 7));
     }
-  }
-
-  function remove(id: string) {
-    onDelete(id);
-    setEditing(null);
   }
 
   function toggleMilestone(campaign: Campaign, milestoneId: string) {
@@ -365,6 +384,8 @@ export function CampaignsView({
   return (
     <section className="workspace-section soc camps">
       <div className="soc-toolbar">
+        {view !== "webinars" && (
+          <>
         <div className="soc-monthnav">
           <button
             className="btn-mini"
@@ -456,6 +477,8 @@ export function CampaignsView({
             Dated
           </button>
         </div>
+          </>
+        )}
 
         <div className="soc-toolbar-right">
           <div className="soc-tabs" role="tablist" aria-label="Cards or calendar">
@@ -475,10 +498,20 @@ export function CampaignsView({
             >
               Calendar
             </button>
+            <button
+              role="tab"
+              aria-selected={view === "webinars"}
+              className={view === "webinars" ? "active" : ""}
+              onClick={() => setView("webinars")}
+              title="The webinar pipeline: every Webinar campaign worked through the 2026 kit"
+            >
+              Webinars
+            </button>
           </div>
         </div>
       </div>
 
+      {view !== "webinars" && (
       <div className="soc-summary">
         <span className="muted small">
           {monthCampaigns.length === 0
@@ -495,6 +528,20 @@ export function CampaignsView({
           {" · open a card to edit it, tick a milestone when it's happened"}
         </span>
       </div>
+      )}
+
+      {view === "webinars" && (
+        <WebinarPipeline
+          campaigns={campaigns}
+          designers={designers}
+          currentDesignerId={currentDesignerId}
+          onOpen={onOpenCampaign}
+          onCreate={(c) => onSave(c)}
+          speakers={speakers}
+          onSaveSpeaker={onSaveSpeaker}
+          onDeleteSpeaker={onDeleteSpeaker}
+        />
+      )}
 
       {view === "cards" && (
         <>
@@ -551,7 +598,7 @@ export function CampaignsView({
                   <button
                     type="button"
                     className="camp-card-title"
-                    onClick={() => setEditing({ mode: "edit", campaign: c })}
+                    onClick={() => onOpenCampaign(c.id)}
                     title="Edit campaign"
                   >
                     {c.name}
@@ -567,16 +614,7 @@ export function CampaignsView({
                     )}
                     {c.owner ? ` · ${c.owner}` : ""}
                   </p>
-                  {c.sharePointUrl && (
-                    <a
-                      className="camp-card-sharepoint"
-                      href={c.sharePointUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      SharePoint page ↗
-                    </a>
-                  )}
+                  <ActivityPortalLink kind="campaign" id={c.id} className="camp-card-sharepoint" short offerSetup={false} />
                   {(() => {
                     const cat = socialCategoryMeta(c.category, categories);
                     return cat ? (
@@ -780,7 +818,7 @@ export function CampaignsView({
                         <button
                           type="button"
                           className="camp-ms-card-body"
-                          onClick={() => setEditing({ mode: "edit", campaign: c })}
+                          onClick={() => onOpenCampaign(c.id)}
                           title={`${c.name} · open the campaign`}
                         >
                           <span className="camp-ms-card-label">{m.label}</span>
@@ -801,7 +839,7 @@ export function CampaignsView({
         </>
       )}
 
-      {upcoming.length > 0 && (
+      {view !== "webinars" && upcoming.length > 0 && (
         <div className="camps-upcoming">
           <div className="section-head">
             <h2>Coming up</h2>
@@ -813,7 +851,7 @@ export function CampaignsView({
                 <button
                   type="button"
                   className="camps-upcoming-row"
-                  onClick={() => setEditing({ mode: "edit", campaign: c })}
+                  onClick={() => onOpenCampaign(c.id)}
                 >
                   <span className="camps-swatch" style={{ background: c.color }} />
                   <span className="camps-upcoming-name">{c.name}</span>
@@ -845,24 +883,6 @@ export function CampaignsView({
           onOpenSocialPost={openSocialPost}
           onCancel={() => setEditing(null)}
           onSave={save}
-        />
-      )}
-      {editing && editing.mode === "edit" && (
-        <CampaignModal
-          key={editing.campaign.id}
-          mode="edit"
-          initial={editing.campaign}
-          categories={categories}
-          milestoneTypes={milestoneTypes}
-          designers={designers}
-          projects={projects}
-          workspaces={workspaces}
-          onOpenProject={openProject}
-          socialPosts={socialPosts}
-          onOpenSocialPost={openSocialPost}
-          onCancel={() => setEditing(null)}
-          onSave={save}
-          onDelete={() => remove(editing.campaign.id)}
         />
       )}
       {exporting && (

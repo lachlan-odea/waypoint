@@ -29,6 +29,8 @@ import { copyText, projectShareUrl } from "../share";
 import { projectContentTypes } from "../contentTypes";
 import { Avatar } from "./Avatar";
 import { AssigneePicker } from "./AssigneePicker";
+import { Icon } from "./Icon";
+import { socialStatusTone } from "../statusTone";
 
 type Props = {
   project: Project;
@@ -64,6 +66,13 @@ type Props = {
   onOpenCampaign: (campaignId: string) => void;
   // Content types on offer, from Settings → Types & tags.
   contentTypeOptions: readonly string[];
+  // Render as the Details tab of the project's page rather than as a
+  // window over the board: no overlay, no close button, no Escape, no
+  // "Done". Everything else — the live edits, tasks, comments — is the same.
+  inline?: boolean;
+  // With `inline`, show only the comment thread (the project page's
+  // Comments tab): no header, no other sections, no footer.
+  section?: "comments";
 };
 
 const priorities: Priority[] = ["Urgent", "High", "Normal", "Low"];
@@ -109,7 +118,10 @@ export function ProjectDetailModal({
   onOpenSocialPost,
   onOpenCampaign,
   contentTypeOptions,
+  inline = false,
+  section,
 }: Props) {
+  const onlyComments = inline && section === "comments";
   // Campaigns this project is doing work for. Same shape as the linked
   // posts below: its own small query, soonest start first.
   const [linkedCampaigns, setLinkedCampaigns] = useState<Campaign[]>([]);
@@ -193,12 +205,13 @@ export function ProjectDetailModal({
   }
 
   useEffect(() => {
+    if (inline) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, inline]);
 
   useEffect(() => {
     if (shareState === "idle") return;
@@ -560,9 +573,9 @@ export function ProjectDetailModal({
     }
   }
 
-  return (
-    <div className="modal-overlay">
-      <div className="modal">
+  const editor = (
+      <div className={inline ? `modal item-editor ${onlyComments ? "item-editor-comments" : ""}` : "modal"}>
+        {!onlyComments && (
         <header className="modal-head">
           <div>
             <input
@@ -617,13 +630,18 @@ export function ProjectDetailModal({
                 </option>
               ))}
             </select>
-            <button className="icon-btn" onClick={onClose} aria-label="Close">
-              ✕
-            </button>
+            {!inline && (
+              <button className="icon-btn" onClick={onClose} aria-label="Close">
+                <Icon name="close" size={16} />
+              </button>
+            )}
           </div>
         </header>
+        )}
 
         <div className="modal-body">
+          {!onlyComments && (
+          <>
           <section className="modal-section">
             <h3>Overview</h3>
             {editingOverview ? (
@@ -775,7 +793,7 @@ export function ProjectDetailModal({
               />
               {project.briefUrl && (
                 <a className="brief-link" href={project.briefUrl} target="_blank" rel="noreferrer">
-                  Open link ↗
+                  Open link <Icon name="external-link" size={12} />
                 </a>
               )}
             </Field>
@@ -1020,10 +1038,7 @@ export function ProjectDetailModal({
                         <span className="linked-post-date">
                           {p.date ? formatShort(p.date) : "Unscheduled"}
                         </span>
-                        <span
-                          className="soc-status"
-                          style={{ background: status.color }}
-                        >
+                        <span className={`soc-status wp-status ${socialStatusTone(p.status)}`}>
                           <span className="soc-status-label">{status.label}</span>
                         </span>
                       </button>
@@ -1034,8 +1049,11 @@ export function ProjectDetailModal({
             </section>
           )}
 
+          </>
+          )}
+
           <section className="modal-section">
-            <h3>Comments</h3>
+            {!onlyComments && <h3>Comments</h3>}
             <div className="comments">
               {topLevelComments.length === 0 && (
                 <p className="muted">No comments yet — start the thread below.</p>
@@ -1093,6 +1111,7 @@ export function ProjectDetailModal({
           </section>
         </div>
 
+        {!onlyComments && (
         <footer className="modal-foot">
           {confirmingDelete ? (
             <>
@@ -1115,13 +1134,14 @@ export function ProjectDetailModal({
               <button onClick={() => onArchiveToggle(!project.archived)}>
                 {project.archived ? "Unarchive" : "Archive"}
               </button>
-              <button onClick={onClose}>Done</button>
+              {!inline && <button onClick={onClose}>Done</button>}
             </>
           )}
         </footer>
+        )}
       </div>
-    </div>
   );
+  return inline ? editor : <div className="modal-overlay">{editor}</div>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

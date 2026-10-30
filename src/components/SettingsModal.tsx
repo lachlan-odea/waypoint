@@ -15,6 +15,7 @@ import {
   supportedTimeZones,
   timeZoneOffsetLabel,
 } from "../timezones";
+import { Icon } from "./Icon";
 
 type Props = {
   currentDesigner: Designer;
@@ -161,7 +162,7 @@ export function SettingsModal({
         <header className="modal-head">
           <h2 className="modal-title-static">Settings</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
-            ✕
+            <Icon name="close" size={16} />
           </button>
         </header>
 
@@ -667,7 +668,7 @@ function ManageHubsModal({
         <header className="modal-head">
           <h2 className="modal-title-static">Locations &amp; time zones</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
-            ✕
+            <Icon name="close" size={16} />
           </button>
         </header>
         <div className="modal-body">
@@ -990,7 +991,7 @@ function ManageUsersModal({
         <header className="modal-head">
           <h2 className="modal-title-static">Manage users</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
-            ✕
+            <Icon name="close" size={16} />
           </button>
         </header>
         <div className="modal-body">

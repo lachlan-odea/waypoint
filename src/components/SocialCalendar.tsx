@@ -29,6 +29,8 @@ import {
   socialPostsCsv,
   socialPostsInRange,
 } from "../csvExport";
+import { Icon } from "./Icon";
+import { socialStatusTone } from "../statusTone";
 
 type Props = {
   // Only used for owner suggestions in the post editor.
@@ -570,7 +572,7 @@ export function SocialCalendar({
             aria-label="Previous month"
             disabled={tab === "library"}
           >
-            ‹
+            <Icon name="chevron-left" size={16} />
           </button>
           <h2 className="soc-month-title">
             {tab === "library" ? "Evergreen library" : monthLabel}
@@ -581,7 +583,7 @@ export function SocialCalendar({
             aria-label="Next month"
             disabled={tab === "library"}
           >
-            ›
+            <Icon name="chevron-right" size={16} />
           </button>
           {tab === "calendar" && month !== today.slice(0, 7) && (
             <button className="btn-mini" onClick={() => setMonth(today.slice(0, 7))}>
@@ -837,7 +839,7 @@ export function SocialCalendar({
                           : `Show only ${s.label} posts`
                       }
                     >
-                      <span className="soc-status" style={{ background: s.color }}>
+                      <span className={`soc-status wp-status ${socialStatusTone(s.value)}`}>
                         <span className="soc-status-label">{s.label}</span>
                       </span>
                       {statusCounts.get(s.value) ? (

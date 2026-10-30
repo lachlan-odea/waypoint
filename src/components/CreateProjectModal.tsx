@@ -4,6 +4,7 @@ import { BRANDS } from "../constants";
 import { ContentTypeField } from "./ContentTypeField";
 import { projectContentTypes } from "../contentTypes";
 import { AssigneePicker } from "./AssigneePicker";
+import { Icon } from "./Icon";
 
 type Props = {
   designers: Designer[];
@@ -109,7 +110,7 @@ export function CreateProjectModal({
         <header className="modal-head">
           <h2 className="modal-title-static">New project</h2>
           <button className="icon-btn" onClick={onCancel} aria-label="Close">
-            ✕
+            <Icon name="close" size={16} />
           </button>
         </header>
         <div className="modal-body">

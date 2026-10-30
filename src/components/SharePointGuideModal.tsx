@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Icon } from "./Icon";
 
 // The marketing team's campaign library on SharePoint, where every
 // campaign's page is uploaded.
@@ -103,7 +104,7 @@ export function SharePointGuideModal({
           </div>
           {canClose && (
             <button className="icon-btn" onClick={onCancel} aria-label="Close">
-              ✕
+              <Icon name="close" size={16} />
             </button>
           )}
         </header>
@@ -112,7 +113,7 @@ export function SharePointGuideModal({
           <ol className="sp-steps">
             <li className={`sp-step ${downloaded ? "done" : ""}`}>
               <span className="sp-step-num" aria-hidden>
-                {downloaded ? "✓" : 1}
+                {downloaded ? <Icon name="checkmark" size={14} /> : 1}
               </span>
               <div className="sp-step-body">
                 <h3>Download the SharePoint page</h3>
@@ -121,7 +122,7 @@ export function SharePointGuideModal({
                 </p>
                 <button
                   type="button"
-                  className={downloaded ? "btn-mini" : "primary"}
+                  className={downloaded ? "btn btn-secondary btn-sm" : "btn btn-primary"}
                   onClick={download}
                 >
                   {downloaded ? "Download again" : "Download page"}
@@ -131,7 +132,7 @@ export function SharePointGuideModal({
 
             <li className={`sp-step ${openedFolder ? "done" : ""}`}>
               <span className="sp-step-num" aria-hidden>
-                {openedFolder ? "✓" : 2}
+                {openedFolder ? <Icon name="checkmark" size={14} /> : 2}
               </span>
               <div className="sp-step-body">
                 <h3>Upload it to SharePoint</h3>
@@ -140,13 +141,13 @@ export function SharePointGuideModal({
                   downloaded file in, or use Upload › Files.
                 </p>
                 <a
-                  className={`sp-step-link ${downloaded && !openedFolder ? "primary" : "btn-mini"}`}
+                  className={`sp-step-link btn ${downloaded && !openedFolder ? "btn-primary" : "btn-secondary btn-sm"}`}
                   href={folderUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setOpenedFolder(true)}
                 >
-                  Click here to go to SharePoint ↗
+                  Open the SharePoint folder <Icon name="external-link" size={14} />
                 </a>
               </div>
             </li>
@@ -172,7 +173,7 @@ export function SharePointGuideModal({
 
             <li className={`sp-step ${valid ? "done" : ""}`}>
               <span className="sp-step-num" aria-hidden>
-                {valid ? "✓" : 4}
+                {valid ? <Icon name="checkmark" size={14} /> : 4}
               </span>
               <div className="sp-step-body">
                 <h3>Paste the page's link here</h3>
@@ -210,7 +211,7 @@ export function SharePointGuideModal({
             </span>
           )}
           {canClose && <button onClick={onCancel}>Cancel</button>}
-          <button className="primary" onClick={save} disabled={!valid}>
+          <button className="btn btn-primary" onClick={save} disabled={!valid}>
             Save link
           </button>
         </footer>

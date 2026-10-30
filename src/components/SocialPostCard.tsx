@@ -10,6 +10,7 @@ import { writeDraggedSocialPostId } from "../dnd";
 import { socialPostTitle } from "../socialPosts";
 import { LinkedInGlyph } from "./LinkedInGlyph";
 import { firstEmbeddableImage } from "../assetLinks";
+import { socialStatusTone } from "../statusTone";
 
 type Props = {
   post: SocialPost;
@@ -164,8 +165,7 @@ export function SocialPostCard({
           {post.channel || "No channel"}
         </span>
         <span
-          className="soc-status"
-          style={{ background: status.color }}
+          className={`soc-status wp-status ${socialStatusTone(post.status)}`}
           title={`Status: ${status.label}`}
         >
           <span className="soc-status-label">{status.label}</span>

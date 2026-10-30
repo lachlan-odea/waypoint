@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
   Campaign,
+  ActivityShare,
   MarketingEvent,
   Notification,
+  Speaker,
   Project,
   ProjectStatus,
   SocialConfig,
@@ -11,6 +13,7 @@ import type {
   WorkspaceData,
 } from "./types";
 import { auth, observeAuth, signOut as fbSignOut } from "./firebase";
+import { APP_VERSION, markSessionEpoch, sessionEpochChanged } from "./version";
 import {
   deleteNotification as firestoreDeleteNotification,
   deleteNotificationsForRecipient as firestoreDeleteNotificationsForRecipient,
@@ -42,17 +45,25 @@ import {
   deleteItineraryPage as firestoreDeleteItineraryPage,
   seedEventsIfMissing,
   subscribeEvents,
+  subscribeSpeakers,
+  subscribeActivityShare,
+  setActivityShare as firestoreSetActivityShare,
+  setSpeaker as firestoreSetSpeaker,
+  deleteSpeaker as firestoreDeleteSpeaker,
   subscribeCampaigns,
   subscribeSocialConfig,
   subscribeSocialPosts,
   subscribeWorkspace,
 } from "./firestore";
-import { isSocialMilestone, milestoneSocialPost } from "./campaigns";
+import { duplicateCampaign as copyCampaign, isSocialMilestone, milestoneSocialPost } from "./campaigns";
 import { publishCampaignPage } from "./campaignExport";
+import { ACTIVITY_PAGE_FILE_NAME, activityPageData, downloadActivityPage, newShareToken, publishActivityPage } from "./activityExport";
+import { SharePointGuideModal } from "./components/SharePointGuideModal";
+import { ActivityPortalContext, activityItemUrl } from "./activityPortal";
 import { publishItineraryPage } from "./itineraryExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
-import { ProjectDetailModal } from "./components/ProjectDetailModal";
+import { MyWorkTable } from "./components/MyWorkTable";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { CreateProjectModal } from "./components/CreateProjectModal";
 import { SettingsModal } from "./components/SettingsModal";
@@ -65,16 +76,33 @@ import { CampaignsPanel } from "./components/CampaignsPanel";
 import { EventsView } from "./components/EventsView";
 import { NewMenu, type NewKind } from "./components/NewMenu";
 import { Login } from "./components/Login";
+import { ProjectPage } from "./components/pages/ProjectPage";
+import { CampaignPage } from "./components/pages/CampaignPage";
+import { EventPage } from "./components/pages/EventPage";
+import { closeItem, openItem, replaceItemTab, useItemRoute } from "./router";
+import { HelpTour } from "./components/HelpTour";
+import { showDesktopAlert } from "./desktopNotifications";
+import { tourFor } from "./helpTours";
+import { allSeries, kitOf } from "./webinarKit";
+import { NewWebinarModal } from "./components/webinar/NewWebinarModal";
+import { Icon } from "./components/Icon";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
 import { contentTypesSearchText } from "./contentTypes";
 import {
+  PROJECT_STATUSES,
   resolveSocialConfig,
   DEFAULT_WORKSPACE_ID,
   SUPER_USER_EMAILS,
 } from "./constants";
+import { projectStatusTone } from "./statusTone";
 import "./App.css";
+import "./pages.css";
+import "./help.css";
+import "./exec.css";
+import "./webinar.css";
+import "./analytics.css";
 
 const PRIORITY_ORDER: Record<string, number> = {
   Urgent: 0,
@@ -109,7 +137,20 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false);
   const drawerOpen = isMobile && navOpen;
   const [view, setView] = useState<SidebarView>("myDesk");
-  const [openProjectId, setOpenProjectId] = useState<string | null>(null);
+  // The project, campaign or event open as a page, from the address bar.
+  const route = useItemRoute();
+  // The Help button's guided tour of the page on screen. Closes when the
+  // page changes under it.
+  const [tourOpen, setTourOpen] = useState(false);
+  // + New → Campaign → Webinar: the Start a webinar form, from anywhere.
+  const [newWebinarOpen, setNewWebinarOpen] = useState(false);
+  useEffect(() => {
+    setTourOpen(false);
+  }, [route?.kind, route?.id, view]);
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0);
+  }, [route?.kind, route?.id]);
   const [creating, setCreating] = useState(false);
   const [createInitial, setCreateInitial] = useState<Partial<Project> | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -138,6 +179,42 @@ export default function App() {
   );
   const [pausedExpanded, setPausedExpanded] = useState(true);
   const [completedExpanded, setCompletedExpanded] = useState(true);
+  const [cancelledExpanded, setCancelledExpanded] = useState(false);
+  // The Team section folds away so the board is just your own work.
+  // Per-browser, like the other view preferences.
+  const [teamCollapsed, setTeamCollapsedState] = useState(() => {
+    try {
+      return localStorage.getItem("waypoint.board.teamCollapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
+  function setTeamCollapsed(next: boolean) {
+    setTeamCollapsedState(next);
+    try {
+      localStorage.setItem("waypoint.board.teamCollapsed", next ? "1" : "0");
+    } catch {
+      // per-browser preference only
+    }
+  }
+  // My work as a grid of your active projects, or a kanban of everything
+  // assigned to you by status.
+  const [myWorkView, setMyWorkViewState] = useState<"grid" | "kanban" | "list">(() => {
+    try {
+      const saved = localStorage.getItem("waypoint.board.myWorkView");
+      return saved === "kanban" || saved === "list" ? saved : "grid";
+    } catch {
+      return "grid";
+    }
+  });
+  function setMyWorkView(next: "grid" | "kanban" | "list") {
+    setMyWorkViewState(next);
+    try {
+      localStorage.setItem("waypoint.board.myWorkView", next);
+    } catch {
+      // per-browser preference only
+    }
+  }
   const [darkMode, setDarkMode] = useState(() =>
     localStorage.getItem("waypoint.darkMode") === "true"
   );
@@ -183,8 +260,23 @@ export default function App() {
   // UID (which is also their Designer doc id) when signed in, or null when
   // signed out. The Login screen calls signIn/signUp directly and the
   // resulting auth change flows back through here.
+  //
+  // A release can ask everyone to sign in again (SESSION_EPOCH in
+  // version.ts). The first time this browser boots on such a build with a
+  // restored user, that user is signed out and the login page says why.
+  const [signedOutForUpdate, setSignedOutForUpdate] = useState(false);
   useEffect(() => {
     return observeAuth((user) => {
+      if (user && sessionEpochChanged()) {
+        markSessionEpoch();
+        setSignedOutForUpdate(true);
+        fbSignOut().catch((err) => {
+          console.error(err);
+          setSessionDesignerId(user.uid);
+        });
+        return;
+      }
+      markSessionEpoch();
       setSessionDesignerId(user ? user.uid : null);
     });
   }, []);
@@ -264,9 +356,6 @@ export default function App() {
       setStatus(`Sync error: ${err.message}`);
     });
   }, [sessionDesignerId]);
-  // A campaign the Social calendar's overlay asked to open on the
-  // Campaigns view.
-  const [focusCampaignId, setFocusCampaignId] = useState<string | null>(null);
 
   // Trade shows and conferences, for the Events page.
   const [events, setEvents] = useState<MarketingEvent[]>([]);
@@ -275,6 +364,26 @@ export default function App() {
     return subscribeEvents(setEvents, (err) => {
       console.warn("Couldn't load events", err);
       setStatus(`Sync error: ${err.message}`);
+    });
+  }, [sessionDesignerId]);
+
+  // The webinar speaker directory, for the Webinars view and the speaker
+  // rows on every webinar's page.
+  const [speakers, setSpeakers] = useState<Speaker[]>([]);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeSpeakers(setSpeakers, (err) => {
+      console.warn("Couldn't load speakers", err);
+    });
+  }, [sessionDesignerId]);
+
+  // The marketing activity page on SharePoint: its token and link.
+  const [activityShare, setActivityShare] = useState<ActivityShare>({});
+  const [activityGuideOpen, setActivityGuideOpen] = useState(false);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeActivityShare(setActivityShare, (err) => {
+      console.warn("Couldn't load the activity page settings", err);
     });
   }, [sessionDesignerId]);
 
@@ -287,6 +396,8 @@ export default function App() {
   const [newEventRequest, setNewEventRequest] = useState(0);
   const [newPostRequest, setNewPostRequest] = useState(0);
   const [exportRequest, setExportRequest] = useState(0);
+  // The dashboard opens the Campaigns page straight onto its Webinars view.
+  const [campaignsViewRequest, setCampaignsViewRequest] = useState<{ view: "cards" | "calendar" | "webinars"; seq: number } | undefined>();
   const requestSeq = useRef(0);
   const nextRequest = () => ++requestSeq.current;
 
@@ -300,7 +411,11 @@ export default function App() {
       setCreating(true);
       return;
     }
-    setOpenProjectId(null);
+    if (kind === "webinar") {
+      setNewWebinarOpen(true);
+      return;
+    }
+    closeItem();
     if (kind === "campaign") {
       setNewCampaignRequest(nextRequest());
       setView("campaigns");
@@ -381,7 +496,7 @@ export default function App() {
       setCreateInitial({ ...payload, source: "outlook" });
       setCreating(true);
       params.delete("new");
-      const url = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+      const url = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", url);
     } catch (err) {
       console.warn("Bad ?new payload", err);
@@ -438,7 +553,7 @@ export default function App() {
     const project = workspace.projects.find((p) => p.id === id);
     if (project) {
       setCurrentWorkspaceId(project.workspaceId);
-      setOpenProjectId(id);
+      openItem("project", id);
     } else {
       // Someone shared a link to a project that's since been deleted. Say so
       // — stripping the param and showing an ordinary board leaves the
@@ -453,7 +568,8 @@ export default function App() {
     // hand-off doesn't navigate, so there's nothing to tidy there.
     if (fromAddressBar) {
       params.delete("project");
-      const url = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+      // Keep the hash: openItem above just put the project's page route there.
+      const url = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", url);
     }
   }, [sessionDesignerId, workspace, pendingLaunchProjectId]);
@@ -559,6 +675,14 @@ export default function App() {
     [nonArchived],
   );
 
+  const cancelledProjects = useMemo(
+    () =>
+      nonArchived
+        .filter((p) => p.status === "cancelled")
+        .sort(sortByPriorityThenDue),
+    [nonArchived],
+  );
+
   // The Archive is deliberately global rather than scoped to the board you
   // came in from. Archived work is a reference library, and having to
   // remember which team a finished project lived on before you can find it
@@ -626,6 +750,15 @@ export default function App() {
       .sort(sortByPriorityThenDue);
   }, [workspace, sessionDesignerId]);
 
+  // Everything assigned to me, whatever its status, for the kanban.
+  const myAllProjects = useMemo(() => {
+    if (!workspace || !sessionDesignerId) return [];
+    return workspace.projects
+      .filter((p) => p.assigneeIds.includes(sessionDesignerId))
+      .filter((p) => !p.archived)
+      .sort(sortByPriorityThenDue);
+  }, [workspace, sessionDesignerId]);
+
   const otherDesigners = useMemo(
     () => workspaceDesigners.filter((d) => d.id !== sessionDesignerId),
     [workspaceDesigners, sessionDesignerId],
@@ -647,6 +780,31 @@ export default function App() {
   );
 
   const unreadNotifications = myNotifications.length;
+
+  // Desktop alerts for notifications that arrive while the app is open.
+  // The first batch after sign-in is what was already waiting, so it's
+  // recorded, not announced; after that, anything new gets an alert.
+  const seenNotificationIds = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    seenNotificationIds.current = null;
+  }, [sessionDesignerId]);
+  useEffect(() => {
+    if (!sessionDesignerId || !workspace) return;
+    const ids = new Set(myNotifications.map((n) => n.id));
+    const seen = seenNotificationIds.current;
+    seenNotificationIds.current = ids;
+    if (!seen) return;
+    for (const n of myNotifications) {
+      if (seen.has(n.id)) continue;
+      const project = workspace.projects.find((p) => p.id === n.projectId);
+      showDesktopAlert(n, project, () => {
+        firestoreDeleteNotification(n.id).catch(writeError);
+        setNotificationsOpen(false);
+        openItem("project", n.projectId, "comments");
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myNotifications, sessionDesignerId]);
 
   // Super users are admins: they manage teams, manage super users and
   // reviewers, and see the by-designer analytics chart. SUPER_USER_EMAILS
@@ -714,7 +872,7 @@ export default function App() {
 
   function deleteProject(id: string) {
     firestoreDeleteProject(id).catch(writeError);
-    setOpenProjectId(null);
+    closeItem();
   }
 
   function createProject(project: Project) {
@@ -732,7 +890,19 @@ export default function App() {
     // hide it, drop back to the board so the new project is actually visible
     // behind the modal.
     if (view !== "board") setView("board");
-    setOpenProjectId(project.id);
+    openItem("project", project.id);
+  }
+
+  // Dropping a card on a kanban column sets its status; a card that isn't
+  // mine yet is claimed on the way, since the kanban is My work.
+  function dropProjectOntoStatus(projectId: string, status: ProjectStatus) {
+    const project = findProject(projectId);
+    if (!project || !sessionDesignerId) return;
+    const assigneeIds = project.assigneeIds.includes(sessionDesignerId)
+      ? project.assigneeIds
+      : [...project.assigneeIds, sessionDesignerId];
+    if ((project.status ?? "active") === status && assigneeIds === project.assigneeIds) return;
+    firestoreSetProject({ ...project, status, assigneeIds }).catch(writeError);
   }
 
   // Drop semantics: dropping a card on a designer's column adds them as an
@@ -758,6 +928,15 @@ export default function App() {
   // milestone's date changes. A post someone has since deleted is left
   // deleted rather than recreated. `deletePostIds` are posts whose
   // milestones were removed in the editor with "delete the post too".
+  // Refresh the marketing activity page's public copy after a campaign or
+  // event changes. Nothing is written until the page has a token.
+  function republishActivity(nextCampaigns: Campaign[], nextEvents: MarketingEvent[]) {
+    if (!activityShare.shareToken || !workspace) return;
+    publishActivityPage(activityShare.shareToken, nextCampaigns, nextEvents, socialPostsForUsage, workspace.designers).catch((err) =>
+      console.warn("Couldn't update the marketing activity page", err),
+    );
+  }
+
   function saveCampaign(campaign: Campaign, deletePostIds: string[] = []) {
     deletePostIds.forEach((id) => firestoreDeleteSocialPost(id).catch(writeError));
     const before = campaigns.find((c) => c.id === campaign.id);
@@ -782,21 +961,30 @@ export default function App() {
     publishCampaignPage(saved, socialPostsForUsage).catch((err) =>
       console.warn("Couldn't update the campaign's SharePoint page", err),
     );
+    republishActivity(campaigns.some((c) => c.id === saved.id) ? campaigns.map((c) => (c.id === saved.id ? saved : c)) : [...campaigns, saved], events);
   }
 
   // Jump to the Social calendar with one post's editor open.
   function openSocialPost(postId: string) {
-    setOpenProjectId(null);
+    closeItem();
     setFocusSocialPostId(postId);
     setView("socialCalendar");
   }
 
-  // Jump to the Campaigns page with one campaign's editor open. Closes any
-  // project window first so the page isn't hidden behind it.
-  function openCampaign(campaignId: string) {
-    setOpenProjectId(null);
-    setFocusCampaignId(campaignId);
+  // Open a project, campaign or event as its own page.
+  function openProject(projectId: string) {
+    openItem("project", projectId);
+  }
+  function openEvent(eventId: string, tab?: string) {
+    openItem("event", eventId, tab);
+  }
+  function openWebinars() {
+    closeItem();
+    setCampaignsViewRequest({ view: "webinars", seq: nextRequest() });
     setView("campaigns");
+  }
+  function openCampaign(campaignId: string, tab?: string) {
+    openItem("campaign", campaignId, tab);
   }
 
   // Which campaigns each project contributes to, for the flag on its card.
@@ -814,9 +1002,41 @@ export default function App() {
 
   // Its SharePoint page's public copy goes too, so the page says the
   // campaign has been removed rather than showing it as it was.
+  // An exact copy, opened straight away. Written directly so the copy's
+  // social milestones don't create posts on the Social calendar.
+  function duplicateCampaign(id: string) {
+    const c = campaigns.find((x) => x.id === id);
+    if (!c) {
+      setToast({ message: "That campaign isn't loaded yet. Try again in a moment." });
+      return;
+    }
+    try {
+      const copy = copyCampaign(c, sessionDesignerId ?? undefined);
+      firestoreSetCampaign(copy)
+        .then(() => setToast({ message: `Created "${copy.name}" — you're now looking at the copy.` }))
+        .catch((err) => {
+          writeError(err);
+          setToast({ message: `Couldn't save the copy: ${err instanceof Error ? err.message : String(err)}` });
+        });
+      openItem("campaign", copy.id);
+    } catch (err) {
+      console.error("Couldn't duplicate the campaign", err);
+      setToast({ message: `Couldn't duplicate: ${err instanceof Error ? err.message : String(err)}` });
+    }
+  }
+
+  const saveSpeaker = useCallback((speaker: Speaker) => {
+    firestoreSetSpeaker(speaker).catch(writeError);
+  }, []);
+  function deleteSpeaker(id: string) {
+    firestoreDeleteSpeaker(id).catch(writeError);
+  }
+
   function deleteCampaign(id: string) {
+    closeItem();
     const token = campaigns.find((c) => c.id === id)?.shareToken;
     firestoreDeleteCampaign(id).catch(writeError);
+    republishActivity(campaigns.filter((c) => c.id !== id), events);
     if (token) {
       firestoreDeleteCampaignPage(token).catch((err) =>
         console.warn("Couldn't remove the campaign's SharePoint page", err),
@@ -831,11 +1051,13 @@ export default function App() {
     publishItineraryPage(event).catch((err) =>
       console.warn("Couldn't update the itinerary's SharePoint page", err),
     );
+    republishActivity(campaigns, events.some((e) => e.id === event.id) ? events.map((e) => (e.id === event.id ? event : e)) : [...events, event]);
   }
 
   // The itinerary page's public copy goes with the event, so the page says
   // the itinerary has been removed rather than showing it as it was.
   function deleteEvent(id: string) {
+    closeItem();
     const token = events.find((e) => e.id === id)?.itineraryShareToken;
     firestoreDeleteEvent(id).catch(writeError);
     if (token) {
@@ -843,6 +1065,7 @@ export default function App() {
         console.warn("Couldn't remove the itinerary's SharePoint page", err),
       );
     }
+    republishActivity(campaigns, events.filter((e) => e.id !== id));
   }
 
   function addNotifications(notifs: Notification[]) {
@@ -907,7 +1130,7 @@ export default function App() {
   // Sign-out resets local UI state; the observeAuth callback will clear
   // sessionDesignerId, which tears down the subscription.
   function logout() {
-    setOpenProjectId(null);
+    closeItem();
     setCreating(false);
     setSettingsOpen(false);
     setView("myDesk");
@@ -926,7 +1149,15 @@ export default function App() {
   }
 
   if (!sessionDesignerId) {
-    return <Login onSignedIn={() => { /* auth state listener does the rest */ }} />;
+    return (
+      <Login
+        notice={signedOutForUpdate ? `Waypoint has been updated to version ${APP_VERSION}. Please sign in again.` : undefined}
+        onSignedIn={() => {
+          setSignedOutForUpdate(false);
+          /* auth state listener does the rest */
+        }}
+      />
+    );
   }
 
   if (profileSetupNeeded && workspace && !designerExists) {
@@ -946,13 +1177,54 @@ export default function App() {
     );
   }
 
-  const openProject = openProjectId
-    ? workspace.projects.find((p) => p.id === openProjectId)
-    : null;
+  const routedProject =
+    route?.kind === "project"
+      ? (workspace.projects.find((p) => p.id === route.id) ?? null)
+      : null;
+  const routedCampaign =
+    route?.kind === "campaign" ? (campaigns.find((c) => c.id === route.id) ?? null) : null;
+  const routedEvent =
+    route?.kind === "event" ? (events.find((e) => e.id === route.id) ?? null) : null;
+  // Which sidebar row the open page belongs to.
+  const navView: SidebarView = route
+    ? route.kind === "project"
+      ? "board"
+      : route.kind === "campaign"
+        ? "campaigns"
+        : "events"
+    : view;
+  const listFor = (kind: "project" | "campaign" | "event"): SidebarView =>
+    kind === "project" ? "board" : kind === "campaign" ? "campaigns" : "events";
+  const tourKey = route
+    ? route.kind === "campaign" && routedCampaign && kitOf(routedCampaign)
+      ? "webinar"
+      : route.kind
+    : view;
+  const tour = tourFor(tourKey);
 
   const unassigned = activeProjects
     .filter((p) => p.assigneeIds.length === 0)
     .sort(sortByPriorityThenDue);
+
+  function statusDropHandlers(status: ProjectStatus) {
+    const key = `status:${status}`;
+    return {
+      onDragOver: (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "move";
+        setDropOverColumn(key);
+      },
+      onDragLeave: () => setDropOverColumn((cur) => (cur === key ? null : cur)),
+      onDrop: (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDropOverColumn(null);
+        const pid = readDraggedProjectId(e);
+        if (pid) dropProjectOntoStatus(pid, status);
+      },
+    };
+  }
 
   function dropHandlers(targetId: string | null) {
     return {
@@ -974,17 +1246,27 @@ export default function App() {
     };
   }
 
+  // Every "open on SharePoint" action in the tree links into the marketing
+  // activity portal (src/activityPortal.ts), or offers to set it up.
+  const activityPortal = {
+    url: activityShare.sharePointUrl,
+    itemUrl: (kind: "campaign" | "event", id: string) => activityItemUrl(activityShare.sharePointUrl, kind, id),
+    openSetup: () => setActivityGuideOpen(true),
+  };
+
   return (
+    <ActivityPortalContext.Provider value={activityPortal}>
     <div className={`app ${drawerOpen ? "nav-open" : ""}`}>
       <Sidebar
         currentDesigner={currentDesigner}
         collapsed={isMobile ? false : collapsed}
-        view={view}
+        view={navView}
         unreadNotifications={unreadNotifications}
         workspaces={availableWorkspaces}
         hubs={workspace.hubs}
         currentWorkspaceId={currentWorkspaceId}
         onSelectWorkspace={(id) => {
+          closeItem();
           setCurrentWorkspaceId(id);
           setView("board");
           setNavOpen(false);
@@ -994,6 +1276,7 @@ export default function App() {
           isMobile ? setNavOpen(false) : setCollapsed((c) => !c)
         }
         onSelectView={(v) => {
+          closeItem();
           setView(v);
           setNavOpen(false);
         }}
@@ -1012,7 +1295,127 @@ export default function App() {
         <div className="nav-scrim" onClick={() => setNavOpen(false)} aria-hidden />
       )}
 
-      <main className="main">
+      <main className="main" ref={mainRef}>
+        {route ? (
+          <>
+            <header className="topbar topbar-item">
+              <button
+                type="button"
+                className="icon-btn mobile-nav-btn"
+                onClick={() => setNavOpen(true)}
+                aria-label="Open menu"
+                aria-expanded={drawerOpen}
+              >
+                ☰
+              </button>
+              <span className="topbar-item-kind">{route.kind}</span>
+              <div className="topbar-actions">
+                <HelpButton onClick={() => setTourOpen(true)} />
+                <NewMenu variant="primary" onPick={startNew} />
+              </div>
+            </header>
+            {status && <div className="banner">{status}</div>}
+            {route.kind === "project" && routedProject ? (
+              <ProjectPage
+                key={routedProject.id}
+                project={routedProject}
+                designers={workspace.designers}
+                reviewers={reviewers}
+                workspaces={availableWorkspaces}
+                campaigns={campaigns}
+                socialPosts={socialPostsForUsage}
+                contentTypeOptions={socialConfig.contentTypes}
+                currentDesignerId={currentDesigner.id}
+                currentDesignerName={currentDesigner.name}
+                tab={route.tab}
+                onTab={(t) => replaceItemTab("project", routedProject.id, t)}
+                onBack={() => {
+                  setCurrentWorkspaceId(routedProject.workspaceId);
+                  setView("board");
+                  closeItem();
+                }}
+                onChange={(updater) => updateProject(routedProject.id, updater)}
+                onSetReviewers={(reviewerIds) =>
+                  setProjectReviewers(routedProject.id, reviewerIds)
+                }
+                onStatusChange={(s) => setProjectStatus(routedProject.id, s)}
+                onArchiveToggle={(archived) => setProjectArchived(routedProject.id, archived)}
+                onDelete={() => deleteProject(routedProject.id)}
+                onNotify={addNotifications}
+                onMoveToWorkspace={(workspaceId) =>
+                  moveProjectToWorkspace(routedProject.id, workspaceId)
+                }
+                onOpenSocialPost={openSocialPost}
+                onOpenCampaign={openCampaign}
+              />
+            ) : route.kind === "campaign" && routedCampaign ? (
+              <CampaignPage
+                key={routedCampaign.id}
+                campaign={routedCampaign}
+                campaigns={campaigns}
+                currentDesignerId={currentDesigner.id}
+                speakers={speakers}
+                onSaveSpeaker={saveSpeaker}
+                onOpenCampaign={openCampaign}
+                categories={socialConfig.categories}
+                milestoneTypes={socialConfig.milestoneTypes}
+                designers={workspace.designers}
+                projects={workspace.projects}
+                workspaces={availableWorkspaces}
+                socialPosts={socialPostsForUsage}
+                tab={route.tab}
+                onTab={(t) => replaceItemTab("campaign", routedCampaign.id, t)}
+                onBack={() => {
+                  setView("campaigns");
+                  closeItem();
+                }}
+                onSave={saveCampaign}
+                onDelete={() => deleteCampaign(routedCampaign.id)}
+                onDuplicate={() => duplicateCampaign(routedCampaign.id)}
+                onOpenProject={openProject}
+                onOpenSocialPost={openSocialPost}
+              />
+            ) : route.kind === "event" && routedEvent ? (
+              <EventPage
+                key={routedEvent.id}
+                event={routedEvent}
+                events={events}
+                campaigns={campaigns}
+                designers={workspace.designers}
+                projects={workspace.projects}
+                workspaces={availableWorkspaces}
+                tab={route.tab}
+                onTab={(t) => replaceItemTab("event", routedEvent.id, t)}
+                onBack={() => {
+                  setView("events");
+                  closeItem();
+                }}
+                onSave={saveEvent}
+                onDelete={() => deleteEvent(routedEvent.id)}
+                onOpenProject={openProject}
+                onOpenCampaign={openCampaign}
+              />
+            ) : (
+              <section className="item-missing">
+                <h2>This {route.kind} isn’t here</h2>
+                <p className="muted">
+                  It may have been deleted, or the link is incomplete.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setView(listFor(route.kind));
+                    closeItem();
+                  }}
+                >
+                  Back to {route.kind === "project" ? "the board" : route.kind === "campaign" ? "Campaigns" : "Events"}
+                </button>
+              </section>
+            )}
+          </>
+        ) : (
+          <>
         <header className="topbar">
           <button
             type="button"
@@ -1069,7 +1472,7 @@ export default function App() {
                   : view === "myDesk"
                     ? "Focus on your assigned projects, deadlines, and priorities"
                     : view === "executiveDashboard"
-                      ? "View all projects, deadlines, and recent activity"
+                      ? "Every team and programme on one page: what needs attention, the next fortnight, how teams are tracking and what moved"
                       : view === "socialCalendar"
                         ? "Plan and track posts across the CargoWise and WiseTech channels"
                         : view === "campaigns"
@@ -1111,6 +1514,24 @@ export default function App() {
                 Export CSV
               </button>
             )}
+            {view === "executiveDashboard" && (
+              <>
+                {activityShare.sharePointUrl && (
+                  <a className="btn btn-secondary" href={activityShare.sharePointUrl} target="_blank" rel="noopener noreferrer" title="The marketing activity page on SharePoint">
+                    <Icon name="external-link" size={14} /> Activity page
+                  </a>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setActivityGuideOpen(true)}
+                  title="A single page for SharePoint showing every campaign, webinar and event, each opening to its own information page. It keeps itself up to date."
+                >
+                  <Icon name="browser" size={14} /> {activityShare.sharePointUrl ? "Update activity page" : "Put activity on SharePoint"}
+                </button>
+              </>
+            )}
+            <HelpButton onClick={() => setTourOpen(true)} />
             <NewMenu variant="primary" onPick={startNew} />
           </div>
         </header>
@@ -1172,7 +1593,7 @@ export default function App() {
                     project={p}
                     designers={workspace.designers}
                     campaigns={campaignsByProject.get(p.id)}
-                    onClick={() => setOpenProjectId(p.id)}
+                    onClick={() => openProject(p.id)}
                     // Only worth labelling when teams are mixed together —
                     // redundant once you've filtered to one.
                     teamBadge={
@@ -1191,12 +1612,12 @@ export default function App() {
           <MyDesk
             workspace={workspace}
             currentDesignerId={sessionDesignerId}
-            onOpenProject={setOpenProjectId}
+            onOpenProject={openProject}
             notifications={myNotifications}
             reviewProjects={reviewProjects}
             onOpenNotification={(projectId, notificationId) => {
               deleteNotification(notificationId);
-              setOpenProjectId(projectId);
+              openProject(projectId);
             }}
             onClearNotifications={clearAllNotifications}
             campaigns={campaigns}
@@ -1213,8 +1634,20 @@ export default function App() {
         ) : view === "executiveDashboard" ? (
           <Dashboard
             workspace={workspace}
+            campaigns={campaigns}
+            events={events}
+            socialPosts={socialPostsForUsage}
             currentDesignerId={sessionDesignerId}
-            onOpenProject={setOpenProjectId}
+            onOpenProject={openProject}
+            onOpenCampaign={openCampaign}
+            onOpenEvent={openEvent}
+            onOpenSocialPost={openSocialPost}
+            onOpenBoard={(id) => {
+              setCurrentWorkspaceId(id);
+              setView("board");
+            }}
+            onOpenView={setView}
+            onOpenWebinars={openWebinars}
           />
         ) : view === "socialCalendar" ? (
           <SocialCalendar
@@ -1224,7 +1657,7 @@ export default function App() {
             onOpenCampaign={openCampaign}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
-            onOpenProject={setOpenProjectId}
+            onOpenProject={openProject}
             focusPostId={focusSocialPostId}
             onFocusHandled={() => setFocusSocialPostId(null)}
             createRequest={newPostRequest}
@@ -1239,8 +1672,9 @@ export default function App() {
             designers={workspace.designers}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
-            onOpenProject={setOpenProjectId}
+            onOpenProject={openProject}
             onOpenCampaign={openCampaign}
+            onOpenEvent={openEvent}
             onSave={saveEvent}
             onDelete={deleteEvent}
             createRequest={newEventRequest}
@@ -1256,17 +1690,21 @@ export default function App() {
             designers={workspace.designers}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
-            onOpenProject={setOpenProjectId}
+            onOpenProject={openProject}
             socialPosts={socialPostsForUsage}
             onOpenSocialPost={openSocialPost}
             onSave={saveCampaign}
             onDelete={deleteCampaign}
-            focusCampaignId={focusCampaignId}
-            onFocusHandled={() => setFocusCampaignId(null)}
+            onOpenCampaign={openCampaign}
+            currentDesignerId={currentDesigner.id}
+            speakers={speakers}
+            onSaveSpeaker={saveSpeaker}
+            onDeleteSpeaker={deleteSpeaker}
             createRequest={newCampaignRequest}
             onCreateHandled={() => setNewCampaignRequest(0)}
             exportRequest={exportRequest}
             onExportHandled={() => setExportRequest(0)}
+            viewRequest={campaignsViewRequest}
           />
         ) : view === "board" ? (
           <>
@@ -1277,7 +1715,7 @@ export default function App() {
               title={`${currentWorkspaceName} campaigns`}
               subject="this team"
               onOpenCampaign={openCampaign}
-              onOpenProject={setOpenProjectId}
+              onOpenProject={openProject}
               storageKey={`waypoint.board.${currentWorkspaceId}.campaignsCollapsed`}
             />
 
@@ -1288,12 +1726,75 @@ export default function App() {
               {...dropHandlers(sessionDesignerId)}
             >
               <div className="section-head">
-                <h2>My work</h2>
+                <div className="section-head-title">
+                  <h2>My work</h2>
+                  <div className="view-seg" role="group" aria-label="My work layout">
+                    <button type="button" aria-pressed={myWorkView === "grid"} onClick={() => setMyWorkView("grid")}>
+                      Grid
+                    </button>
+                    <button type="button" aria-pressed={myWorkView === "kanban"} onClick={() => setMyWorkView("kanban")}>
+                      Kanban
+                    </button>
+                    <button type="button" aria-pressed={myWorkView === "list"} onClick={() => setMyWorkView("list")}>
+                      List
+                    </button>
+                  </div>
+                </div>
                 <span className="muted small">
-                  High priority first · drop cards here to claim
+                  {myWorkView === "kanban"
+                    ? "Everything assigned to you, by status · drag a card between columns to change its status"
+                    : myWorkView === "list"
+                      ? "Everything assigned to you, one line each · change a status in place, click a row to open it"
+                      : "High priority first · drop cards here to claim"}
                 </span>
               </div>
-              {myProjects.length === 0 ? (
+              {myWorkView === "kanban" ? (
+                <div className="kanban">
+                  {PROJECT_STATUSES.map((s) => {
+                    const cards = myAllProjects.filter((p) => (p.status ?? "active") === s.value);
+                    return (
+                      <div
+                        key={s.value}
+                        className={`kanban-col drop-target ${dropOverColumn === `status:${s.value}` ? "drop-over" : ""}`}
+                        {...statusDropHandlers(s.value)}
+                      >
+                        <header className="kanban-col-head">
+                          <span className={`wp-status ${projectStatusTone(s.value)}`}>{s.label}</span>
+                          <span className="kanban-col-count">{cards.length}</span>
+                        </header>
+                        <div className="kanban-col-cards">
+                          {cards.length === 0 && <p className="muted small kanban-empty">Drop a card here</p>}
+                          {cards.map((p) => (
+                            <ProjectCard
+                              key={p.id}
+                              project={p}
+                              designers={workspace.designers}
+                              campaigns={campaignsByProject.get(p.id)}
+                              onClick={() => openProject(p.id)}
+                              compact
+                              teamBadge={
+                                p.workspaceId !== currentWorkspaceId
+                                  ? availableWorkspaces.find((w) => w.id === p.workspaceId)?.name
+                                  : undefined
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : myWorkView === "list" ? (
+                <MyWorkTable
+                  projects={myAllProjects}
+                  designers={workspace.designers}
+                  workspaces={availableWorkspaces}
+                  campaignsByProject={campaignsByProject}
+                  onOpen={openProject}
+                  onStatusChange={setProjectStatus}
+                  onOpenCampaign={openCampaign}
+                />
+              ) : myProjects.length === 0 ? (
                 <p className="muted">
                   Nothing assigned to you yet. Hit + New → Project, drag a card from a teammate,
                   or wait for an Outlook brief to arrive.
@@ -1306,7 +1807,7 @@ export default function App() {
                       project={p}
                       designers={workspace.designers}
                       campaigns={campaignsByProject.get(p.id)}
-                      onClick={() => setOpenProjectId(p.id)}
+                      onClick={() => openProject(p.id)}
                       teamBadge={
                         p.workspaceId !== currentWorkspaceId
                           ? availableWorkspaces.find(
@@ -1336,7 +1837,7 @@ export default function App() {
                       project={p}
                       designers={workspace.designers}
                       campaigns={campaignsByProject.get(p.id)}
-                      onClick={() => setOpenProjectId(p.id)}
+                      onClick={() => openProject(p.id)}
                       teamBadge={
                         p.workspaceId !== currentWorkspaceId
                           ? availableWorkspaces.find(
@@ -1350,11 +1851,26 @@ export default function App() {
               </section>
             )}
 
-            <section className="team-section">
+            <section className={`team-section ${teamCollapsed ? "collapsed" : ""}`}>
               <div className="section-head">
-                <h2>Team</h2>
-                <span className="muted small">Drag a card to reassign it</span>
+                <div className="section-head-title">
+                  <button
+                    className="collapse-toggle"
+                    onClick={() => setTeamCollapsed(!teamCollapsed)}
+                    title={teamCollapsed ? "Show the team" : "Hide the team"}
+                    aria-expanded={!teamCollapsed}
+                  >
+                    <span className={`collapse-icon ${teamCollapsed ? "" : "expanded"}`}>▶</span>
+                  </button>
+                  <h2>Team</h2>
+                </div>
+                <span className="muted small">
+                  {teamCollapsed
+                    ? `${otherDesigners.length} teammate${otherDesigners.length === 1 ? "" : "s"} · ${activeProjects.length} active project${activeProjects.length === 1 ? "" : "s"} · expand to reassign`
+                    : "Drag a card to reassign it"}
+                </span>
               </div>
+              {!teamCollapsed && (
               <div className="team-columns">
                 {otherDesigners.map((d) => {
                   const projects = activeProjects
@@ -1388,7 +1904,7 @@ export default function App() {
                             project={p}
                             designers={workspace.designers}
                             campaigns={campaignsByProject.get(p.id)}
-                            onClick={() => setOpenProjectId(p.id)}
+                            onClick={() => openProject(p.id)}
                             compact
                           />
                         ))}
@@ -1423,13 +1939,14 @@ export default function App() {
                         project={p}
                         designers={workspace.designers}
                         campaigns={campaignsByProject.get(p.id)}
-                        onClick={() => setOpenProjectId(p.id)}
+                        onClick={() => openProject(p.id)}
                         compact
                       />
                     ))}
                   </div>
                 </div>
               </div>
+              )}
             </section>
 
             {planningProjects.length > 0 && (
@@ -1459,7 +1976,7 @@ export default function App() {
                         project={p}
                         designers={workspace.designers}
                         campaigns={campaignsByProject.get(p.id)}
-                        onClick={() => setOpenProjectId(p.id)}
+                        onClick={() => openProject(p.id)}
                       />
                     ))}
                   </div>
@@ -1494,7 +2011,7 @@ export default function App() {
                         project={p}
                         designers={workspace.designers}
                         campaigns={campaignsByProject.get(p.id)}
-                        onClick={() => setOpenProjectId(p.id)}
+                        onClick={() => openProject(p.id)}
                       />
                     ))}
                   </div>
@@ -1528,7 +2045,41 @@ export default function App() {
                         project={p}
                         designers={workspace.designers}
                         campaigns={campaignsByProject.get(p.id)}
-                        onClick={() => setOpenProjectId(p.id)}
+                        onClick={() => openProject(p.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {cancelledProjects.length > 0 && (
+              <section className="workspace-section cancelled-section">
+                <div className="section-head">
+                  <div className="section-head-title">
+                    <button
+                      className="collapse-toggle"
+                      onClick={() => setCancelledExpanded(!cancelledExpanded)}
+                      title={cancelledExpanded ? "Collapse" : "Expand"}
+                    >
+                      <span className={`collapse-icon ${cancelledExpanded ? "expanded" : ""}`}>▶</span>
+                    </button>
+                    <h2>Cancelled</h2>
+                  </div>
+                  <span className="muted small">
+                    {cancelledProjects.length} project
+                    {cancelledProjects.length === 1 ? "" : "s"} stopped before completion
+                  </span>
+                </div>
+                {cancelledExpanded && (
+                  <div className="workspace-grid workspace-grid-scrollable">
+                    {cancelledProjects.map((p) => (
+                      <ProjectCard
+                        key={p.id}
+                        project={p}
+                        designers={workspace.designers}
+                        campaigns={campaignsByProject.get(p.id)}
+                        onClick={() => openProject(p.id)}
                       />
                     ))}
                   </div>
@@ -1537,36 +2088,9 @@ export default function App() {
             )}
           </>
         ) : null}
+          </>
+        )}
       </main>
-
-      {openProject && (
-        <ProjectDetailModal
-          project={openProject}
-          designers={workspace.designers}
-          reviewers={reviewers}
-          workspaces={availableWorkspaces}
-          currentDesignerId={currentDesigner.id}
-          contentTypeOptions={socialConfig.contentTypes}
-          currentDesignerName={currentDesigner.name}
-          onClose={() => setOpenProjectId(null)}
-          onChange={(updater) => updateProject(openProject.id, updater)}
-          onSetReviewers={(reviewerIds) =>
-            setProjectReviewers(openProject.id, reviewerIds)
-          }
-          onStatusChange={(status) => setProjectStatus(openProject.id, status)}
-          onArchiveToggle={(archived) => {
-            setProjectArchived(openProject.id, archived);
-            if (archived) setOpenProjectId(null);
-          }}
-          onDelete={() => deleteProject(openProject.id)}
-          onNotify={addNotifications}
-          onMoveToWorkspace={(workspaceId) =>
-            moveProjectToWorkspace(openProject.id, workspaceId)
-          }
-          onOpenSocialPost={openSocialPost}
-          onOpenCampaign={openCampaign}
-        />
-      )}
 
       {creating && (
         <CreateProjectModal
@@ -1625,11 +2149,54 @@ export default function App() {
           onClose={() => setNotificationsOpen(false)}
           onOpenProject={(projectId, notificationId) => {
             deleteNotification(notificationId);
-            setOpenProjectId(projectId);
+            openProject(projectId);
             setNotificationsOpen(false);
           }}
           onClearAll={clearAllNotifications}
         />
+      )}
+
+      {newWebinarOpen && (
+        <NewWebinarModal
+          designers={workspace.designers}
+          currentDesignerId={currentDesigner.id}
+          series={allSeries(campaigns)}
+          onCancel={() => setNewWebinarOpen(false)}
+          onCreate={(c) => {
+            saveCampaign(c);
+            setNewWebinarOpen(false);
+            openItem("campaign", c.id, "brief");
+          }}
+        />
+      )}
+
+      {activityGuideOpen && (
+        <SharePointGuideModal
+          fileName={ACTIVITY_PAGE_FILE_NAME}
+          initialUrl={activityShare.sharePointUrl}
+          subject="marketing activity page"
+          onDownload={() => {
+            // Mint the token on the first download and publish before the
+            // file goes out, so the page has something to fetch.
+            const token = activityShare.shareToken ?? newShareToken();
+            const data = activityPageData(campaigns, events, socialPostsForUsage, workspace.designers);
+            if (!activityShare.shareToken) {
+              setActivityShare((cur) => ({ ...cur, shareToken: token }));
+              firestoreSetActivityShare({ shareToken: token }).catch(writeError);
+            }
+            publishActivityPage(token, campaigns, events, socialPostsForUsage, workspace.designers).catch(writeError);
+            downloadActivityPage(token, data);
+          }}
+          onSave={(url) => {
+            firestoreSetActivityShare({ sharePointUrl: url }).catch(writeError);
+            setActivityGuideOpen(false);
+          }}
+          onCancel={() => setActivityGuideOpen(false)}
+        />
+      )}
+
+      {tourOpen && tour && (
+        <HelpTour key={tourKey} title={tour.title} steps={tour.steps} onClose={() => setTourOpen(false)} />
       )}
 
       {toast && (
@@ -1650,5 +2217,15 @@ export default function App() {
         </div>
       )}
     </div>
+    </ActivityPortalContext.Provider>
+  );
+}
+
+// The Help button beside + New: opens the guided tour of the page on screen.
+function HelpButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="btn btn-secondary help-btn" onClick={onClick} title="How to use this page">
+      <Icon name="lightbulb" size={16} /> Help
+    </button>
   );
 }

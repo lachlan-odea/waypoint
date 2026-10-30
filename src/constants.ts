@@ -15,6 +15,7 @@ export const PROJECT_STATUSES: { value: ProjectStatus; label: string }[] = [
   { value: "active", label: "Active" },
   { value: "paused", label: "On hold" },
   { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 // A project with no status set predates the field and is treated as active.
@@ -53,11 +54,15 @@ export const SEED_WORKSPACES = [
   { id: "design", name: "Design" },
   { id: "video", name: "Video" },
   { id: "marketing", name: "Marketing" },
-  // Added Sept 2026. seedWorkspacesIfMissing creates any id listed here that
-  // isn't in /workspaces yet, so a new team is a one-line addition — plus a
-  // colour + glyph in WORKSPACE_VISUALS (Sidebar.tsx) and, for the Teams
-  // ingest, ALLOWED_WORKSPACE_IDS in functions/src/index.ts.
+  // seedWorkspacesIfMissing creates any id listed here that isn't in
+  // /workspaces yet, so a new team is a one-line addition here plus, for the
+  // Teams ingest, ALLOWED_WORKSPACE_IDS in functions/src/index.ts. The
+  // sidebar lists teams alphabetically; give the new team an icon in
+  // src/workspaceIcon.ts or it gets the folder.
   { id: "comms", name: "Comms" },
+  // Added Oct 2026: the events team, who run the trade shows and conferences
+  // on the Events page and need a board for the work around them.
+  { id: "events", name: "Events" },
 ] as const;
 
 export const DEFAULT_WORKSPACE_ID = SEED_WORKSPACES[0].id;
@@ -96,14 +101,14 @@ export const SOCIAL_POST_STATUSES: {
   label: string;
   color: string;
 }[] = [
-  { value: "draft", label: "Draft", color: "#6b6d88" },
+  { value: "draft", label: "Draft", color: "#8b96a8" },
   // Stored as "pending" — see the note on SocialPostStatus.
-  { value: "pending", label: "Ready to publish", color: "#c2335f" },
+  { value: "pending", label: "Ready to publish", color: "#6a5cd8" },
   { value: "scheduled", label: "Scheduled", color: "#b4501f" },
-  { value: "onHold", label: "On hold", color: "#371ee1" },
-  { value: "published", label: "Published", color: "#1f7a4d" },
-  { value: "cancelled", label: "Cancelled", color: "#651d32" },
-  { value: "backlog", label: "Backlog", color: "#3b4a66" },
+  { value: "onHold", label: "On hold", color: "#5d6b82" },
+  { value: "published", label: "Published", color: "#0c5a2e" },
+  { value: "cancelled", label: "Cancelled", color: "#8a1c16" },
+  { value: "backlog", label: "Backlog", color: "#3a4a66" },
 ];
 
 export function socialStatusMeta(status: SocialPostStatus | undefined) {
@@ -132,6 +137,9 @@ export const DEFAULT_SOCIAL_CATEGORIES: SocialCategory[] = [
   { id: "digital-event", label: "Digital Event", short: "Digital event", color: "#2f6fb0" },
   { id: "industry", label: "Industry", short: "Industry", color: "#1f7a4d" },
   { id: "wisetech-academy", label: "WiseTech Academy", short: "Academy", color: "#1d1765" },
+  // Predefined for the webinar programme: a campaign of this type is a
+  // webinar, from brief to on-demand recording.
+  { id: "webinar", label: "Webinar", short: "Webinar", color: "#3a4a66" },
 ];
 
 // Company hashtags to start with — the two brand tags. Edited in the same
@@ -150,7 +158,26 @@ export const DEFAULT_MILESTONE_TYPES: MilestoneType[] = [
   { id: "edm", label: "EDM", social: false },
   { id: "landing-page", label: "Landing Page", social: false },
   { id: "press-release", label: "Press Release", social: false },
+  // The webinar itself — the go-live date inside a webinar campaign.
+  { id: "webinar", label: "Webinar", social: false },
 ];
+
+// Webinar is a predefined option everywhere a campaign is typed: as a
+// campaign type and as a milestone type. A /socialConfig document saved
+// before it existed won't list it, so the resolved config always carries
+// it, whatever the saved lists hold.
+const WEBINAR_CATEGORY = DEFAULT_SOCIAL_CATEGORIES.find((c) => c.id === "webinar")!;
+const WEBINAR_MILESTONE = DEFAULT_MILESTONE_TYPES.find((t) => t.id === "webinar")!;
+
+function withPredefined<T extends { id: string; label: string }>(
+  list: T[],
+  required: T,
+): T[] {
+  const present = list.some(
+    (x) => x.id === required.id || x.label.trim().toLowerCase() === required.label.toLowerCase(),
+  );
+  return present ? list : [...list, required];
+}
 
 // CONTENT_TYPES is declared further down; the function form keeps this
 // independent of declaration order.
@@ -171,10 +198,13 @@ export function resolveSocialConfig(
   const d = defaultSocialConfig();
   if (!doc) return d;
   return {
-    categories: doc.categories ?? d.categories,
+    categories: withPredefined(doc.categories ?? d.categories, WEBINAR_CATEGORY),
     hashtags: doc.hashtags ?? d.hashtags,
     contentTypes: doc.contentTypes ?? d.contentTypes,
-    milestoneTypes: doc.milestoneTypes ?? d.milestoneTypes,
+    milestoneTypes: withPredefined(
+      doc.milestoneTypes ?? d.milestoneTypes,
+      WEBINAR_MILESTONE,
+    ),
   };
 }
 
@@ -189,7 +219,7 @@ export function socialCategoryMeta(
     categories.find((c) => c.label === category) ?? {
       label: category,
       short: category,
-      color: "#6b6d88",
+      color: "#8b96a8",
     }
   );
 }
@@ -205,7 +235,7 @@ const BRAND_COLORS: Record<string, string> = {
   e2open: "#6a5cd8",
   Blume: "#a3294d",
   BorderWise: "#244349",
-  "No brand": "#6b6d88",
+  "No brand": "#8b96a8",
 };
 
 export function brandColor(brand: string): string {
@@ -234,7 +264,7 @@ const SOCIAL_CHANNEL_COLORS: Record<string, string> = {
 // Colour for a channel chip. Unknown channels fall back to a neutral grey
 // so a new channel is legible before anyone has picked it a colour.
 export function socialChannelColor(channel: string): string {
-  return SOCIAL_CHANNEL_COLORS[channel.trim().toLowerCase()] ?? "#6b6d88";
+  return SOCIAL_CHANNEL_COLORS[channel.trim().toLowerCase()] ?? "#8b96a8";
 }
 
 export const CONTENT_TYPES = [

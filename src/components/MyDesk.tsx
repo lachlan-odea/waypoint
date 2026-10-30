@@ -331,15 +331,15 @@ export function MyDesk({
   const getStatusColor = (priority: string): string => {
     switch (priority) {
       case "Urgent":
-        return "#c2335f";
+        return "#8a1c16";
       case "High":
-        return "#f0844f";
+        return "#b4501f";
       case "Normal":
         return "#371ee1";
       case "Low":
-        return "#8a84ff";
+        return "#8b96a8";
       default:
-        return "#5f6079";
+        return "#5d6b82";
     }
   };
 

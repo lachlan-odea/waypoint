@@ -15,7 +15,7 @@ const ALLOWED_PRIORITIES = ["Urgent", "High", "Normal", "Low"] as const;
 type Priority = (typeof ALLOWED_PRIORITIES)[number];
 
 // Keep in step with SEED_WORKSPACES in src/constants.ts.
-const ALLOWED_WORKSPACE_IDS = ["design", "video", "marketing", "comms"];
+const ALLOWED_WORKSPACE_IDS = ["design", "video", "marketing", "comms", "events"];
 const DEFAULT_WORKSPACE_ID = "design";
 
 type IncomingBody = {

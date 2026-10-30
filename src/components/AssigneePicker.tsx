@@ -99,7 +99,7 @@ export function AssigneePicker({
               aria-label={`Remove ${d.name}`}
               tabIndex={-1}
             >
-              ×
+              <Icon name="close" size={12} />
             </button>
           </span>
         ))}
@@ -154,3 +154,5 @@ export function AssigneePicker({
     </div>
   );
 }
+
+import { Icon } from "./Icon";

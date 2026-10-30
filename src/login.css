@@ -1,0 +1,404 @@
+/* The sign-in page, from the "Waypoint Login" design. WiseTech Blue field,
+   the proposition on the left, the card on the right, the endorsement line
+   below. Tokens from App.css where they exist; the design's own values
+   where the page differs from the app chrome. */
+
+.lg {
+  position: relative;
+  min-height: 100vh;
+  background: var(--wtg-blue);
+  color: #fff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-sans);
+}
+
+/* A faint 48px grid, strongest towards the proposition and fading out. */
+.lg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 30% 40%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 30% 40%, #000 20%, transparent 75%);
+  pointer-events: none;
+}
+
+.lg-main {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 64px 96px;
+  padding: 56px clamp(24px, 6vw, 96px);
+  box-sizing: border-box;
+}
+
+/* Proposition */
+.lg-pitch {
+  flex: 1 1 380px;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.lg-eyebrow,
+.lg-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wtg-periwinkle);
+}
+.lg-mono {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #fff;
+}
+.lg-pitch h1 {
+  margin: 0;
+  font-size: clamp(36px, 4.4vw, 58px);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  text-wrap: balance;
+  color: #fff;
+}
+.lg-pitch p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.55;
+  max-width: 460px;
+  color: #fff;
+}
+.lg-motif {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  max-width: 420px;
+}
+.lg-motif > div {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.lg-motif span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #fff;
+}
+.lg-motif i {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: #fff;
+}
+.lg-motif i.dest {
+  background: var(--wtg-periwinkle);
+}
+
+/* Card */
+.lg-card {
+  flex: 0 1 440px;
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 40px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  color: var(--ink-800);
+}
+.lg-logo-slot {
+  position: relative;
+  height: 36px;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+}
+.lg-egg-hotspot {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  cursor: default;
+  display: block;
+  line-height: 0;
+}
+.lg-egg-hotspot:focus {
+  outline: none;
+}
+.lg-egg {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.lg-egg-trophy {
+  width: 24px;
+  height: 24px;
+}
+.lg-egg-bubble {
+  font-size: 12px;
+  color: var(--ink-500);
+}
+.lg-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lg-card-head h2 {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  color: var(--wtg-blue);
+}
+.lg-card-head p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-500);
+}
+
+/* Form */
+.lg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lg-field > span {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-700);
+}
+.lg-field input,
+.lg-field select {
+  font: inherit;
+  font-size: 16px;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink-900);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.lg-field input::placeholder {
+  color: var(--ink-400);
+}
+.lg-field input:focus,
+.lg-field select:focus {
+  outline: none;
+  border-color: var(--wtg-cobalt);
+  box-shadow: var(--focus-ring);
+}
+.lg-field input:disabled,
+.lg-field select:disabled {
+  background: var(--ink-50);
+  color: var(--ink-500);
+}
+.lg-field small {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-500);
+}
+.lg-forgot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+.lg-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--wtg-cobalt);
+  cursor: pointer;
+}
+.lg-link:hover {
+  color: #2c16c4;
+  text-decoration: underline;
+}
+.lg-link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.lg-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: 4px;
+}
+.lg-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.lg-note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-500);
+}
+.lg-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lg-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 54px;
+  padding: 0 28px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.lg-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.lg-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.lg-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.lg-btn-primary {
+  background: var(--wtg-cobalt);
+  color: #fff;
+}
+.lg-btn-primary:hover:not(:disabled) {
+  background: #2c16c4;
+}
+.lg-btn-secondary {
+  background: #fff;
+  color: var(--ink-900);
+  border-color: var(--ink-200);
+}
+.lg-btn-secondary:hover:not(:disabled) {
+  border-color: var(--ink-500);
+  background: var(--ink-50);
+}
+.lg-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink-400);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+.lg-or span {
+  flex: 1;
+  height: 1px;
+  background: var(--ink-200);
+}
+.lg-card-foot {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-600);
+  text-align: center;
+}
+
+/* Endorsement line */
+.lg-foot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 20px clamp(24px, 6vw, 96px);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.lg-foot-left,
+.lg-foot-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.lg-foot-right {
+  gap: 20px;
+  font-size: 13px;
+  color: #fff;
+}
+.lg-replay {
+  appearance: none;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border-radius: var(--radius);
+  height: 32px;
+  padding: 0 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+.lg-replay:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.lg-replay:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(183, 179, 255, 0.45);
+}
+
+/* The intro's flying logo */
+.lg-intro {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .lg-main {
+    padding: 40px 24px;
+    gap: 40px;
+  }
+  .lg-card {
+    padding: 28px 22px;
+  }
+  .lg-foot {
+    justify-content: center;
+    text-align: center;
+  }
+}
