@@ -59,6 +59,7 @@ import { duplicateCampaign as copyCampaign, isSocialMilestone, milestoneSocialPo
 import { publishCampaignPage } from "./campaignExport";
 import { ACTIVITY_PAGE_FILE_NAME, activityPageData, downloadActivityPage, newShareToken, publishActivityPage } from "./activityExport";
 import { SharePointGuideModal } from "./components/SharePointGuideModal";
+import { ActivityPortalContext, activityItemUrl } from "./activityPortal";
 import { publishItineraryPage } from "./itineraryExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
@@ -1245,7 +1246,16 @@ export default function App() {
     };
   }
 
+  // Every "open on SharePoint" action in the tree links into the marketing
+  // activity portal (src/activityPortal.ts), or offers to set it up.
+  const activityPortal = {
+    url: activityShare.sharePointUrl,
+    itemUrl: (kind: "campaign" | "event", id: string) => activityItemUrl(activityShare.sharePointUrl, kind, id),
+    openSetup: () => setActivityGuideOpen(true),
+  };
+
   return (
+    <ActivityPortalContext.Provider value={activityPortal}>
     <div className={`app ${drawerOpen ? "nav-open" : ""}`}>
       <Sidebar
         currentDesigner={currentDesigner}
@@ -2207,6 +2217,7 @@ export default function App() {
         </div>
       )}
     </div>
+    </ActivityPortalContext.Provider>
   );
 }
 

@@ -113,9 +113,9 @@ const TOURS: Record<string, Tour> = {
   campaign: {
     title: "Campaign",
     steps: [
-      { target: ".item-band", title: "The campaign at a glance", body: "Brand, type and phase, a countdown to launch or the end, and the facts: dates, milestones done, owner and linked projects. Open the SharePoint page from here once it exists." },
+      { target: ".item-band", title: "The campaign at a glance", body: "Brand, type and phase, a countdown to launch or the end, and the facts: dates, milestones done, owner and linked projects. Open its page in the marketing activity portal from here." },
       { target: ".item-strip", title: "Milestones as the strip", body: "Every milestone in date order, with its date and whether it's done, late or today. Click one to go to the Milestones tab." },
-      { target: ".item-tabs", title: "Tabs", body: "Overview, Details (the editor, including milestones and the SharePoint page), Milestones to tick off, and the Projects doing the work." },
+      { target: ".item-tabs", title: "Tabs", body: "Overview, Details (the editor, including milestones), Milestones to tick off, and the Projects doing the work." },
       { target: ".item-grid-main", title: "Up next and the schedule", body: "The next milestones to do, the campaign drawn as a timeline bar with its milestones and today, and the description." },
       { target: ".item-grid-bottom", title: "Manage", body: "Duplicate the campaign for a test or a template, work it as a webinar, or delete it." },
       NEW,

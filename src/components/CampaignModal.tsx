@@ -15,14 +15,7 @@ import { MilestonePostLink } from "./MilestonePostLink";
 import { MilestonePostDeleteDialog } from "./MilestonePostDeleteDialog";
 import { BRANDS, brandColor, brandForChannel } from "../constants";
 import { formatShort, shiftIso, todayIso } from "../dates";
-import {
-  campaignPageFileName,
-  downloadCampaignPage,
-  newShareToken,
-  publishCampaignPage,
-} from "../campaignExport";
-import { setCampaignSharePointUrl, setCampaignShareToken } from "../firestore";
-import { SharePointGuideModal } from "./SharePointGuideModal";
+import { ActivityPortalLink } from "./ActivityPortalLink";
 import { ProjectPicker } from "./ProjectPicker";
 import { AssigneePicker } from "./AssigneePicker";
 import { Icon } from "./Icon";
@@ -104,13 +97,6 @@ export function CampaignModal({
   const [milestones, setMilestones] = useState<CampaignMilestone[]>(() =>
     (initial.milestones ?? []).map((m) => ({ ...m })),
   );
-  // Held here rather than read from `initial`: a token minted while the
-  // editor is open has to survive this editor's own save, which rewrites
-  // the whole document.
-  const [shareToken, setShareToken] = useState(initial.shareToken);
-  // Same again for the link pasted back from SharePoint.
-  const [sharePointUrl, setSharePointUrl] = useState(initial.sharePointUrl);
-  const [guideOpen, setGuideOpen] = useState(false);
   // A milestone with a social post, waiting on "delete the post too?".
   const [removing, setRemoving] = useState<CampaignMilestone | null>(null);
   // Posts to delete when the campaign is saved. Held until then so that
@@ -122,12 +108,12 @@ export function CampaignModal({
   useEffect(() => {
     if (inline) return;
     function onKey(e: KeyboardEvent) {
-      // The SharePoint guide and the delete prompt handle their own Escape.
-      if (e.key === "Escape" && !guideOpen && !removing) onCancel();
+      // The delete prompt handles its own Escape.
+      if (e.key === "Escape" && !removing) onCancel();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel, guideOpen, removing, inline]);
+  }, [onCancel, removing, inline]);
 
   // Every campaign needs a start; only a dated one needs an end after it.
   const datesValid =
@@ -187,49 +173,6 @@ export function CampaignModal({
     setRemoving(null);
   }
 
-  // ── SharePoint page ──────────────────────────────────────────────────
-
-  // Downloads the saved campaign, not what's mid-edit here — the page
-  // fetches the saved version anyway, so unsaved edits show on it once
-  // they're saved. The first download mints the campaign's token; the
-  // write isn't awaited so the download doesn't wait on the network (and an
-  // offline write still lands once it syncs).
-  function downloadSharePointPage() {
-    if (!initial.id) return;
-    let token = shareToken;
-    if (!token) {
-      token = newShareToken();
-      setShareToken(token);
-      setCampaignShareToken(initial.id, token).catch((err) => {
-        console.warn("Couldn't save the campaign's share token", err);
-        setError(
-          "Couldn't register the SharePoint page with Waypoint, so it won't update. Try downloading it again.",
-        );
-        setShareToken(undefined);
-      });
-    }
-    // Publish the public copy the page reads. Also brings a campaign shared
-    // before the copy existed up to date.
-    const shared = { ...(initial as Campaign), shareToken: token };
-    publishCampaignPage(shared, socialPosts ?? []).catch((err) => {
-      console.warn("Couldn't publish the campaign's SharePoint page", err);
-      setError("Couldn't publish the SharePoint page, so it won't show live details. Try downloading it again.");
-    });
-    downloadCampaignPage(shared, token, socialPosts ?? []);
-  }
-
-  function saveSharePointUrl(url: string) {
-    setGuideOpen(false);
-    if (!initial.id || url === sharePointUrl) return;
-    const previous = sharePointUrl;
-    setSharePointUrl(url);
-    setCampaignSharePointUrl(initial.id, url).catch((err) => {
-      console.warn("Couldn't save the campaign's SharePoint link", err);
-      setError("Couldn't save the SharePoint link. Open the guide again and re-paste it.");
-      setSharePointUrl(previous);
-    });
-  }
-
   // ── save ─────────────────────────────────────────────────────────────
 
   function submit() {
@@ -269,8 +212,10 @@ export function CampaignModal({
       color,
       milestones: cleanMilestones,
       projectIds,
-      shareToken,
-      sharePointUrl,
+      // Kept from before the activity portal, so a campaign page already
+      // on SharePoint carries on refreshing.
+      shareToken: initial.shareToken,
+      sharePointUrl: initial.sharePointUrl,
       createdAt: initial.createdAt ?? new Date().toISOString(),
     };
     onSave(campaign, deletePostIds);
@@ -304,29 +249,7 @@ export function CampaignModal({
             )}
           </div>
           <div className="modal-head-actions">
-            {mode === "edit" && initial.id && (
-              <>
-                {sharePointUrl && (
-                  <a
-                    className="share-btn"
-                    href={sharePointUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Open the campaign's page on SharePoint"
-                  >
-                    Open on SharePoint <Icon name="external-link" size={12} />
-                  </a>
-                )}
-                <button
-                  type="button"
-                  className="share-btn"
-                  onClick={() => setGuideOpen(true)}
-                  title="Put a page for this campaign on SharePoint. It shows the campaign's timings and milestones, and updates itself every time it's opened. Unsaved edits appear on it once saved."
-                >
-                  {sharePointUrl ? "Update SharePoint page" : "Put on SharePoint"}
-                </button>
-              </>
-            )}
+            {mode === "edit" && <ActivityPortalLink kind="campaign" id={initial.id} className="share-btn" />}
             {!inline && (
               <button className="icon-btn" onClick={onCancel} aria-label="Close">
                 <Icon name="close" size={16} />
@@ -654,15 +577,6 @@ export function CampaignModal({
           />
         ) : null;
       })()}
-      {guideOpen && (
-        <SharePointGuideModal
-          fileName={campaignPageFileName(initial.name ?? "")}
-          initialUrl={sharePointUrl}
-          onDownload={downloadSharePointPage}
-          onSave={saveSharePointUrl}
-          onCancel={() => setGuideOpen(false)}
-        />
-      )}
     </div>
   );
 }

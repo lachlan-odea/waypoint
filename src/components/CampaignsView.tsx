@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ActivityPortalLink } from "./ActivityPortalLink";
 import type {
   Campaign,
   Designer,
@@ -613,16 +614,7 @@ export function CampaignsView({
                     )}
                     {c.owner ? ` · ${c.owner}` : ""}
                   </p>
-                  {c.sharePointUrl && (
-                    <a
-                      className="camp-card-sharepoint"
-                      href={c.sharePointUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      SharePoint page ↗
-                    </a>
-                  )}
+                  <ActivityPortalLink kind="campaign" id={c.id} className="camp-card-sharepoint" short offerSetup={false} />
                   {(() => {
                     const cat = socialCategoryMeta(c.category, categories);
                     return cat ? (

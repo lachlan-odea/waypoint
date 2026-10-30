@@ -32,6 +32,8 @@ import {
 import { daysUntil, formatShort, shiftIso, todayIso } from "../../dates";
 import { Avatar } from "../Avatar";
 import { Icon } from "../Icon";
+import { ActivityPortalLink, ActivityPortalListItem } from "../ActivityPortalLink";
+import { useActivityPortal } from "../../activityPortal";
 import { LinkifiedText } from "../LinkifiedText";
 import { CampaignModal } from "../CampaignModal";
 import { MilestonePostLink } from "../MilestonePostLink";
@@ -264,11 +266,7 @@ function WebinarCampaignPage({
             >
               <Icon name="download" size={14} /> Briefing document
             </button>
-            {campaign.sharePointUrl && (
-              <a className="btn btn-ghost btn-sm" href={campaign.sharePointUrl} target="_blank" rel="noopener noreferrer">
-                <Icon name="external-link" size={14} /> Open on SharePoint
-              </a>
-            )}
+            <ActivityPortalLink kind="campaign" id={campaign.id} />
             {kit.folder && (
               <a className="btn btn-ghost btn-sm" href={kit.folder} target="_blank" rel="noopener noreferrer">
                 <Icon name="folder" size={14} /> Project folder
@@ -368,6 +366,7 @@ function PlainCampaignPage({
   onOpenProject,
   onOpenSocialPost,
 }: Props) {
+  const portalUrl = useActivityPortal().itemUrl("campaign", campaign.id);
   const today = todayIso();
   const phase = campaignPhase(campaign, today);
   const color = campaign.color || brandColor(campaign.brand || "No brand");
@@ -470,17 +469,7 @@ function PlainCampaignPage({
         </>
       }
       facts={facts}
-      actions={
-        campaign.sharePointUrl ? (
-          <a className="btn btn-ghost btn-sm" href={campaign.sharePointUrl} target="_blank" rel="noopener noreferrer">
-            <Icon name="external-link" size={14} /> Open on SharePoint
-          </a>
-        ) : (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => onTab("details")}>
-            <Icon name="browser" size={14} /> Put on SharePoint
-          </button>
-        )
-      }
+      actions={<ActivityPortalLink kind="campaign" id={campaign.id} />}
       tabs={tabs}
       tab={tab}
       onTab={onTab}
@@ -599,14 +588,7 @@ function PlainCampaignPage({
             <>
               <SideCard title="Links">
                 <ul className="item-flist">
-                  {campaign.sharePointUrl && (
-                    <li>
-                      <Icon name="browser" size={16} />
-                      <a href={campaign.sharePointUrl} target="_blank" rel="noopener noreferrer">
-                        Campaign page on SharePoint
-                      </a>
-                    </li>
-                  )}
+                  <ActivityPortalListItem kind="campaign" id={campaign.id} label="Campaign in the activity portal" />
                   {linkedProjects.map((p) => (
                     <li key={p.id}>
                       <Icon name="folder" size={16} />
@@ -625,7 +607,7 @@ function PlainCampaignPage({
                         </a>
                       </li>
                     ))}
-                  {!campaign.sharePointUrl && linkedProjects.length === 0 && !milestones.some((m) => m.url) && <li className="item-hint">Nothing linked yet.</li>}
+                  {!portalUrl && linkedProjects.length === 0 && !milestones.some((m) => m.url) && <li className="item-hint">Nothing linked yet.</li>}
                 </ul>
               </SideCard>
               <SideCard title="Manage">

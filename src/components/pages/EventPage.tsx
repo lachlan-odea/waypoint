@@ -22,6 +22,7 @@ import {
 } from "../../events";
 import { daysUntil, formatShort, todayIso } from "../../dates";
 import { Icon } from "../Icon";
+import { ActivityPortalLink } from "../ActivityPortalLink";
 import { LinkifiedText } from "../LinkifiedText";
 import { EventModal } from "../EventModal";
 import { ItineraryModal } from "../ItineraryModal";
@@ -185,6 +186,7 @@ export function EventPage({
         facts={facts}
         actions={
           <>
+            <ActivityPortalLink kind="event" id={event.id} />
             {event.itinerarySharePointUrl && (
               <a className="btn btn-ghost btn-sm" href={event.itinerarySharePointUrl} target="_blank" rel="noopener noreferrer">
                 <Icon name="external-link" size={14} /> Itinerary on SharePoint
