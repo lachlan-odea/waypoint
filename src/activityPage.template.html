@@ -120,13 +120,14 @@
   /* Toolbar */
   .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 18px 0 6px; }
   .seg { display: inline-flex; gap: 4px; flex-wrap: wrap; }
-  .seg button, .toolbar input {
+  .seg button, .seg .segl, .toolbar input {
     font: inherit; font-size: 13px; font-weight: 600; min-height: 34px; padding: 0 12px;
     border: 1px solid var(--ink-200); border-radius: var(--radius); background: #fff; color: var(--ink-700); cursor: pointer;
   }
-  .seg button[aria-pressed="true"] { background: #ecebff; border-color: var(--cobalt); color: var(--cobalt); }
+  .seg .segl { display: inline-flex; align-items: center; text-decoration: none; }
+  .seg button[aria-pressed="true"], .seg .segl[aria-pressed="true"] { background: #ecebff; border-color: var(--cobalt); color: var(--cobalt); }
   .toolbar input { font-weight: 400; min-width: 220px; cursor: text; color: var(--midnight); }
-  .toolbar input:focus, .seg button:focus-visible { outline: none; border-color: var(--cobalt); box-shadow: 0 0 0 3px rgba(55, 30, 225, 0.35); }
+  .toolbar input:focus, .seg button:focus-visible, .seg .segl:focus-visible { outline: none; border-color: var(--cobalt); box-shadow: 0 0 0 3px rgba(55, 30, 225, 0.35); }
   .toolbar .count { margin-left: auto; font-size: 13px; color: var(--ink-500); }
 
   /* Month groups and cards */
@@ -152,6 +153,42 @@
   .strip .n { font-family: var(--mono); font-size: 11px; color: var(--ink-500); }
   .card .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--ink-200); font-size: 12.5px; color: var(--ink-600); }
   .empty { padding: 32px 0; text-align: center; color: var(--ink-500); }
+
+  /* Events calendar */
+  .cal { margin: 18px 0 0; }
+  .cal-nav { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; }
+  .cal-nav h2 { margin: 0 auto 0 6px; font-size: 18px; font-weight: 700; color: var(--blue); }
+  .cal-nav button {
+    font: inherit; font-size: 13px; font-weight: 600; min-height: 32px; min-width: 32px; padding: 0 10px;
+    border: 1px solid var(--ink-200); border-radius: var(--radius); background: #fff; color: var(--ink-700); cursor: pointer;
+  }
+  .cal-nav button:hover { border-color: var(--cobalt); color: var(--cobalt); }
+  .cal-nav .cal-count { font-size: 13px; color: var(--ink-500); }
+  .cal-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 0 0 6px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-500); }
+  .cal-week span { padding: 0 8px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .cal-day { min-height: 108px; background: #fff; border: 1px solid var(--ink-200); border-radius: var(--radius); padding: 6px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .cal-day.other { background: transparent; border-color: transparent; }
+  .cal-day.other .cal-date { color: var(--ink-300); }
+  .cal-day.weekend:not(.other) { background: var(--ink-50); }
+  .cal-date { font-family: var(--mono); font-size: 12px; color: var(--ink-500); align-self: flex-end; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .cal-day.today .cal-date { background: var(--cobalt); color: #fff; }
+  .cal-ev {
+    display: block; font-size: 12px; font-weight: 600; line-height: 20px; padding: 0 6px; border-radius: 6px;
+    background: var(--sky-100); color: var(--blue); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    border-left: 3px solid var(--sky);
+  }
+  .cal-ev.cont { opacity: 0.7; }
+  .cal-ev.off { background: var(--ink-100); border-left-color: var(--ink-300); color: var(--ink-500); }
+  .cal-ev:hover { background: var(--sky); }
+  .cal-tbc { margin: 22px 0 0; }
+  .cal-tbc h3 { margin: 0 0 10px; font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-500); }
+  @media (max-width: 720px) {
+    .cal-day { min-height: 64px; padding: 4px; }
+    .cal-ev { font-size: 0; height: 6px; line-height: 6px; padding: 0; border-left: 0; background: var(--cobalt); border-radius: 3px; }
+    .cal-ev.off { background: var(--ink-300); }
+    .cal-week span { padding: 0 4px; font-size: 10px; }
+  }
 
   /* Detail */
   .detail { padding: 22px 0 64px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px 22px; align-items: start; }
@@ -222,7 +259,9 @@
   };
 
   var data = null;
-  var ui = { when: "all", q: "" };
+  // view and month belong to the Events section: list or calendar, and
+  // which month the calendar shows (empty means the current one).
+  var ui = { when: "all", q: "", view: "list", month: "" };
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -384,8 +423,12 @@
       "</div></header>";
     html += '<div class="inner"><div class="toolbar">' +
       '<div class="seg" role="group" aria-label="When">' + segBtn("when", "all", "Any time") + segBtn("when", "live", "Live now") + segBtn("when", "upcoming", "Coming up") + segBtn("when", "done", "Finished") + "</div>" +
+      (s.kind === "event" ? '<div class="seg" role="group" aria-label="View"><a class="segl" href="#events" aria-pressed="' + (ui.view !== "calendar") + '">List</a><a class="segl" href="#events/calendar" aria-pressed="' + (ui.view === "calendar") + '">Calendar</a></div>' : "") +
       '<input type="search" id="q" placeholder="Search ' + esc(s.title.toLowerCase()) + '" aria-label="Search" value="' + esc(ui.q) + '" />' +
       '<span class="count">' + plural(items.length, s.one) + "</span></div>";
+    if (s.kind === "event" && ui.view === "calendar") {
+      html += calendarHtml(items, today);
+    } else {
     if (!items.length) html += '<p class="empty">Nothing matches.</p>';
     keys.forEach(function (ym) {
       var list = groups[ym].sort(function (a, b) { return sortDate(a).localeCompare(sortDate(b)); });
@@ -395,17 +438,70 @@
       html += '<section class="group"><h2>' + esc(k) + " <span>· " + tbc[k].length + "</span></h2><div class=\"cards\">" + tbc[k].map(function (it) { return cardHtml(it, today); }).join("") + "</div></section>";
     });
     if (evergreen.length) html += '<section class="group"><h2>Always on <span>· ' + evergreen.length + "</span></h2><div class=\"cards\">" + evergreen.map(function (it) { return cardHtml(it, today); }).join("") + "</div></section>";
+    }
     html += updatedLine() + "</div>";
     var app = document.getElementById("app");
     app.innerHTML = html;
     app.querySelectorAll(".seg button").forEach(function (b) {
       b.addEventListener("click", function () { ui[b.getAttribute("data-k")] = b.getAttribute("data-v"); renderList(key); });
     });
+    app.querySelectorAll("[data-month]").forEach(function (b) {
+      b.addEventListener("click", function () { ui.month = b.getAttribute("data-month"); renderList(key); });
+    });
     var q = document.getElementById("q");
     q.addEventListener("input", function () { ui.q = q.value; var pos = q.selectionStart; renderList(key); var q2 = document.getElementById("q"); q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (e) {} });
   }
   function segBtn(k, v, label) {
     return '<button type="button" data-k="' + k + '" data-v="' + v + '" aria-pressed="' + (ui[k] === v) + '">' + label + "</button>";
+  }
+
+  // ── Events calendar ────────────────────────────────────────────────
+  // A month grid, weeks starting Monday. An event shows on every day it
+  // runs; its name appears on its first day and again at the start of
+  // each week it continues into. Events without dates but with a month
+  // are listed under the grid for that month.
+  var DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function isoOf(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function shiftMonth(ym, n) { var p = ym.split("-"); var d = new Date(+p[0], +p[1] - 1 + n, 1); return d.getFullYear() + "-" + pad2(d.getMonth() + 1); }
+  function calendarHtml(items, today) {
+    var ym = ui.month || today.slice(0, 7);
+    var p = ym.split("-");
+    var first = new Date(+p[0], +p[1] - 1, 1);
+    var startDow = (first.getDay() + 6) % 7;
+    var gridStart = new Date(first); gridStart.setDate(1 - startDow);
+    var daysInMonth = new Date(+p[0], +p[1], 0).getDate();
+    var rows = Math.ceil((startDow + daysInMonth) / 7);
+    var dated = items.filter(function (e) { return e.startDate; }).sort(function (a, b) { return a.startDate.localeCompare(b.startDate) || a.name.localeCompare(b.name); });
+    var inMonth = dated.filter(function (e) { return e.startDate.slice(0, 7) <= ym && (e.endDate || e.startDate).slice(0, 7) >= ym; });
+    var tbc = items.filter(function (e) { return !e.startDate && e.tbcMonth === ym; });
+    var html = '<div class="cal"><div class="cal-nav">' +
+      '<button type="button" data-month="' + shiftMonth(ym, -1) + '" aria-label="Previous month">&lsaquo;</button>' +
+      '<button type="button" data-month="' + shiftMonth(ym, 1) + '" aria-label="Next month">&rsaquo;</button>' +
+      "<h2>" + esc(monthTitle(ym)) + "</h2>" +
+      '<span class="cal-count">' + plural(inMonth.length + tbc.length, "event") + "</span>" +
+      (ym !== today.slice(0, 7) ? '<button type="button" data-month="' + today.slice(0, 7) + '">Today</button>' : "") +
+      "</div>";
+    html += '<div class="cal-week">' + DOW.map(function (d) { return "<span>" + d + "</span>"; }).join("") + "</div>";
+    html += '<div class="cal-grid">';
+    for (var i = 0; i < rows * 7; i++) {
+      var d = new Date(gridStart); d.setDate(gridStart.getDate() + i);
+      var iso = isoOf(d);
+      var other = iso.slice(0, 7) !== ym;
+      var dow = i % 7;
+      var evs = dated.filter(function (e) { return e.startDate <= iso && (e.endDate || e.startDate) >= iso; });
+      html += '<div class="cal-day' + (other ? " other" : "") + (iso === today ? " today" : "") + (dow >= 5 ? " weekend" : "") + '"><span class="cal-date">' + d.getDate() + "</span>" +
+        evs.map(function (e) {
+          var label = e.startDate === iso || dow === 0;
+          var off = e.status === "cancelled" || e.status === "done";
+          return '<a class="cal-ev' + (label ? "" : " cont") + (off ? " off" : "") + '" href="#' + keyOf(e) + '" title="' + esc(e.name) + " · " + esc(e.datesText) + (e.location ? " · " + esc(e.location) : "") + '">' + (label ? esc(e.name) : "&nbsp;") + "</a>";
+        }).join("") +
+        "</div>";
+    }
+    html += "</div>";
+    if (tbc.length) html += '<div class="cal-tbc"><h3>' + esc(monthTitle(ym)) + ', dates to be confirmed</h3><div class="cards">' + tbc.map(function (it) { return cardHtml(it, today); }).join("") + "</div></div>";
+    if (!inMonth.length && !tbc.length) html += '<p class="empty">No events this month.</p>';
+    return html + "</div>";
   }
 
   // ── Detail view ────────────────────────────────────────────────────
@@ -472,7 +568,8 @@
       main += panel("Milestones", milestonesHtml(item.milestones, today), doneCount + " of " + item.milestones.length + " delivered");
       side += panel("Details", kv([["Status", '<span class="st ' + st.cls + '">' + esc(st.label) + "</span>"], ["Runs", item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)], ["Brand", esc(item.brand)], ["Type", esc(item.category)], ["Owner", esc(item.owner)]]));
     }
-    var html = '<header class="hero"><div class="inner"><a class="back" href="#' + section + '"><span aria-hidden="true">←</span> ' + esc(SECTIONS[section].title) + "</a>" +
+    var backHref = "#" + section + (section === "events" && ui.view === "calendar" ? "/calendar" : "");
+    var html = '<header class="hero"><div class="inner"><a class="back" href="' + backHref + '"><span aria-hidden="true">←</span> ' + esc(SECTIONS[section].title) + (section === "events" && ui.view === "calendar" ? " calendar" : "") + "</a>" +
       '<ul class="tags">' + tags + "</ul><h1>" + h1 + "</h1>" + (lede ? '<p class="lede">' + lede + "</p>" : "") +
       '<div class="facts">' + facts.map(function (f) { return "<span>" + esc(f[0]) + " <b>" + f[1] + "</b></span>"; }).join("") + "</div></div></header>" +
       '<div class="inner"><div class="detail"><div class="main">' + main + '</div><div class="side">' + side + "</div></div>" +
@@ -484,7 +581,13 @@
   function render() {
     if (!data) return;
     var key = (location.hash || "").replace(/^#/, "");
-    if (SECTIONS[key]) { renderList(key); document.title = SECTIONS[key].title + " · Marketing activity"; return; }
+    var parts = key.split("/");
+    if (SECTIONS[parts[0]]) {
+      ui.view = parts[0] === "events" && parts[1] === "calendar" ? "calendar" : "list";
+      renderList(parts[0]);
+      document.title = SECTIONS[parts[0]].title + (ui.view === "calendar" ? " calendar" : "") + " · Marketing activity";
+      return;
+    }
     var item = key ? findItem(key) : null;
     if (item) { renderDetail(item); document.title = item.name + " · Marketing activity"; }
     else { renderHome(); document.title = "Marketing activity"; }
