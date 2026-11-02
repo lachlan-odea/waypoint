@@ -16,6 +16,7 @@ import {
   timeZoneOffsetLabel,
 } from "../timezones";
 import { Icon } from "./Icon";
+import { OUTLOOK_ADDIN_MANIFEST_URL, OUTLOOK_ADDIN_STORE_URL } from "../constants";
 
 type Props = {
   currentDesigner: Designer;
@@ -265,6 +266,8 @@ export function SettingsModal({
             currentDesigner={currentDesigner}
             onSave={onUpdatePhotoUrl}
           />
+
+          <OutlookAddInSection />
 
           <section className="modal-section">
             <h3>Display</h3>
@@ -1283,5 +1286,96 @@ function ManageUsersModal({
         </footer>
       </div>
     </div>
+  );
+}
+
+// ── Outlook add-in ───────────────────────────────────────────────────────
+// Walks the user through sideloading "Brief to Waypoint" into Outlook: grab
+// the latest manifest from the add-in's GitHub Pages deploy, then add it as
+// a custom add-in from Outlook's store page. The manifest is fetched and
+// saved as a download (rather than linked) because browsers show an XML
+// file inline when the link is cross-origin, and Outlook needs it as a file.
+function OutlookAddInSection() {
+  const [busy, setBusy] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function download() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(OUTLOOK_ADDIN_MANIFEST_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`The manifest couldn't be fetched (HTTP ${res.status}).`);
+      const blob = await res.blob();
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = "waypoint-outlook-addin.xml";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(href), 10_000);
+      setDownloaded(true);
+    } catch (err) {
+      console.error(err);
+      setError(
+        err instanceof Error
+          ? `${err.message} You can also save it from the link below.`
+          : String(err),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="modal-section">
+      <h3>Outlook add-in</h3>
+      <p className="muted small">
+        <strong>Brief to Waypoint</strong> adds a button to Outlook that turns
+        the email you're reading into a project on a team board, pre-filled
+        from the message. Install it once per mailbox; the add-in itself
+        updates automatically.
+      </p>
+      <ol className="install-steps">
+        <li>
+          <strong>Download the manifest.</strong> It's a small XML file that
+          tells Outlook where the add-in lives.
+        </li>
+        <li>
+          <strong>Open the Outlook add-in store</strong> and go to{" "}
+          <strong>My add-ins → Add a custom add-in → Add from file…</strong>
+        </li>
+        <li>
+          <strong>Choose the downloaded file.</strong> The{" "}
+          <strong>Brief to Waypoint</strong> button then appears on the ribbon
+          whenever you're reading an email.
+        </li>
+      </ol>
+      {error && (
+        <p className="login-error">
+          {error}{" "}
+          <a href={OUTLOOK_ADDIN_MANIFEST_URL} target="_blank" rel="noreferrer">
+            Open the manifest
+          </a>
+        </p>
+      )}
+      <div className="section-actions">
+        {downloaded && !error && (
+          <span className="muted small">Saved as waypoint-outlook-addin.xml</span>
+        )}
+        <button className="primary" onClick={download} disabled={busy}>
+          {busy ? "Downloading…" : "Download manifest"}
+        </button>
+        <a
+          className="btn btn-secondary button-link"
+          href={OUTLOOK_ADDIN_STORE_URL}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open Outlook add-in store →
+        </a>
+      </div>
+    </section>
   );
 }

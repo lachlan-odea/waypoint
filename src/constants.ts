@@ -281,3 +281,13 @@ export const CONTENT_TYPES = [
   "Illustration",
   "Internal comms",
 ] as const;
+
+// The Outlook add-in ("Brief to Waypoint") is a sibling repo deployed to
+// GitHub Pages. Outlook installs it from this manifest; the task pane it
+// points at updates itself, so the file only needs downloading once.
+export const OUTLOOK_ADDIN_MANIFEST_URL =
+  "https://lachlan-odea.github.io/waypoint-outlook-addin/manifest.xml";
+// Outlook on the web's add-in store, where "Add a custom add-in → Add from
+// file…" takes the downloaded manifest.
+export const OUTLOOK_ADDIN_STORE_URL =
+  "https://outlook.cloud.microsoft/mail/inclientstore";
