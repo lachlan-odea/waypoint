@@ -34,8 +34,6 @@ type Mode = "signin" | "signup";
 
 type Props = {
   onSignedIn: (designerId: string) => void;
-  // Shown above the form, e.g. why the person was signed out.
-  notice?: string;
 };
 
 function friendlyError(err: unknown): string {
@@ -214,7 +212,7 @@ function IntroOverlay({
 
 // ── The page ────────────────────────────────────────────────────────────
 
-export function Login({ onSignedIn, notice }: Props) {
+export function Login({ onSignedIn }: Props) {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -476,11 +474,6 @@ export function Login({ onSignedIn, notice }: Props) {
               </label>
             )}
 
-            {notice && !error && (
-              <p className="lg-note" role="status">
-                {notice}
-              </p>
-            )}
             {error && (
               <p className="lg-error" role="alert">
                 {error}
