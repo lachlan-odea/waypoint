@@ -165,6 +165,56 @@ service cloud.firestore {
         allow delete: if token.matches('^[0-9a-f]{32}$');
       }
     }
+    // Requests for the Live Events team's support, sent in by the Live
+    // event request form on SharePoint (src/liveEventRequestExport.ts).
+    // The form isn't signed in, so a create is taken from anyone, but only
+    // when it carries the current intake token from /settings/liveEventIntake
+    // (rotating the token retires every copy of the form), only as the
+    // fixed set of string fields the form writes, each capped, and only as
+    // pending. Nothing unauthenticated can read a request back; the Video
+    // team reads, decides on and removes them from Waypoint.
+    match /liveEventRequests/{requestId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        || (request.resource.data.keys().hasOnly([
+          'json', 'eventName', 'requesterName', 'requesterEmail', 'eventDate',
+          'createdAt', 'status', 'intakeToken'
+        ])
+        && request.resource.data.intakeToken is string
+        && request.resource.data.intakeToken.matches('^[0-9a-f]{32}$')
+        && request.resource.data.intakeToken
+          == get(/databases/$(database)/documents/settings/liveEventIntake).data.token
+        && request.resource.data.status == 'pending'
+        && request.resource.data.json is string
+        && request.resource.data.json.size() > 0
+        && request.resource.data.json.size() < 200000
+        && request.resource.data.eventName is string
+        && request.resource.data.eventName.size() > 0
+        && request.resource.data.eventName.size() <= 160
+        && request.resource.data.requesterName is string
+        && request.resource.data.requesterName.size() > 0
+        && request.resource.data.requesterName.size() <= 80
+        && request.resource.data.requesterEmail is string
+        && request.resource.data.requesterEmail.size() <= 120
+        && request.resource.data.eventDate is string
+        && request.resource.data.eventDate.matches('^([0-9]{4}-[0-9]{2}-[0-9]{2})?$')
+        && request.resource.data.createdAt is string
+        && request.resource.data.createdAt.size() <= 40);
+      allow update, delete: if request.auth != null;
+    }
+    // Periods the Live Events Team isn't taking bookings for, managed from
+    // the Video board.
+    match /liveEventBlackouts/{blackoutId} {
+      allow read, write: if request.auth != null;
+    }
+    // What a copy of the request form reads back: the blackouts, kept
+    // under the current intake token so only the form (which carries the
+    // token) can find them. Waypoint rewrites it whenever the blackouts or
+    // the token change.
+    match /liveEventPublic/{token} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any
     // signed-in user. Reads are constrained by the ownerId == uid filter the

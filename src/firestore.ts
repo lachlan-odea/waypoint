@@ -15,22 +15,26 @@ import {
 import { db } from "./firebase";
 import { DEFAULT_WORKSPACE_ID, SEED_HUBS, SEED_WORKSPACES } from "./constants";
 import type {
+  ActivityShare,
   Campaign,
-  DeskItem,
   Designer,
+  DeskItem,
   EventItinerary,
   Hub,
   ItineraryAddition,
   ItineraryTravel,
+  LiveEventBlackout,
+  LiveEventIntake,
+  LiveEventRequest,
   MarketingEvent,
   Notification,
   Project,
+  PublicBlackout,
   SocialConfig,
   SocialPost,
+  Speaker,
   Workspace,
   WorkspaceData,
-  Speaker,
-  ActivityShare,
 } from "./types";
 
 const designersCol = () => collection(db, "designers");
@@ -886,4 +890,105 @@ export function subscribeActivityShare(
 
 export async function setActivityShare(patch: ActivityShare): Promise<void> {
   await setDoc(activityShareDoc(), { ...patch, updatedAt: new Date().toISOString() }, { merge: true });
+}
+
+// ── Live event requests ──────────────────────────────────────────────────
+// Submissions from the Live event request form on SharePoint, at
+// /liveEventRequests. The form creates them (see the rules); Waypoint
+// reads them all and writes the team's decisions and notes onto them. The
+// form's configuration is one document, /settings/liveEventIntake.
+
+const liveEventRequestsCol = () => collection(db, "liveEventRequests");
+const liveEventIntakeDoc = () => doc(collection(db, "settings"), "liveEventIntake");
+
+export function subscribeLiveEventRequests(
+  onChange: (requests: LiveEventRequest[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    liveEventRequestsCol(),
+    (snap) =>
+      onChange(
+        snap.docs.map((d) => ({ ...(d.data() as Omit<LiveEventRequest, "id">), id: d.id })),
+      ),
+    onError,
+  );
+}
+
+export async function updateLiveEventRequest(
+  id: string,
+  patch: Partial<Omit<LiveEventRequest, "id">>,
+): Promise<void> {
+  await updateDoc(doc(liveEventRequestsCol(), id), patch);
+}
+
+export async function deleteLiveEventRequest(id: string): Promise<void> {
+  await deleteDoc(doc(liveEventRequestsCol(), id));
+}
+
+export function subscribeLiveEventIntake(
+  onChange: (intake: LiveEventIntake) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    liveEventIntakeDoc(),
+    (snap) => onChange((snap.data() as LiveEventIntake | undefined) ?? {}),
+    onError,
+  );
+}
+
+export async function setLiveEventIntake(patch: LiveEventIntake): Promise<void> {
+  await setDoc(
+    liveEventIntakeDoc(),
+    { ...patch, updatedAt: new Date().toISOString() },
+    { merge: true },
+  );
+}
+
+// An event the Video team adds from the board, already approved.
+export async function createLiveEventRequest(data: Omit<LiveEventRequest, "id">): Promise<string> {
+  const ref = doc(liveEventRequestsCol());
+  await setDoc(ref, data);
+  return ref.id;
+}
+
+const liveEventBlackoutsCol = () => collection(db, "liveEventBlackouts");
+const liveEventPublicDoc = (token: string) => doc(collection(db, "liveEventPublic"), token);
+
+export function subscribeLiveEventBlackouts(
+  onChange: (blackouts: LiveEventBlackout[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    liveEventBlackoutsCol(),
+    (snap) =>
+      onChange(
+        snap.docs.map((d) => ({ ...(d.data() as Omit<LiveEventBlackout, "id">), id: d.id })),
+      ),
+    onError,
+  );
+}
+
+export async function saveLiveEventBlackout(
+  blackout: Omit<LiveEventBlackout, "id"> & { id?: string },
+): Promise<string> {
+  const { id, ...data } = blackout;
+  const ref = id ? doc(liveEventBlackoutsCol(), id) : doc(liveEventBlackoutsCol());
+  await setDoc(ref, data, { merge: true });
+  return ref.id;
+}
+
+export async function deleteLiveEventBlackout(id: string): Promise<void> {
+  await deleteDoc(doc(liveEventBlackoutsCol(), id));
+}
+
+// The copy of the blackouts the request form reads, under the current
+// intake token (see firestore.rules): rewritten whenever the blackouts or
+// the token change.
+export async function publishLiveEventPublic(token: string, blackouts: PublicBlackout[]): Promise<void> {
+  await setDoc(liveEventPublicDoc(token), { blackouts, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteLiveEventPublic(token: string): Promise<void> {
+  await deleteDoc(liveEventPublicDoc(token));
 }

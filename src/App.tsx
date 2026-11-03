@@ -3,6 +3,9 @@ import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
   Campaign,
   ActivityShare,
+  LiveEventBlackout,
+  LiveEventIntake,
+  LiveEventRequest,
   MarketingEvent,
   Notification,
   Speaker,
@@ -47,6 +50,17 @@ import {
   subscribeSpeakers,
   subscribeActivityShare,
   setActivityShare as firestoreSetActivityShare,
+  subscribeLiveEventIntake,
+  subscribeLiveEventRequests,
+  subscribeLiveEventBlackouts,
+  setLiveEventIntake as firestoreSetLiveEventIntake,
+  updateLiveEventRequest as firestoreUpdateLiveEventRequest,
+  deleteLiveEventRequest as firestoreDeleteLiveEventRequest,
+  createLiveEventRequest as firestoreCreateLiveEventRequest,
+  saveLiveEventBlackout as firestoreSaveLiveEventBlackout,
+  deleteLiveEventBlackout as firestoreDeleteLiveEventBlackout,
+  publishLiveEventPublic as firestorePublishLiveEventPublic,
+  deleteLiveEventPublic as firestoreDeleteLiveEventPublic,
   setSpeaker as firestoreSetSpeaker,
   deleteSpeaker as firestoreDeleteSpeaker,
   subscribeCampaigns,
@@ -72,6 +86,10 @@ import { MyDesk } from "./components/MyDesk";
 import { SocialCalendar } from "./components/SocialCalendar";
 import { CampaignsView } from "./components/CampaignsView";
 import { CampaignsPanel } from "./components/CampaignsPanel";
+import { LiveEventRequestsPanel } from "./components/LiveEventRequestsPanel";
+import type { BlackoutDraft } from "./components/LiveEventBlackoutModal";
+import { publicBlackouts } from "./liveEventRequests";
+import { LiveEventFormModal } from "./components/LiveEventFormModal";
 import { EventsView } from "./components/EventsView";
 import { NewMenu, type NewKind } from "./components/NewMenu";
 import { Login } from "./components/Login";
@@ -93,6 +111,7 @@ import {
   PROJECT_STATUSES,
   resolveSocialConfig,
   DEFAULT_WORKSPACE_ID,
+  LIVE_EVENT_REQUESTS_WORKSPACE_ID,
   SUPER_USER_EMAILS,
 } from "./constants";
 import { projectStatusTone } from "./statusTone";
@@ -365,6 +384,77 @@ export default function App() {
       console.warn("Couldn't load speakers", err);
     });
   }, [sessionDesignerId]);
+
+  // Live event requests sent in by the form on SharePoint, and the form's
+  // own settings, for the Video board's panel. A missing rule (the
+  // collection is denied until it's deployed) only logs: the panel then
+  // shows nothing rather than every board showing a sync error.
+  const [liveEventRequests, setLiveEventRequests] = useState<LiveEventRequest[]>([]);
+  const [liveEventIntake, setLiveEventIntake] = useState<LiveEventIntake>({});
+  const [liveEventFormOpen, setLiveEventFormOpen] = useState(false);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeLiveEventRequests(setLiveEventRequests, (err) => {
+      console.warn("Couldn't load live event requests", err);
+    });
+  }, [sessionDesignerId]);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeLiveEventIntake(setLiveEventIntake, (err) => {
+      console.warn("Couldn't load the live event form settings", err);
+    });
+  }, [sessionDesignerId]);
+  const [liveEventBlackouts, setLiveEventBlackouts] = useState<LiveEventBlackout[]>([]);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeLiveEventBlackouts(setLiveEventBlackouts, (err) => {
+      console.warn("Couldn't load the live event no-booking periods", err);
+    });
+  }, [sessionDesignerId]);
+
+  // The form reads the no-booking periods from /liveEventPublic/{token},
+  // so that copy is rewritten whenever the periods or the token change
+  // (and the copy under a retired token removed).
+  async function publishLiveEventBlackouts(token: string | undefined, blackouts: LiveEventBlackout[]) {
+    if (!token) return;
+    await firestorePublishLiveEventPublic(token, publicBlackouts(blackouts));
+  }
+  async function saveLiveEventIntake(patch: LiveEventIntake) {
+    const oldToken = liveEventIntake.token;
+    await firestoreSetLiveEventIntake(patch);
+    if (patch.token && patch.token !== oldToken) {
+      await publishLiveEventBlackouts(patch.token, liveEventBlackouts);
+      if (oldToken) await firestoreDeleteLiveEventPublic(oldToken).catch(() => undefined);
+    }
+  }
+  async function saveLiveEventBlackout(draft: BlackoutDraft) {
+    if (!currentDesigner) throw new Error("Sign in to change the no-booking periods.");
+    const existing = draft.id ? liveEventBlackouts.find((b) => b.id === draft.id) : undefined;
+    const now = new Date().toISOString();
+    const data = {
+      start: draft.start,
+      end: draft.end,
+      reason: draft.reason,
+      createdAt: existing?.createdAt ?? now,
+      createdById: existing?.createdById ?? currentDesigner.id,
+      createdByName: existing?.createdByName ?? currentDesigner.name,
+    };
+    const id = await firestoreSaveLiveEventBlackout({ ...data, id: draft.id });
+    await publishLiveEventBlackouts(liveEventIntake.token, [
+      ...liveEventBlackouts.filter((b) => b.id !== id),
+      { ...data, id },
+    ]);
+  }
+  async function deleteLiveEventBlackout(id: string) {
+    await firestoreDeleteLiveEventBlackout(id);
+    await publishLiveEventBlackouts(
+      liveEventIntake.token,
+      liveEventBlackouts.filter((b) => b.id !== id),
+    );
+  }
+  async function createLiveEventRequest(data: Omit<LiveEventRequest, "id">) {
+    await firestoreCreateLiveEventRequest(data);
+  }
 
   // The marketing activity page on SharePoint: its token and link.
   const [activityShare, setActivityShare] = useState<ActivityShare>({});
@@ -1695,6 +1785,25 @@ export default function App() {
           />
         ) : view === "board" ? (
           <>
+            {/* The Video team's inbox: requests from the Live event request
+                form on SharePoint, to approve or decline, and the approved
+                events still ahead. */}
+            {currentWorkspaceId === LIVE_EVENT_REQUESTS_WORKSPACE_ID && (
+              <LiveEventRequestsPanel
+                requests={liveEventRequests}
+                blackouts={liveEventBlackouts}
+                intake={liveEventIntake}
+                currentDesigner={currentDesigner}
+                onUpdate={firestoreUpdateLiveEventRequest}
+                onDelete={firestoreDeleteLiveEventRequest}
+                onCreate={createLiveEventRequest}
+                onSaveBlackout={saveLiveEventBlackout}
+                onDeleteBlackout={deleteLiveEventBlackout}
+                onOpenForm={() => setLiveEventFormOpen(true)}
+                storageKey={`waypoint.board.${currentWorkspaceId}.liveEventRequestsCollapsed`}
+              />
+            )}
+
             {/* Campaigns any of this team's live projects are feeding. */}
             <CampaignsPanel
               campaigns={campaigns}
@@ -2154,6 +2263,15 @@ export default function App() {
             setNewWebinarOpen(false);
             openItem("campaign", c.id, "brief");
           }}
+        />
+      )}
+
+      {liveEventFormOpen && (
+        <LiveEventFormModal
+          intake={liveEventIntake}
+          onSaveIntake={saveLiveEventIntake}
+          onDeleteRequest={firestoreDeleteLiveEventRequest}
+          onClose={() => setLiveEventFormOpen(false)}
         />
       )}
 
