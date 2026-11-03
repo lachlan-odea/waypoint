@@ -97,6 +97,11 @@ export function Sidebar({
   // CSS (:hover on the row keeps it open across the gap); this is for → and
   // focus, where there's nothing to hover.
   const [flyout, setFlyout] = useState<SidebarView | null>(null);
+  // The row whose flyout was just used: clicking the row or one of its
+  // children closes the flyout, even though the pointer is still over it
+  // and focus is still inside. It comes back when the pointer returns to
+  // the row or focus leaves it.
+  const [dismissed, setDismissed] = useState<SidebarView | null>(null);
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="sidebar-head">
@@ -187,10 +192,16 @@ export function Sidebar({
             return (
               <li
                 key={item.view}
-                className={`nav-li ${item.children ? "has-children" : ""} ${flyout === item.view ? "flyout-open" : ""}`}
+                className={`nav-li ${item.children ? "has-children" : ""} ${flyout === item.view ? "flyout-open" : ""} ${dismissed === item.view ? "flyout-dismissed" : ""}`}
+                onMouseEnter={() => {
+                  if (dismissed === item.view) setDismissed(null);
+                }}
                 onBlur={(e) => {
                   // Leaving the row and its flyout altogether closes it.
-                  if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFlyout(null);
+                  if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                    setFlyout(null);
+                    setDismissed(null);
+                  }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Escape" && flyout === item.view) setFlyout(null);
@@ -198,7 +209,13 @@ export function Sidebar({
               >
                 <button
                   className={`designer-btn ${view === item.view || childOpen ? "active" : ""}`}
-                  onClick={() => onSelectView(item.view)}
+                  onClick={() => {
+                    if (item.children) {
+                      setFlyout(null);
+                      setDismissed(item.view);
+                    }
+                    onSelectView(item.view);
+                  }}
                   title={item.children ? `${item.label} · ${item.children.map((c) => c.label).join(", ")} beside it` : item.label}
                   aria-haspopup={item.children ? "menu" : undefined}
                   aria-expanded={item.children ? flyout === item.view || undefined : undefined}
@@ -206,6 +223,7 @@ export function Sidebar({
                     if (item.children && e.key === "ArrowRight") {
                       e.preventDefault();
                       setFlyout(item.view);
+                      setDismissed(null);
                       // The flyout is in the DOM already; it just needs a
                       // paint with the class on before it can take focus.
                       window.requestAnimationFrame(() =>
@@ -231,6 +249,7 @@ export function Sidebar({
                           aria-current={view === c.view ? "page" : undefined}
                           onClick={() => {
                             setFlyout(null);
+                            setDismissed(item.view);
                             onSelectView(c.view);
                           }}
                           onKeyDown={(e) => {

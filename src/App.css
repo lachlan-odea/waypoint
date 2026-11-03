@@ -706,6 +706,13 @@ textarea {
 .nav-li.flyout-open > .nav-flyout {
   display: block;
 }
+/* Just used: closed until the pointer comes back or focus leaves (Sidebar.tsx).
+   Not in the narrow drawer, where the child always shows under its parent. */
+@media (min-width: 721px) {
+  .nav-li.flyout-dismissed > .nav-flyout {
+    display: none;
+  }
+}
 .nav-flyout::before {
   content: "";
   position: absolute;
