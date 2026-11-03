@@ -9940,3 +9940,30 @@ a.button-link:hover {
     display: none;
   }
 }
+
+.ler-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.ler-preset {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ler-preset:hover {
+  border-color: var(--wtg-cobalt);
+}
+.ler-preset.active {
+  background: var(--wtg-cobalt);
+  border-color: var(--wtg-cobalt);
+  color: #fff;
+}

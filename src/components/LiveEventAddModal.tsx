@@ -14,6 +14,15 @@ type Props = {
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
+// The events the team runs every year, as a starting point: the name and
+// the usual audience shape, everything still editable.
+const PRESETS: { name: string; audienceType: string; hint: string }[] = [
+  { name: "Cake Day", audienceType: AUDIENCE.hybrid, hint: "Company all-hands, hosted from Sydney with a stream" },
+  { name: "AGM", audienceType: AUDIENCE.hybrid, hint: "Annual general meeting, in the room and webcast" },
+  { name: "Full Year Results", audienceType: AUDIENCE.online, hint: "Results briefing, webcast" },
+  { name: "Half Year Results", audienceType: AUDIENCE.online, hint: "Results briefing, webcast" },
+];
+
 // An event the Video team puts on the calendar themselves, without a
 // request coming through the form: it's stored as an already-approved
 // request, so it lists, reviews and prints like the rest.
@@ -117,6 +126,21 @@ export function LiveEventAddModal({ initialDate, currentDesigner, blackouts, onC
         </header>
 
         <div className="modal-body">
+          <div className="ler-presets" role="group" aria-label="Start from a regular event">
+            <span className="muted small">Start from</span>
+            {PRESETS.map((p) => (
+              <button
+                key={p.name}
+                type="button"
+                className={`ler-preset ${v.eventName === p.name ? "active" : ""}`}
+                title={p.hint}
+                aria-pressed={v.eventName === p.name}
+                onClick={() => setV((cur) => ({ ...cur, eventName: p.name, audienceType: p.audienceType }))}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
           <label className="field">
             <span>Event name</span>
             <input
