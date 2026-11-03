@@ -11,6 +11,7 @@ import type {
 import { Avatar } from "./Avatar";
 import { CampaignsPanel } from "./CampaignsPanel";
 import { MyWork } from "./MyWork";
+import { ProjectPicker } from "./ProjectPicker";
 import {
   describeNotification,
   notificationTag,
@@ -861,24 +862,23 @@ export function MyDesk({
           <>
             {/* Put a project on today's list without retyping its title. */}
             {myProjects.length > 0 && (
-              <label className="desk-addproject">
-                <span className="muted small">Add a project to today's list</span>
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const p = myProjects.find((x) => x.id === e.target.value);
+              <div className="desk-addproject">
+                <span className="eyebrow">Add a project to today's list</span>
+                {/* The same type-to-search picker the editors use. Nothing
+                    stays selected: a pick goes straight onto the list and
+                    the box clears for the next one. */}
+                <ProjectPicker
+                  projects={myProjects}
+                  workspaces={workspaces}
+                  value={[]}
+                  single
+                  onChange={(ids) => {
+                    const p = myProjects.find((x) => x.id === ids[0]);
                     if (p) addProjectToToday(p);
                   }}
-                >
-                  <option value="">Choose a project…</option>
-                  {myProjects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.title}
-                      {p.dueDate ? ` · ${dueLabel(p.dueDate)}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  placeholder="Search your projects by title, client or brand…"
+                />
+              </div>
             )}
             {/* The personal checklist — Today / Upcoming / Completed. */}
             <DeskChecklist

@@ -10135,15 +10135,13 @@ a.button-link:hover {
 .desk-peek-text {
   color: var(--text);
 }
-/* The Checklist tab's "add a project to today" row. */
+/* The Checklist tab's "add a project to today" picker. */
 .desk-addproject {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.desk-addproject select {
-  max-width: 420px;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 560px;
+  margin-bottom: 16px;
 }
 .mydesk .item-card .deadline-list {
   margin: 0;
