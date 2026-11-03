@@ -635,8 +635,11 @@ function submit(){
     })
     .catch(function(err){
       sending = false;
+      // Firestore answers 403 both for a retired copy (its key no longer
+      // matches) and for a form that isn't switched on yet, and says no
+      // more than "insufficient permissions" either way.
       sendError = (err && /HTTP 403/.test(err.message))
-        ? "This copy of the form has been retired, so the request couldn't be sent."
+        ? "This form isn't accepting requests at the moment: either this copy has been retired or it isn't switched on yet. Ask the Live Events Team for the current form."
         : "Couldn't send the request just now. Check you're online and try again.";
       render();
     });

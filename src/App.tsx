@@ -2206,6 +2206,7 @@ export default function App() {
         <LiveEventFormModal
           intake={liveEventIntake}
           onSaveIntake={firestoreSetLiveEventIntake}
+          onDeleteRequest={firestoreDeleteLiveEventRequest}
           onClose={() => setLiveEventFormOpen(false)}
         />
       )}

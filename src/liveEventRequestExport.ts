@@ -68,6 +68,53 @@ export function liveEventFormHtml(intake: LiveEventIntake, token: string): strin
   return template.replace(/__LER_[A-Z_]+__/g, (key) => fill[key] ?? key);
 }
 
+// Sends a throwaway request exactly as the form would, signed out, so the
+// set-up dialog can tell whether requests are getting through. Firestore's
+// 403 reads the same for a wrong token and for rules that haven't been
+// deployed; with the current token in hand, a 403 here means the rules.
+export type IntakeCheck =
+  | { ok: true; id: string }
+  | { ok: false; status: number; message: string };
+
+export async function checkIntake(token: string): Promise<IntakeCheck> {
+  const now = new Date().toISOString();
+  const data: Record<string, string> = {
+    json: JSON.stringify({ check: true, createdAt: now }),
+    eventName: "Connection check",
+    requesterName: "Waypoint",
+    requesterEmail: "",
+    eventDate: "",
+    createdAt: now,
+    status: "pending",
+    intakeToken: token,
+  };
+  const fields: Record<string, { stringValue: string }> = {};
+  for (const [k, v] of Object.entries(data)) fields[k] = { stringValue: v };
+  let res: Response;
+  try {
+    res = await fetch(submitUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields }),
+    });
+  } catch (err) {
+    return { ok: false, status: 0, message: err instanceof Error ? err.message : String(err) };
+  }
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { error?: { message?: string } };
+      if (body.error?.message) message = body.error.message;
+    } catch {
+      /* no body */
+    }
+    return { ok: false, status: res.status, message };
+  }
+  const doc = (await res.json()) as { name?: string };
+  const name = doc.name ?? "";
+  return { ok: true, id: name.slice(name.lastIndexOf("/") + 1) };
+}
+
 export function downloadLiveEventForm(intake: LiveEventIntake, token: string): void {
   const blob = new Blob([liveEventFormHtml(intake, token)], {
     type: "text/html;charset=utf-8",

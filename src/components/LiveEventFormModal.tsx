@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { LiveEventIntake } from "../types";
 import {
   LIVE_EVENT_FORM_FILE_NAME,
+  checkIntake,
   downloadLiveEventForm,
   intakeEmails,
   newIntakeToken,
@@ -12,8 +13,13 @@ import { Icon } from "./Icon";
 type Props = {
   intake: LiveEventIntake;
   onSaveIntake: (patch: LiveEventIntake) => Promise<void>;
+  onDeleteRequest: (id: string) => Promise<void>;
   onClose: () => void;
 };
+
+// The command that puts firestore.rules live. The deploy workflow only
+// publishes the site, so a new collection's rules go up by hand.
+const RULES_DEPLOY = "firebase deploy --only firestore:rules";
 
 // Anything on SharePoint over https.
 function isSharePointUrl(value: string): boolean {
@@ -52,7 +58,7 @@ const LINK_FIELDS: LinkField[] = [
 // it lives once uploaded, and a way to retire every copy already out there
 // by issuing a new token. The settings are baked into the file at download,
 // so a change here means downloading and re-uploading the form.
-export function LiveEventFormModal({ intake, onSaveIntake, onClose }: Props) {
+export function LiveEventFormModal({ intake, onSaveIntake, onDeleteRequest, onClose }: Props) {
   const defaults = intakeEmails(intake);
   const [teamEmail, setTeamEmail] = useState(intake.teamEmail ?? "");
   const [facilitiesEmail, setFacilitiesEmail] = useState(intake.facilitiesEmail ?? "");
@@ -63,7 +69,8 @@ export function LiveEventFormModal({ intake, onSaveIntake, onClose }: Props) {
     guidePhoneUrl: intake.guidePhoneUrl ?? "",
   });
   const [url, setUrl] = useState(intake.sharePointUrl ?? "");
-  const [busy, setBusy] = useState<"settings" | "download" | "link" | "rotate" | null>(null);
+  const [busy, setBusy] = useState<"settings" | "download" | "link" | "rotate" | "check" | null>(null);
+  const [check, setCheck] = useState<{ ok: boolean; text: string } | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [downloaded, setDownloaded] = useState(false);
@@ -158,6 +165,38 @@ export function LiveEventFormModal({ intake, onSaveIntake, onClose }: Props) {
 
   function saveLink() {
     return run("link", () => onSaveIntake({ sharePointUrl: url.trim() }), "Link saved.");
+  }
+
+  // Sends a test request the way the form does and removes it again, so
+  // the answer is about the rules and the key, not about any one copy.
+  async function runCheck() {
+    if (!intake.token) return;
+    const token = intake.token;
+    setBusy("check");
+    setCheck(null);
+    setError("");
+    setMessage("");
+    try {
+      const result = await checkIntake(token);
+      if (result.ok) {
+        await onDeleteRequest(result.id);
+        setCheck({ ok: true, text: "Requests are getting through. A copy of the form with the current key will work." });
+      } else if (result.status === 403) {
+        setCheck({
+          ok: false,
+          text:
+            `Firestore refused the request (${result.message}). The key it used is the current one, ` +
+            `so the rules for live event requests aren't live yet: deploy them with \u201c${RULES_DEPLOY}\u201d ` +
+            "from the repo and check again. Until then every copy of the form, old or new, says it can't send.",
+        });
+      } else {
+        setCheck({ ok: false, text: `Couldn't reach Firestore: ${result.message}` });
+      }
+    } catch (err) {
+      setCheck({ ok: false, text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(null);
+    }
   }
 
   const urlValid = isSharePointUrl(url);
@@ -338,6 +377,21 @@ export function LiveEventFormModal({ intake, onSaveIntake, onClose }: Props) {
               </div>
             </li>
           </ol>
+
+          {intake.token && (
+            <section className="ler-retire">
+              <h3>Check requests get through</h3>
+              <p className="muted small">
+                Sends a test request exactly as the form does, signed out and with the current
+                key, then removes it. If it's refused, the form's copies will all say they can't
+                send, whatever key they carry.
+              </p>
+              <button type="button" className="btn btn-secondary btn-sm" disabled={busy !== null} onClick={runCheck}>
+                {busy === "check" ? "Checking…" : "Send a test request"}
+              </button>
+              {check && <p className={`field-hint ${check.ok ? "ler-msg" : "warn"}`}>{check.text}</p>}
+            </section>
+          )}
 
           {intake.token && (
             <section className="ler-retire">
