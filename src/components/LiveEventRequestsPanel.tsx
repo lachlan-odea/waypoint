@@ -32,6 +32,7 @@ type Props = {
   onCreate: (data: Omit<LiveEventRequest, "id">) => Promise<void>;
   onSaveBlackout: (draft: BlackoutDraft) => Promise<void>;
   onDeleteBlackout: (id: string) => Promise<void>;
+  blackoutsError?: string;
   // Opens the form's set-up: download, SharePoint link, settings.
   onOpenForm: () => void;
   // localStorage key for the collapsed state; the view sits beside it.
@@ -78,6 +79,7 @@ export function LiveEventRequestsPanel({
   onCreate,
   onSaveBlackout,
   onDeleteBlackout,
+  blackoutsError,
   onOpenForm,
   storageKey,
 }: Props) {
@@ -206,6 +208,7 @@ export function LiveEventRequestsPanel({
           onAddEvent={(date) => setAdding(date)}
           onAddBlackout={() => setBlackoutEdit({ blackout: null, date: today })}
           onEditBlackout={(b) => setBlackoutEdit({ blackout: b, date: b.start })}
+          blackoutsError={blackoutsError}
         />
       )}
 
@@ -332,6 +335,7 @@ export function LiveEventRequestsPanel({
           initialDate={adding}
           currentDesigner={currentDesigner}
           blackouts={blackouts}
+          intake={intake}
           onCreate={onCreate}
           onClose={() => setAdding(null)}
         />

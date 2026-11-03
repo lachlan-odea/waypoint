@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Designer, LiveEventBlackout, LiveEventRequest } from "../types";
-import { AUDIENCE, blackoutRange, blackoutsOn, teamEventJson } from "../liveEventRequests";
+import type { Designer, LiveEventBlackout, LiveEventIntake, LiveEventRequest } from "../types";
+import { AUDIENCE, TEAM_EVENT_PRESETS, blackoutRange, blackoutsOn, teamEventJson } from "../liveEventRequests";
 import type { TeamEventInput } from "../liveEventRequests";
 import { Icon } from "./Icon";
 
@@ -8,25 +8,18 @@ type Props = {
   initialDate: string;
   currentDesigner: Designer;
   blackouts: LiveEventBlackout[];
+  // For the regular events' contacts.
+  intake: LiveEventIntake;
   onCreate: (data: Omit<LiveEventRequest, "id">) => Promise<void>;
   onClose: () => void;
 };
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
-// The events the team runs every year, as a starting point: the name and
-// the usual audience shape, everything still editable.
-const PRESETS: { name: string; audienceType: string; hint: string }[] = [
-  { name: "Cake Day", audienceType: AUDIENCE.hybrid, hint: "Company all-hands, hosted from Sydney with a stream" },
-  { name: "AGM", audienceType: AUDIENCE.hybrid, hint: "Annual general meeting, in the room and webcast" },
-  { name: "Full Year Results", audienceType: AUDIENCE.online, hint: "Results briefing, webcast" },
-  { name: "Half Year Results", audienceType: AUDIENCE.online, hint: "Results briefing, webcast" },
-];
-
 // An event the Video team puts on the calendar themselves, without a
 // request coming through the form: it's stored as an already-approved
 // request, so it lists, reviews and prints like the rest.
-export function LiveEventAddModal({ initialDate, currentDesigner, blackouts, onCreate, onClose }: Props) {
+export function LiveEventAddModal({ initialDate, currentDesigner, blackouts, intake, onCreate, onClose }: Props) {
   const [v, setV] = useState<TeamEventInput>({
     eventName: "",
     date: initialDate,
@@ -128,18 +121,28 @@ export function LiveEventAddModal({ initialDate, currentDesigner, blackouts, onC
         <div className="modal-body">
           <div className="ler-presets" role="group" aria-label="Start from a regular event">
             <span className="muted small">Start from</span>
-            {PRESETS.map((p) => (
-              <button
-                key={p.name}
-                type="button"
-                className={`ler-preset ${v.eventName === p.name ? "active" : ""}`}
-                title={p.hint}
-                aria-pressed={v.eventName === p.name}
-                onClick={() => setV((cur) => ({ ...cur, eventName: p.name, audienceType: p.audienceType }))}
-              >
-                {p.name}
-              </button>
-            ))}
+            {TEAM_EVENT_PRESETS.map(({ hint, ...p }) => {
+              const contact = intake.presetContacts?.[p.eventName];
+              return (
+                <button
+                  key={p.eventName}
+                  type="button"
+                  className={`ler-preset ${v.eventName === p.eventName ? "active" : ""}`}
+                  title={contact?.name ? `${hint}; ${contact.name} (${p.forTeam})` : hint}
+                  aria-pressed={v.eventName === p.eventName}
+                  onClick={() =>
+                    setV((cur) => ({
+                      ...cur,
+                      ...p,
+                      forName: contact?.name ?? "",
+                      forEmail: contact?.email ?? "",
+                    }))
+                  }
+                >
+                  {p.eventName}
+                </button>
+              );
+            })}
           </div>
           <label className="field">
             <span>Event name</span>

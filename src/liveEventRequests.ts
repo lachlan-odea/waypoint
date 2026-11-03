@@ -596,3 +596,17 @@ export function teamEventJson(input: TeamEventInput, by: Designer, createdAt: st
   };
   return JSON.stringify(s);
 }
+
+// The events the team runs every year, as a starting point in Add event:
+// the name, the usual audience shape, the room and the owning team. The
+// contact for each is in the form settings (LiveEventIntake.presetContacts).
+export type TeamEventPreset = Pick<TeamEventInput, "eventName" | "audienceType" | "room" | "forTeam"> & {
+  hint: string;
+};
+const EVENTS_SPACE = { room: "Events Space", forTeam: "Comms" };
+export const TEAM_EVENT_PRESETS: TeamEventPreset[] = [
+  { eventName: "Cake Day", audienceType: AUDIENCE.hybrid, ...EVENTS_SPACE, hint: "Company all-hands in the Events Space with a stream" },
+  { eventName: "AGM", audienceType: AUDIENCE.hybrid, ...EVENTS_SPACE, hint: "Annual general meeting in the Events Space, webcast" },
+  { eventName: "Full Year Results", audienceType: AUDIENCE.online, ...EVENTS_SPACE, hint: "Results briefing from the Events Space, webcast" },
+  { eventName: "Half Year Results", audienceType: AUDIENCE.online, ...EVENTS_SPACE, hint: "Results briefing from the Events Space, webcast" },
+];

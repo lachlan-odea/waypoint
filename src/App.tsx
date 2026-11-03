@@ -405,11 +405,19 @@ export default function App() {
     });
   }, [sessionDesignerId]);
   const [liveEventBlackouts, setLiveEventBlackouts] = useState<LiveEventBlackout[]>([]);
+  const [liveEventBlackoutsError, setLiveEventBlackoutsError] = useState("");
   useEffect(() => {
     if (!sessionDesignerId) return;
-    return subscribeLiveEventBlackouts(setLiveEventBlackouts, (err) => {
-      console.warn("Couldn't load the live event no-booking periods", err);
-    });
+    return subscribeLiveEventBlackouts(
+      (list) => {
+        setLiveEventBlackouts(list);
+        setLiveEventBlackoutsError("");
+      },
+      (err) => {
+        console.warn("Couldn't load the live event no-booking periods", err);
+        setLiveEventBlackoutsError(err.message);
+      },
+    );
   }, [sessionDesignerId]);
 
   // The form reads the no-booking periods from /liveEventPublic/{token},
@@ -1799,6 +1807,7 @@ export default function App() {
                 onCreate={createLiveEventRequest}
                 onSaveBlackout={saveLiveEventBlackout}
                 onDeleteBlackout={deleteLiveEventBlackout}
+                blackoutsError={liveEventBlackoutsError || undefined}
                 onOpenForm={() => setLiveEventFormOpen(true)}
                 storageKey={`waypoint.board.${currentWorkspaceId}.liveEventRequestsCollapsed`}
               />
