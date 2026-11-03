@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type {
+  BigRock,
   Campaign,
   Designer,
   Notification,
@@ -29,6 +30,7 @@ import { copyText, projectShareUrl } from "../share";
 import { projectContentTypes } from "../contentTypes";
 import { Avatar } from "./Avatar";
 import { AssigneePicker } from "./AssigneePicker";
+import { BigRockPicker } from "./BigRockPicker";
 import { Icon } from "./Icon";
 import { socialStatusTone } from "../statusTone";
 
@@ -66,6 +68,8 @@ type Props = {
   onOpenCampaign: (campaignId: string) => void;
   // Content types on offer, from Settings → Types & tags.
   contentTypeOptions: readonly string[];
+  // The Big Rocks on offer for the project to serve.
+  bigRocks: BigRock[];
   // Render as the Details tab of the project's page rather than as a
   // window over the board: no overlay, no close button, no Escape, no
   // "Done". Everything else — the live edits, tasks, comments — is the same.
@@ -118,6 +122,7 @@ export function ProjectDetailModal({
   onOpenSocialPost,
   onOpenCampaign,
   contentTypeOptions,
+  bigRocks,
   inline = false,
   section,
 }: Props) {
@@ -737,6 +742,16 @@ export function ProjectDetailModal({
                 options={contentTypeOptions}
               />
             </Field>
+            {/* A div, not Field's label: a label's click would land on the
+                first chip and toggle it. */}
+            <div className="field">
+              <span>Big Rocks</span>
+              <BigRockPicker
+                rocks={bigRocks}
+                value={project.bigRockIds ?? []}
+                onChange={(ids) => onChange((p) => ({ ...p, bigRockIds: ids }))}
+              />
+            </div>
             <Field label="Assignees">
               <AssigneePicker
                 designers={designers}

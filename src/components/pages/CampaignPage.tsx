@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type {
+  BigRock,
   Campaign,
   Designer,
   MilestoneType,
@@ -36,6 +37,8 @@ import { ActivityPortalLink, ActivityPortalListItem } from "../ActivityPortalLin
 import { useActivityPortal } from "../../activityPortal";
 import { LinkifiedText } from "../LinkifiedText";
 import { CampaignModal } from "../CampaignModal";
+import { BigRockChips } from "../BigRockPicker";
+import { rocksFor } from "../../bigRocks";
 import { MilestonePostLink } from "../MilestonePostLink";
 import { ProjectCard } from "../ProjectCard";
 import { useKitApi } from "../webinar/kitApi";
@@ -68,6 +71,7 @@ type Props = {
   projects: Project[];
   workspaces: Workspace[];
   socialPosts: SocialPost[];
+  bigRocks: BigRock[];
   currentDesignerId: string;
   // The webinar speaker directory.
   speakers: Speaker[];
@@ -125,6 +129,7 @@ function WebinarCampaignPage({
   onOpenProject,
   onOpenSocialPost,
   onOpenCampaign,
+  bigRocks,
   api,
 }: Props & { api: ReturnType<typeof useKitApi> }) {
   const { kit } = api;
@@ -247,6 +252,7 @@ function WebinarCampaignPage({
           <>
             <span className="item-chip">{STAGE_LABEL[kit.stage]}</span>
             <KitHealthChip st={st} campaign={campaign} />
+            <BigRockChips rocks={bigRocks} ids={campaign.bigRockIds} />
           </>
         }
         facts={facts}
@@ -293,6 +299,7 @@ function WebinarCampaignPage({
             designers={designers}
             projects={projects}
             workspaces={workspaces}
+            bigRocks={bigRocks}
             socialPosts={socialPosts}
             onOpenProject={onOpenProject}
             onOpenSocialPost={onOpenSocialPost}
@@ -365,8 +372,10 @@ function PlainCampaignPage({
   onDuplicate,
   onOpenProject,
   onOpenSocialPost,
+  bigRocks,
 }: Props) {
   const portalUrl = useActivityPortal().itemUrl("campaign", campaign.id);
+  const campaignRocks = rocksFor(campaign.bigRockIds, bigRocks);
   const today = todayIso();
   const phase = campaignPhase(campaign, today);
   const color = campaign.color || brandColor(campaign.brand || "No brand");
@@ -466,6 +475,7 @@ function PlainCampaignPage({
               {overdue.length} overdue milestone{overdue.length === 1 ? "" : "s"}
             </StatusChip>
           )}
+          <BigRockChips rocks={bigRocks} ids={campaign.bigRockIds} />
         </>
       }
       facts={facts}
@@ -487,6 +497,7 @@ function PlainCampaignPage({
           designers={designers}
           projects={projects}
           workspaces={workspaces}
+          bigRocks={bigRocks}
           socialPosts={socialPosts}
           onOpenProject={onOpenProject}
           onOpenSocialPost={onOpenSocialPost}
@@ -574,6 +585,16 @@ function PlainCampaignPage({
                         </span>
                       ) : (
                         ownerName || <span className="item-hint">Not set</span>
+                      ),
+                    },
+                    {
+                      label: "Big Rocks",
+                      value: campaignRocks.length ? (
+                        <span className="item-chips">
+                          <BigRockChips rocks={bigRocks} ids={campaign.bigRockIds} />
+                        </span>
+                      ) : (
+                        <span className="item-hint">None tagged</span>
                       ),
                     },
                   ]}

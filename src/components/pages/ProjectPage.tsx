@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type {
+  BigRock,
   Campaign,
   Designer,
   Notification,
@@ -23,6 +24,8 @@ import { Avatar } from "../Avatar";
 import { Icon } from "../Icon";
 import { LinkifiedText } from "../LinkifiedText";
 import { ProjectDetailModal } from "../ProjectDetailModal";
+import { BigRockChips } from "../BigRockPicker";
+import { rocksFor } from "../../bigRocks";
 import {
   EmptyNote,
   ItemGrid,
@@ -47,6 +50,7 @@ type Props = {
   campaigns: Campaign[];
   socialPosts: SocialPost[];
   contentTypeOptions: readonly string[];
+  bigRocks: BigRock[];
   currentDesignerId: string;
   currentDesignerName: string;
   tab: string;
@@ -86,6 +90,7 @@ export function ProjectPage({
   campaigns,
   socialPosts,
   contentTypeOptions,
+  bigRocks,
   currentDesignerId,
   currentDesignerName,
   tab,
@@ -117,6 +122,7 @@ export function ProjectPage({
   const linkedPosts = socialPosts
     .filter((p) => p.projectId === project.id)
     .sort((a, b) => (b.date || "0000").localeCompare(a.date || "0000"));
+  const projectRocks = rocksFor(project.bigRockIds, bigRocks);
 
   const tasks = project.milestones;
   const tasksDone = tasks.filter((m) => m.done).length;
@@ -242,6 +248,7 @@ export function ProjectPage({
     currentDesignerId,
     currentDesignerName,
     contentTypeOptions,
+    bigRocks,
     onClose: onBack,
     onChange,
     onSetReviewers,
@@ -296,6 +303,7 @@ export function ProjectPage({
           {reviewerList.length > 0 && <StatusChip status="review">In review</StatusChip>}
           {overdue && <StatusChip status="blocked">Overdue</StatusChip>}
           {project.archived && <span className="item-chip">Archived</span>}
+          <BigRockChips rocks={bigRocks} ids={project.bigRockIds} />
         </>
       }
       facts={facts}
@@ -713,10 +721,20 @@ export function ProjectPage({
                         </select>
                       ),
                     },
+                    {
+                      label: "Big Rocks",
+                      value: projectRocks.length ? (
+                        <span className="item-chips">
+                          <BigRockChips rocks={bigRocks} ids={project.bigRockIds} />
+                        </span>
+                      ) : (
+                        <span className="item-hint">None tagged</span>
+                      ),
+                    },
                   ]}
                 />
                 <button type="button" className="link-btn" onClick={() => onTab("details")}>
-                  Change assignees and reviewers on Details
+                  Change assignees, reviewers and Big Rocks on Details
                 </button>
               </SideCard>
               <SideCard title="Ready when" aside={<ReadyCount reqs={reqs} />}>

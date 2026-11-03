@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type {
+  BigRock,
   Campaign,
   CampaignMilestone,
   Designer,
@@ -18,6 +19,7 @@ import { formatShort, shiftIso, todayIso } from "../dates";
 import { ActivityPortalLink } from "./ActivityPortalLink";
 import { ProjectPicker } from "./ProjectPicker";
 import { AssigneePicker } from "./AssigneePicker";
+import { BigRockPicker } from "./BigRockPicker";
 import { Icon } from "./Icon";
 
 type Props = {
@@ -33,6 +35,8 @@ type Props = {
   // Board projects that can be linked as contributing to the campaign.
   projects: Project[];
   workspaces: Workspace[];
+  // The Big Rocks on offer for the campaign to serve.
+  bigRocks: BigRock[];
   onCancel: () => void;
   // deletePostIds: Social calendar posts to delete along with the
   // milestones that created them, as chosen when each was removed.
@@ -60,6 +64,7 @@ export function CampaignModal({
   designers,
   projects,
   workspaces,
+  bigRocks,
   onCancel,
   onSave,
   onDelete,
@@ -94,6 +99,7 @@ export function CampaignModal({
   );
   const [description, setDescription] = useState(initial.description ?? "");
   const [projectIds, setProjectIds] = useState<string[]>(initial.projectIds ?? []);
+  const [bigRockIds, setBigRockIds] = useState<string[]>(initial.bigRockIds ?? []);
   const [milestones, setMilestones] = useState<CampaignMilestone[]>(() =>
     (initial.milestones ?? []).map((m) => ({ ...m })),
   );
@@ -212,6 +218,7 @@ export function CampaignModal({
       color,
       milestones: cleanMilestones,
       projectIds,
+      bigRockIds: bigRockIds.length ? bigRockIds : undefined,
       // Kept from before the activity portal, so a campaign page already
       // on SharePoint carries on refreshing.
       shareToken: initial.shareToken,
@@ -424,6 +431,18 @@ export function CampaignModal({
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="asset-field">
+            <label className="field">
+              <span>Big Rocks</span>
+            </label>
+            <BigRockPicker rocks={bigRocks} value={bigRockIds} onChange={setBigRockIds} />
+            <span className="field-hint">
+              Which of the team's Big Rocks this campaign serves. Its contributing
+              projects, its milestones' posts and its events count towards them on
+              the Big Rocks page.
+            </span>
           </div>
 
           <div className="modal-section camp-milestones">

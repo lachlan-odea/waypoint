@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
+  BigRock,
   Campaign,
   ActivityShare,
   LiveEventBlackout,
@@ -64,6 +65,8 @@ import {
   setSpeaker as firestoreSetSpeaker,
   deleteSpeaker as firestoreDeleteSpeaker,
   subscribeCampaigns,
+  subscribeBigRocks,
+  saveBigRocks as firestoreSaveBigRocks,
   subscribeSocialConfig,
   subscribeSocialPosts,
   subscribeWorkspace,
@@ -82,6 +85,8 @@ import { CreateProjectModal } from "./components/CreateProjectModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { Analytics } from "./components/Analytics";
 import { Dashboard } from "./components/Dashboard";
+import { BigRocksView } from "./components/BigRocksView";
+import { ManageBigRocksModal } from "./components/ManageBigRocksModal";
 import { MyDesk } from "./components/MyDesk";
 import { SocialCalendar } from "./components/SocialCalendar";
 import { CampaignsView } from "./components/CampaignsView";
@@ -121,6 +126,7 @@ import "./help.css";
 import "./exec.css";
 import "./webinar.css";
 import "./analytics.css";
+import "./bigrocks.css";
 
 const PRIORITY_ORDER: Record<string, number> = {
   Urgent: 0,
@@ -384,6 +390,17 @@ export default function App() {
       console.warn("Couldn't load speakers", err);
     });
   }, [sessionDesignerId]);
+
+  // The Big Rocks, for the pickers, the pages' chips and the Big Rocks page.
+  const [bigRocks, setBigRocks] = useState<BigRock[]>([]);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeBigRocks(setBigRocks, (err) => {
+      console.warn("Couldn't load the Big Rocks", err);
+    });
+  }, [sessionDesignerId]);
+  // The editor, from the Big Rocks page's Manage button (Settings has its own).
+  const [manageRocksOpen, setManageRocksOpen] = useState(false);
 
   // Live event requests sent in by the form on SharePoint, and the form's
   // own settings, for the Video board's panel. A missing rule (the
@@ -1087,6 +1104,16 @@ export default function App() {
     return map;
   }, [campaigns]);
 
+  // How many projects and campaigns carry each Big Rock, for the editor's
+  // row hints and remove warnings.
+  const bigRockUsage = useMemo(() => {
+    const counts = new Map<string, number>();
+    [...(workspace?.projects ?? []), ...campaigns].forEach((x) =>
+      (x.bigRockIds ?? []).forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1)),
+    );
+    return counts;
+  }, [workspace, campaigns]);
+
   // Its SharePoint page's public copy goes too, so the page says the
   // campaign has been removed rather than showing it as it was.
   // An exact copy, opened straight away. Written directly so the copy's
@@ -1410,6 +1437,7 @@ export default function App() {
                 campaigns={campaigns}
                 socialPosts={socialPostsForUsage}
                 contentTypeOptions={socialConfig.contentTypes}
+                bigRocks={bigRocks}
                 currentDesignerId={currentDesigner.id}
                 currentDesignerName={currentDesigner.name}
                 tab={route.tab}
@@ -1448,6 +1476,7 @@ export default function App() {
                 projects={workspace.projects}
                 workspaces={availableWorkspaces}
                 socialPosts={socialPostsForUsage}
+                bigRocks={bigRocks}
                 tab={route.tab}
                 onTab={(t) => replaceItemTab("campaign", routedCampaign.id, t)}
                 onBack={() => {
@@ -1527,6 +1556,8 @@ export default function App() {
                 </>
               ) : view === "executiveDashboard" ? (
                 "Executive Dashboard"
+              ) : view === "bigRocks" ? (
+                "Big Rocks"
               ) : view === "socialCalendar" ? (
                 "Social calendar"
               ) : view === "campaigns" ? (
@@ -1558,6 +1589,8 @@ export default function App() {
                     ? "Focus on your assigned projects, deadlines, and priorities"
                     : view === "executiveDashboard"
                       ? "Every team and programme on one page: what needs attention, the next fortnight, how teams are tracking and what moved"
+                      : view === "bigRocks"
+                        ? "What the team is working towards, and the projects, campaigns, webinars, posts and events serving each rock"
                       : view === "socialCalendar"
                         ? "Plan and track posts across the CargoWise and WiseTech channels"
                         : view === "campaigns"
@@ -1615,6 +1648,16 @@ export default function App() {
                   <Icon name="browser" size={14} /> {activityShare.sharePointUrl ? "Update activity page" : "Put activity on SharePoint"}
                 </button>
               </>
+            )}
+            {view === "bigRocks" && isSuperUser && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setManageRocksOpen(true)}
+                title="Define, reorder, retire or remove the team's Big Rocks"
+              >
+                <Icon name="flag" size={14} /> Manage Big Rocks
+              </button>
             )}
             <HelpButton onClick={() => setTourOpen(true)} />
             <NewMenu variant="primary" onPick={startNew} />
@@ -1716,6 +1759,19 @@ export default function App() {
               })
             }
           />
+        ) : view === "bigRocks" ? (
+          <BigRocksView
+            rocks={bigRocks}
+            workspace={workspace}
+            campaigns={campaigns}
+            events={events}
+            socialPosts={socialPostsForUsage}
+            onOpenProject={openProject}
+            onOpenCampaign={openCampaign}
+            onOpenEvent={openEvent}
+            onOpenSocialPost={openSocialPost}
+            onManage={isSuperUser ? () => setManageRocksOpen(true) : undefined}
+          />
         ) : view === "executiveDashboard" ? (
           <Dashboard
             workspace={workspace}
@@ -1733,6 +1789,8 @@ export default function App() {
             }}
             onOpenView={setView}
             onOpenWebinars={openWebinars}
+            bigRocks={bigRocks}
+            onOpenBigRocks={() => setView("bigRocks")}
           />
         ) : view === "socialCalendar" ? (
           <SocialCalendar
@@ -1778,6 +1836,7 @@ export default function App() {
             onOpenProject={openProject}
             socialPosts={socialPostsForUsage}
             onOpenSocialPost={openSocialPost}
+            bigRocks={bigRocks}
             onSave={saveCampaign}
             onDelete={deleteCampaign}
             onOpenCampaign={openCampaign}
@@ -2203,6 +2262,7 @@ export default function App() {
           workspaces={availableWorkspaces}
           defaultWorkspaceId={currentWorkspaceId}
           contentTypeOptions={socialConfig.contentTypes}
+          bigRocks={bigRocks}
           defaultAssigneeId={sessionDesignerId}
           initial={createInitial}
           onCancel={() => {
@@ -2226,6 +2286,9 @@ export default function App() {
           socialCategoryUsage={socialCategoryUsage}
           onSaveSocialConfig={firestoreSetSocialConfig}
           onRelabelSocialCategory={firestoreRelabelSocialPostCategory}
+          bigRocks={bigRocks}
+          bigRockUsage={bigRockUsage}
+          onSaveBigRocks={firestoreSaveBigRocks}
           darkMode={darkMode}
           onDarkModeChange={setDarkMode}
           textSize={textSize}
@@ -2244,6 +2307,15 @@ export default function App() {
           onDeleteHub={firestoreDeleteHub}
           onUpdateDesignerHub={firestoreSetDesignerHub}
           onClose={() => setSettingsOpen(false)}
+        />
+      )}
+
+      {manageRocksOpen && (
+        <ManageBigRocksModal
+          rocks={bigRocks}
+          usage={bigRockUsage}
+          onSave={firestoreSaveBigRocks}
+          onClose={() => setManageRocksOpen(false)}
         />
       )}
 

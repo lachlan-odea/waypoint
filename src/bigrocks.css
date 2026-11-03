@@ -1,0 +1,91 @@
+/* Big Rocks: the picker chips, the Settings editor rows and the report
+   page, on top of the Analytics and Executive Dashboard primitives. */
+
+.rock-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+.rock-dot.none {
+  background: transparent;
+  border: 1px dashed var(--ink-400);
+}
+
+/* Picker chips: no avatar, so no seat for one on the left. */
+.rock-chip {
+  padding-left: 10px;
+}
+.rock-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Settings editor rows */
+.manage-social-row.rock {
+  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1.6fr) auto 64px auto;
+}
+.manage-social-row.rock.retired input:not([type="color"]):not([type="checkbox"]) {
+  color: var(--muted);
+}
+
+/* Report page */
+.br-stat-sub {
+  font-size: 12px;
+}
+.br-desc {
+  display: block;
+  margin-top: 2px;
+  max-width: 420px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: normal;
+}
+.br-table td:first-child {
+  min-width: 240px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  height: auto;
+}
+.br-table tr.selected td {
+  background: var(--cobalt-050);
+}
+.br-table tr.retired b {
+  color: var(--muted);
+}
+.br-detail-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.br-detail-title .rock-dot {
+  width: 14px;
+  height: 14px;
+}
+.br-empty .an-panel-body {
+  padding: 32px;
+  max-width: 640px;
+}
+.br-empty h2 {
+  margin: 6px 0 10px;
+  font-size: 22px;
+  color: var(--wtg-blue);
+}
+.br-empty p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* The Executive Dashboard's Big Rocks panel */
+.ex-rocks .ex-bar {
+  min-width: 90px;
+}
+
+:root.dark-mode .br-table tr.selected td {
+  background: var(--surface-2);
+}
+:root.dark-mode .br-empty h2 {
+  color: var(--wtg-periwinkle);
+}
