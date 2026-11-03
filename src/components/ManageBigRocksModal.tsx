@@ -5,7 +5,7 @@ import { Icon } from "./Icon";
 
 type Props = {
   rocks: BigRock[];
-  // How many projects and campaigns carry each rock, by id — shown beside
+  // How many projects, campaigns, posts and events carry each rock, by id — shown beside
   // the row and used to word the remove warning.
   usage: Map<string, number>;
   onSave: (rocks: BigRock[], removedIds: string[]) => Promise<void>;
@@ -67,7 +67,7 @@ export function ManageBigRocksModal({ rocks, usage, onSave, onClose }: Props) {
   function remove(rock: BigRock) {
     const n = usage.get(rock.id) ?? 0;
     const warning = n
-      ? `\n\n${n} project${n === 1 ? " or campaign carries" : "s and campaigns carry"} it. They'll lose the tag, and nothing will report against this rock any more. Retire it instead to keep that.`
+      ? `\n\n${n} item${n === 1 ? " carries" : "s carry"} it (projects, campaigns, posts and events). They'll lose the tag, and nothing will report against this rock any more. Retire it instead to keep that.`
       : "";
     if (!window.confirm(`Remove “${rock.name || "this Big Rock"}”?${warning}`)) return;
     setDraft((cur) => cur.filter((r) => r.id !== rock.id));

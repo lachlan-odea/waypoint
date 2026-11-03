@@ -274,6 +274,9 @@ export type SocialPost = {
   // The project's detail window lists every post that points at it. Left
   // dangling if the project is deleted — the editor shows that plainly.
   projectId?: string;
+  // Big Rocks the post serves directly (BigRock ids), on top of any it
+  // picks up through its project or campaign milestone — see src/bigRocks.ts.
+  bigRockIds?: string[];
   // Link to the live post on LinkedIn once it's up. Pasted by whoever posted
   // it — publishing goes through LinkedIn's own composer, so there's no API
   // response to take this from.
@@ -624,6 +627,9 @@ export type MarketingEvent = {
   // Board projects producing work for the event — the booth graphics, the
   // presentation, the social posts.
   projectIds: string[];
+  // Big Rocks the event serves directly (BigRock ids), on top of any it
+  // picks up through its campaign or projects — see src/bigRocks.ts.
+  bigRockIds?: string[];
   // File names, as the team records them.
   presentation?: string;
   feedbackDoc?: string;

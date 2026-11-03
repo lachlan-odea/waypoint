@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type {
+  BigRock,
   Project,
   SocialCategory,
   SocialHashtag,
@@ -17,6 +18,7 @@ import {
 import { LinkedInGlyph } from "./LinkedInGlyph";
 import { AssetPreview } from "./AssetPreview";
 import { ProjectPicker } from "./ProjectPicker";
+import { BigRockPicker } from "./BigRockPicker";
 import { Icon } from "./Icon";
 
 type Props = {
@@ -36,6 +38,8 @@ type Props = {
   // them in the picker.
   projects: Project[];
   workspaces: Workspace[];
+  // The team's Big Rocks, for the post's own rock tags.
+  bigRocks: BigRock[];
   onCancel: () => void;
   onSave: (post: SocialPost) => void;
   onDelete?: () => void;
@@ -58,6 +62,7 @@ export function SocialPostModal({
   hashtags,
   projects,
   workspaces,
+  bigRocks,
   onCancel,
   onSave,
   onDelete,
@@ -85,6 +90,7 @@ export function SocialPostModal({
   const [evergreen, setEvergreen] = useState(initial.evergreen ?? false);
   const [postUrl, setPostUrl] = useState(initial.postUrl ?? "");
   const [projectId, setProjectId] = useState(initial.projectId ?? "");
+  const [bigRockIds, setBigRockIds] = useState<string[]>(initial.bigRockIds ?? []);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   // Feedback after handing off to LinkedIn — whether the copy made it onto
   // the clipboard, mostly.
@@ -154,6 +160,7 @@ export function SocialPostModal({
       // link removes it from the document rather than storing "".
       postUrl: trimmedUrl || undefined,
       projectId: projectId || undefined,
+      bigRockIds: bigRockIds.length ? bigRockIds : undefined,
       publishedAt: initial.publishedAt,
       createdAt: initial.createdAt ?? new Date().toISOString(),
       source: initial.source ?? "manual",
@@ -439,6 +446,18 @@ export function SocialPostModal({
                   </button>
                 )}
             </div>
+          </div>
+
+          <div className="asset-field">
+            <label className="field">
+              <span>Big Rocks</span>
+            </label>
+            <BigRockPicker rocks={bigRocks} value={bigRockIds} onChange={setBigRockIds} />
+            <span className="field-hint">
+              Which of the team's Big Rocks this post serves. It also counts towards
+              the rocks of its linked project, or of the campaign whose milestone
+              created it.
+            </span>
           </div>
 
           <label className="soc-check">

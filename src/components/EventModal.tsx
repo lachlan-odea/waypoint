@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type {
+  BigRock,
   Campaign,
   Designer,
   EventChecklist,
@@ -22,6 +23,7 @@ import {
   toUsd,
 } from "../events";
 import { ProjectPicker } from "./ProjectPicker";
+import { BigRockPicker } from "./BigRockPicker";
 import { ItineraryModal } from "./ItineraryModal";
 import { Icon } from "./Icon";
 
@@ -37,6 +39,8 @@ type Props = {
   // Board projects doing work for the event.
   projects: Project[];
   workspaces: Workspace[];
+  // The team's Big Rocks, for the event's own rock tags.
+  bigRocks: BigRock[];
   onCancel: () => void;
   onSave: (event: MarketingEvent) => void;
   onDelete?: () => void;
@@ -85,6 +89,7 @@ export function EventModal({
   designers,
   projects,
   workspaces,
+  bigRocks,
   onCancel,
   onSave,
   onDelete,
@@ -123,6 +128,7 @@ export function EventModal({
   const [campaignCode, setCampaignCode] = useState(initial.campaignCode ?? "");
   const [campaignId, setCampaignId] = useState(initial.campaignId ?? "");
   const [projectIds, setProjectIds] = useState<string[]>(initial.projectIds ?? []);
+  const [bigRockIds, setBigRockIds] = useState<string[]>(initial.bigRockIds ?? []);
   const [presentation, setPresentation] = useState(initial.presentation ?? "");
   const [feedbackDoc, setFeedbackDoc] = useState(initial.feedbackDoc ?? "");
   const [investment, setInvestment] = useState(
@@ -229,6 +235,7 @@ export function EventModal({
       campaignCode: textOrUndefined(campaignCode),
       campaignId: textOrUndefined(campaignId),
       projectIds,
+      bigRockIds: bigRockIds.length ? bigRockIds : undefined,
       presentation: textOrUndefined(presentation),
       feedbackDoc: textOrUndefined(feedbackDoc),
       investment: investmentNumber,
@@ -777,6 +784,16 @@ export function EventModal({
                   ))}
                 </div>
               )}
+            </div>
+            <div className="asset-field">
+              <label className="field">
+                <span>Big Rocks</span>
+              </label>
+              <BigRockPicker rocks={bigRocks} value={bigRockIds} onChange={setBigRockIds} />
+              <span className="field-hint">
+                Which of the team's Big Rocks this event serves. It also counts towards
+                the rocks of its Waypoint campaign and of the projects doing work for it.
+              </span>
             </div>
           </div>
 
