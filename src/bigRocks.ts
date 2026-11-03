@@ -1,15 +1,16 @@
 import type { BigRock, Campaign, MarketingEvent, Project, SocialPost } from "./types";
 import { kitOf } from "./webinarKit";
 
-// How the team's work is attributed to Big Rocks. Campaigns and projects
-// carry bigRockIds themselves; everything else follows from those:
+// How the team's work is attributed to Big Rocks. Campaigns, projects,
+// posts and events can all carry bigRockIds; posts and events also pick
+// rocks up through what they're linked to:
 //
 //   project   tagged with the rock, or contributing to a campaign that is
 //   campaign  tagged with the rock (a webinar is a campaign with the kit)
-//   post      promotes one of the rock's projects, or was created by a
-//             milestone of one of the rock's campaigns
-//   event     part of one of the rock's campaigns, or has one of the rock's
-//             projects doing work for it
+//   post      tagged with the rock, promotes one of the rock's projects, or
+//             was created by a milestone of one of the rock's campaigns
+//   event     tagged with the rock, part of one of the rock's campaigns, or
+//             has one of the rock's projects doing work for it
 //
 // Pure functions over the lists App already holds; nothing is stored.
 
@@ -70,10 +71,14 @@ export function rockWork(rock: BigRock, lists: WorkLists): RockWork {
     ),
   );
   const posts = lists.socialPosts.filter(
-    (p) => (!!p.projectId && projectIds.has(p.projectId)) || milestonePostIds.has(p.id),
+    (p) =>
+      !!p.bigRockIds?.includes(rock.id) ||
+      (!!p.projectId && projectIds.has(p.projectId)) ||
+      milestonePostIds.has(p.id),
   );
   const events = lists.events.filter(
     (e) =>
+      !!e.bigRockIds?.includes(rock.id) ||
       (!!e.campaignId && campaignIds.has(e.campaignId)) ||
       (e.projectIds ?? []).some((id) => projectIds.has(id)),
   );

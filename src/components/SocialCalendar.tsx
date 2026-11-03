@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
+  BigRock,
   Campaign,
   Designer,
   Project,
@@ -46,6 +47,8 @@ type Props = {
   // Board projects a post can link back to, with the teams that name them.
   projects: Project[];
   workspaces: Workspace[];
+  // The team's Big Rocks, for the post editor's rock tags.
+  bigRocks: BigRock[];
   // Open a project's detail window (rendered by App, over any view).
   onOpenProject: (projectId: string) => void;
   // A post another view asked us to open — the project window's "Social
@@ -165,6 +168,7 @@ export function SocialCalendar({
   onOpenCampaign,
   projects,
   workspaces,
+  bigRocks,
   onOpenProject,
   focusPostId,
   onFocusHandled,
@@ -997,6 +1001,7 @@ export function SocialCalendar({
           hashtags={hashtags}
           projects={projects}
           workspaces={workspaces}
+          bigRocks={bigRocks}
           onCancel={() => setEditing(null)}
           onSave={savePost}
           onOpenProject={openProject}
@@ -1013,6 +1018,7 @@ export function SocialCalendar({
           hashtags={hashtags}
           projects={projects}
           workspaces={workspaces}
+          bigRocks={bigRocks}
           onCancel={() => setEditing(null)}
           onSave={savePost}
           onDelete={() => removePost(editing.post.id)}

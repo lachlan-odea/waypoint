@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type {
+  BigRock,
   Campaign,
   Designer,
   EventChecklist,
@@ -48,6 +49,7 @@ type Props = {
   designers: Designer[];
   projects: Project[];
   workspaces: Workspace[];
+  bigRocks: BigRock[];
   tab: string;
   onTab: (tab: string) => void;
   onBack: () => void;
@@ -73,6 +75,7 @@ export function EventPage({
   designers,
   projects,
   workspaces,
+  bigRocks,
   tab,
   onTab,
   onBack,
@@ -214,6 +217,7 @@ export function EventPage({
             designers={designers}
             projects={projects}
             workspaces={workspaces}
+            bigRocks={bigRocks}
             onOpenProject={onOpenProject}
             onOpenCampaign={onOpenCampaign}
             onCancel={onBack}

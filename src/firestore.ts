@@ -886,9 +886,10 @@ export function subscribeBigRocks(
 
 // The Settings editor saves the whole list at once: every rock as it now
 // stands, the removed ones deleted, and their ids taken off every project
-// and campaign that carried them — one batch, so a half-applied edit is
-// impossible. Removing a rock un-attributes its work; retiring it (the
-// `retired` flag) keeps that, which is why the editor offers both.
+// campaign, social post and event that carried them — one batch, so a
+// half-applied edit is impossible. Removing a rock un-attributes its work;
+// retiring it (the `retired` flag) keeps that, which is why the editor
+// offers both.
 export async function saveBigRocks(
   rocks: BigRock[],
   removedIds: string[],
@@ -898,11 +899,10 @@ export async function saveBigRocks(
   removedIds.forEach((id) => batch.delete(doc(bigRocksCol(), id)));
   if (removedIds.length > 0) {
     const removed = new Set(removedIds);
-    const [projectsSnap, campaignsSnap] = await Promise.all([
-      getDocs(projectsCol()),
-      getDocs(campaignsCol()),
-    ]);
-    [...projectsSnap.docs, ...campaignsSnap.docs].forEach((d) => {
+    const snaps = await Promise.all(
+      [projectsCol(), campaignsCol(), socialPostsCol(), eventsCol()].map((c) => getDocs(c)),
+    );
+    snaps.flatMap((s) => s.docs).forEach((d) => {
       const ids = (d.data() as { bigRockIds?: string[] }).bigRockIds;
       if (!ids?.some((id) => removed.has(id))) return;
       batch.update(d.ref, { bigRockIds: ids.filter((id) => !removed.has(id)) });

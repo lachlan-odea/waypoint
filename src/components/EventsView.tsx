@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type {
+  BigRock,
   Campaign,
   Designer,
   EventStatus,
@@ -44,6 +45,8 @@ type Props = {
   // Board projects an event can link as doing work for it.
   projects: Project[];
   workspaces: Workspace[];
+  // The team's Big Rocks, for the editor's rock tags.
+  bigRocks: BigRock[];
   onOpenProject: (projectId: string) => void;
   onOpenCampaign: (campaignId: string) => void;
   // Open an event as its own page (hash route in App.tsx). Editing
@@ -135,6 +138,7 @@ export function EventsView({
   designers,
   projects,
   workspaces,
+  bigRocks,
   onOpenProject,
   onOpenCampaign,
   onOpenEvent,
@@ -1042,6 +1046,7 @@ export function EventsView({
           designers={designers}
           projects={projects}
           workspaces={workspaces}
+          bigRocks={bigRocks}
           onOpenProject={openProject}
           onOpenCampaign={openCampaign}
           onCancel={() => setEditing(null)}

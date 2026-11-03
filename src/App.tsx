@@ -1104,15 +1104,15 @@ export default function App() {
     return map;
   }, [campaigns]);
 
-  // How many projects and campaigns carry each Big Rock, for the editor's
-  // row hints and remove warnings.
+  // How many projects, campaigns, posts and events carry each Big Rock, for
+  // the editor's row hints and remove warnings.
   const bigRockUsage = useMemo(() => {
     const counts = new Map<string, number>();
-    [...(workspace?.projects ?? []), ...campaigns].forEach((x) =>
+    [...(workspace?.projects ?? []), ...campaigns, ...socialPostsForUsage, ...events].forEach((x) =>
       (x.bigRockIds ?? []).forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1)),
     );
     return counts;
-  }, [workspace, campaigns]);
+  }, [workspace, campaigns, socialPostsForUsage, events]);
 
   // Its SharePoint page's public copy goes too, so the page says the
   // campaign has been removed rather than showing it as it was.
@@ -1498,6 +1498,7 @@ export default function App() {
                 designers={workspace.designers}
                 projects={workspace.projects}
                 workspaces={availableWorkspaces}
+                bigRocks={bigRocks}
                 tab={route.tab}
                 onTab={(t) => replaceItemTab("event", routedEvent.id, t)}
                 onBack={() => {
@@ -1800,6 +1801,7 @@ export default function App() {
             onOpenCampaign={openCampaign}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
+            bigRocks={bigRocks}
             onOpenProject={openProject}
             focusPostId={focusSocialPostId}
             onFocusHandled={() => setFocusSocialPostId(null)}
@@ -1815,6 +1817,7 @@ export default function App() {
             designers={workspace.designers}
             projects={workspace.projects}
             workspaces={availableWorkspaces}
+            bigRocks={bigRocks}
             onOpenProject={openProject}
             onOpenCampaign={openCampaign}
             onOpenEvent={openEvent}
