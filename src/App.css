@@ -689,6 +689,44 @@ textarea {
   background: rgba(55, 30, 225, 0.08);
   color: var(--primary);
 }
+/* Views nested under another (Big Rocks under Executive Dashboard): a
+   smaller row, indented along a hairline from the parent. The parent
+   stays highlighted while a child is open. */
+.designer-sublist {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0 0 0 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.designer-sublist::before {
+  content: "";
+  position: absolute;
+  left: 19px;
+  top: 0;
+  bottom: 6px;
+  width: 1px;
+  background: var(--border);
+}
+.designer-btn.designer-sub {
+  min-height: 34px;
+  font-size: 13px;
+}
+.designer-btn.designer-sub .designer-name {
+  font-size: 13px;
+}
+.designer-btn.designer-sub .nav-icon {
+  width: 16px;
+  height: 16px;
+}
+.sidebar.collapsed .designer-sublist {
+  padding-left: 0;
+}
+.sidebar.collapsed .designer-sublist::before {
+  display: none;
+}
 .dot-avatar {
   width: 28px;
   height: 28px;
