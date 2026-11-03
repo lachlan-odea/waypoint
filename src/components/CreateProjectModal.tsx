@@ -205,7 +205,7 @@ export function CreateProjectModal({
                   {outsiders.join(", ")}{" "}
                   {outsiders.length === 1 ? "isn't" : "aren't"} in{" "}
                   {selectedWorkspace.name}, so they won't get a column on that
-                  board. The project still appears in their My work.
+                  board. The project still appears in My work on their desk.
                 </span>
               )}
             </label>

@@ -10078,3 +10078,22 @@ a.button-link:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Your own column on a team board, listed first. */
+.team-column.mine {
+  border-color: var(--wtg-cobalt);
+}
+.team-col-you {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--cobalt-050);
+  color: var(--wtg-cobalt);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}

@@ -79,7 +79,6 @@ import { ActivityPortalContext, activityItemUrl } from "./activityPortal";
 import { publishItineraryPage } from "./itineraryExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { ProjectCard } from "./components/ProjectCard";
-import { MyWorkTable } from "./components/MyWorkTable";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { CreateProjectModal } from "./components/CreateProjectModal";
 import { SettingsModal } from "./components/SettingsModal";
@@ -113,13 +112,11 @@ import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
 import { contentTypesSearchText } from "./contentTypes";
 import {
-  PROJECT_STATUSES,
   resolveSocialConfig,
   DEFAULT_WORKSPACE_ID,
   LIVE_EVENT_REQUESTS_WORKSPACE_ID,
   SUPER_USER_EMAILS,
 } from "./constants";
-import { projectStatusTone } from "./statusTone";
 import "./App.css";
 import "./pages.css";
 import "./help.css";
@@ -217,24 +214,6 @@ export default function App() {
     setTeamCollapsedState(next);
     try {
       localStorage.setItem("waypoint.board.teamCollapsed", next ? "1" : "0");
-    } catch {
-      // per-browser preference only
-    }
-  }
-  // My work as a grid of your active projects, or a kanban of everything
-  // assigned to you by status.
-  const [myWorkView, setMyWorkViewState] = useState<"grid" | "kanban" | "list">(() => {
-    try {
-      const saved = localStorage.getItem("waypoint.board.myWorkView");
-      return saved === "kanban" || saved === "list" ? saved : "grid";
-    } catch {
-      return "grid";
-    }
-  });
-  function setMyWorkView(next: "grid" | "kanban" | "list") {
-    setMyWorkViewState(next);
-    try {
-      localStorage.setItem("waypoint.board.myWorkView", next);
     } catch {
       // per-browser preference only
     }
@@ -841,10 +820,8 @@ export default function App() {
     [archivedCountsByTeam],
   );
 
-  // "My work" is global — every active project assigned to me regardless
-  // of which team it lives under. Each card in this section gets a team
-  // badge when it belongs to a different team than the one we're viewing,
-  // so the cross-team origin is visible without switching boards.
+  // Every active project assigned to me regardless of which team it lives
+  // under, for the topbar count. My work itself lives on My Desk.
   const myProjects = useMemo(() => {
     if (!workspace || !sessionDesignerId) return [];
     return workspace.projects
@@ -854,19 +831,17 @@ export default function App() {
       .sort(sortByPriorityThenDue);
   }, [workspace, sessionDesignerId]);
 
-  // Everything assigned to me, whatever its status, for the kanban.
-  const myAllProjects = useMemo(() => {
-    if (!workspace || !sessionDesignerId) return [];
-    return workspace.projects
-      .filter((p) => p.assigneeIds.includes(sessionDesignerId))
-      .filter((p) => !p.archived)
-      .sort(sortByPriorityThenDue);
-  }, [workspace, sessionDesignerId]);
-
   const otherDesigners = useMemo(
     () => workspaceDesigners.filter((d) => d.id !== sessionDesignerId),
     [workspaceDesigners, sessionDesignerId],
   );
+
+  // The Team columns: you first, when you belong to this team, then
+  // everyone else. Dropping a card on your own column claims it.
+  const teamColumnDesigners = useMemo(() => {
+    const me = workspaceDesigners.find((d) => d.id === sessionDesignerId);
+    return me ? [me, ...otherDesigners] : otherDesigners;
+  }, [workspaceDesigners, otherDesigners, sessionDesignerId]);
 
   // Notifications are global to the user — a mention or like on a
   // cross-team project still pings them regardless of which team's board
@@ -995,18 +970,6 @@ export default function App() {
     // behind the modal.
     if (view !== "board") setView("board");
     openItem("project", project.id);
-  }
-
-  // Dropping a card on a kanban column sets its status; a card that isn't
-  // mine yet is claimed on the way, since the kanban is My work.
-  function dropProjectOntoStatus(projectId: string, status: ProjectStatus) {
-    const project = findProject(projectId);
-    if (!project || !sessionDesignerId) return;
-    const assigneeIds = project.assigneeIds.includes(sessionDesignerId)
-      ? project.assigneeIds
-      : [...project.assigneeIds, sessionDesignerId];
-    if ((project.status ?? "active") === status && assigneeIds === project.assigneeIds) return;
-    firestoreSetProject({ ...project, status, assigneeIds }).catch(writeError);
   }
 
   // Drop semantics: dropping a card on a designer's column adds them as an
@@ -1317,26 +1280,6 @@ export default function App() {
   const unassigned = activeProjects
     .filter((p) => p.assigneeIds.length === 0)
     .sort(sortByPriorityThenDue);
-
-  function statusDropHandlers(status: ProjectStatus) {
-    const key = `status:${status}`;
-    return {
-      onDragOver: (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.dataTransfer.dropEffect = "move";
-        setDropOverColumn(key);
-      },
-      onDragLeave: () => setDropOverColumn((cur) => (cur === key ? null : cur)),
-      onDrop: (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDropOverColumn(null);
-        const pid = readDraggedProjectId(e);
-        if (pid) dropProjectOntoStatus(pid, status);
-      },
-    };
-  }
 
   function dropHandlers(targetId: string | null) {
     return {
@@ -1749,7 +1692,10 @@ export default function App() {
             }}
             onClearNotifications={clearAllNotifications}
             campaigns={campaigns}
+            campaignsByProject={campaignsByProject}
+            workspaces={availableWorkspaces}
             onOpenCampaign={openCampaign}
+            onStatusChange={setProjectStatus}
             onToggleMilestone={(campaign, milestoneId) =>
               saveCampaign({
                 ...campaign,
@@ -1883,108 +1829,6 @@ export default function App() {
               storageKey={`waypoint.board.${currentWorkspaceId}.campaignsCollapsed`}
             />
 
-            <section
-              className={`workspace-section drop-target ${
-                dropOverColumn === sessionDesignerId ? "drop-over" : ""
-              }`}
-              {...dropHandlers(sessionDesignerId)}
-            >
-              <div className="section-head">
-                <div className="section-head-title">
-                  <h2>My work</h2>
-                  <div className="view-seg" role="group" aria-label="My work layout">
-                    <button type="button" aria-pressed={myWorkView === "grid"} onClick={() => setMyWorkView("grid")}>
-                      Grid
-                    </button>
-                    <button type="button" aria-pressed={myWorkView === "kanban"} onClick={() => setMyWorkView("kanban")}>
-                      Kanban
-                    </button>
-                    <button type="button" aria-pressed={myWorkView === "list"} onClick={() => setMyWorkView("list")}>
-                      List
-                    </button>
-                  </div>
-                </div>
-                <span className="muted small">
-                  {myWorkView === "kanban"
-                    ? "Everything assigned to you, by status · drag a card between columns to change its status"
-                    : myWorkView === "list"
-                      ? "Everything assigned to you, one line each · change a status in place, click a row to open it"
-                      : "High priority first · drop cards here to claim"}
-                </span>
-              </div>
-              {myWorkView === "kanban" ? (
-                <div className="kanban">
-                  {PROJECT_STATUSES.map((s) => {
-                    const cards = myAllProjects.filter((p) => (p.status ?? "active") === s.value);
-                    return (
-                      <div
-                        key={s.value}
-                        className={`kanban-col drop-target ${dropOverColumn === `status:${s.value}` ? "drop-over" : ""}`}
-                        {...statusDropHandlers(s.value)}
-                      >
-                        <header className="kanban-col-head">
-                          <span className={`wp-status ${projectStatusTone(s.value)}`}>{s.label}</span>
-                          <span className="kanban-col-count">{cards.length}</span>
-                        </header>
-                        <div className="kanban-col-cards">
-                          {cards.length === 0 && <p className="muted small kanban-empty">Drop a card here</p>}
-                          {cards.map((p) => (
-                            <ProjectCard
-                              key={p.id}
-                              project={p}
-                              designers={workspace.designers}
-                              campaigns={campaignsByProject.get(p.id)}
-                              onClick={() => openProject(p.id)}
-                              compact
-                              teamBadge={
-                                p.workspaceId !== currentWorkspaceId
-                                  ? availableWorkspaces.find((w) => w.id === p.workspaceId)?.name
-                                  : undefined
-                              }
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : myWorkView === "list" ? (
-                <MyWorkTable
-                  projects={myAllProjects}
-                  designers={workspace.designers}
-                  workspaces={availableWorkspaces}
-                  campaignsByProject={campaignsByProject}
-                  onOpen={openProject}
-                  onStatusChange={setProjectStatus}
-                  onOpenCampaign={openCampaign}
-                />
-              ) : myProjects.length === 0 ? (
-                <p className="muted">
-                  Nothing assigned to you yet. Hit + New → Project, drag a card from a teammate,
-                  or wait for an Outlook brief to arrive.
-                </p>
-              ) : (
-                <div className="workspace-grid">
-                  {myProjects.map((p) => (
-                    <ProjectCard
-                      key={p.id}
-                      project={p}
-                      designers={workspace.designers}
-                      campaigns={campaignsByProject.get(p.id)}
-                      onClick={() => openProject(p.id)}
-                      teamBadge={
-                        p.workspaceId !== currentWorkspaceId
-                          ? availableWorkspaces.find(
-                              (w) => w.id === p.workspaceId,
-                            )?.name
-                          : undefined
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-
             {reviewProjects.length > 0 && (
               <section className="workspace-section review-section">
                 <div className="section-head">
@@ -2031,12 +1875,13 @@ export default function App() {
                 <span className="muted small">
                   {teamCollapsed
                     ? `${otherDesigners.length} teammate${otherDesigners.length === 1 ? "" : "s"} · ${activeProjects.length} active project${activeProjects.length === 1 ? "" : "s"} · expand to reassign`
-                    : "Drag a card to reassign it"}
+                    : "Drag a card to reassign it · drop one on your own column to claim it"}
                 </span>
               </div>
               {!teamCollapsed && (
               <div className="team-columns">
-                {otherDesigners.map((d) => {
+                {teamColumnDesigners.map((d) => {
+                  const mine = d.id === sessionDesignerId;
                   const projects = activeProjects
                     .filter((p) => p.assigneeIds.includes(d.id))
                     .sort(sortByPriorityThenDue);
@@ -2044,7 +1889,7 @@ export default function App() {
                   return (
                     <div
                       key={d.id}
-                      className={`team-column drop-target ${
+                      className={`team-column drop-target ${mine ? "mine" : ""} ${
                         dropOverColumn === d.id ? "drop-over" : ""
                       }`}
                       {...dropHandlers(d.id)}
@@ -2052,7 +1897,10 @@ export default function App() {
                       <header className="team-col-head">
                         <Avatar designer={d} />
                         <div>
-                          <div className="team-col-name">{d.name}</div>
+                          <div className="team-col-name">
+                            {d.name}
+                            {mine && <span className="team-col-you">you</span>}
+                          </div>
                           <div className="muted small">
                             {projects.length} project{projects.length === 1 ? "" : "s"}
                           </div>

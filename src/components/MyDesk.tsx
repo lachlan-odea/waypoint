@@ -4,10 +4,13 @@ import type {
   DeskItem,
   Notification,
   Project,
+  ProjectStatus,
+  Workspace,
   WorkspaceData,
 } from "../types";
 import { Avatar } from "./Avatar";
 import { CampaignsPanel } from "./CampaignsPanel";
+import { MyWork } from "./MyWork";
 import {
   describeNotification,
   notificationTag,
@@ -51,6 +54,12 @@ interface MyDeskProps {
   onOpenCampaign: (campaignId: string) => void;
   // Flags a milestone done (or not) on a campaign you own.
   onToggleMilestone: (campaign: Campaign, milestoneId: string) => void;
+  // For the My work section: which campaigns each project feeds, the teams
+  // (so every card can say which board it's from) and the status setter
+  // behind the kanban's drag-and-drop and the list's in-place select.
+  campaignsByProject: Map<string, Campaign[]>;
+  workspaces: Workspace[];
+  onStatusChange: (projectId: string, status: ProjectStatus) => void;
 }
 
 // How far ahead the owner's milestone list looks.
@@ -94,6 +103,9 @@ export function MyDesk({
   campaigns,
   onOpenCampaign,
   onToggleMilestone,
+  campaignsByProject,
+  workspaces,
+  onStatusChange,
 }: MyDeskProps) {
   const [deskItems, setDeskItems] = useState<DeskItem[]>([]);
   const [deskError, setDeskError] = useState<string | null>(null);
@@ -271,6 +283,16 @@ export function MyDesk({
         .filter((p) => p.assigneeIds.includes(currentDesignerId))
         .sort(sortByPriorityThenDue),
     [allActiveProjects, currentDesignerId],
+  );
+
+  // Everything assigned to you, whatever its status, for My work's kanban
+  // and list.
+  const myAllProjects = useMemo(
+    () =>
+      workspace.projects
+        .filter((p) => p.assigneeIds.includes(currentDesignerId) && !p.archived)
+        .sort(sortByPriorityThenDue),
+    [workspace.projects, currentDesignerId],
   );
 
   const overdueTasks = useMemo(() => {
@@ -454,6 +476,20 @@ export function MyDesk({
             </section>
           )}
       </div>
+
+      {/* Your work across every team: a grid of what's live, a kanban of
+          everything by status, or a table. Moved here from the team boards
+          so each board is just the team. */}
+      <MyWork
+        projects={myProjects}
+        allProjects={myAllProjects}
+        designers={workspace.designers}
+        workspaces={workspaces}
+        campaignsByProject={campaignsByProject}
+        onOpen={onOpenProject}
+        onStatusChange={onStatusChange}
+        onOpenCampaign={onOpenCampaign}
+      />
 
       {/* Campaigns that any project you're assigned to is feeding — the
           wider thing your work is part of. Renders nothing when there are

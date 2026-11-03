@@ -23,7 +23,8 @@ const TOURS: Record<string, Tour> = {
   myDesk: {
     title: "My Desk",
     steps: [
-      { target: ".mydesk-header", title: "Your start page", body: "Everything that's yours, in one place: your projects, anything waiting on your review, your notifications and a private checklist nobody else sees." },
+      { target: ".mydesk-header", title: "Your start page", body: "Everything that's yours, in one place: your work across every team, anything waiting on your review, your notifications and a private checklist nobody else sees." },
+      { target: ".mywork-section", title: "My work", body: "Your projects from every team, high priority first, each card marked with its team. Switch to Kanban to see everything assigned to you by status — Planning, Active, On hold, Completed, Cancelled — and drag a card between columns to change its status; List puts one project per line. Click a card to open the project." },
       { target: ".mydesk-notify", title: "Notifications", body: "Mentions, replies, likes and review requests land here. Open one to jump to the project; clear them all when you've caught up." },
       { target: ".desk-panels", title: "Your checklist", body: "Add anything you need to do today. Unticked items roll forward each morning and say how many times they've rolled. Set a reminder to park an item until its time arrives; done items sweep themselves out after a fortnight." },
       { target: ".mydesk-grid", title: "Your projects and campaigns", body: "The projects assigned to you, soonest due first, the ones flagged for your review, and the campaigns you own with their next milestones. Tick a milestone here when it's happened." },
@@ -36,8 +37,7 @@ const TOURS: Record<string, Tour> = {
     steps: [
       { target: ".topbar .search", title: "Find a project", body: "Search by title, client, brand or content type. The board filters as you type." },
       { target: ".camps-panel", title: "Campaigns this team feeds", body: "The campaigns any of this team's live projects contribute to, with their next milestone. Open one to see the whole campaign." },
-      { target: ".drop-target.workspace-section", title: "My work", body: "Your projects, high priority first. Drop a card here to claim it. Switch to Kanban to see everything assigned to you by status — Planning, Active, On hold, Completed, Cancelled — and drag a card between columns to change its status. Click a card to open the project." },
-      { target: ".team-section", title: "The team", body: "A column per teammate. Drag a card between columns to reassign it, or into Unassigned to free it up. Collapse the section with the arrow to focus on your own work; it stays collapsed until you open it again." },
+      { target: ".team-section", title: "The team", body: "A column per person, you first. Drag a card between columns to reassign it, onto your own column to claim it, or into Unassigned to free it up. Your work across every team is on My Desk. Collapse the section with the arrow; it stays collapsed until you open it again." },
       { target: ".planning-section", title: "Planning, On hold, Completed", body: "Below the board, work that isn't live yet, work that's paused and work that's done. Collapse the ones you don't need; open a project to move it between stages." },
       NEW,
       NAV,
