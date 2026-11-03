@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Designer, LiveEventIntake, LiveEventRequest } from "../types";
+import type { Designer, LiveEventBlackout, LiveEventIntake, LiveEventRequest } from "../types";
 import {
   attentionFlags,
   audienceShort,
+  blackoutFlag,
   deliverableShort,
   mailtoUrl,
   outlookComposeUrl,
@@ -26,6 +27,7 @@ type Props = {
   request: LiveEventRequest;
   currentDesigner: Designer;
   intake: LiveEventIntake;
+  blackouts: LiveEventBlackout[];
   onUpdate: (id: string, patch: Partial<Omit<LiveEventRequest, "id">>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onClose: () => void;
@@ -40,13 +42,18 @@ export function LiveEventRequestModal({
   request,
   currentDesigner,
   intake,
+  blackouts,
   onUpdate,
   onDelete,
   onClose,
 }: Props) {
   const s = useMemo(() => parseSubmission(request.json), [request.json]);
   const { facilitiesEmail } = intakeEmails(intake);
-  const flags = useMemo(() => attentionFlags(s), [s]);
+  const flags = useMemo(() => {
+    const f = attentionFlags(s);
+    const blocked = blackoutFlag(request, blackouts);
+    return blocked ? [blocked, ...f] : f;
+  }, [s, request, blackouts]);
   const sections = useMemo(() => submissionSections(s, facilitiesEmail), [s, facilitiesEmail]);
 
   const [note, setNote] = useState(request.decision?.note ?? "");
@@ -159,7 +166,18 @@ export function LiveEventRequestModal({
               {submissionDateLabel(s)} · {submissionTimeLabel(s)} · {whereLabel(s)}
             </div>
             <div className="modal-sub">
-              From <strong>{request.requesterName || s.name || "unknown"}</strong>
+              {request.source === "team" ? (
+                <>
+                  Added by <strong>{request.createdByName || "the team"}</strong>
+                  {request.requesterName && request.requesterName !== request.createdByName
+                    ? ` for ${request.requesterName}`
+                    : ""}
+                </>
+              ) : (
+                <>
+                  From <strong>{request.requesterName || s.name || "unknown"}</strong>
+                </>
+              )}
               {s.team ? ` (${s.team})` : ""}
               {request.requesterEmail ? (
                 <>
@@ -167,7 +185,9 @@ export function LiveEventRequestModal({
                   · <a href={`mailto:${request.requesterEmail}`}>{request.requesterEmail}</a>
                 </>
               ) : null}
-              {request.createdAt ? ` · received ${timeAgo(request.createdAt)}` : ""}
+              {request.createdAt
+                ? ` · ${request.source === "team" ? "added" : "received"} ${timeAgo(request.createdAt)}`
+                : ""}
             </div>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close">

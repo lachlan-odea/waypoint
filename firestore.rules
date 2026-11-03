@@ -175,7 +175,8 @@ service cloud.firestore {
     // team reads, decides on and removes them from Waypoint.
     match /liveEventRequests/{requestId} {
       allow read: if request.auth != null;
-      allow create: if request.resource.data.keys().hasOnly([
+      allow create: if request.auth != null
+        || (request.resource.data.keys().hasOnly([
           'json', 'eventName', 'requesterName', 'requesterEmail', 'eventDate',
           'createdAt', 'status', 'intakeToken'
         ])
@@ -198,8 +199,21 @@ service cloud.firestore {
         && request.resource.data.eventDate is string
         && request.resource.data.eventDate.matches('^([0-9]{4}-[0-9]{2}-[0-9]{2})?$')
         && request.resource.data.createdAt is string
-        && request.resource.data.createdAt.size() <= 40;
+        && request.resource.data.createdAt.size() <= 40);
       allow update, delete: if request.auth != null;
+    }
+    // Periods the Live Events Team isn't taking bookings for, managed from
+    // the Video board.
+    match /liveEventBlackouts/{blackoutId} {
+      allow read, write: if request.auth != null;
+    }
+    // What a copy of the request form reads back: the blackouts, kept
+    // under the current intake token so only the form (which carries the
+    // token) can find them. Waypoint rewrites it whenever the blackouts or
+    // the token change.
+    match /liveEventPublic/{token} {
+      allow read: if true;
+      allow write: if request.auth != null;
     }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any

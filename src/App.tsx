@@ -3,6 +3,7 @@ import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
   Campaign,
   ActivityShare,
+  LiveEventBlackout,
   LiveEventIntake,
   LiveEventRequest,
   MarketingEvent,
@@ -51,9 +52,15 @@ import {
   setActivityShare as firestoreSetActivityShare,
   subscribeLiveEventIntake,
   subscribeLiveEventRequests,
+  subscribeLiveEventBlackouts,
   setLiveEventIntake as firestoreSetLiveEventIntake,
   updateLiveEventRequest as firestoreUpdateLiveEventRequest,
   deleteLiveEventRequest as firestoreDeleteLiveEventRequest,
+  createLiveEventRequest as firestoreCreateLiveEventRequest,
+  saveLiveEventBlackout as firestoreSaveLiveEventBlackout,
+  deleteLiveEventBlackout as firestoreDeleteLiveEventBlackout,
+  publishLiveEventPublic as firestorePublishLiveEventPublic,
+  deleteLiveEventPublic as firestoreDeleteLiveEventPublic,
   setSpeaker as firestoreSetSpeaker,
   deleteSpeaker as firestoreDeleteSpeaker,
   subscribeCampaigns,
@@ -80,6 +87,8 @@ import { SocialCalendar } from "./components/SocialCalendar";
 import { CampaignsView } from "./components/CampaignsView";
 import { CampaignsPanel } from "./components/CampaignsPanel";
 import { LiveEventRequestsPanel } from "./components/LiveEventRequestsPanel";
+import type { BlackoutDraft } from "./components/LiveEventBlackoutModal";
+import { publicBlackouts } from "./liveEventRequests";
 import { LiveEventFormModal } from "./components/LiveEventFormModal";
 import { EventsView } from "./components/EventsView";
 import { NewMenu, type NewKind } from "./components/NewMenu";
@@ -395,6 +404,57 @@ export default function App() {
       console.warn("Couldn't load the live event form settings", err);
     });
   }, [sessionDesignerId]);
+  const [liveEventBlackouts, setLiveEventBlackouts] = useState<LiveEventBlackout[]>([]);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeLiveEventBlackouts(setLiveEventBlackouts, (err) => {
+      console.warn("Couldn't load the live event no-booking periods", err);
+    });
+  }, [sessionDesignerId]);
+
+  // The form reads the no-booking periods from /liveEventPublic/{token},
+  // so that copy is rewritten whenever the periods or the token change
+  // (and the copy under a retired token removed).
+  async function publishLiveEventBlackouts(token: string | undefined, blackouts: LiveEventBlackout[]) {
+    if (!token) return;
+    await firestorePublishLiveEventPublic(token, publicBlackouts(blackouts));
+  }
+  async function saveLiveEventIntake(patch: LiveEventIntake) {
+    const oldToken = liveEventIntake.token;
+    await firestoreSetLiveEventIntake(patch);
+    if (patch.token && patch.token !== oldToken) {
+      await publishLiveEventBlackouts(patch.token, liveEventBlackouts);
+      if (oldToken) await firestoreDeleteLiveEventPublic(oldToken).catch(() => undefined);
+    }
+  }
+  async function saveLiveEventBlackout(draft: BlackoutDraft) {
+    if (!currentDesigner) throw new Error("Sign in to change the no-booking periods.");
+    const existing = draft.id ? liveEventBlackouts.find((b) => b.id === draft.id) : undefined;
+    const now = new Date().toISOString();
+    const data = {
+      start: draft.start,
+      end: draft.end,
+      reason: draft.reason,
+      createdAt: existing?.createdAt ?? now,
+      createdById: existing?.createdById ?? currentDesigner.id,
+      createdByName: existing?.createdByName ?? currentDesigner.name,
+    };
+    const id = await firestoreSaveLiveEventBlackout({ ...data, id: draft.id });
+    await publishLiveEventBlackouts(liveEventIntake.token, [
+      ...liveEventBlackouts.filter((b) => b.id !== id),
+      { ...data, id },
+    ]);
+  }
+  async function deleteLiveEventBlackout(id: string) {
+    await firestoreDeleteLiveEventBlackout(id);
+    await publishLiveEventBlackouts(
+      liveEventIntake.token,
+      liveEventBlackouts.filter((b) => b.id !== id),
+    );
+  }
+  async function createLiveEventRequest(data: Omit<LiveEventRequest, "id">) {
+    await firestoreCreateLiveEventRequest(data);
+  }
 
   // The marketing activity page on SharePoint: its token and link.
   const [activityShare, setActivityShare] = useState<ActivityShare>({});
@@ -1731,10 +1791,14 @@ export default function App() {
             {currentWorkspaceId === LIVE_EVENT_REQUESTS_WORKSPACE_ID && (
               <LiveEventRequestsPanel
                 requests={liveEventRequests}
+                blackouts={liveEventBlackouts}
                 intake={liveEventIntake}
                 currentDesigner={currentDesigner}
                 onUpdate={firestoreUpdateLiveEventRequest}
                 onDelete={firestoreDeleteLiveEventRequest}
+                onCreate={createLiveEventRequest}
+                onSaveBlackout={saveLiveEventBlackout}
+                onDeleteBlackout={deleteLiveEventBlackout}
                 onOpenForm={() => setLiveEventFormOpen(true)}
                 storageKey={`waypoint.board.${currentWorkspaceId}.liveEventRequestsCollapsed`}
               />
@@ -2205,7 +2269,7 @@ export default function App() {
       {liveEventFormOpen && (
         <LiveEventFormModal
           intake={liveEventIntake}
-          onSaveIntake={firestoreSetLiveEventIntake}
+          onSaveIntake={saveLiveEventIntake}
           onDeleteRequest={firestoreDeleteLiveEventRequest}
           onClose={() => setLiveEventFormOpen(false)}
         />

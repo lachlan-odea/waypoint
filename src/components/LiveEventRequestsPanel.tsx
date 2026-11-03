@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
-import type { Designer, LiveEventIntake, LiveEventRequest } from "../types";
+import { useCallback, useMemo, useState } from "react";
+import type { Designer, LiveEventBlackout, LiveEventIntake, LiveEventRequest } from "../types";
 import { timeAgo, todayIso } from "../dates";
 import {
   attentionFlags,
+  blackoutsOn,
   parseSubmission,
   requestIsUpcoming,
   requestStatusLabel,
@@ -15,20 +16,30 @@ import {
 } from "../liveEventRequests";
 import { Icon } from "./Icon";
 import { LiveEventRequestModal } from "./LiveEventRequestModal";
+import { LiveEventCalendar } from "./LiveEventCalendar";
+import { LiveEventAddModal } from "./LiveEventAddModal";
+import { LiveEventBlackoutModal } from "./LiveEventBlackoutModal";
+import type { BlackoutDraft } from "./LiveEventBlackoutModal";
 
 type Props = {
   requests: LiveEventRequest[];
+  blackouts: LiveEventBlackout[];
   intake: LiveEventIntake;
   currentDesigner: Designer;
   onUpdate: (id: string, patch: Partial<Omit<LiveEventRequest, "id">>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  // An event the team adds themselves, already approved.
+  onCreate: (data: Omit<LiveEventRequest, "id">) => Promise<void>;
+  onSaveBlackout: (draft: BlackoutDraft) => Promise<void>;
+  onDeleteBlackout: (id: string) => Promise<void>;
   // Opens the form's set-up: download, SharePoint link, settings.
   onOpenForm: () => void;
-  // localStorage key for the collapsed state.
+  // localStorage key for the collapsed state; the view sits beside it.
   storageKey: string;
 };
 
 type Filter = "pending" | "upcoming" | "declined" | "all";
+type View = "list" | "calendar";
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: "pending", label: "Pending" },
@@ -37,41 +48,68 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "all", label: "All" },
 ];
 
-// The Video team's inbox for live event requests, on their board: what has
-// come in from the SharePoint form, what's waiting on a decision, and the
-// approved events still ahead, which doubles as the team's schedule. A
-// card opens the request for review.
+function readStored(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function writeStored(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Storage unavailable — the choice still holds for this page load.
+  }
+}
+
+// The Video team's live events, on their board: what has come in from the
+// SharePoint form, what's waiting on a decision, and the approved events
+// still ahead, as a list or a month calendar. The team can add events of
+// their own and block out periods the form won't take bookings for. A
+// card or calendar chip opens the request for review.
 export function LiveEventRequestsPanel({
   requests,
+  blackouts,
   intake,
   currentDesigner,
   onUpdate,
   onDelete,
+  onCreate,
+  onSaveBlackout,
+  onDeleteBlackout,
   onOpenForm,
   storageKey,
 }: Props) {
   const today = todayIso();
-  const [collapsed, setCollapsedState] = useState(() => {
-    try {
-      return localStorage.getItem(storageKey) === "true";
-    } catch {
-      return false;
-    }
-  });
+  const [collapsed, setCollapsedState] = useState(() => readStored(storageKey) === "true");
   function setCollapsed(v: boolean) {
     setCollapsedState(v);
-    try {
-      localStorage.setItem(storageKey, String(v));
-    } catch {
-      // Storage unavailable — the toggle still works for this page load.
-    }
+    writeStored(storageKey, String(v));
+  }
+  const viewKey = `${storageKey}.view`;
+  const [view, setViewState] = useState<View>(() => (readStored(viewKey) === "calendar" ? "calendar" : "list"));
+  function setView(v: View) {
+    setViewState(v);
+    writeStored(viewKey, v);
   }
   const [filter, setFilter] = useState<Filter>("pending");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [adding, setAdding] = useState<string | null>(null);
+  const [blackoutEdit, setBlackoutEdit] = useState<{ blackout: LiveEventBlackout | null; date: string } | null>(
+    null,
+  );
 
   const parsed = useMemo(
     () => new Map(requests.map((r) => [r.id, parseSubmission(r.json)])),
     [requests],
+  );
+  const startTime = useCallback(
+    (r: LiveEventRequest) => {
+      const s = parsed.get(r.id);
+      return s && !s.timeTbc ? s.time : "";
+    },
+    [parsed],
   );
 
   const counts = useMemo(
@@ -118,7 +156,7 @@ export function LiveEventRequestsPanel({
           >
             <span className={`collapse-icon ${collapsed ? "" : "expanded"}`}>▶</span>
           </button>
-          <h2>Live event requests</h2>
+          <h2>Live events</h2>
           {counts.pending > 0 && (
             <span className="ler-pending-badge" title={`${counts.pending} waiting on a decision`}>
               {counts.pending}
@@ -129,23 +167,56 @@ export function LiveEventRequestsPanel({
           <span className="muted small">
             {counts.all === 0
               ? "nothing in yet"
-              : `${counts.pending} pending · ${counts.upcoming} upcoming · ${counts.all} in total`}{" "}
-            · from the request form on SharePoint
+              : `${counts.pending} pending · ${counts.upcoming} upcoming · ${counts.all} in total`}
           </span>
+          <div className="filter-quick ler-view" role="group" aria-label="How to show them">
+            <button
+              type="button"
+              className={view === "list" ? "active" : ""}
+              aria-pressed={view === "list"}
+              onClick={() => setView("list")}
+            >
+              List
+            </button>
+            <button
+              type="button"
+              className={view === "calendar" ? "active" : ""}
+              aria-pressed={view === "calendar"}
+              onClick={() => setView("calendar")}
+            >
+              Calendar
+            </button>
+          </div>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAdding(today)}>
+            <Icon name="calendar" size={14} /> Add event
+          </button>
           <button type="button" className="btn btn-secondary btn-sm" onClick={onOpenForm}>
             <Icon name="settings" size={14} /> {formReady ? "Request form" : "Set up the form"}
           </button>
         </div>
       </div>
 
-      {!collapsed && (
+      {!collapsed && view === "calendar" && (
+        <LiveEventCalendar
+          requests={requests}
+          blackouts={blackouts}
+          today={today}
+          startTime={startTime}
+          onOpenRequest={setOpenId}
+          onAddEvent={(date) => setAdding(date)}
+          onAddBlackout={() => setBlackoutEdit({ blackout: null, date: today })}
+          onEditBlackout={(b) => setBlackoutEdit({ blackout: b, date: b.start })}
+        />
+      )}
+
+      {!collapsed && view === "list" && (
         <>
           {requests.length === 0 ? (
             <div className="ler-empty">
               <p>
                 <strong>No requests yet.</strong>{" "}
                 {formReady
-                  ? "When someone fills in the Live event request form on SharePoint, it lands here for the team to approve or decline."
+                  ? "When someone fills in the Live event request form on SharePoint, it lands here for the team to approve or decline. Events the team runs without a request go on with Add event."
                   : "Download the Live event request form, put it on SharePoint, and every request people fill in lands here for the team to approve or decline."}
               </p>
               {!formReady && (
@@ -185,6 +256,7 @@ export function LiveEventRequestsPanel({
                   {shown.map((r) => {
                     const s = parsed.get(r.id) ?? parseSubmission(r.json);
                     const flags = attentionFlags(s);
+                    const blocked = r.status === "pending" ? blackoutsOn(r.eventDate, blackouts)[0] : undefined;
                     return (
                       <button
                         key={r.id}
@@ -201,6 +273,11 @@ export function LiveEventRequestsPanel({
                         <div className="ler-card-when">
                           <Icon name="calendar" size={13} /> {submissionDateLabel(s, true)}
                           <span className="muted"> · {submissionTimeLabel(s)}</span>
+                          {blocked && (
+                            <span className="ler-bo-tag" title={`No bookings: ${blocked.reason || "blocked out"}`}>
+                              No-booking period
+                            </span>
+                          )}
                         </div>
                         <div className="ler-card-meta muted small">
                           {whereLabel(s)}
@@ -213,7 +290,9 @@ export function LiveEventRequestsPanel({
                         ) : null}
                         <div className="ler-card-foot muted small">
                           <span>
-                            {r.requesterName || s.name || "Unknown requester"}
+                            {r.source === "team"
+                              ? `Added by ${r.createdByName || "the team"}`
+                              : r.requesterName || s.name || "Unknown requester"}
                             {s.team ? ` · ${s.team}` : ""}
                           </span>
                           <span>
@@ -241,9 +320,31 @@ export function LiveEventRequestsPanel({
           request={open}
           currentDesigner={currentDesigner}
           intake={intake}
+          blackouts={blackouts}
           onUpdate={onUpdate}
           onDelete={onDelete}
           onClose={() => setOpenId(null)}
+        />
+      )}
+
+      {adding !== null && (
+        <LiveEventAddModal
+          initialDate={adding}
+          currentDesigner={currentDesigner}
+          blackouts={blackouts}
+          onCreate={onCreate}
+          onClose={() => setAdding(null)}
+        />
+      )}
+
+      {blackoutEdit && (
+        <LiveEventBlackoutModal
+          blackout={blackoutEdit.blackout}
+          initialDate={blackoutEdit.date}
+          requests={requests}
+          onSave={onSaveBlackout}
+          onDelete={onDeleteBlackout}
+          onClose={() => setBlackoutEdit(null)}
         />
       )}
     </section>

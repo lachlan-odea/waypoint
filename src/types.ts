@@ -759,6 +759,11 @@ export type LiveEventRequest = {
   createdAt: string;
   status: LiveEventRequestStatus;
   intakeToken: string;
+  // "team" when the Video team added the event themselves from the board
+  // (already approved); missing or "form" when it came through the form.
+  source?: "form" | "team";
+  createdById?: string;
+  createdByName?: string;
   // Set in Waypoint by the Video team.
   decision?: LiveEventDecision;
   teamNotes?: string;
@@ -772,6 +777,23 @@ export type LiveEventRequest = {
 // SharePoint, the mailboxes it names and the links behind its resource
 // buttons (the runsheet templates and recording guides, hosted wherever
 // the team keeps them).
+// A period the Live Events Team isn't taking bookings for: the request
+// form refuses dates inside it and the team's calendar shades it. Dates
+// are YYYY-MM-DD, the end inclusive.
+export type LiveEventBlackout = {
+  id: string;
+  start: string;
+  end: string;
+  reason: string;
+  createdAt: string;
+  createdById: string;
+  createdByName: string;
+};
+
+// What the form reads back from /liveEventPublic/{token}: the blackouts
+// without who set them.
+export type PublicBlackout = Pick<LiveEventBlackout, "start" | "end" | "reason">;
+
 export type LiveEventIntake = {
   token?: string;
   sharePointUrl?: string;

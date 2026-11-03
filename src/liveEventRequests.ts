@@ -1,4 +1,11 @@
-import type { LiveEventRequest, LiveEventRequestStatus } from "./types";
+import type {
+  Designer,
+  LiveEventBlackout,
+  LiveEventRequest,
+  LiveEventRequestStatus,
+  PublicBlackout,
+} from "./types";
+import { todayIso } from "./dates";
 import type { WpTone } from "./statusTone";
 
 // Helpers for the Live event requests panel: what the SharePoint form
@@ -505,4 +512,87 @@ export function sortRequests(list: LiveEventRequest[]): LiveEventRequest[] {
     }
     return (b.createdAt || "").localeCompare(a.createdAt || "");
   });
+}
+
+// ── No-booking periods ──
+
+export function blackoutsOn(iso: string, blackouts: LiveEventBlackout[]): LiveEventBlackout[] {
+  if (!iso) return [];
+  return blackouts.filter((b) => b.start <= iso && iso <= b.end);
+}
+
+function formatBlackoutDay(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export function blackoutRange(b: Pick<LiveEventBlackout, "start" | "end">): string {
+  return b.start === b.end
+    ? formatBlackoutDay(b.start)
+    : `${formatBlackoutDay(b.start)} to ${formatBlackoutDay(b.end)}`;
+}
+
+// The attention line for a request whose date the team has blocked out.
+export function blackoutFlag(r: LiveEventRequest, blackouts: LiveEventBlackout[]): string | null {
+  const b = blackoutsOn(r.eventDate, blackouts)[0];
+  if (!b) return null;
+  return `Falls in a no-booking period: ${b.reason || "no bookings"} (${blackoutRange(b)})`;
+}
+
+// What the form gets: the periods still ahead, dates and reason only.
+export function publicBlackouts(blackouts: LiveEventBlackout[]): PublicBlackout[] {
+  const today = todayIso();
+  return blackouts
+    .filter((b) => b.end >= today)
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .map(({ start, end, reason }) => ({ start, end, reason }));
+}
+
+// ── Events the team adds themselves ──
+
+export type TeamEventInput = {
+  eventName: string;
+  date: string;
+  time: string;
+  endTime: string;
+  room: string;
+  audienceType: string;
+  inPerson: string;
+  online: string;
+  forName: string;
+  forEmail: string;
+  forTeam: string;
+  notes: string;
+};
+
+// A team-added event in the form's own shape, so the panel, calendar and
+// review modal read it through the same code as a submission. What the
+// team didn't say is left empty, the way an unanswered form field would be.
+export function teamEventJson(input: TeamEventInput, by: Designer, createdAt: string): string {
+  const s: Partial<LiveEventSubmission> = {
+    name: input.forName || by.name,
+    email: input.forEmail,
+    team: input.forTeam,
+    primaryContact: "Yes",
+    eventName: input.eventName,
+    date: input.date,
+    time: input.time,
+    endTime: input.endTime,
+    dateUnc: false,
+    dateTbc: !input.date,
+    timeTbc: !input.time,
+    endTbc: !input.endTime,
+    inPerson: input.inPerson,
+    online: input.online,
+    audienceType: input.audienceType,
+    room: input.room,
+    notes: input.notes,
+    createdAt,
+  };
+  return JSON.stringify(s);
 }

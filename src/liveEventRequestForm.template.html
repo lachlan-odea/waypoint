@@ -152,6 +152,9 @@ var FACILITIES_EMAIL = __LER_FACILITIES_EMAIL__;
 // Links behind the resource buttons; a button is left out when its link is
 // empty.
 var LINKS = __LER_LINKS__;
+// Where the form reads the periods the team isn't taking bookings for.
+var PUBLIC_URL = __LER_PUBLIC_URL__;
+var BLACKOUTS = [];
 var VIDEO_HELP_EMAIL = LIVE_EVENTS_EMAIL;
 var RIVERSIDE_URL = "https://riverside.fm";
 var PPT_DEADLINE = "1-2 weeks before the event";
@@ -272,7 +275,34 @@ function dateStr(r){
   var dt=new Date(+m[1],+m[2]-1,+m[3]);
   return DAYS[dt.getDay()]+", "+(+m[3])+" "+MONTHS[+m[2]-1]+" "+m[1]+(r.dateUnc?" (not confirmed)":"");
 }
-function previewDate(){ var p=$("#datepreview"); if(!p) return; saveInputs(); p.textContent = (a.date&&!a.dateTbc) ? "Date selected: "+dateStr({date:a.date,dateUnc:a.dateUnc}) : ""; }
+function previewDate(){ var p=$("#datepreview"); if(!p) return; saveInputs(); p.textContent = (a.date&&!a.dateTbc) ? "Date selected: "+dateStr({date:a.date,dateUnc:a.dateUnc}) : ""; var n=$("#blackoutnote"); if(n) n.innerHTML=blackoutNote(); }
+
+// ── No-booking periods ──
+// Read once on load from the team's published list. If they can't be read
+// the form simply doesn't check dates against them.
+function fmtDay(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||""); if(!m) return iso||""; return new Date(+m[1],+m[2]-1,+m[3]).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}); }
+function blackoutRange(b){ return b.start===b.end ? fmtDay(b.start) : fmtDay(b.start)+" to "+fmtDay(b.end); }
+function blackoutFor(iso){ if(!iso) return null; for(var i=0;i<BLACKOUTS.length;i++){ var b=BLACKOUTS[i]; if(b.start<=iso&&iso<=b.end) return b; } return null; }
+function blackoutNote(){
+  if(!BLACKOUTS.length) return "";
+  var hit = (a.date&&!a.dateTbc) ? blackoutFor(a.date) : null;
+  var list = BLACKOUTS.slice(0,6).map(function(b){ return "<b>"+esc(blackoutRange(b))+"</b>"+(b.reason?" ("+esc(b.reason)+")":""); }).join("; ");
+  return '<div class="callout'+(hit?' warn':'')+'">'+(hit?'<b>That date is in a no-booking period.</b> ':'')+
+    "The Live Events Team isn't taking bookings on: "+list+(BLACKOUTS.length>6?"; and later dates":"")+'.</div>';
+}
+function loadBlackouts(){
+  if(!PUBLIC_URL) return;
+  fetch(PUBLIC_URL).then(function(r){ return r.ok ? r.json() : null; }).then(function(doc){
+    var vals = (doc && doc.fields && doc.fields.blackouts && doc.fields.blackouts.arrayValue && doc.fields.blackouts.arrayValue.values) || [];
+    var today = todayStr(), ok = /^\d{4}-\d{2}-\d{2}$/;
+    BLACKOUTS = vals.map(function(v){
+      var f=(v.mapValue&&v.mapValue.fields)||{}; var g=function(k){ return (f[k]&&f[k].stringValue)||""; };
+      return {start:g("start"), end:g("end"), reason:g("reason")};
+    }).filter(function(b){ return ok.test(b.start)&&ok.test(b.end)&&b.end>=today; })
+      .sort(function(x,y){ return x.start<y.start?-1:x.start>y.start?1:0; });
+    var n=$("#blackoutnote"); if(n) n.innerHTML=blackoutNote();
+  }).catch(function(){});
+}
 function timeRange(r){
   var s=!r.timeTbc&&r.time, e=!r.endTbc&&r.endTime;
   if(s&&e) return s+" - "+e;
@@ -408,6 +438,7 @@ function renderForm(){
     '<label>Date</label>'+
     '<input id="f-date" type="date" min="'+todayStr()+'" value="'+esc(a.date)+'" '+(a.dateTbc?"disabled":"")+'>'+
     '<div class="note" id="datepreview" style="margin-top:6px"></div>'+
+    '<div id="blackoutnote">'+blackoutNote()+'</div>'+
     '<label class="chk"><input type="checkbox" id="f-dateUnc" '+(a.dateUnc?"checked":"")+' '+(a.dateTbc?"disabled":"")+'> I\'ve chosen a date, but it\'s not confirmed and may change</label>'+
     '<label class="chk"><input type="checkbox" id="f-dateTbc" data-tbc '+(a.dateTbc?"checked":"")+'> Not sure of the date yet</label>'+
     '<div class="row"><div><label>Start time</label><input id="f-time" type="time" value="'+esc(a.time)+'" '+(a.timeTbc?"disabled":"")+'>'+
@@ -547,6 +578,7 @@ function renderForm(){
       if(a.contactEmail&&!/^\S+@\S+\.\S+$/.test(a.contactEmail)) return bad("The primary contact's email doesn't look right.");
       if(!a.eventName) return bad("Please enter the event name.");
       if((!a.date&&!a.dateTbc)||(!a.time&&!a.timeTbc)||(!a.endTime&&!a.endTbc)) return bad("Please choose the date and times, or tick 'not sure yet'.");
+      if(a.date&&!a.dateTbc){ var bo=blackoutFor(a.date); if(bo) return bad("The Live Events Team isn't taking bookings "+(bo.start===bo.end?"on ":"from ")+blackoutRange(bo)+(bo.reason?" ("+bo.reason+")":"")+". Please choose another date, or tick 'Not sure of the date yet' and we'll be in touch."); }
       if(!a.timeTbc&&!a.endTbc&&a.endTime<=a.time) return bad("End time must be after the start time.");
       if(a.inPerson===""&&a.online==="") return bad("Please enter how many in person and/or online attendees you expect.");
       if(Number(a.online)>0&&!a.onlineWho) return bad("Please say who is watching the online stream.");
@@ -768,6 +800,7 @@ var fp=document.getElementById("field-pattern"); if(fp) fp.outerHTML=fieldSvg();
 
 loadDraft();
 render();
+loadBlackouts();
 })();
 </script>
 </body>

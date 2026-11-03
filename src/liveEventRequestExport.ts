@@ -27,6 +27,16 @@ function submitUrl(): string {
   );
 }
 
+// Where the form reads the no-booking periods: the public copy Waypoint
+// keeps under the current token (see publishLiveEventPublic).
+function publicUrl(token: string): string {
+  const { projectId, apiKey } = firebaseConfig;
+  return (
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
+    `/documents/liveEventPublic/${encodeURIComponent(token)}?key=${apiKey}`
+  );
+}
+
 // The mailboxes the form names: the team's own unless Settings says
 // otherwise.
 export function intakeEmails(intake: LiveEventIntake): { teamEmail: string; facilitiesEmail: string } {
@@ -56,6 +66,7 @@ export function liveEventFormHtml(intake: LiveEventIntake, token: string): strin
     __LER_TITLE__: escapeHtml("Live Event Request"),
     __LER_SUBMIT_URL__: jsLiteral(submitUrl()),
     __LER_TOKEN__: jsLiteral(token),
+    __LER_PUBLIC_URL__: jsLiteral(publicUrl(token)),
     __LER_TEAM_EMAIL__: jsLiteral(teamEmail),
     __LER_FACILITIES_EMAIL__: jsLiteral(facilitiesEmail),
     __LER_LINKS__: jsLiteral({
