@@ -42,10 +42,17 @@ type Props = {
 };
 
 // The shell nav (design system §7 "Tiles & app navigation"): plain line
-// icons, no coloured tiles. Each team board is a folder.
-const VIEW_NAV: { view: SidebarView; label: string; icon: IconName }[] = [
-  { view: "executiveDashboard", label: "Executive Dashboard", icon: "presentation-board-chart-graph" },
-  { view: "bigRocks", label: "Big Rocks", icon: "flag" },
+// icons, no coloured tiles. Each team board is a folder. A view with
+// `children` nests them beneath it, and stays highlighted while a child
+// is open.
+type NavItem = { view: SidebarView; label: string; icon: IconName; children?: NavItem[] };
+const VIEW_NAV: NavItem[] = [
+  {
+    view: "executiveDashboard",
+    label: "Executive Dashboard",
+    icon: "presentation-board-chart-graph",
+    children: [{ view: "bigRocks", label: "Big Rocks", icon: "flag" }],
+  },
   { view: "campaigns", label: "Campaigns", icon: "target" },
   { view: "events", label: "Events", icon: "calendar" },
   { view: "socialCalendar", label: "Social calendar", icon: "file" },
@@ -53,10 +60,10 @@ const VIEW_NAV: { view: SidebarView; label: string; icon: IconName }[] = [
   { view: "archived", label: "Archived", icon: "archive-documents-box-big" },
 ];
 
-function NavIcon({ name }: { name: IconName }) {
+function NavIcon({ name, size = 20 }: { name: IconName; size?: number }) {
   return (
     <span className="nav-icon" aria-hidden>
-      <Icon name={name} size={20} />
+      <Icon name={name} size={size} />
     </span>
   );
 }
@@ -170,18 +177,37 @@ export function Sidebar({
 
         {!collapsed && <div className="nav-section">View</div>}
         <ul className="designer-list">
-          {VIEW_NAV.map((item) => (
-            <li key={item.view}>
-              <button
-                className={`designer-btn ${view === item.view ? "active" : ""}`}
-                onClick={() => onSelectView(item.view)}
-                title={item.label}
-              >
-                <NavIcon name={item.icon} />
-                {!collapsed && <span className="designer-name">{item.label}</span>}
-              </button>
-            </li>
-          ))}
+          {VIEW_NAV.map((item) => {
+            const childOpen = item.children?.some((c) => c.view === view) ?? false;
+            return (
+              <li key={item.view}>
+                <button
+                  className={`designer-btn ${view === item.view || childOpen ? "active" : ""}`}
+                  onClick={() => onSelectView(item.view)}
+                  title={item.label}
+                >
+                  <NavIcon name={item.icon} />
+                  {!collapsed && <span className="designer-name">{item.label}</span>}
+                </button>
+                {item.children && (
+                  <ul className="designer-sublist">
+                    {item.children.map((c) => (
+                      <li key={c.view}>
+                        <button
+                          className={`designer-btn designer-sub ${view === c.view ? "active" : ""}`}
+                          onClick={() => onSelectView(c.view)}
+                          title={c.label}
+                        >
+                          <NavIcon name={c.icon} size={16} />
+                          {!collapsed && <span className="designer-name">{c.label}</span>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
