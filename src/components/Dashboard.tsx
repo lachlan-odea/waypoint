@@ -1,8 +1,9 @@
 import { useMemo, type ReactNode } from "react";
-import type { Campaign, MarketingEvent, SocialPost, WorkspaceData } from "../types";
+import type { BigRock, Campaign, MarketingEvent, SocialPost, WorkspaceData } from "../types";
 import type { SidebarView } from "./Sidebar";
 import { PROJECT_STATUSES, projectStatusLabel, socialStatusMeta, brandColor } from "../constants";
 import { PHASE_LABEL, campaignPhase } from "../campaigns";
+import { rockWork, unattributed } from "../bigRocks";
 import { checklistDone, eventPhase, eventStatusMeta, followUpMissing, formatEventDates, formatUsd, EVENT_CHECKLIST } from "../events";
 import { STAGE_LABEL, kitName, kitOf, kitState } from "../webinarKit";
 import { socialPostTitle } from "../socialPosts";
@@ -22,6 +23,7 @@ type Props = {
   campaigns: Campaign[];
   events: MarketingEvent[];
   socialPosts: SocialPost[];
+  bigRocks: BigRock[];
   currentDesignerId: string;
   onOpenProject: (id: string) => void;
   onOpenCampaign: (id: string, tab?: string) => void;
@@ -31,9 +33,10 @@ type Props = {
   onOpenView: (view: SidebarView) => void;
   // The Campaigns page, already on its Webinars view.
   onOpenWebinars: () => void;
+  onOpenBigRocks: () => void;
 };
 
-export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCampaign, onOpenEvent, onOpenSocialPost, onOpenBoard, onOpenView, onOpenWebinars }: Props) {
+export function Dashboard({ workspace, campaigns, events, socialPosts, bigRocks, onOpenCampaign, onOpenEvent, onOpenSocialPost, onOpenBoard, onOpenView, onOpenWebinars, onOpenBigRocks }: Props) {
   const today = todayIso();
   const in7 = shiftIso(today, 7);
   const in30 = shiftIso(today, 30);
@@ -116,8 +119,81 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, onOpenCam
 
   const statusMix = PROJECT_STATUSES.map((s) => ({ s, n: projects.filter((p) => (p.status ?? "active") === s.value).length }));
 
+  // ── Big Rocks ───────────────────────────────────────────────────────────
+  const isLiveProject = (p: { archived?: boolean; status?: string }) => !p.archived && ["active", "planning"].includes(p.status ?? "active");
+  const rockWorks = bigRocks.map((r) => rockWork(r, { projects: workspace.projects, campaigns, socialPosts, events }));
+  const rockRows = rockWorks
+    .filter((w) => !w.rock.retired)
+    .map((w) => ({
+      w,
+      live: w.projects.filter(isLiveProject).length,
+      open: [...w.campaigns, ...w.webinars].filter((c) => campaignPhase(c, today) !== "finished").length,
+      published: w.posts.filter((p) => p.status === "published").length,
+    }));
+  const offRock = unattributed(rockWorks, { projects: workspace.projects, campaigns }).projects.filter(isLiveProject).length;
+  const maxRockLive = Math.max(1, offRock, ...rockRows.map((r) => r.live));
+
   return (
     <div className="an ex">
+      {/* ── Big Rocks ─────────────────────────────────────────────────── */}
+      <Section
+        eyebrow="What the work is for"
+        title="Big Rocks"
+        summary={
+          bigRocks.length
+            ? `${rockRows.length} in play · ${offRock} live project${offRock === 1 ? "" : "s"} on no rock`
+            : "The team's strategic priorities, once they're defined"
+        }
+      >
+        {rockRows.length === 0 ? (
+          <div className="an-panel ex-rocks">
+            <div className="an-panel-body">
+              <Empty>No Big Rocks defined yet. A super user sets them in Settings → Big Rocks; campaigns and projects can then be tagged with the rock they serve.</Empty>
+            </div>
+          </div>
+        ) : (
+          <div className="ex-rocks">
+            {rockRows.map(({ w, live, open, published }) => (
+              <button
+                key={w.rock.id}
+                type="button"
+                className="ex-rock"
+                style={{ ["--rock" as string]: w.rock.color } as React.CSSProperties}
+                onClick={onOpenBigRocks}
+                title={`${w.rock.name} on the Big Rocks page`}
+              >
+                <span className="ex-rock-head">
+                  <b>{w.rock.name}</b>
+                  {w.rock.description && <span className="ex-rock-desc">{w.rock.description}</span>}
+                </span>
+                <span className="ex-rock-nums">
+                  <RockNum n={live} label="live projects" />
+                  <RockNum n={open} label="open campaigns" />
+                  <RockNum n={w.webinars.length} label="webinars" />
+                  <RockNum n={published} label="posts published" />
+                  <RockNum n={w.events.length} label="events" />
+                </span>
+                <span className="ex-rock-track" aria-hidden="true">
+                  <i style={{ width: `${(live / maxRockLive) * 100}%` }} />
+                </span>
+              </button>
+            ))}
+            <button type="button" className="ex-rock ex-rock-none" onClick={onOpenBigRocks} title="Live work on no rock, on the Big Rocks page">
+              <span className="ex-rock-head">
+                <b>Not on any rock</b>
+                <span className="ex-rock-desc">Live work nothing claims. Tag it from its Details tab.</span>
+              </span>
+              <span className="ex-rock-nums">
+                <RockNum n={offRock} label="live projects" alert />
+              </span>
+              <span className="ex-rock-track" aria-hidden="true">
+                <i style={{ width: `${(offRock / maxRockLive) * 100}%` }} />
+              </span>
+            </button>
+          </div>
+        )}
+      </Section>
+
       {/* ── The numbers ────────────────────────────────────────────────── */}
       <div className="an-stats ex-stats">
         <Stat label="Live projects" value={live.length} icon="folder" tone="sky" onClick={() => onOpenView("analytics")} />
@@ -386,6 +462,17 @@ function Stat({ label, value, icon, tone, alert, onClick }: { label: string; val
         <span className="an-stat-value">{value.toLocaleString()}</span>
       </div>
     </Tag>
+  );
+}
+
+// One figure on a Big Rock card. A zero is shown but recedes, so the eye
+// lands on the rocks with work behind them.
+function RockNum({ n, label, alert }: { n: number; label: string; alert?: boolean }) {
+  return (
+    <span className={`ex-rock-num ${n === 0 ? "zero" : ""} ${alert && n > 0 ? "alert" : ""}`}>
+      <b className="mono">{n}</b>
+      <small>{label}</small>
+    </span>
   );
 }
 

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Designer, Hub, SocialConfig, Workspace } from "../types";
+import type { BigRock, Designer, Hub, SocialConfig, Workspace } from "../types";
 import { changePassword } from "../firebase";
 import { Avatar } from "./Avatar";
 import { ManageSocialModal } from "./ManageSocialModal";
+import { ManageBigRocksModal } from "./ManageBigRocksModal";
 import { APP_BUILT_AT, versionLabel } from "../version";
 import {
   DEFAULT_WORK_END_HOUR,
@@ -40,6 +41,11 @@ type Props = {
   socialCategoryUsage: Map<string, number>;
   onSaveSocialConfig: (config: SocialConfig) => Promise<void>;
   onRelabelSocialCategory: (oldLabel: string, newLabel: string) => Promise<number>;
+  // The Big Rocks, how many projects and campaigns carry each, and the
+  // batch save behind the editor. Super users edit them from here.
+  bigRocks: BigRock[];
+  bigRockUsage: Map<string, number>;
+  onSaveBigRocks: (rocks: BigRock[], removedIds: string[]) => Promise<void>;
   darkMode: boolean;
   onDarkModeChange: (enabled: boolean) => void;
   textSize: "small" | "default" | "large";
@@ -93,6 +99,9 @@ export function SettingsModal({
   socialCategoryUsage,
   onSaveSocialConfig,
   onRelabelSocialCategory,
+  bigRocks,
+  bigRockUsage,
+  onSaveBigRocks,
   darkMode,
   onDarkModeChange,
   textSize,
@@ -117,17 +126,18 @@ export function SettingsModal({
   const [manageUsersOpen, setManageUsersOpen] = useState(false);
   const [manageHubsOpen, setManageHubsOpen] = useState(false);
   const [manageSocialOpen, setManageSocialOpen] = useState(false);
+  const [manageRocksOpen, setManageRocksOpen] = useState(false);
 
   useEffect(() => {
     // Suspend the Settings Escape handler while a sub-modal is up — that
     // modal owns Escape until it's closed.
-    if (manageUsersOpen || manageHubsOpen || manageSocialOpen) return;
+    if (manageUsersOpen || manageHubsOpen || manageSocialOpen || manageRocksOpen) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, manageUsersOpen, manageHubsOpen, manageSocialOpen]);
+  }, [onClose, manageUsersOpen, manageHubsOpen, manageSocialOpen, manageRocksOpen]);
 
   const myHub = hubs.find((h) => h.id === currentDesigner.hubId);
 
@@ -211,6 +221,37 @@ export function SettingsModal({
                   onClick={() => setManageSocialOpen(true)}
                 >
                   Manage types &amp; tags →
+                </button>
+              </div>
+            </section>
+          )}
+
+          {isSuperUser && (
+            <section className="modal-section">
+              <h3>Big Rocks</h3>
+              <p className="muted small">
+                The few things the team is working towards. Campaigns and
+                projects are tagged with the rock they serve, and the Big Rocks
+                page reports what has been done for each. Opens in a dedicated
+                window.
+              </p>
+              {bigRocks.length > 0 && (
+                <div className="hub-summary">
+                  {bigRocks.map((r) => (
+                    <span key={r.id} className="hub-summary-item rock-tag">
+                      <i className="rock-dot" style={{ background: r.color }} aria-hidden="true" />
+                      {r.name}
+                      {r.retired ? " · retired" : ""}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="section-actions">
+                <button
+                  className="primary"
+                  onClick={() => setManageRocksOpen(true)}
+                >
+                  Manage Big Rocks →
                 </button>
               </div>
             </section>
@@ -406,6 +447,15 @@ export function SettingsModal({
           onSaveHub={onSaveHub}
           onDeleteHub={onDeleteHub}
           onClose={() => setManageHubsOpen(false)}
+        />
+      )}
+
+      {manageRocksOpen && (
+        <ManageBigRocksModal
+          rocks={bigRocks}
+          usage={bigRockUsage}
+          onSave={onSaveBigRocks}
+          onClose={() => setManageRocksOpen(false)}
         />
       )}
 

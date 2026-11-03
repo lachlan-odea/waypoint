@@ -11,6 +11,7 @@ import { NewMenu, type NewKind } from "./NewMenu";
 export type SidebarView =
   | "myDesk"
   | "executiveDashboard"
+  | "bigRocks"
   | "board"
   | "campaigns"
   | "events"
@@ -44,6 +45,7 @@ type Props = {
 // icons, no coloured tiles. Each team board is a folder.
 const VIEW_NAV: { view: SidebarView; label: string; icon: IconName }[] = [
   { view: "executiveDashboard", label: "Executive Dashboard", icon: "presentation-board-chart-graph" },
+  { view: "bigRocks", label: "Big Rocks", icon: "flag" },
   { view: "campaigns", label: "Campaigns", icon: "target" },
   { view: "events", label: "Events", icon: "calendar" },
   { view: "socialCalendar", label: "Social calendar", icon: "file" },

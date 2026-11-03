@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ActivityPortalLink } from "./ActivityPortalLink";
 import type {
+  BigRock,
   Campaign,
   Designer,
   MilestoneType,
@@ -50,6 +51,8 @@ type Props = {
   // Board projects a campaign can link as contributing to it.
   projects: Project[];
   workspaces: Workspace[];
+  // The Big Rocks a new campaign can be tagged with.
+  bigRocks: BigRock[];
   onOpenProject: (projectId: string) => void;
   // Open a campaign as its own page (hash route in App.tsx), optionally
   // on a tab or kit section. Editing happens there; this view only creates.
@@ -136,6 +139,7 @@ export function CampaignsView({
   designers,
   projects,
   workspaces,
+  bigRocks,
   onOpenProject,
   onOpenCampaign,
   currentDesignerId,
@@ -878,6 +882,7 @@ export function CampaignsView({
           designers={designers}
           projects={projects}
           workspaces={workspaces}
+          bigRocks={bigRocks}
           onOpenProject={openProject}
           socialPosts={socialPosts}
           onOpenSocialPost={openSocialPost}

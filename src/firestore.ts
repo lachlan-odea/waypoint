@@ -16,6 +16,7 @@ import { db } from "./firebase";
 import { DEFAULT_WORKSPACE_ID, SEED_HUBS, SEED_WORKSPACES } from "./constants";
 import type {
   ActivityShare,
+  BigRock,
   Campaign,
   Designer,
   DeskItem,
@@ -48,6 +49,7 @@ const socialConfigDoc = () => doc(collection(db, "socialConfig"), "default");
 const campaignsCol = () => collection(db, "campaigns");
 const eventsCol = () => collection(db, "events");
 const speakersCol = () => collection(db, "speakers");
+const bigRocksCol = () => collection(db, "bigRocks");
 
 // Backfill missing workspaceId on legacy docs that predate the multi-
 // workspace feature. They all belonged to the original Design workspace.
@@ -859,6 +861,54 @@ export async function setSpeaker(speaker: Speaker): Promise<void> {
 
 export async function deleteSpeaker(id: string): Promise<void> {
   await deleteDoc(doc(speakersCol(), id));
+}
+
+// ── Big Rocks ──────────────────────────────────────────────────────────
+// The marketing team's strategic priorities (BigRock in types.ts). A
+// handful of documents, needed wherever a rock is picked or reported on,
+// so one subscription, in list order.
+
+export function subscribeBigRocks(
+  onChange: (rocks: BigRock[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    bigRocksCol(),
+    (snap) =>
+      onChange(
+        snap.docs
+          .map((d) => d.data() as BigRock)
+          .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name)),
+      ),
+    onError,
+  );
+}
+
+// The Settings editor saves the whole list at once: every rock as it now
+// stands, the removed ones deleted, and their ids taken off every project
+// and campaign that carried them — one batch, so a half-applied edit is
+// impossible. Removing a rock un-attributes its work; retiring it (the
+// `retired` flag) keeps that, which is why the editor offers both.
+export async function saveBigRocks(
+  rocks: BigRock[],
+  removedIds: string[],
+): Promise<void> {
+  const batch = writeBatch(db);
+  rocks.forEach((r) => batch.set(doc(bigRocksCol(), r.id), r));
+  removedIds.forEach((id) => batch.delete(doc(bigRocksCol(), id)));
+  if (removedIds.length > 0) {
+    const removed = new Set(removedIds);
+    const [projectsSnap, campaignsSnap] = await Promise.all([
+      getDocs(projectsCol()),
+      getDocs(campaignsCol()),
+    ]);
+    [...projectsSnap.docs, ...campaignsSnap.docs].forEach((d) => {
+      const ids = (d.data() as { bigRockIds?: string[] }).bigRockIds;
+      if (!ids?.some((id) => removed.has(id))) return;
+      batch.update(d.ref, { bigRockIds: ids.filter((id) => !removed.has(id)) });
+    });
+  }
+  await batch.commit();
 }
 
 // ── The marketing activity page ────────────────────────────────────────

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Designer, Priority, Project, Workspace } from "../types";
+import type { BigRock, Designer, Priority, Project, Workspace } from "../types";
 import { BRANDS } from "../constants";
 import { ContentTypeField } from "./ContentTypeField";
+import { BigRockPicker } from "./BigRockPicker";
 import { projectContentTypes } from "../contentTypes";
 import { AssigneePicker } from "./AssigneePicker";
 import { Icon } from "./Icon";
@@ -17,6 +18,8 @@ type Props = {
   initial?: Partial<Project>;
   // Content types on offer, from Settings → Types & tags.
   contentTypeOptions: readonly string[];
+  // The Big Rocks on offer for the project to serve.
+  bigRocks: BigRock[];
   onCancel: () => void;
   onCreate: (project: Project) => void;
 };
@@ -30,6 +33,7 @@ export function CreateProjectModal({
   defaultAssigneeId,
   initial,
   contentTypeOptions,
+  bigRocks,
   onCancel,
   onCreate,
 }: Props) {
@@ -57,6 +61,7 @@ export function CreateProjectModal({
       return initial.assigneeIds;
     return defaultAssigneeId ? [defaultAssigneeId] : [];
   });
+  const [bigRockIds, setBigRockIds] = useState<string[]>(initial?.bigRockIds ?? []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -96,6 +101,7 @@ export function CreateProjectModal({
       dueDate,
       priority,
       assigneeIds,
+      bigRockIds: bigRockIds.length ? bigRockIds : undefined,
       milestones: initial?.milestones ?? [],
       comments: initial?.comments ?? [],
       createdAt: initial?.createdAt ?? new Date().toISOString(),
@@ -203,6 +209,16 @@ export function CreateProjectModal({
                 </span>
               )}
             </label>
+            {/* A div, not a label: a label's click would land on the first
+                chip and toggle it. */}
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
+              <span>Big Rocks</span>
+              <BigRockPicker rocks={bigRocks} value={bigRockIds} onChange={setBigRockIds} />
+              <span className="field-hint">
+                Which of the team's Big Rocks this project serves. Optional — a
+                project linked to a campaign takes the campaign's rocks on its own.
+              </span>
+            </div>
           </div>
         </div>
         <footer className="modal-foot">

@@ -104,6 +104,10 @@ export type Project = {
   // `flaggedForReview` — a project is "flagged" iff reviewerIds is non-empty,
   // and each reviewer only sees projects where their own UID is in this list.
   reviewerIds?: string[];
+  // The Big Rocks this project serves (BigRock ids). A project linked to a
+  // campaign also counts towards that campaign's rocks without being tagged
+  // itself — see src/bigRocks.ts.
+  bigRockIds?: string[];
   status?: ProjectStatus;
   archived?: boolean;
   milestones: Milestone[];
@@ -359,6 +363,32 @@ export type Campaign = {
   // files, notes and activity. See webinarKit.ts. Lives on the campaign
   // document so one subscription brings the whole pipeline.
   webinar?: WebinarKit;
+  // The Big Rocks this campaign serves (BigRock ids). Its contributing
+  // projects, its milestones' posts and its events are attributed to those
+  // rocks through it — see src/bigRocks.ts.
+  bigRockIds?: string[];
+  createdAt: string;
+};
+
+// A Big Rock: one of the few things the marketing team is working towards,
+// as the Head of Marketing defines them in Settings → Big Rocks. Campaigns
+// and projects carry the rocks they serve (bigRockIds); social posts,
+// webinars and events are attributed through those (src/bigRocks.ts), so
+// the Big Rocks page can say what has been done for each. Stored in
+// /bigRocks, shared by everyone; written only by super users (UI-gated,
+// like the other shared config).
+export type BigRock = {
+  id: string;
+  name: string;
+  // A line or two on what the rock is and what done looks like.
+  description: string;
+  // Hex colour for the rock's dot and chip, so it reads the same everywhere.
+  color: string;
+  // Position in the list, lowest first.
+  order: number;
+  // A rock the team has finished with. Kept so the work done for it still
+  // reports; left out of the pickers unless already chosen.
+  retired?: boolean;
   createdAt: string;
 };
 

@@ -69,6 +69,12 @@ service cloud.firestore {
     match /speakers/{speakerId} {
       allow read, write: if request.auth != null;
     }
+    // The marketing team's Big Rocks (strategic priorities). Read by every
+    // signed-in user; written from Settings by super users, gated in the
+    // UI like the other shared configuration.
+    match /bigRocks/{rockId} {
+      allow read, write: if request.auth != null;
+    }
     // Public copies of campaigns shared as a SharePoint page, keyed by the
     // campaign's random shareToken (see src/campaignExport.ts). The page is
     // opened by people who aren't signed in, so a document can be read by

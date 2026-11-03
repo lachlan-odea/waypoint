@@ -16,7 +16,7 @@ const NEW: TourStep = {
 const NAV: TourStep = {
   target: ".sidebar-nav",
   title: "Get around from the sidebar",
-  body: "Teams are the boards; the views below them are the shared plans: Executive Dashboard, Campaigns, Events, the Social calendar, Analytics and the Archive. Drag a project card onto a team to move it there.",
+  body: "Teams are the boards; the views below them are the shared plans: Executive Dashboard, Big Rocks, Campaigns, Events, the Social calendar, Analytics and the Archive. Drag a project card onto a team to move it there.",
 };
 
 const TOURS: Record<string, Tour> = {
@@ -46,10 +46,21 @@ const TOURS: Record<string, Tour> = {
   executiveDashboard: {
     title: "Executive Dashboard",
     steps: [
+      { target: ".ex-rocks", title: "Big Rocks", body: "First, what the work is for: the team's strategic priorities, each with the live projects, open campaigns, published posts and events serving it, and how much live work is on no rock at all. Opens the Big Rocks page." },
       { target: ".ex-stats", title: "The numbers", body: "Across every team and programme: live projects, overdue, due this week, awaiting review, live campaigns, webinars in flight, events in the next 30 days and posts this week. Tiles with a pointer open the page behind them." },
       { target: ".ex-grid-4", title: "Programmes", body: "Live and launching campaigns with their next milestone, webinars by stage with each one's health, events with the year's spend, conversations, opportunities and follow-ups owed, and the Social calendar's month by status with what's going out this week. Every row opens the item." },
       { target: ".ex-teams", title: "Teams and projects", body: "One row per team: live work, overdue, due this week, in review, planning, on hold, done, and live projects per person. Click a team to open its board. Beside it, every project on the boards by status, with overdue, due, review, urgent and unassigned at a glance." },
       NEW,
+    ],
+  },
+  bigRocks: {
+    title: "Big Rocks",
+    steps: [
+      { target: ".br-stats", title: "The numbers", body: "How many rocks are in play, how much of the live work — projects and campaigns — serves one, the webinars and posts attributed, and how much live work is on no rock. Click that last tile to see what it is." },
+      { target: ".br-table", title: "The rocks", body: "One row per Big Rock: live projects as a bar, then every project, campaigns, webinars, posts (and how many are published) and events. A project counts when it's tagged with the rock or contributes to one of the rock's campaigns; posts, webinars and events follow from those. Click a row for its lists." },
+      { target: ".br-detail", title: "What's been done for it", body: "The rock's projects (marked “via campaign” when they come through one), its campaigns and webinars, its social posts and its events. Every row opens the item. Tag a campaign or project with a rock from its Details tab; super users define the rocks from Manage Big Rocks or Settings." },
+      NEW,
+      NAV,
     ],
   },
   campaigns: {
