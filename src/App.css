@@ -689,43 +689,66 @@ textarea {
   background: rgba(55, 30, 225, 0.08);
   color: var(--primary);
 }
-/* Views nested under another (Big Rocks under Executive Dashboard): a
-   smaller row, indented along a hairline from the parent. The parent
-   stays highlighted while a child is open. */
-.designer-sublist {
-  list-style: none;
-  margin: 2px 0 0;
-  padding: 0 0 0 18px;
+/* Views nested under another (Big Rocks under Executive Dashboard) open
+   in a flyout beside the row on hover, focus or →, like the + New menu's
+   Webinar. The parent carries a caret and stays highlighted while a child
+   is open. The flyout's ::before bridges the gap to the row, so the
+   pointer can cross without the flyout closing. */
+.nav-li {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }
-.designer-sublist::before {
+.nav-flyout {
+  display: none;
+  top: 0;
+}
+.nav-li:hover > .nav-flyout,
+.nav-li:focus-within > .nav-flyout,
+.nav-li.flyout-open > .nav-flyout {
+  display: block;
+}
+.nav-flyout::before {
   content: "";
   position: absolute;
-  left: 19px;
   top: 0;
-  bottom: 6px;
-  width: 1px;
-  background: var(--border);
+  bottom: 0;
+  right: 100%;
+  width: 8px;
 }
-.designer-btn.designer-sub {
-  min-height: 34px;
-  font-size: 13px;
+.nav-caret {
+  margin-left: auto;
+  flex: 0 0 auto;
+  opacity: 0.6;
 }
-.designer-btn.designer-sub .designer-name {
-  font-size: 13px;
+.nav-flyout .new-menu-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.designer-btn.designer-sub .nav-icon {
-  width: 16px;
-  height: 16px;
+.nav-flyout .new-menu-item:hover {
+  background: var(--surface-2);
 }
-.sidebar.collapsed .designer-sublist {
-  padding-left: 0;
+.nav-flyout .new-menu-item.active {
+  background: var(--cobalt-050);
+  color: var(--primary);
 }
-.sidebar.collapsed .designer-sublist::before {
-  display: none;
+.nav-flyout .new-menu-item.active .new-menu-hint {
+  color: var(--primary);
+  opacity: 0.8;
+}
+.sidebar.collapsed .nav-flyout {
+  left: calc(100% + 8px);
+}
+@media (max-width: 720px) {
+  /* The drawer has no hover: the child sits under its parent instead. */
+  .nav-flyout {
+    display: block;
+    position: static;
+    margin: 2px 0 2px 10px;
+    min-width: 0;
+  }
+  .nav-flyout::before {
+    display: none;
+  }
 }
 .dot-avatar {
   width: 28px;
