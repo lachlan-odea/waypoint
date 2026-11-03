@@ -130,8 +130,8 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, bigRocks,
       open: [...w.campaigns, ...w.webinars].filter((c) => campaignPhase(c, today) !== "finished").length,
       published: w.posts.filter((p) => p.status === "published").length,
     }));
-  const maxRockLive = Math.max(1, ...rockRows.map((r) => r.live));
   const offRock = unattributed(rockWorks, { projects: workspace.projects, campaigns }).projects.filter(isLiveProject).length;
+  const maxRockLive = Math.max(1, offRock, ...rockRows.map((r) => r.live));
 
   return (
     <div className="an ex">
@@ -145,42 +145,53 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, bigRocks,
             : "The team's strategic priorities, once they're defined"
         }
       >
-        <div className="an-grid ex-grid-1">
-          <Panel
-            title="By Big Rock"
-            className="ex-rocks"
-            aside={
-              <button type="button" className="link-btn" onClick={onOpenBigRocks}>
-                The Big Rocks page
-              </button>
-            }
-          >
-            {rockRows.length === 0 ? (
+        {rockRows.length === 0 ? (
+          <div className="an-panel ex-rocks">
+            <div className="an-panel-body">
               <Empty>No Big Rocks defined yet. A super user sets them in Settings → Big Rocks; campaigns and projects can then be tagged with the rock they serve.</Empty>
-            ) : (
-              <ul className="ex-list">
-                {rockRows.map(({ w, live, open, published }) => (
-                  <li key={w.rock.id}>
-                    <button type="button" className="ex-row" onClick={onOpenBigRocks}>
-                      <i className="an-swatch" style={{ background: w.rock.color }} />
-                      <span className="ex-row-main">
-                        <b>{w.rock.name}</b>
-                        <span className="ex-row-sub">
-                          {live} live project{live === 1 ? "" : "s"} · {open} open campaign{open === 1 ? "" : "s"}
-                          {w.webinars.length ? ` (${w.webinars.length} webinar${w.webinars.length === 1 ? "" : "s"})` : ""} · {published} post{published === 1 ? "" : "s"} published · {w.events.length} event{w.events.length === 1 ? "" : "s"}
-                        </span>
-                      </span>
-                      <span className="ex-bar" title={`${live} live project${live === 1 ? "" : "s"}`}>
-                        <i style={{ width: `${(live / maxRockLive) * 100}%`, background: w.rock.color }} />
-                        <span className="mono">{live}</span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel>
-        </div>
+            </div>
+          </div>
+        ) : (
+          <div className="ex-rocks">
+            {rockRows.map(({ w, live, open, published }) => (
+              <button
+                key={w.rock.id}
+                type="button"
+                className="ex-rock"
+                style={{ ["--rock" as string]: w.rock.color } as React.CSSProperties}
+                onClick={onOpenBigRocks}
+                title={`${w.rock.name} on the Big Rocks page`}
+              >
+                <span className="ex-rock-head">
+                  <b>{w.rock.name}</b>
+                  {w.rock.description && <span className="ex-rock-desc">{w.rock.description}</span>}
+                </span>
+                <span className="ex-rock-nums">
+                  <RockNum n={live} label="live projects" />
+                  <RockNum n={open} label="open campaigns" />
+                  <RockNum n={w.webinars.length} label="webinars" />
+                  <RockNum n={published} label="posts published" />
+                  <RockNum n={w.events.length} label="events" />
+                </span>
+                <span className="ex-rock-track" aria-hidden="true">
+                  <i style={{ width: `${(live / maxRockLive) * 100}%` }} />
+                </span>
+              </button>
+            ))}
+            <button type="button" className="ex-rock ex-rock-none" onClick={onOpenBigRocks} title="Live work on no rock, on the Big Rocks page">
+              <span className="ex-rock-head">
+                <b>Not on any rock</b>
+                <span className="ex-rock-desc">Live work nothing claims. Tag it from its Details tab.</span>
+              </span>
+              <span className="ex-rock-nums">
+                <RockNum n={offRock} label="live projects" alert />
+              </span>
+              <span className="ex-rock-track" aria-hidden="true">
+                <i style={{ width: `${(offRock / maxRockLive) * 100}%` }} />
+              </span>
+            </button>
+          </div>
+        )}
       </Section>
 
       {/* ── The numbers ────────────────────────────────────────────────── */}
@@ -451,6 +462,17 @@ function Stat({ label, value, icon, tone, alert, onClick }: { label: string; val
         <span className="an-stat-value">{value.toLocaleString()}</span>
       </div>
     </Tag>
+  );
+}
+
+// One figure on a Big Rock card. A zero is shown but recedes, so the eye
+// lands on the rocks with work behind them.
+function RockNum({ n, label, alert }: { n: number; label: string; alert?: boolean }) {
+  return (
+    <span className={`ex-rock-num ${n === 0 ? "zero" : ""} ${alert && n > 0 ? "alert" : ""}`}>
+      <b className="mono">{n}</b>
+      <small>{label}</small>
+    </span>
   );
 }
 
