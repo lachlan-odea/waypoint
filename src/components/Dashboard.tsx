@@ -135,6 +135,54 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, bigRocks,
 
   return (
     <div className="an ex">
+      {/* ── Big Rocks ─────────────────────────────────────────────────── */}
+      <Section
+        eyebrow="What the work is for"
+        title="Big Rocks"
+        summary={
+          bigRocks.length
+            ? `${rockRows.length} in play · ${offRock} live project${offRock === 1 ? "" : "s"} on no rock`
+            : "The team's strategic priorities, once they're defined"
+        }
+      >
+        <div className="an-grid ex-grid-1">
+          <Panel
+            title="By Big Rock"
+            className="ex-rocks"
+            aside={
+              <button type="button" className="link-btn" onClick={onOpenBigRocks}>
+                The Big Rocks page
+              </button>
+            }
+          >
+            {rockRows.length === 0 ? (
+              <Empty>No Big Rocks defined yet. A super user sets them in Settings → Big Rocks; campaigns and projects can then be tagged with the rock they serve.</Empty>
+            ) : (
+              <ul className="ex-list">
+                {rockRows.map(({ w, live, open, published }) => (
+                  <li key={w.rock.id}>
+                    <button type="button" className="ex-row" onClick={onOpenBigRocks}>
+                      <i className="an-swatch" style={{ background: w.rock.color }} />
+                      <span className="ex-row-main">
+                        <b>{w.rock.name}</b>
+                        <span className="ex-row-sub">
+                          {live} live project{live === 1 ? "" : "s"} · {open} open campaign{open === 1 ? "" : "s"}
+                          {w.webinars.length ? ` (${w.webinars.length} webinar${w.webinars.length === 1 ? "" : "s"})` : ""} · {published} post{published === 1 ? "" : "s"} published · {w.events.length} event{w.events.length === 1 ? "" : "s"}
+                        </span>
+                      </span>
+                      <span className="ex-bar" title={`${live} live project${live === 1 ? "" : "s"}`}>
+                        <i style={{ width: `${(live / maxRockLive) * 100}%`, background: w.rock.color }} />
+                        <span className="mono">{live}</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        </div>
+      </Section>
+
       {/* ── The numbers ────────────────────────────────────────────────── */}
       <div className="an-stats ex-stats">
         <Stat label="Live projects" value={live.length} icon="folder" tone="sky" onClick={() => onOpenView("analytics")} />
@@ -271,54 +319,6 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, bigRocks,
                         </span>
                       </span>
                       <StatusChip status={socialStatusTone(p.status)}>{socialStatusMeta(p.status).label}</StatusChip>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel>
-        </div>
-      </Section>
-
-      {/* ── Big Rocks ─────────────────────────────────────────────────── */}
-      <Section
-        eyebrow="What the work is for"
-        title="Big Rocks"
-        summary={
-          bigRocks.length
-            ? `${rockRows.length} in play · ${offRock} live project${offRock === 1 ? "" : "s"} on no rock`
-            : "The team's strategic priorities, once they're defined"
-        }
-      >
-        <div className="an-grid ex-grid-1">
-          <Panel
-            title="By Big Rock"
-            className="ex-rocks"
-            aside={
-              <button type="button" className="link-btn" onClick={onOpenBigRocks}>
-                The Big Rocks page
-              </button>
-            }
-          >
-            {rockRows.length === 0 ? (
-              <Empty>No Big Rocks defined yet. A super user sets them in Settings → Big Rocks; campaigns and projects can then be tagged with the rock they serve.</Empty>
-            ) : (
-              <ul className="ex-list">
-                {rockRows.map(({ w, live, open, published }) => (
-                  <li key={w.rock.id}>
-                    <button type="button" className="ex-row" onClick={onOpenBigRocks}>
-                      <i className="an-swatch" style={{ background: w.rock.color }} />
-                      <span className="ex-row-main">
-                        <b>{w.rock.name}</b>
-                        <span className="ex-row-sub">
-                          {live} live project{live === 1 ? "" : "s"} · {open} open campaign{open === 1 ? "" : "s"}
-                          {w.webinars.length ? ` (${w.webinars.length} webinar${w.webinars.length === 1 ? "" : "s"})` : ""} · {published} post{published === 1 ? "" : "s"} published · {w.events.length} event{w.events.length === 1 ? "" : "s"}
-                        </span>
-                      </span>
-                      <span className="ex-bar" title={`${live} live project${live === 1 ? "" : "s"}`}>
-                        <i style={{ width: `${(live / maxRockLive) * 100}%`, background: w.rock.color }} />
-                        <span className="mono">{live}</span>
-                      </span>
                     </button>
                   </li>
                 ))}

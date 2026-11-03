@@ -46,9 +46,9 @@ const TOURS: Record<string, Tour> = {
   executiveDashboard: {
     title: "Executive Dashboard",
     steps: [
+      { target: ".ex-rocks", title: "Big Rocks", body: "First, what the work is for: the team's strategic priorities, each with the live projects, open campaigns, published posts and events serving it, and how much live work is on no rock at all. Opens the Big Rocks page." },
       { target: ".ex-stats", title: "The numbers", body: "Across every team and programme: live projects, overdue, due this week, awaiting review, live campaigns, webinars in flight, events in the next 30 days and posts this week. Tiles with a pointer open the page behind them." },
       { target: ".ex-grid-4", title: "Programmes", body: "Live and launching campaigns with their next milestone, webinars by stage with each one's health, events with the year's spend, conversations, opportunities and follow-ups owed, and the Social calendar's month by status with what's going out this week. Every row opens the item." },
-      { target: ".ex-rocks", title: "Big Rocks", body: "The team's strategic priorities, each with the live projects, open campaigns, published posts and events serving it, and how much live work is on no rock at all. Opens the Big Rocks page." },
       { target: ".ex-teams", title: "Teams and projects", body: "One row per team: live work, overdue, due this week, in review, planning, on hold, done, and live projects per person. Click a team to open its board. Beside it, every project on the boards by status, with overdue, due, review, urgent and unassigned at a glance." },
       NEW,
     ],
