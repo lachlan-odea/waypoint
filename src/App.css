@@ -9369,3 +9369,363 @@ a.button-link:hover {
 .notif-alerts .btn {
   flex: none;
 }
+
+/* ── Live event requests (the Video board's panel and its modals) ───────── */
+.ler-panel .section-head-title {
+  align-items: center;
+}
+.ler-pending-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 11px;
+  background: var(--wp-status-review-bg);
+  color: var(--wp-status-review-fg);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.ler-head-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.ler-empty {
+  border: 1px dashed var(--ink-300);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.ler-empty p {
+  margin: 0;
+  max-width: 60ch;
+}
+.ler-filters {
+  margin-bottom: 14px;
+}
+.ler-filter-n {
+  margin-left: 4px;
+  opacity: 0.7;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.ler-none {
+  margin: 4px 0 8px;
+}
+.ler-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.ler-card {
+  --edge: var(--wp-status-review-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--edge);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  cursor: pointer;
+  min-width: 0;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.ler-card.approved {
+  --edge: var(--wp-status-live-fg);
+}
+.ler-card.declined {
+  --edge: var(--wp-status-blocked-fg);
+  opacity: 0.8;
+}
+.ler-card:hover {
+  border-color: var(--wtg-cobalt);
+  border-left-color: var(--edge);
+  background: var(--cobalt-050);
+}
+.ler-card:focus-visible {
+  outline: 2px solid var(--wtg-cobalt);
+  outline-offset: 2px;
+}
+.ler-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ler-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.ler-card-when {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wtg-blue);
+}
+.ler-card-when .muted {
+  font-weight: 500;
+}
+.ler-card-setup {
+  color: var(--text);
+  line-height: 1.45;
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+}
+.ler-card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+.ler-card-foot > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ler-flags {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--wp-status-scheduled-fg);
+  background: var(--wp-status-scheduled-bg);
+  padding: 0 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* The review modal */
+.ler-modal {
+  width: min(820px, 100%);
+}
+.ler-head-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ler-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ler-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+@media (max-width: 640px) {
+  .ler-tiles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.ler-tile {
+  background: var(--ink-50);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ler-tile strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.ler-setup {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.ler-attn {
+  background: var(--wp-status-scheduled-bg);
+  color: var(--wp-status-scheduled-fg);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+}
+.ler-attn .eyebrow {
+  color: inherit;
+  opacity: 0.8;
+}
+.ler-attn ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.ler-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.ler-block h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--wtg-blue);
+}
+.ler-block .field {
+  margin: 0 0 8px;
+}
+.ler-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ler-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+.ler-decided {
+  margin: 0 0 8px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ler-note {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--wtg-periwinkle);
+  background: var(--ink-50);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+.ler-details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.ler-details > summary {
+  cursor: pointer;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--wtg-cobalt);
+  list-style: none;
+}
+.ler-details > summary::-webkit-details-marker {
+  display: none;
+}
+.ler-details > summary::before {
+  content: "▶";
+  display: inline-block;
+  font-size: 10px;
+  margin-right: 8px;
+  transition: transform var(--dur) var(--ease);
+}
+.ler-details[open] > summary::before {
+  transform: rotate(90deg);
+}
+.ler-section {
+  padding: 0 14px 12px;
+}
+.ler-section h4 {
+  margin: 8px 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ler-kv {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+.ler-kv > div {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 2px 14px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+.ler-kv > div:last-child {
+  border-bottom: 0;
+}
+.ler-kv dt {
+  color: var(--muted);
+  font-weight: 600;
+}
+.ler-kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 560px) {
+  .ler-kv > div {
+    grid-template-columns: 1fr;
+  }
+}
+.ler-foot {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ler-foot .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ler-ref {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* The form set-up modal */
+.ler-form-modal {
+  width: min(760px, 100%);
+}
+.ler-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  margin: 8px 0 10px;
+}
+@media (max-width: 640px) {
+  .ler-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.ler-form-grid .field {
+  margin: 0;
+}
+.ler-retire {
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px dashed var(--ink-300);
+  border-radius: var(--radius);
+}
+.ler-retire h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.ler-retire p {
+  margin: 0 0 10px;
+}
+.ler-msg {
+  color: var(--wp-status-live-fg);
+}

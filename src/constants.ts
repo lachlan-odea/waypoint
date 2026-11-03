@@ -291,3 +291,10 @@ export const OUTLOOK_ADDIN_MANIFEST_URL =
 // file…" takes the downloaded manifest.
 export const OUTLOOK_ADDIN_STORE_URL =
   "https://outlook.cloud.microsoft/mail/inclientstore";
+
+// The team whose board carries the Live event requests panel (the requests
+// the SharePoint form sends in), and the mailboxes the form names unless
+// its settings say otherwise.
+export const LIVE_EVENT_REQUESTS_WORKSPACE_ID = "video";
+export const LIVE_EVENTS_TEAM_EMAIL = "Liveevents@wisetechglobal.com";
+export const FACILITIES_EMAIL = "facilities@wisetechglobal.com";

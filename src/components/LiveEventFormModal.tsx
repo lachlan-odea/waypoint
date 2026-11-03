@@ -1,0 +1,378 @@
+import { useEffect, useState } from "react";
+import type { LiveEventIntake } from "../types";
+import {
+  LIVE_EVENT_FORM_FILE_NAME,
+  downloadLiveEventForm,
+  intakeEmails,
+  newIntakeToken,
+} from "../liveEventRequestExport";
+import { timeAgo } from "../dates";
+import { Icon } from "./Icon";
+
+type Props = {
+  intake: LiveEventIntake;
+  onSaveIntake: (patch: LiveEventIntake) => Promise<void>;
+  onClose: () => void;
+};
+
+// Anything on SharePoint over https.
+function isSharePointUrl(value: string): boolean {
+  try {
+    const u = new URL(value.trim());
+    return u.protocol === "https:" && /(^|\.)sharepoint\.com$/i.test(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isHttpsUrl(value: string): boolean {
+  if (!value.trim()) return true;
+  try {
+    return new URL(value.trim()).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+type LinkField = {
+  key: "runsheetBlankUrl" | "runsheetExampleUrl" | "guideObsUrl" | "guidePhoneUrl";
+  label: string;
+  hint: string;
+};
+
+const LINK_FIELDS: LinkField[] = [
+  { key: "runsheetBlankUrl", label: "Blank runsheet", hint: "The .xlsx template people build their runsheet from." },
+  { key: "runsheetExampleUrl", label: "Example runsheet", hint: "The pre-filled example." },
+  { key: "guideObsUrl", label: "OBS and webcam guide", hint: "The recording setup PDF for OBS Studio and a webcam." },
+  { key: "guidePhoneUrl", label: "Phone guide", hint: "The recording setup PDF for filming on a phone." },
+];
+
+// Sets up the Live event request form: the mailboxes and resource links it
+// shows, a download of the form itself (as .aspx, for SharePoint), where
+// it lives once uploaded, and a way to retire every copy already out there
+// by issuing a new token. The settings are baked into the file at download,
+// so a change here means downloading and re-uploading the form.
+export function LiveEventFormModal({ intake, onSaveIntake, onClose }: Props) {
+  const defaults = intakeEmails(intake);
+  const [teamEmail, setTeamEmail] = useState(intake.teamEmail ?? "");
+  const [facilitiesEmail, setFacilitiesEmail] = useState(intake.facilitiesEmail ?? "");
+  const [links, setLinks] = useState<Record<LinkField["key"], string>>({
+    runsheetBlankUrl: intake.runsheetBlankUrl ?? "",
+    runsheetExampleUrl: intake.runsheetExampleUrl ?? "",
+    guideObsUrl: intake.guideObsUrl ?? "",
+    guidePhoneUrl: intake.guidePhoneUrl ?? "",
+  });
+  const [url, setUrl] = useState(intake.sharePointUrl ?? "");
+  const [busy, setBusy] = useState<"settings" | "download" | "link" | "rotate" | null>(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [downloaded, setDownloaded] = useState(false);
+  const [armRotate, setArmRotate] = useState(false);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!armRotate) return;
+    const t = setTimeout(() => setArmRotate(false), 5000);
+    return () => clearTimeout(t);
+  }, [armRotate]);
+
+  const settingsPatch = (): LiveEventIntake => ({
+    teamEmail: teamEmail.trim(),
+    facilitiesEmail: facilitiesEmail.trim(),
+    runsheetBlankUrl: links.runsheetBlankUrl.trim(),
+    runsheetExampleUrl: links.runsheetExampleUrl.trim(),
+    guideObsUrl: links.guideObsUrl.trim(),
+    guidePhoneUrl: links.guidePhoneUrl.trim(),
+  });
+
+  const settingsDirty =
+    teamEmail.trim() !== (intake.teamEmail ?? "").trim() ||
+    facilitiesEmail.trim() !== (intake.facilitiesEmail ?? "").trim() ||
+    LINK_FIELDS.some((f) => links[f.key].trim() !== (intake[f.key] ?? "").trim());
+  const linksValid = LINK_FIELDS.every((f) => isHttpsUrl(links[f.key]));
+  const emailsValid =
+    (!teamEmail.trim() || /^\S+@\S+\.\S+$/.test(teamEmail.trim())) &&
+    (!facilitiesEmail.trim() || /^\S+@\S+\.\S+$/.test(facilitiesEmail.trim()));
+
+  async function run<T>(what: typeof busy, fn: () => Promise<T>, done: string): Promise<T | undefined> {
+    setBusy(what);
+    setError("");
+    setMessage("");
+    try {
+      const out = await fn();
+      setMessage(done);
+      return out;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      return undefined;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function saveSettings() {
+    return run("settings", () => onSaveIntake(settingsPatch()), "Settings saved. Download the form again to bake them in.");
+  }
+
+  // The first download issues the token; later ones reuse it, so a
+  // re-download after a settings change doesn't retire the live copy.
+  async function download() {
+    await run(
+      "download",
+      async () => {
+        const patch = settingsPatch();
+        const token = intake.token ?? newIntakeToken();
+        if (!intake.token || settingsDirty) await onSaveIntake({ ...patch, token });
+        downloadLiveEventForm({ ...intake, ...patch, token }, token);
+        setDownloaded(true);
+      },
+      `Saved ${LIVE_EVENT_FORM_FILE_NAME} to your Downloads folder.`,
+    );
+  }
+
+  async function rotate() {
+    if (!armRotate) {
+      setArmRotate(true);
+      return;
+    }
+    setArmRotate(false);
+    await run(
+      "rotate",
+      async () => {
+        const token = newIntakeToken();
+        const patch = settingsPatch();
+        await onSaveIntake({ ...patch, token });
+        downloadLiveEventForm({ ...intake, ...patch, token }, token);
+        setDownloaded(true);
+      },
+      "Every copy of the old form now stops working. Upload the new download to SharePoint in its place.",
+    );
+  }
+
+  function saveLink() {
+    return run("link", () => onSaveIntake({ sharePointUrl: url.trim() }), "Link saved.");
+  }
+
+  const urlValid = isSharePointUrl(url);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal ler-form-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ler-form-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="modal-head">
+          <div>
+            <h2 className="modal-title-static" id="ler-form-title">
+              The Live event request form
+            </h2>
+            <div className="modal-sub">
+              A page for SharePoint that anyone can fill in. Every request it sends lands on this
+              board for the team to approve or decline.
+            </div>
+          </div>
+          <button className="icon-btn" onClick={onClose} aria-label="Close">
+            <Icon name="close" size={16} />
+          </button>
+        </header>
+
+        <div className="modal-body">
+          <ol className="sp-steps">
+            <li className="sp-step">
+              <span className="sp-step-num" aria-hidden>
+                1
+              </span>
+              <div className="sp-step-body">
+                <h3>What the form says</h3>
+                <p className="muted small">
+                  The mailboxes it names and the files behind its download buttons. Put the
+                  runsheets and recording guides on SharePoint and paste their links here; a
+                  button with no link is left off the form.
+                </p>
+                <div className="ler-form-grid">
+                  <label className="field">
+                    <span>Live Events Team mailbox</span>
+                    <input
+                      value={teamEmail}
+                      onChange={(e) => setTeamEmail(e.target.value)}
+                      placeholder={defaults.teamEmail}
+                      inputMode="email"
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Facilities mailbox</span>
+                    <input
+                      value={facilitiesEmail}
+                      onChange={(e) => setFacilitiesEmail(e.target.value)}
+                      placeholder={defaults.facilitiesEmail}
+                      inputMode="email"
+                    />
+                  </label>
+                  {LINK_FIELDS.map((f) => (
+                    <label className="field" key={f.key}>
+                      <span>{f.label}</span>
+                      <input
+                        value={links[f.key]}
+                        onChange={(e) => setLinks((cur) => ({ ...cur, [f.key]: e.target.value }))}
+                        placeholder="https://wisetechglobal.sharepoint.com/…"
+                        inputMode="url"
+                      />
+                      <span className={`field-hint ${isHttpsUrl(links[f.key]) ? "" : "warn"}`}>
+                        {isHttpsUrl(links[f.key]) ? f.hint : "That isn't an https link."}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  disabled={busy !== null || !settingsDirty || !linksValid || !emailsValid}
+                  onClick={saveSettings}
+                >
+                  {busy === "settings" ? "Saving…" : "Save settings"}
+                </button>
+              </div>
+            </li>
+
+            <li className={`sp-step ${downloaded ? "done" : ""}`}>
+              <span className="sp-step-num" aria-hidden>
+                {downloaded ? <Icon name="checkmark" size={14} /> : 2}
+              </span>
+              <div className="sp-step-body">
+                <h3>Download the form</h3>
+                <p className="muted small">
+                  Saves <code>{LIVE_EVENT_FORM_FILE_NAME}</code> to your Downloads folder with the
+                  settings above baked in.
+                  {intake.token
+                    ? " The form already has its key, so this download replaces the live copy without retiring it."
+                    : " The first download gives the form its key, which is what lets its requests in."}
+                </p>
+                <button
+                  type="button"
+                  className={downloaded ? "btn btn-secondary btn-sm" : "btn btn-primary"}
+                  disabled={busy !== null || !linksValid || !emailsValid}
+                  onClick={download}
+                >
+                  <Icon name="download" size={14} />{" "}
+                  {busy === "download" ? "Preparing…" : downloaded ? "Download again" : "Download form"}
+                </button>
+              </div>
+            </li>
+
+            <li className="sp-step">
+              <span className="sp-step-num" aria-hidden>
+                3
+              </span>
+              <div className="sp-step-body">
+                <h3>Upload it to SharePoint</h3>
+                <p className="muted small">
+                  Drag the file into the document library people will find it in (or use Upload
+                  › Files), then click the <strong>⋯</strong> next to the file, go to{" "}
+                  <strong>More</strong> and click <strong>Check in</strong>: until it's checked in,
+                  only you can open it. Replacing an existing copy keeps its link.
+                </p>
+              </div>
+            </li>
+
+            <li className={`sp-step ${urlValid && url.trim() === (intake.sharePointUrl ?? "").trim() ? "done" : ""}`}>
+              <span className="sp-step-num" aria-hidden>
+                {urlValid && url.trim() === (intake.sharePointUrl ?? "").trim() ? (
+                  <Icon name="checkmark" size={14} />
+                ) : (
+                  4
+                )}
+              </span>
+              <div className="sp-step-body">
+                <h3>Keep the form's link here</h3>
+                <p className="muted small">
+                  Click the <strong>⋯</strong> next to the file, then <strong>Copy link</strong>, so
+                  the team can always find the live copy.
+                </p>
+                <label className="field">
+                  <input
+                    aria-label="SharePoint link to the form"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && urlValid) saveLink();
+                    }}
+                    placeholder="https://wisetechglobal.sharepoint.com/…"
+                    inputMode="url"
+                  />
+                  {url.trim() && !urlValid && (
+                    <span className="field-hint warn">
+                      That isn't a SharePoint link. Copy it from the file's ⋯ menu.
+                    </span>
+                  )}
+                </label>
+                <div className="ler-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    disabled={busy !== null || !urlValid || url.trim() === (intake.sharePointUrl ?? "").trim()}
+                    onClick={saveLink}
+                  >
+                    {busy === "link" ? "Saving…" : "Save link"}
+                  </button>
+                  {intake.sharePointUrl && (
+                    <a
+                      className="btn btn-ghost btn-sm"
+                      href={intake.sharePointUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open the form <Icon name="external-link" size={12} />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </li>
+          </ol>
+
+          {intake.token && (
+            <section className="ler-retire">
+              <h3>Retire the old copies</h3>
+              <p className="muted small">
+                If a copy of the form has got somewhere it shouldn't, or you just want a clean
+                start, issue a new key. Every copy already out there stops working the moment
+                you do, and a fresh download with the new key starts straight away.
+                {intake.updatedAt ? ` Last changed ${timeAgo(intake.updatedAt)}.` : ""}
+              </p>
+              <button
+                type="button"
+                className={`btn btn-sm ${armRotate ? "btn-danger" : "btn-ghost"}`}
+                disabled={busy !== null}
+                onClick={rotate}
+              >
+                {busy === "rotate"
+                  ? "Issuing…"
+                  : armRotate
+                    ? "Click again to retire every existing copy"
+                    : "Issue a new key and download"}
+              </button>
+            </section>
+          )}
+
+          {message && <p className="field-hint ler-msg">{message}</p>}
+          {error && <p className="field-hint warn">{error}</p>}
+        </div>
+
+        <footer className="modal-foot">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>
+            Done
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}

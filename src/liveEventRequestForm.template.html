@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>__LER_TITLE__</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --brand1:#1D1765; --brand2:#2f6fed;
+  --bg:#f3f4fa; --card:#ffffff; --text:#14123a; --muted:#5d6184; --line:#dcdeee;
+  --accent:#1D1765; --accent2:#2f6fed; --accent-soft:#e8e9f7; --ok:#12915a; --ok-soft:#e1f6ec;
+  --no:#d6334a; --no-soft:#fde7ea; --warn:#b26a00; --warn-soft:#fff2d9;
+  --shadow:0 8px 30px rgba(29,23,101,.12);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d0c25; --card:#171637; --text:#eeeefc; --muted:#a2a5c9; --line:#2c2c58;
+    --accent:#a5a3f7; --accent2:#6b9bff; --accent-soft:#25244f; --ok:#4ad69a; --ok-soft:#173a2c;
+    --no:#ff7a8d; --no-soft:#3d1c24; --warn:#ffc15e; --warn-soft:#3a2d12;
+    --shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;line-height:1.45;min-height:100vh}
+.hero{background:linear-gradient(135deg,var(--brand1),var(--brand2));color:#fff;padding:28px 20px 70px}
+.hero-in{max-width:760px;margin:0 auto}
+.live{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:rgba(255,255,255,.2);padding:6px 12px;border-radius:99px}
+.dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}
+h1{margin:14px 0 6px;font-size:clamp(26px,5vw,38px);line-height:1.1}
+.hero p{margin:0;opacity:.92;max-width:520px}
+.wrap{max-width:760px;margin:-46px auto 40px;padding:0 16px}
+.card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:26px;border:1px solid var(--line)}
+.prog{height:6px;background:var(--line);border-radius:9px;overflow:hidden;margin-bottom:6px}
+.prog>i{display:block;height:100%;background:linear-gradient(90deg,var(--brand1),var(--brand2));transition:width .35s}
+.step-label{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:18px}
+h2{margin:0 0 4px;font-size:24px}
+.sub{color:var(--muted);margin:0 0 20px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:16px;cursor:pointer;color:var(--text);font:inherit;transition:.15s}
+.opt:hover{border-color:var(--accent);transform:translateY(-2px)}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt:not(:has(.ic)){justify-content:center;text-align:center;padding:22px 16px}
+.opt:not(:has(.ic)) b{font-size:18px}
+.opt .ic{font-size:26px;line-height:1;flex-shrink:0}
+.micimg{display:block;width:84px;height:63px;background:var(--accent);-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
+.opt b{display:block;font-size:16px}
+.opt span.d{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+input,select,textarea{width:100%;font:inherit;color:var(--text);background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:12px 14px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:24px}
+.btn{border:0;border-radius:12px;padding:13px 22px;font:inherit;font-weight:700;cursor:pointer;transition:.15s;text-decoration:none;display:inline-block}
+.btn.p{background:linear-gradient(90deg,var(--brand1),var(--brand2));color:#fff}
+.btn.p:hover{filter:brightness(1.08)}
+.btn.p:disabled{opacity:.4;cursor:not-allowed;filter:none}
+.btn.g{background:transparent;color:var(--muted)}
+.btn.o{background:var(--accent-soft);color:var(--accent)}
+.err{color:var(--no);font-size:13px;margin-top:8px;min-height:18px}
+.sum{display:grid;gap:8px;margin:6px 0 4px}
+.sum div{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.sum div span:first-child{color:var(--muted)}
+.sum div span:last-child{font-weight:600;text-align:right}
+.sumh{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:800;padding:14px 0 4px;border-bottom:2px solid var(--line)!important;display:block!important}
+.done{text-align:center;padding:10px 0}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+.nums{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.num{border:2px solid var(--line);background:var(--card);color:var(--text);border-radius:14px;padding:14px 0;font:inherit;font-weight:700;font-size:18px;cursor:pointer;transition:.15s}
+.num:hover{border-color:var(--accent)}
+.num.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.person{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin-top:10px}
+.person>span{font-size:13px;font-weight:600;color:var(--muted)}
+.pcard{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:12px;background:var(--bg)}
+.pcard input[type=text]{margin-top:8px;background:var(--card)}
+.chk{display:flex;gap:8px;align-items:center;font-weight:600;font-size:13px;margin-top:10px}
+.chk input{width:auto}
+.subhead{margin:20px 0 0;font-weight:700;font-size:14px}
+.callout{background:var(--accent-soft);border-radius:12px;padding:12px 14px;font-size:14px;margin-top:14px;line-height:1.5}
+.callout a{color:var(--accent);font-weight:600}
+.callout.warn{background:var(--warn-soft)}
+.yn{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px}
+.res{border:1px solid var(--line);border-left:5px solid var(--brand2);border-radius:10px;padding:14px 16px;margin-top:14px;background:var(--card)}
+.res .d{color:var(--muted);font-size:14px;margin-top:2px}
+.deadline{margin-top:12px;font-size:13px;background:var(--accent-soft);padding:8px 12px;border-radius:8px}
+.stage{position:relative;border-radius:16px;overflow:hidden;color:#fff;text-align:center;background:#0b0a2c}
+.stage-svg{position:absolute;inset:0;width:100%;height:100%}
+.stage-in{position:relative;padding:48px 20px 64px;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.stage-in .big{font-size:52px;line-height:1}
+.stage-in h2{color:#fff;margin:8px 0 6px}
+.stage-in p{margin:0 auto;max-width:460px;opacity:.95}
+.beam{transform-box:view-box;animation:sway 7s ease-in-out infinite alternate;opacity:.9}
+.beam.b1{transform-origin:94px 10px}.beam.b2{transform-origin:506px 10px;animation-direction:alternate-reverse}
+@keyframes sway{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
+@media (prefers-reduced-motion:reduce){.beam,.dot{animation:none}}
+.ref{display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--accent-soft);color:var(--accent);padding:4px 10px;border-radius:8px;margin-top:8px}
+.toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:50;padding:14px 22px;border-radius:14px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:92vw;text-align:center;background:var(--no);color:#fff}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="hero"><div class="hero-in">
+  <span class="live"><span class="dot"></span> Live Events Team</span>
+  <h1>Request a live event</h1>
+  <p>Tell us about your event and we'll work out how best to support you. Takes about 5 minutes.</p>
+</div></div>
+
+<div class="wrap">
+  <div class="card" id="main"></div>
+</div>
+
+<script>
+(function () {
+"use strict";
+
+// ====== CONFIG (filled in when the form is downloaded) ======
+// Where a finished request is sent: one document, created without signing
+// in, which the team reviews from their board. The token is checked by the
+// server before the request is accepted, so a copy of this form stops
+// working if the team retires it.
+var SUBMIT_URL = __LER_SUBMIT_URL__;
+var INTAKE_TOKEN = __LER_TOKEN__;
+var LIVE_EVENTS_EMAIL = __LER_TEAM_EMAIL__;
+var FACILITIES_EMAIL = __LER_FACILITIES_EMAIL__;
+// Links behind the resource buttons; a button is left out when its link is
+// empty.
+var LINKS = __LER_LINKS__;
+var VIDEO_HELP_EMAIL = LIVE_EVENTS_EMAIL;
+var RIVERSIDE_URL = "https://riverside.fm";
+var PPT_DEADLINE = "1-2 weeks before the event";
+var RUNSHEET_DEADLINE = "1-2 weeks before the event";
+var DRAFT_KEY = "liveEventRequest.draft";
+// =============================================================
+
+var MICICONS = {
+  lapel:'<i class="micimg" style="-webkit-mask-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGgAAABOCAYAAADM6VOKAAAEnklEQVR42u2dTY8UVRSGn+qmR5DmU1xIkI3EhRISt8aFkUgC8QfoD/BHuCdh4R9wKbohISEkxg8ICQlGE+PChW4gwURAEAZmmGE+mOmuKhd1buZOTdFdxdDNoXnf5Kanq2qqas57z7nvOfdWDQiCIEwsEif30QIyYC/wGfAR8K5932b7F4D/gD+B74BzQC/6XWHEeB+4BuQ12yXgDWcdbWLxDjBjhu8DqXlFFhGS2fbUjsmBP4CueZEwQpwxg/caeNCKfX5u52jLjKPDvxUeM6z1zJvOTjJBW5zcx96nGEcSC2077Xs+iQR5id2bMe5ECwQvBEkmOycIeZBvgjZzH30RJKHz0hO0mTCViiCJBMlsUeE7fj+gqFonDcJdqM/ds7+jZdWFpNTxwnFJxflTdY56+MoMtUr9Uk8w7olnEEXcSnUvN7YfuAy8bbK5NST8prb/G+AH4BjwGrAP+Bv4CdgBHAD+An4FXqeYnnjT9s0BX5vXBaI0Fg7AW8AvNb0nAx4Dp4HZGsc/jDwubp8Ch4COzF9PrHSA4+ZN2ROMOqiyHeaKetaWKeaZ5qxNA/eNsFmKWdpHwG8UM7iTkhuOjKQgWr6g3vxQn42TeoHY8LkCLA3xxhy4UiEwJLMrcqG2Kbo6aJfG0aRk5EBwEhFSVoKB6MM2hmWeRIPHMklac7DOS0bPK0hKI0HRf4LhM7PDijXlQTW9KSv1+DTyhnaNnCkFXm1wzS+BeTt3KoIGY3uF1C5PaS+aALgL3AJu2OdN4DbFEq2PLXRlpTEqHqd6wM/AhcjrEi8JrDeCgodctXxmF7DH9v0IfA/cMRKmjaCFAee71nA8zszrlqTZhifPHUtgF6yHDzq+bZ0ttHakCus2gE+Ak8AHXoSCxxCXR3W1O9arF23fK6ytiYvFQTpEGdbFh3b+E1Z9eO5hzmtSFkLdVKleFi9qzJ+hAYO33DWJv+ql7OM5ay4TMKreHARBF3jPOsUhYLdCnC90gCPmQYs4qc+JoPUy/rIpxIMSCT6T46PmOUvKg/xhC/C7VRO6XghSaX29CJm2asRDnJR7RNDG/GsKR09KiKD1lYvdliDviXIwYYDRpmxMuBgprVFca4rimdcwuzoHnBcNz5+gcJ0uxdKveI5pQSHOD1IjJJ5mnxNBvjy2XfpsiSBfCi6p2CaCBBHURCzIg16wsCeCHHmQywX0IqhAVuExmlF1hC4bV7NuF0F+xME2YGtpmwhyJATmrcXb7osgX2NQpjHIL8Ii+9iDVkWQH4SHvWKCVM12MgYlRpDGIMdKLqxHiAm6LYJ8Se1bUcKaAv+IIF8E3WRtDXgbuC7TDDdah/GsSWhRvD/hW/OiUxTPq8qDnAiFlnnQBSPsjESCT6/t2s87cVLdFkHrPSmLElfNBzke+9xABFUTlIsgETQxBOUvyTVfSIJCnaw/Zg/KRFD9njzP2mP4o+7Z/UjFiaCamGWt0jzqkLZi1xJBDQw3Q/FYyDjwmKKq3RNB9fFgDB4UsEzxEiYR1EBFzYwxxC1TvG1EBDUw3D0jaRxYong/kAhqgPAS2HGouBDiJvo/qgiCIDjB/71voIqwbxO/AAAAAElFTkSuQmCC);mask-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGgAAABOCAYAAADM6VOKAAAEnklEQVR42u2dTY8UVRSGn+qmR5DmU1xIkI3EhRISt8aFkUgC8QfoD/BHuCdh4R9wKbohISEkxg8ICQlGE+PChW4gwURAEAZmmGE+mOmuKhd1buZOTdFdxdDNoXnf5Kanq2qqas57z7nvOfdWDQiCIEwsEif30QIyYC/wGfAR8K5932b7F4D/gD+B74BzQC/6XWHEeB+4BuQ12yXgDWcdbWLxDjBjhu8DqXlFFhGS2fbUjsmBP4CueZEwQpwxg/caeNCKfX5u52jLjKPDvxUeM6z1zJvOTjJBW5zcx96nGEcSC2077Xs+iQR5id2bMe5ECwQvBEkmOycIeZBvgjZzH30RJKHz0hO0mTCViiCJBMlsUeE7fj+gqFonDcJdqM/ds7+jZdWFpNTxwnFJxflTdY56+MoMtUr9Uk8w7olnEEXcSnUvN7YfuAy8bbK5NST8prb/G+AH4BjwGrAP+Bv4CdgBHAD+An4FXqeYnnjT9s0BX5vXBaI0Fg7AW8AvNb0nAx4Dp4HZGsc/jDwubp8Ch4COzF9PrHSA4+ZN2ROMOqiyHeaKetaWKeaZ5qxNA/eNsFmKWdpHwG8UM7iTkhuOjKQgWr6g3vxQn42TeoHY8LkCLA3xxhy4UiEwJLMrcqG2Kbo6aJfG0aRk5EBwEhFSVoKB6MM2hmWeRIPHMklac7DOS0bPK0hKI0HRf4LhM7PDijXlQTW9KSv1+DTyhnaNnCkFXm1wzS+BeTt3KoIGY3uF1C5PaS+aALgL3AJu2OdN4DbFEq2PLXRlpTEqHqd6wM/AhcjrEi8JrDeCgodctXxmF7DH9v0IfA/cMRKmjaCFAee71nA8zszrlqTZhifPHUtgF6yHDzq+bZ0ttHakCus2gE+Ak8AHXoSCxxCXR3W1O9arF23fK6ytiYvFQTpEGdbFh3b+E1Z9eO5hzmtSFkLdVKleFi9qzJ+hAYO33DWJv+ql7OM5ay4TMKreHARBF3jPOsUhYLdCnC90gCPmQYs4qc+JoPUy/rIpxIMSCT6T46PmOUvKg/xhC/C7VRO6XghSaX29CJm2asRDnJR7RNDG/GsKR09KiKD1lYvdliDviXIwYYDRpmxMuBgprVFca4rimdcwuzoHnBcNz5+gcJ0uxdKveI5pQSHOD1IjJJ5mnxNBvjy2XfpsiSBfCi6p2CaCBBHURCzIg16wsCeCHHmQywX0IqhAVuExmlF1hC4bV7NuF0F+xME2YGtpmwhyJATmrcXb7osgX2NQpjHIL8Ii+9iDVkWQH4SHvWKCVM12MgYlRpDGIMdKLqxHiAm6LYJ8Se1bUcKaAv+IIF8E3WRtDXgbuC7TDDdah/GsSWhRvD/hW/OiUxTPq8qDnAiFlnnQBSPsjESCT6/t2s87cVLdFkHrPSmLElfNBzke+9xABFUTlIsgETQxBOUvyTVfSIJCnaw/Zg/KRFD9njzP2mP4o+7Z/UjFiaCamGWt0jzqkLZi1xJBDQw3Q/FYyDjwmKKq3RNB9fFgDB4UsEzxEiYR1EBFzYwxxC1TvG1EBDUw3D0jaRxYong/kAhqgPAS2HGouBDiJvo/qgiCIDjB/71voIqwbxO/AAAAAElFTkSuQmCC)"></i>',
+  gooseneck:'<i class="micimg" style="-webkit-mask-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGgAAABOCAYAAADM6VOKAAAGD0lEQVR42u2dW2gcVRiAv52dTbJJajRUSwpS2lRtVRrblwrWa5GoIN5AnwQf1Jc+qK8+FhEVERGf9EEFpeqDiFgFUSwWFNt6L1q8X1q1VmMbW9tcdsaH8x/mz2E3NWl2Z3bz/zBkd2cyu3u+81/PZcHExMTE5BRlE7AN+BB4CBiQ12Og1OZH28uVwD9Aqo5PgLVyvmKA8pWdAmUSqAFT8vxXYE0HaFLby0EBkygN8pC+BAaBSA4DFEjUAkDvy/tMq9dieb4WeExgRZjkIquBX5TmeE1K5DgEnCa9MTINykfOBd5TJm5aYE0BJ4CL2tgXtb2UlTndAvwcRHQpsAOoqusNUNB4rXifFNgFPAv8APwlsM4BVgLLgHdEu/z1Ji0Q3dsqdc5fDGwXIC8BXW2WH3UUIB8IxOrw12wVf7RdtKldIHUcoPCIVYi9Xszft8CIghQZoPwAheZvEHgTOArcqHxY2QDlC6ikTB7A4+KX7g8SXAOUI6CSaIo3eXdIVLcN6CuoX1p0gHQgAbAR2A98LAlv0fzSogQU+qVlwNuSO12tzF1kgPIFFPqlR6U8dI+6d9kA5Qso9Et3CqSnVFIbG6B8AYV+6RLcONMOYCjn4MEANfBLZwMfSFK7IUe/ZIBm8Uu9wPO4OQ+35ZTUtn01uxlfIpXPPgm8IsCelHPvqvNWEc9Jg7Rf8p3sVuAw8DKwpIV+yQDNwS+N4Cai7AJWtAiSAZpHsfV14BvcWFOzKw8GaB7Bg/dJfwK3Nzl4sCBhHsFDArwBHAOeAHpww+mpwLPgIScNqpfUjkoN70UVPMRm4vIFFPql84HvgY8kwV3I4MEALRCkpbh54gdU5aFigIoxZuPNXRfwjJi8qxYIkgFawIq4l62S1N68AJAMUJOCh3uB4wsAyQA1EdJ9uDkPo6cQ3RmgJvulR4AjwDDzG6Ft+ySyVOCOE0lSuxMYA65Xie5ckmPToCZr0XrcMPoV8zB1pkEtKHdN42azjuMG/mLcss3cNciWHWad6Dngctwo7XRROpYByhaR7Qb6gfOKpPkGKDNR+3HVbwNUQEARMCGR3LABKqYPQmp0ZxXpgxmgmTJONlvVABVQg2pF+2AGaKZU5lhFMEAtli6pKBiggoba4IYgDFDB/E8KdEsEN1AHWm4SGx9KEhwMARfghh4oii8yDcrkdNGafvFFqQEqlpnfKNo0DKyiIHvYGaBMU/zi5D6yOd0lA5S/1KQd1qjXLrMorlgRXKgp/QaoWJCiICgoTD0uXmQgSkprUuWDpgIoFQXOh9ypAWoekKRBXhMBZ8jREwDye33rtkpbnR/FHQom3Aba+5UVuBHTlQJlEDepfoBsvwXkmgeA34HvgD243Yn1/ZNWfZlOeA8vZQWmF7cv94W4TZhGcEtPEnVNVRp7AFiu7nMC+E0eH8dtK70HeA23/tV37lqzTV+nACorMzaEmzq1SYD0ka28W4qruSVk8+JqYtKq6n4TwL9kO+b34AbzDgqop3FrjUrNBtQJSyAjsoG2a4EHgZtwhc9ueb1btOSYaIdv1CmlDbH6rKnSshpuo4wJAbkauE7a7jOaPMjX7hrkA4DNwF3AOtGShGzRcCLmLsUtOZlWELw/6RV/5M3bmDR8N9nvSlQUuJpEfVuAFyxImN3f3A08LL18iWpUD9CvsDtGNilRA47lXmNyTQX3UwXVWSyMh7vOADUWb6ZGpTFLqpcn6nlJBQS+9/vtzcqiMd58LW8AJa1THiqTjR0ZoFka7Uz5HtUgsZyUho/kXKz8kW/kcXk8oP63XumnFCS2iVy/ygCd3MxVlb9JVe/uUyH1EdGQfjnvtaY3SFAJKg2Jeq2sHnepENzyoJPcd4UECLeQbTpLAAvxUVMCKVK+KYQR0bhG+QfwI7APeAt4VfyWAfofpq6KG8e5BriBbI51I1/izVS9z3cUt9fPPmCv/P0at4T/71aXRdr9Pbz50dOlqhJhbRZgG8j23Q7lMG7Xxs+BT4EvBM6BWfIu7esSAzS3GlzEzCInuMkgo8Clkicdwv0S5W7gK+CnBiDKgRlM60R0tu+PiYmJyfzkP0AYSQmRMnUpAAAAAElFTkSuQmCC);mask-image:url(data:image/png;base64,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)"></i>',
+  headset:'<i class="micimg" style="-webkit-mask-image:url(data:image/png;base64,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);mask-image:url(data:image/png;base64,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)"></i>',
+  handheld:'<i class="micimg" style="-webkit-mask-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGgAAABOCAYAAADM6VOKAAAEY0lEQVR42u2dS4vUQBSFv+5WB3WhooKj+NiriMKAf8CFyIzizp2IqLj3V7h340YEdSOKD3AxIIg7F77QnYiIqNNOz4zzwEdPJy5yi4nB9FTSlUwq3gMh6XSlqlInp+6tW9VpUCgUitqi4Vl9m0Ao2xrgKDAKjADbgSHgF/AZeAY8AB4BXbnXBhAo7cWgFTs+C7yOkdVvewWcSclH4ZicPcDjWOMHwCLQk2Nzrifng1jacWC3klRMtwZwAPgkjd0VEmwU1JP0IfAR2J/IV+GAnN1iV8JYY2fdzHWfgF1ij5SkAR2YpnRHTwckJ0nSE8m36aGjVBmskv0FR+QkSTqXKEeRQ0HrxG4EGWyOjU0KgA/AWlXQYDgpjbroiJwwkd+YL0a4qhiNNapLhEqQm7odLMjbMs7Boao/pFWu3CZguKCQlMlvGNigBOXDenESii5jvRKUD10x5kWX0VWCBhuoFokWFY/LVV1B8zGvy7UXh+SvCsqJb8B1OXY9h2PyuyblKHJ2P4dZmkJwOVA1+Y2gUw8D4x5L8z6uoggBcMeHm69yoHBMXOB34jC4skOh5PceOAUsAPdVB9nxRp70eWAONzE5c/2s5BtIOYoc2AhsAbYCO4C70ri/c9ikQK4LgdtEC0y2ApulHIUDDAG3+HvawHZ6wRzfkHwUBeIC8CWjgj4D53282SpPVrWAbbGxmlnX9h3YB1wEjtE/lrYAPASuAG+JAqPx6YsA+CoqU2TETuBHH2M/a6me2T7d4Q8pR93sHJgETqTUsSlbdxn3uwGsjhGUxKKUo1DUzwZRUhhG7Y+ivgpyXedQKVf81wpaTf5lWGYc1fXphn1Z9toSY34auEQUV8viQPSIfvB1Gbgay0/hCCaasJfBotl7E/kpCiBpXJ7+37JfbjPpxn0kp+lhXW/GIglZtpuqnnIcmi3ANHZrFcz303Kdd46RT09TKMZ9kqUp6uUMvfn+vlzX0rFQ8d5cAziC3aSd+f6IXOfdCh7f+mPT8F8t62/eq/CFYn7GogSl4DvRXA59Gt2c/0k0J+S16+qTggBmiFb62GBO0qMKKg/zFo0eJ3NeFVSegsz7djqWBHUkfUMVVG6dO5bpOz73Fj5W2gw025YKavs4QPXdBgFMOE6nBDlG23E6JaggghqWXaESVPJYKCtBoRJULqYsCeooQSujoCmi95P+a3xjxku/iKYatItbAYJsIgQ2EQclqCAs9Gl883la0qmCSlaQWT41ZUFQF0/DPD4rKOkApKHjcxShDgS1l1FQWwmqBkF5B7NKUEnRhDRMeH5/3hM0kaKQWoR5fCYozNjFhUrQymAq5T6yTuopQQUpqEP0Q+D4OMeMkxbxPA5XB4JmSF/dM0e0PEsJWkH8K9ZWi9U8dVCQiVbPpKSZIT3arQSVOFidTFHQpO+D1LoQ1E4hqK0EVYMg08WZfzXpJc57TZDP/51jlPJc9kOJ/QvfPbg6wKhjjOjlsy9lf7wO6lEoFIqa4w/6sDAFgZk7SwAAAABJRU5ErkJggg==);mask-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGgAAABOCAYAAADM6VOKAAAEY0lEQVR42u2dS4vUQBSFv+5WB3WhooKj+NiriMKAf8CFyIzizp2IqLj3V7h340YEdSOKD3AxIIg7F77QnYiIqNNOz4zzwEdPJy5yi4nB9FTSlUwq3gMh6XSlqlInp+6tW9VpUCgUitqi4Vl9m0Ao2xrgKDAKjADbgSHgF/AZeAY8AB4BXbnXBhAo7cWgFTs+C7yOkdVvewWcSclH4ZicPcDjWOMHwCLQk2Nzrifng1jacWC3klRMtwZwAPgkjd0VEmwU1JP0IfAR2J/IV+GAnN1iV8JYY2fdzHWfgF1ij5SkAR2YpnRHTwckJ0nSE8m36aGjVBmskv0FR+QkSTqXKEeRQ0HrxG4EGWyOjU0KgA/AWlXQYDgpjbroiJwwkd+YL0a4qhiNNapLhEqQm7odLMjbMs7Boao/pFWu3CZguKCQlMlvGNigBOXDenESii5jvRKUD10x5kWX0VWCBhuoFokWFY/LVV1B8zGvy7UXh+SvCsqJb8B1OXY9h2PyuyblKHJ2P4dZmkJwOVA1+Y2gUw8D4x5L8z6uoggBcMeHm69yoHBMXOB34jC4skOh5PceOAUsAPdVB9nxRp70eWAONzE5c/2s5BtIOYoc2AhsAbYCO4C70ri/c9ikQK4LgdtEC0y2ApulHIUDDAG3+HvawHZ6wRzfkHwUBeIC8CWjgj4D53282SpPVrWAbbGxmlnX9h3YB1wEjtE/lrYAPASuAG+JAqPx6YsA+CoqU2TETuBHH2M/a6me2T7d4Q8pR93sHJgETqTUsSlbdxn3uwGsjhGUxKKUo1DUzwZRUhhG7Y+ivgpyXedQKVf81wpaTf5lWGYc1fXphn1Z9toSY34auEQUV8viQPSIfvB1Gbgay0/hCCaasJfBotl7E/kpCiBpXJ7+37JfbjPpxn0kp+lhXW/GIglZtpuqnnIcmi3ANHZrFcz303Kdd46RT09TKMZ9kqUp6uUMvfn+vlzX0rFQ8d5cAziC3aSd+f6IXOfdCh7f+mPT8F8t62/eq/CFYn7GogSl4DvRXA59Gt2c/0k0J+S16+qTggBmiFb62GBO0qMKKg/zFo0eJ3NeFVSegsz7djqWBHUkfUMVVG6dO5bpOz73Fj5W2gw025YKavs4QPXdBgFMOE6nBDlG23E6JaggghqWXaESVPJYKCtBoRJULqYsCeooQSujoCmi95P+a3xjxku/iKYatItbAYJsIgQ2EQclqCAs9Gl883la0qmCSlaQWT41ZUFQF0/DPD4rKOkApKHjcxShDgS1l1FQWwmqBkF5B7NKUEnRhDRMeH5/3hM0kaKQWoR5fCYozNjFhUrQymAq5T6yTuopQQUpqEP0Q+D4OMeMkxbxPA5XB4JmSF/dM0e0PEsJWkH8K9ZWi9U8dVCQiVbPpKSZIT3arQSVOFidTFHQpO+D1LoQ1E4hqK0EVYMg08WZfzXpJc57TZDP/51jlPJc9kOJ/QvfPbg6wKhjjOjlsy9lf7wO6lEoFIqa4w/6sDAFgZk7SwAAAABJRU5ErkJggg==)"></i>',
+  lectern:'<i class="micimg" style="-webkit-mask-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGgAAABOCAYAAADM6VOKAAAFZklEQVR42u2cTYgcRRTHfzXd40ISP1HEL/AkHg0KCYoHIXrwKHhT/AAPOYgIghcR9pCD3o2HeFHUg+AXehEURIQse4iYi7rZZNePrIlsTAwmmux0t4d6j6k0M5kZM13TVVMPip6Pnp5+9a/33v9VvS5IkiRJkmjFRKhTBhTyehuwB3gE2AncDHSBv4AV4CvgE+B3Ob8DlGlYXNmAyqUjM2mmBg7AduAl4AegGtE2gFeBBQekJFO2duOAs2cIMBeAE8BvwJkB3y8BtyWQrgycG4BXgC+Aj4Cnaue9IC5KO70APgWeBO4GrgF2ALcADwNvCXD6m8PAdQKQSd0+nmhn3Q78OGDkfwbcCLwo7y/K8Wtg9xjX3w2sCZgV8G7NXSYZI+gDHJAO/AfoOa0CjksH6/vXHQvQWKVAG8clduWcu4BTDkgPJJAmc20diSuF04naeo47q4CXnd+M08FXyXGvc8332wJQJyCgsiFxIatR42sdaynGuPaWnP+2WCLAQ8DV8vsUi8Z0cR/WYsygptb09IQWoOe951xrVxusKCQ6+ZqM9q4AMUxK4Bl5XU1goUZYnMqdbUjmQwCokPtcBh6VrD8fApKRc29yZgXG7eAK+MN5f31bKGwIUoqr+RK4H/jGAamqnVcCf8qxM4EVaTxS6SaAJrekDFiX2YL9ApIRoAqHTr+TZgRmn7gCPAdsOoH9opMDTQJOLscnnGs9X/tuJpIHCFDpAHAA+Bx4EDvZuQz8NCFBaLXkgd63jvJMSMMHNQuLZskgD/z+C8eajEMSSAC1y5oKIpXEcpIFBTGX5c5yD/rMjLDgYAEygbCpLSemufGtqiWv3nXMPYCzQ/6nzUBpocl257Nt2JnxbEiM0wT57yZBMg0rvAv4uC3TJmPIAnaZAeAcdnHwcq6tBzyGrWfIQiErunazAHzP6Kqa0Nth0TVrYsA3sdaRy0haBB6nvyAWipgJgn8PW4BisDV2edvzMAX8PgGmx6VVNrG1UnTcEp2bGvRTdW1d4BCXrnDG3FTH77D1DY24umkywkWHnlZz0lTXxbbP0NyDnfKP3bVdztXtbCvNNsC3Qq0L5q+mTHVextbVtS7ve2OOLGZU29/GmYRDwLOOVc5bPVnlHNMk9LzINEf5MHrZi7wP8yHWVLQNoGGyF/tkWxmR6asuJ4E3Q1VCwViKmAwcrOnqxTynCVApStwrri6PxIJUl6WarkEBpLLm/E8sAKkux3y5oSZp5xEP/zUr971a0zVIgNb5f3XSbc531KWtxwDQBvbxwtjklOgWNEAGOIt99J2ILAjR6SwNF400HRfUra05+UMMOZCSn8andZoGyNSCaUyy6iPZ98WsViIEyItOTQOkvvmoHGNYI8pqOlUxAPQzdrUxlErTUcRnS3SKBqCT0mKRE44+wQNkgPPArxEwudKh2Od9eAQfJMGrz44tpvqcHzsSkYvzpotPgGKi2isxAVQ5mXfoVDur6VLFAJAG1l+wj3SESrWV8JwTXbwQHp8ubpP+7rqhAoTosBmbi+v4TO48Jd1e1rc6ngfC0QgAWvXZd76XoWNgcl7Thc6MlAuxLNjEDJCynXX6e+yESLEr+nUIZUwAqf8+jt31PbQ4pPd6hv7Gs1WMAJ32rWADA+x0jACpiyh9ZuENALRGf3tOL+Kz0tOtT9Bd4kOR3qxIzixKcY/R364/JIKg9+5VfAKkrOcgdhvLkHZ1V+a55JPBNWGquvthNeDa+lnom+9lI/QriWS/1CQzsKBbgTskqM7jQ8Q5tvZio603uY/+xg7z9ui96ryvzXlQFWCO02rdp83i/sWWI10grqfpxs2VFqQPkiRJkiTJaPkPUsdcO25oG/oAAAAASUVORK5CYII=);mask-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGgAAABOCAYAAADM6VOKAAAFZklEQVR42u2cTYgcRRTHfzXd40ISP1HEL/AkHg0KCYoHIXrwKHhT/AAPOYgIghcR9pCD3o2HeFHUg+AXehEURIQse4iYi7rZZNePrIlsTAwmmux0t4d6j6k0M5kZM13TVVMPip6Pnp5+9a/33v9VvS5IkiRJkmjFRKhTBhTyehuwB3gE2AncDHSBv4AV4CvgE+B3Ob8DlGlYXNmAyqUjM2mmBg7AduAl4AegGtE2gFeBBQekJFO2duOAs2cIMBeAE8BvwJkB3y8BtyWQrgycG4BXgC+Aj4Cnaue9IC5KO70APgWeBO4GrgF2ALcADwNvCXD6m8PAdQKQSd0+nmhn3Q78OGDkfwbcCLwo7y/K8Wtg9xjX3w2sCZgV8G7NXSYZI+gDHJAO/AfoOa0CjksH6/vXHQvQWKVAG8clduWcu4BTDkgPJJAmc20diSuF04naeo47q4CXnd+M08FXyXGvc8332wJQJyCgsiFxIatR42sdaynGuPaWnP+2WCLAQ8DV8vsUi8Z0cR/WYsygptb09IQWoOe951xrVxusKCQ6+ZqM9q4AMUxK4Bl5XU1goUZYnMqdbUjmQwCokPtcBh6VrD8fApKRc29yZgXG7eAK+MN5f31bKGwIUoqr+RK4H/jGAamqnVcCf8qxM4EVaTxS6SaAJrekDFiX2YL9ApIRoAqHTr+TZgRmn7gCPAdsOoH9opMDTQJOLscnnGs9X/tuJpIHCFDpAHAA+Bx4EDvZuQz8NCFBaLXkgd63jvJMSMMHNQuLZskgD/z+C8eajEMSSAC1y5oKIpXEcpIFBTGX5c5yD/rMjLDgYAEygbCpLSemufGtqiWv3nXMPYCzQ/6nzUBpocl257Nt2JnxbEiM0wT57yZBMg0rvAv4uC3TJmPIAnaZAeAcdnHwcq6tBzyGrWfIQiErunazAHzP6Kqa0Nth0TVrYsA3sdaRy0haBB6nvyAWipgJgn8PW4BisDV2edvzMAX8PgGmx6VVNrG1UnTcEp2bGvRTdW1d4BCXrnDG3FTH77D1DY24umkywkWHnlZz0lTXxbbP0NyDnfKP3bVdztXtbCvNNsC3Qq0L5q+mTHVextbVtS7ve2OOLGZU29/GmYRDwLOOVc5bPVnlHNMk9LzINEf5MHrZi7wP8yHWVLQNoGGyF/tkWxmR6asuJ4E3Q1VCwViKmAwcrOnqxTynCVApStwrri6PxIJUl6WarkEBpLLm/E8sAKkux3y5oSZp5xEP/zUr971a0zVIgNb5f3XSbc531KWtxwDQBvbxwtjklOgWNEAGOIt99J2ILAjR6SwNF400HRfUra05+UMMOZCSn8andZoGyNSCaUyy6iPZ98WsViIEyItOTQOkvvmoHGNYI8pqOlUxAPQzdrUxlErTUcRnS3SKBqCT0mKRE44+wQNkgPPArxEwudKh2Od9eAQfJMGrz44tpvqcHzsSkYvzpotPgGKi2isxAVQ5mXfoVDur6VLFAJAG1l+wj3SESrWV8JwTXbwQHp8ubpP+7rqhAoTosBmbi+v4TO48Jd1e1rc6ngfC0QgAWvXZd76XoWNgcl7Thc6MlAuxLNjEDJCynXX6e+yESLEr+nUIZUwAqf8+jt31PbQ4pPd6hv7Gs1WMAJ32rWADA+x0jACpiyh9ZuENALRGf3tOL+Kz0tOtT9Bd4kOR3qxIzixKcY/R364/JIKg9+5VfAKkrOcgdhvLkHZ1V+a55JPBNWGquvthNeDa+lnom+9lI/QriWS/1CQzsKBbgTskqM7jQ8Q5tvZio603uY/+xg7z9ui96ryvzXlQFWCO02rdp83i/sWWI10grqfpxs2VFqQPkiRJkiTJaPkPUsdcO25oG/oAAAAASUVORK5CYII=)"></i>'
+};
+var AT = {
+  live:"Live Audience only (Sydney)",
+  hybrid:"Live Audience with Online Stream (hosted from Sydney)",
+  out:"Live Audience (not hosted in Sydney)",
+  online:"Online-Only audience"
+};
+var AUD_SHORT = {};
+AUD_SHORT[AT.live]="Live only (Sydney)"; AUD_SHORT[AT.hybrid]="Live + online stream"; AUD_SHORT[AT.out]="Live, not in Sydney"; AUD_SHORT[AT.online]="Online only";
+var ACCESS = {
+  "Public":"Public (anyone with the link can join)",
+  "Internal":"Internal (company SSO login to join)",
+  "Registration required":"Registration required (an online registration portal to capture audience information)",
+  "Curated Invite List":"Curated Invite List (you supply us a CSV of the name and email for every audience member)"
+};
+var CHOICES = {
+  audienceType:[
+    {v:AT.live,ic:"🏛️",d:"Everyone attends in person in Sydney"},
+    {v:AT.hybrid,ic:"📡",d:"In-person audience in Sydney plus an online stream"},
+    {v:AT.out,ic:"✈️",d:"The event takes place outside Sydney"},
+    {v:AT.online,ic:"💻",d:"A pure live event streamed to an online audience"}],
+  room:[
+    {v:"Events Space",ic:"🏢"},{v:"Training Room",ic:"🎓"},{v:"Kitchen",ic:"🍽️"},{v:"Rooftop",ic:"🌇"}],
+  onlineWho:[
+    {v:"Internal only",ic:"🔒",d:"Employees only"},
+    {v:"External only",ic:"🌐",d:"Customers, partners, public"},
+    {v:"Both internal & external",ic:"🤝",d:"Mixed audience"}],
+  access:[
+    {v:"Public",ic:"🔓",d:"Anyone with the link can join"},
+    {v:"Internal",ic:"🪪",d:"Company SSO login to join"},
+    {v:"Registration required",ic:"📝",d:"An online registration portal to capture audience information"},
+    {v:"Curated Invite List",ic:"📋",d:"You supply us a CSV of the name and email for every audience member"}],
+  mics:[
+    {v:"Headset mics",ic:MICICONS.headset,d:"Discreet over-ear headset mic, hands-free"},
+    {v:"Handheld mics",ic:MICICONS.handheld,d:"Wireless handhelds"},
+    {v:"Gooseneck mics",ic:MICICONS.gooseneck,d:"Table or panel mic on a flexible neck"},
+    {v:"Lectern mic",ic:MICICONS.lectern,d:"Lectern with a gooseneck mic"},
+    {v:"Lapel mics",ic:MICICONS.lapel,d:"Clip-on lavalier"}],
+  content:[
+    {v:"Slideshow",ic:"📊",d:"Slides or a presentation deck"},
+    {v:"Videos",ic:"🎞️",d:"Video clips played during the event"},
+    {v:"Audience activities",ic:"🧘",d:"e.g. a wellness moment, polls, quiz"},
+    {v:"Pre-recorded segments",ic:"📼",d:"Speakers recorded ahead of time"},
+    {v:"None of these",ic:"🙅",d:"Just live speakers"}],
+  dialIn:[
+    {v:"Yes",ic:"📞",d:"Someone joins remotely and interacts live"},
+    {v:"No",ic:"🚫",d:"Everyone is in the room"}],
+  slideControl:[
+    {v:"Speakers control their own slides",ic:"💻",d:"From the lectern. We'll supply a USB slide remote"},
+    {v:"We run the slides for you",ic:"🎛️",d:"Send us the deck and we'll look after it"},
+    {v:"Mix of both / not sure",ic:"🔀",d:"We'll sort it out together"}],
+  qa:[
+    {v:"No Q&A",ic:"📡",d:"Broadcast only"},
+    {v:"In person (Sydney)",ic:"🏛️",d:"Questions from the room in Sydney"},
+    {v:"Online",ic:"💻",d:"Questions from remote attendees"},
+    {v:"In person and online",ic:"🔁",d:"Both the room and online"}],
+  qaMod:[
+    {v:"Moderated",ic:"🛡️",d:"Questions are reviewed before they're shown"},
+    {v:"Not moderated",ic:"⚡",d:"Questions appear straight away"}],
+  moderation:[
+    {v:"Requester's team",ic:"🙋",d:"Someone from your team moderates"},
+    {v:"Live Events Team",ic:"🎬",d:"We'll moderate for you"},
+    {v:"Not sure yet",ic:"🤔",d:"Let's discuss"}],
+  deliverables:[
+    {v:"Live stream",ic:"🔴",d:"Broadcast live on the day"},
+    {v:"On-demand edit",ic:"✂️",d:"Edited recording for later viewing"},
+    {v:"Both",ic:"🎁",d:"Live stream plus an edited on-demand version"}],
+  publishWhere:[
+    {v:"Supplied to your team to save on the team workspace",ic:"📁"},
+    {v:"Shared in a Teams Channel",ic:"💬"},
+    {v:"Uploaded to The Source",ic:"🌐"},
+    {v:"Supplied back to attendees for rewatching",ic:"🔁"}]
+};
+function blank(){ return {name:"",email:"",eventName:"",date:"",time:"",endTime:"",dateUnc:false,dateTbc:false,timeTbc:false,endTbc:false,
+  team:"",primaryContact:"",contactName:"",contactEmail:"",inPerson:"",online:"",onlineWho:"",
+  audienceType:"",room:"",access:"",speakers:"",speakerNames:[],mics:[],content:[],preCount:"",preSpeakers:[],
+  dialIn:"",slideControl:"",script:"",qa:"",qaMod:"",moderation:"",modName:"",timer:"",teamsConfirm:false,
+  deliverables:"",publishWhen:"",publishTbc:false,publishWhere:[],facilitiesAck:false,preSupport:false,notes:""}; }
+var a = blank();
+var step = 0, submitted = null, errMsg = "", sending = false, sendError = "";
+
+// A half-finished form survives a refresh.
+function loadDraft(){
+  try{ var raw=localStorage.getItem(DRAFT_KEY); if(!raw) return; var d=JSON.parse(raw); if(d&&d.a){ a=Object.assign(blank(),d.a); step=Math.max(0,d.step|0); } }catch(e){}
+}
+function saveDraft(){ try{ localStorage.setItem(DRAFT_KEY,JSON.stringify({a:a,step:step})); }catch(e){} }
+function clearDraft(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} }
+
+function $(s){ return document.querySelector(s); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function has(arr,v){ return Array.isArray(arr)&&arr.indexOf(v)>=0; }
+function namesOf(r){
+  if(Array.isArray(r.preSpeakers)&&r.preSpeakers.length) return r.preSpeakers.map(function(p){
+    var nm=(p.name||"").trim();
+    var t = nm ? nm+(p.unconfirmed?" (unconfirmed)":"") : "Unconfirmed speaker";
+    return t+(p.based?" - based in "+p.based:"");
+  });
+  return [];
+}
+var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+var DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+function dateStr(r){
+  if(r.dateTbc||!r.date) return "To be confirmed";
+  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(r.date); if(!m) return r.date;
+  var dt=new Date(+m[1],+m[2]-1,+m[3]);
+  return DAYS[dt.getDay()]+", "+(+m[3])+" "+MONTHS[+m[2]-1]+" "+m[1]+(r.dateUnc?" (not confirmed)":"");
+}
+function previewDate(){ var p=$("#datepreview"); if(!p) return; saveInputs(); p.textContent = (a.date&&!a.dateTbc) ? "Date selected: "+dateStr({date:a.date,dateUnc:a.dateUnc}) : ""; }
+function timeRange(r){
+  var s=!r.timeTbc&&r.time, e=!r.endTbc&&r.endTime;
+  if(s&&e) return s+" - "+e;
+  if(s&&r.endTbc) return s+" - TBC";
+  if(e) return "TBC - "+e;
+  if(s) return s;
+  return "To be confirmed";
+}
+var DELIV={"Live stream":"Live stream: broadcast live on the day","On-demand edit":"On-demand edit: edited recording for viewing later"};
+function deliverLines(r){ return r.deliverables==="Both" ? [DELIV["Live stream"],DELIV["On-demand edit"]] : (DELIV[r.deliverables]?[DELIV[r.deliverables]]:(r.deliverables?[r.deliverables]:[])); }
+function speakerList(r){ return (Array.isArray(r.speakerNames)?r.speakerNames:[]).map(function(x){return (x||"").trim();}).filter(Boolean); }
+function hostedSydney(r){ return r.audienceType===AT.live||r.audienceType===AT.hybrid; }
+function externalOnline(r){ return r.onlineWho==="External only"||r.onlineWho==="Both internal & external"; }
+function onlineInvolved(r){ return (r.audienceType && r.audienceType!==AT.live) || Number(r.online)>0; }
+function qaOpts(){
+  var t=a.audienceType, o=CHOICES.qa;
+  if(t===AT.online) o=o.filter(function(x){return x.v==="No Q&A"||x.v==="Online";});
+  else if(t===AT.live) o=o.filter(function(x){return x.v==="No Q&A"||x.v==="In person (Sydney)";});
+  return o;
+}
+function wantsOnDemand(r){ return r.deliverables==="On-demand edit"||r.deliverables==="Both"; }
+
+function activeSteps(){
+  var s = ["basics","audience","access"];
+  if(hostedSydney(a)) s.push("presenters");
+  s.push("content");
+  if(has(a.content,"Pre-recorded segments")) s.push("prerec");
+  s.push("dialIn");
+  if(has(a.content,"Slideshow")) s.push("slides");
+  s.push("qa");
+  if(/online/i.test(a.qa)) s.push("qaMod");
+  if(a.qaMod==="Moderated" && /online/i.test(a.qa)) s.push("moderation");
+  s.push("extras","deliverables","facilities","resources","review");
+  return s;
+}
+
+function sections(r){
+  var contact = r.primaryContact==="No" ? "No. Primary event contact: "+(r.contactName||"-")+(r.contactEmail?" ("+r.contactEmail+")":"") : (r.primaryContact||"");
+  var spk = r.speakers?(r.speakers+(speakerList(r).length?": "+speakerList(r).join(", "):"")):"";
+  var modv = r.moderation==="Requester's team" ? "Requester's team"+(r.modName?": "+r.modName+" (to be added as a Producer)":"") : (r.moderation||"");
+  return [
+    ["Requester",[["Name",r.name],["Email",r.email],["Team",r.team],["Primary event contact",contact]]],
+    ["Event",[["Date",dateStr(r)],["Time",timeRange(r)],["In-person attendees",r.inPerson],["Online attendees",r.online],["Who's watching online",r.onlineWho]]],
+    ["Venue & access",[["Audience type",r.audienceType],["Room",r.room],["Access",ACCESS[r.access]||r.access],["Online platform",r.teamsConfirm?"Microsoft Teams (confirmed by requester). The Live-Events Team will recommend the best platform/event type.":""]]],
+    ["Presenters & audio",[["In-person speakers",spk],["Mics",r.mics],["On-screen speaker timer",r.timer]]],
+    ["Content",[["Includes",r.content],["Pre-recorded segments",namesOf(r)],["Pre-recording support",r.preSupport?"Requested. The Live Events Team will be in touch (Riverside suggested).":""],["Dial-in needed",r.dialIn],["Slide control",r.slideControl],["Script / speaker notes in PowerPoint",r.script]]],
+    ["Q&A",[["Format",r.qa],["Online Q&A",r.qaMod],["Moderator",modv]]],
+    ["Recording & delivery",[["Deliverables",deliverLines(r)],["On-demand needed by",wantsOnDemand(r)?(r.publishTbc?"Not sure yet":(r.publishWhen?dateStr({date:r.publishWhen}):"")):""],["On-demand published to",wantsOnDemand(r)?(r.publishWhere||[]):[]]]],
+    ["Facilities",[["Facilities request",r.facilitiesAck?"Acknowledged: will contact "+FACILITIES_EMAIL+" for additional support (catering, security, furniture hire, seating, branded banners or decorations)":""]]],
+    ["Notes",[["Notes",r.notes]]]
+  ];
+}
+function keepRow(kv){ var v=kv[1]; return Array.isArray(v)?v.length>0:!!v; }
+function lines(r){
+  var out=["LIVE EVENT REQUEST: "+r.eventName];
+  sections(r).forEach(function(sec){
+    var rr=sec[1].filter(keepRow); if(!rr.length) return;
+    out.push("","--- "+sec[0].toUpperCase()+" ---");
+    rr.forEach(function(kv){ out.push(kv[0]+": "+(Array.isArray(kv[1])?kv[1].join("; "):kv[1])); });
+  });
+  if(r.reference) out.push("","Reference: "+r.reference);
+  return out.join("\n");
+}
+function mailBrief(r){ return "mailto:"+LIVE_EVENTS_EMAIL+"?subject="+encodeURIComponent("Live event request: "+r.eventName)+"&body="+encodeURIComponent(lines(r)); }
+function outlookLink(r){ return "https://outlook.office.com/mail/deeplink/compose?to="+encodeURIComponent(LIVE_EVENTS_EMAIL)+"&subject="+encodeURIComponent("Live event request: "+r.eventName)+"&body="+encodeURIComponent(lines(r)); }
+
+function flags(r){
+  var f = [];
+  if(r.dateTbc||r.timeTbc||r.endTbc) f.push("Date or time not confirmed yet");
+  if(r.dateUnc&&!r.dateTbc) f.push("Date is not confirmed and may change");
+  if(r.audienceType===AT.out) f.push("Not hosted in Sydney: our on-site support is Sydney only, so we need to work with the requester on a solution");
+  if(externalOnline(r) && r.access==="Public") f.push("External online audience with public access");
+  if(((Number(r.inPerson)||0)+(Number(r.online)||0))>=500 && r.qaMod==="Not moderated") f.push("Large audience with unmoderated online Q&A");
+  if(r.moderation==="Live Events Team") f.push("Needs a Q&A moderator from the Live Events Team");
+  if(r.moderation==="Requester's team" && r.modName) f.push("Add "+r.modName+" to the event as a Producer (Q&A moderator)");
+  if(Array.isArray(r.preSpeakers)&&r.preSpeakers.some(function(p){return p.unconfirmed;})) f.push("Unconfirmed pre-recorded speaker(s)");
+  if(r.preSupport) f.push("Needs support with pre-recording: get in touch (Riverside suggested)");
+  if(r.dialIn==="Yes") f.push("Dial-in needed: remote person joining live");
+  if(r.slideControl==="We run the slides for you") f.push("We run the slides: collect decks in advance");
+  if(r.slideControl==="Speakers control their own slides") f.push("Supply a USB slide remote");
+  if(r.script==="Yes") f.push("Script or speaker notes are included in the PowerPoint");
+  if(r.timer==="Yes") f.push("On-screen speaker timer required");
+  if(wantsOnDemand(r) && has(r.publishWhere,"Supplied back to attendees for rewatching")) f.push("Recording to be supplied to attendees: internal sharing or an unlisted public link only, no private lists and no downloads");
+  return f;
+}
+
+var _tt=null;
+function toast(msg,ms){
+  var t=document.getElementById("toast");
+  if(!t){ t=document.createElement("div"); t.id="toast"; t.className="toast"; document.body.appendChild(t); }
+  t.textContent=msg; t.style.display="block";
+  clearTimeout(_tt); if(ms) _tt=setTimeout(function(){ t.style.display="none"; },ms);
+}
+function render(){
+  if(submitted) return renderDone();
+  renderForm();
+}
+
+function optButtons(key, multi, list){
+  list = list || CHOICES[key];
+  return '<div class="grid">' + list.map(function(o){
+    var sel = multi ? has(a[key],o.v) : a[key]===o.v;
+    return '<button type="button" class="opt '+(sel?"sel":"")+'" data-k="'+key+'" data-v="'+esc(o.v)+'" data-multi="'+(multi?1:0)+'">'+(o.ic?'<span class="ic">'+o.ic+'</span>':"")+'<span><b>'+esc(o.v)+'</b>'+(o.d?'<span class="d">'+esc(o.d)+'</span>':"")+'</span></button>';
+  }).join("") + '</div>';
+}
+function numGrid(key,max){
+  var h='<div class="nums">';
+  for(var i=1;i<=max;i++) h+='<button type="button" class="num '+(String(a[key])===String(i)?"sel":"")+'" data-nk="'+key+'" data-v="'+i+'">'+i+'</button>';
+  return h+'</div>';
+}
+function ynButtons(key){
+  return '<div class="yn">'+["Yes","No"].map(function(v){ return '<button type="button" class="num '+(a[key]===v?"sel":"")+'" data-yn="'+key+'" data-v="'+v+'">'+v+'</button>'; }).join("")+'</div>';
+}
+function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function linkBtn(url,label){ return url ? '<a class="btn o" href="'+esc(url)+'" target="_blank" rel="noopener">'+label+'</a>' : ""; }
+
+function renderForm(){
+  var list = activeSteps(); if(step>=list.length) step=list.length-1;
+  var key = list[step], total = list.length;
+  var h = '<div class="prog"><i style="width:'+(((step+1)/total)*100)+'%"></i></div><div class="step-label">Step '+(step+1)+' of '+total+'</div>';
+  if(key==="basics"){
+    h += '<h2>Your details and event basics</h2><p class="sub">Tell us who you are and what the event is, so we can work out how best to support you.</p>'+
+    '<div class="subhead" style="margin-top:0">About you</div>'+
+    '<div class="row"><div><label>Your name</label><input id="f-name" value="'+esc(a.name)+'" placeholder="Jane Smith" autocomplete="name"></div>'+
+    '<div><label>Your email</label><input id="f-email" type="email" value="'+esc(a.email)+'" placeholder="jane@company.com" autocomplete="email"></div></div>'+
+    '<label>Your Team</label><input id="f-team" value="'+esc(a.team)+'" placeholder="e.g. Finance">'+
+    '<label>Are you the primary event contact?</label>'+ynButtons("primaryContact")+
+    (a.primaryContact==="No"?'<label>Who is the primary event contact?</label>'+
+    '<div class="row"><div><input id="f-contactName" value="'+esc(a.contactName)+'" placeholder="Full name"></div>'+
+    '<div><input id="f-contactEmail" type="email" value="'+esc(a.contactEmail)+'" placeholder="Their email (optional)"></div></div>':"")+
+    '<div class="subhead">The event</div>'+
+    '<label style="margin-top:6px">Event name</label><input id="f-eventName" value="'+esc(a.eventName)+'" placeholder="e.g. Finance Town Hall">'+
+    '<label>Date</label>'+
+    '<input id="f-date" type="date" min="'+todayStr()+'" value="'+esc(a.date)+'" '+(a.dateTbc?"disabled":"")+'>'+
+    '<div class="note" id="datepreview" style="margin-top:6px"></div>'+
+    '<label class="chk"><input type="checkbox" id="f-dateUnc" '+(a.dateUnc?"checked":"")+' '+(a.dateTbc?"disabled":"")+'> I\'ve chosen a date, but it\'s not confirmed and may change</label>'+
+    '<label class="chk"><input type="checkbox" id="f-dateTbc" data-tbc '+(a.dateTbc?"checked":"")+'> Not sure of the date yet</label>'+
+    '<div class="row"><div><label>Start time</label><input id="f-time" type="time" value="'+esc(a.time)+'" '+(a.timeTbc?"disabled":"")+'>'+
+    '<label class="chk"><input type="checkbox" id="f-timeTbc" data-tbc '+(a.timeTbc?"checked":"")+'> Start time not sure yet</label></div>'+
+    '<div><label>End time</label><input id="f-endTime" type="time" value="'+esc(a.endTime)+'" '+(a.endTbc?"disabled":"")+'>'+
+    '<label class="chk"><input type="checkbox" id="f-endTbc" data-tbc '+(a.endTbc?"checked":"")+'> End time not sure yet</label></div></div>'+
+    '<div class="subhead">Audience numbers</div>'+
+    '<div class="row"><div><label style="margin-top:6px">How many in person attendees?</label><input id="f-inPerson" type="number" min="0" value="'+esc(a.inPerson)+'" placeholder="e.g. 120"></div>'+
+    '<div><label style="margin-top:6px">How many online attendees? (if applicable)</label><input id="f-online" type="number" min="0" value="'+esc(a.online)+'" placeholder="e.g. 400"></div></div>'+
+    (Number(a.online)>0?'<label>Who\'s watching the online stream?</label>'+optButtons("onlineWho"):"");
+  } else if(key==="audience"){
+    h += '<h2>What type of audience is it?</h2><p class="sub">Pick the option that fits your event best.</p>'+optButtons("audienceType");
+    if(a.audienceType===AT.out) h += '<div class="callout">ℹ️ The WTG Live-Events Team can only provide AV support for Sydney based events. Please continue filling out this application so the Events Team can discuss a solution for your event.</div>';
+    if(hostedSydney(a)) h += '<div class="subhead">Which room would you like?</div>'+optButtons("room")+'<div class="note">Facilities will confirm the availability of WTG Office spaces.</div>';
+  } else if(key==="access"){
+    h += '<h2>How should attendees get in?</h2><p class="sub">Pick the level of access that suits your audience.</p>'+optButtons("access");
+  } else if(key==="presenters"){
+    var n=Number(a.speakers)||0;
+    h += '<h2>In Person Presenter information (Sydney Only)</h2><p class="sub">Tell us about the speakers presenting in the room so we can work out how best to support them.</p>'+
+    '<div class="subhead" style="margin-top:6px">How many in person speakers are presenting?</div>'+numGrid("speakers",10);
+    if(n){
+      h += '<div class="note">Speaker names are optional. You can add them now or later.</div>';
+      for(var i=0;i<n;i++) h += '<div class="person"><span>Speaker '+(i+1)+'</span><input type="text" data-sp="'+i+'" value="'+esc((a.speakerNames||[])[i]||"")+'" placeholder="Full name or TBC"></div>';
+    }
+    h += '<div class="subhead">How do you want to mic your speakers?</div><div class="note" style="margin-top:2px;margin-bottom:10px">Select all that apply.</div>'+optButtons("mics",true);
+  } else if(key==="content"){
+    h += '<h2>What content is in the event?</h2><p class="sub">Select everything that applies.</p>'+optButtons("content",true);
+  } else if(key==="prerec"){
+    var pn=Number(a.preCount)||0;
+    h += '<h2>Pre-recorded segments</h2><p class="sub">How many people need to be pre-recorded?</p>'+
+    '<div class="callout">🎥 Pre-recordings are done by the speakers themselves. We encourage using <b>OBS Studio</b>, which internal employees can download from the Software Centre. A phone or webcam works for visuals, and a headset or another mic for audio. If you need a hand, reach out to <a href="mailto:'+esc(VIDEO_HELP_EMAIL)+'" target="_blank" rel="noopener">'+esc(VIDEO_HELP_EMAIL)+'</a>.</div>'+
+    '<label class="chk"><input type="checkbox" id="f-preSupport" data-tbc '+(a.preSupport?"checked":"")+'> I need support with pre-recording</label>'+
+    (a.preSupport?'<div class="callout">We\'re happy to help. <b>Riverside</b> is a simple option for recording remotely: <a href="'+RIVERSIDE_URL+'" target="_blank" rel="noopener">find out more about Riverside</a>. The Live Events Team will be in touch to talk through how we can support your pre-recording.</div>':"")+
+    numGrid("preCount",8);
+    for(var j=0;j<pn;j++){
+      var p=(a.preSpeakers||[])[j]||{name:"",based:"",unconfirmed:false};
+      h += '<div class="pcard"><b>Pre-recorded speaker '+(j+1)+'</b>'+
+        '<input type="text" data-ps="'+j+'" data-f="name" value="'+esc(p.name)+'" placeholder="Full name">'+
+        '<input type="text" data-ps="'+j+'" data-f="based" value="'+esc(p.based)+'" placeholder="Where are they based? e.g. Sydney, London">'+
+        '<label class="chk"><input type="checkbox" data-ps="'+j+'" data-f="unconfirmed" '+(p.unconfirmed?"checked":"")+'> Unconfirmed speaker</label></div>';
+    }
+  } else if(key==="dialIn"){
+    h += '<h2>Is a dial-in needed?</h2><p class="sub">For example, someone interstate or overseas joins live and interacts with the speakers in Sydney.</p>'+optButtons("dialIn");
+  } else if(key==="slides"){
+    h += '<h2>Slides</h2><div class="subhead" style="margin-top:6px">Who controls the slides?</div>'+optButtons("slideControl");
+    if(a.slideControl==="Speakers control their own slides") h += '<div class="callout">🖱️ If speakers control their own slides from the lectern, we will supply a USB slide remote.</div>';
+    h += '<div class="subhead">Will there be a script or speaker notes included in the PowerPoint presentation?</div>'+ynButtons("script");
+  } else if(key==="qa"){
+    if(a.qa && !qaOpts().some(function(o){return o.v===a.qa;})) a.qa="";
+    h += '<h2>Will there be Q&A?</h2><p class="sub">How would you like questions to come in?</p>'+optButtons("qa",false,qaOpts());
+  } else if(key==="qaMod"){
+    h += '<h2>Should online questions be moderated?</h2><p class="sub">Moderated questions are reviewed before they go on screen.</p>'+optButtons("qaMod");
+  } else if(key==="moderation"){
+    h += '<h2>Who moderates the Q&A?</h2><p class="sub">Someone needs to filter and surface questions.</p>'+optButtons("moderation");
+    if(a.moderation==="Requester's team") h += '<label>Who will moderate from your team?</label><input id="f-modName" value="'+esc(a.modName)+'" placeholder="Full name"><div class="note">Enter their name so we can add them to the event as a Producer.</div>';
+  } else if(key==="extras"){
+    h += '<h2>A couple more things</h2><p class="sub">A few details to help us plan the right support.</p>';
+    if(onlineInvolved(a)) h += '<div class="subhead" style="margin-top:6px">Online platform</div>'+
+      '<div class="callout">WiseTech online events are held via Microsoft Teams. Unless your event requirements fall outside of Teams\' capability, or you have a specific platform requirement, we will recommend the best platform/event type to suit your needs.</div>'+
+      '<label class="chk"><input type="checkbox" id="f-teamsConfirm" '+(a.teamsConfirm?"checked":"")+'> Tick to confirm</label>';
+    h += '<div class="subhead">Do you require an on-screen speaker timer?</div>'+ynButtons("timer");
+  } else if(key==="deliverables"){
+    h += '<h2>What do you need delivered?</h2><p class="sub">Pick the output.</p>'+optButtons("deliverables");
+    if(wantsOnDemand(a)){
+      h += '<div class="subhead">When do you need the on-demand recording published?</div>'+
+        '<input id="f-publishWhen" type="date" min="'+todayStr()+'" value="'+esc(a.publishWhen)+'" '+(a.publishTbc?"disabled":"")+'>'+
+        '<label class="chk"><input type="checkbox" id="f-publishTbc" data-tbc '+(a.publishTbc?"checked":"")+'> Not sure yet</label>'+
+        '<div class="subhead">Where is it being published?</div><div class="note" style="margin-top:2px;margin-bottom:10px">Select all that apply.</div>'+optButtons("publishWhere",true);
+      if(has(a.publishWhere,"Supplied back to attendees for rewatching")) h += '<div class="callout warn">⚠️ If the attendee list includes a public audience, we can\'t supply a private stream link to a specific audience list. We can only share the on-demand recording internally, or entirely public facing (an unlisted but publicly shareable video link). We do not offer direct downloads of the recording to any audience members.</div>';
+    }
+  } else if(key==="facilities"){
+    h += '<h2>Facilities Request</h2><p class="sub">Some parts of your event are arranged through Facilities.</p>'+
+    '<div class="callout">If you need additional support for your event such as <b>Catering, Security, Furniture Hire, or specific seating arrangements</b>, you\'ll need to contact <a href="mailto:'+esc(FACILITIES_EMAIL)+'" target="_blank" rel="noopener">'+esc(FACILITIES_EMAIL)+'</a>.<br><br>If you need <b>branded banners or decorations</b>, these also have to be submitted via Facilities.<br><br>Facilities will confirm the availability of WTG Office spaces.</div>'+
+    '<label class="chk" style="margin-top:16px"><input type="checkbox" id="f-facilitiesAck" '+(a.facilitiesAck?"checked":"")+'> I understand I need to reach out to facilities for additional support</label>';
+  } else if(key==="resources"){
+    var runsheetBtns=linkBtn(LINKS.runsheetBlank,"⬇ Blank runsheet")+linkBtn(LINKS.runsheetExample,"⬇ Example runsheet");
+    var guideBtns=linkBtn(LINKS.guideObs,"⬇ OBS and webcam guide")+linkBtn(LINKS.guidePhone,"⬇ Phone guide");
+    h += '<h2>Runsheet and slides</h2><p class="sub">These help us plan how to support your event. Please send your completed runsheet and slides before the deadlines.</p>'+
+    '<div class="res"><b>Runsheet</b><div class="d">'+(runsheetBtns?'Use the blank template to build your runsheet, or look at the pre-filled example first.':'The Live Events Team will send you a runsheet template.')+'</div>'+
+      (runsheetBtns?'<div class="actions">'+runsheetBtns+'</div>':"")+
+      '<div class="deadline">Submission deadline: <b>'+esc(RUNSHEET_DEADLINE)+'</b></div></div>'+
+    '<div class="res"><b>Pre-recorded videos</b><div class="d">'+(guideBtns?'Recording a segment yourself? Download the guide that matches how you\'ll film. Each one walks you through setup, lighting, framing and recording.':'Recording a segment yourself? The Live Events Team can send you a setup guide for OBS, a webcam or a phone.')+'</div>'+
+      (guideBtns?'<div class="actions">'+guideBtns+'</div>':"")+
+      '<div class="deadline">Submission deadline: <b>'+esc(RUNSHEET_DEADLINE)+'</b></div></div>'+
+    '<div class="res"><b>PowerPoint slides</b><div class="d">Build your slides with the Claude Design tool. In Claude, click <b>More</b> in the top left sidebar, then choose <b>Design</b>.</div>'+
+      '<div class="deadline">Submission deadline: <b>'+esc(PPT_DEADLINE)+'</b></div></div>';
+  } else if(key==="review"){
+    var secs = sections(a).map(function(sec){
+      var rr=sec[1].filter(keepRow); if(!rr.length||sec[0]==="Notes") return "";
+      return '<div class="sumh">'+esc(sec[0])+'</div>'+rr.map(function(kv){ return '<div><span>'+esc(kv[0])+'</span><span>'+(Array.isArray(kv[1])?kv[1].map(esc).join("<br>"):esc(kv[1]))+'</span></div>'; }).join("");
+    }).join("");
+    h += '<h2>Looks good?</h2><p class="sub">Check your answers, then send. We\'ll be in touch to talk through how we can support your event.</p><div class="sum">'+secs+'</div>'+
+    '<label>Anything else we should know? (optional)</label><textarea id="f-notes" rows="3" placeholder="Special guests, recording needs, venue details...">'+esc(a.notes)+'</textarea>';
+    if(sendError) h += '<div class="callout warn">'+esc(sendError)+' You can also <a href="'+mailBrief(a)+'">send it by email</a> instead.</div>';
+  }
+  h += '<div class="err" id="err">'+esc(errMsg)+'</div><div class="nav">'+
+    '<button type="button" class="btn g" id="back" '+(step===0?"style='visibility:hidden'":"")+'>← Back</button>'+
+    '<button type="button" class="btn p" id="next" '+(sending?"disabled":"")+'>'+(key==="review"?(sending?"Sending…":"Send to Live Events Team 🚀"):"Next →")+'</button></div>';
+  $("#main").innerHTML = h;
+
+  var ADV = ["access","qa","qaMod","dialIn"];
+  Array.prototype.forEach.call(document.querySelectorAll(".opt"),function(b){ b.onclick=function(){
+    saveInputs();
+    var k=b.getAttribute("data-k"), v=b.getAttribute("data-v");
+    if(b.getAttribute("data-multi")==="1"){
+      var arr=(a[k]||[]).slice();
+      if(k==="content"&&v==="None of these") arr=["None of these"];
+      else { if(k==="content") arr=arr.filter(function(x){return x!=="None of these";}); arr = has(arr,v)?arr.filter(function(x){return x!==v;}):arr.concat(v); }
+      a[k]=arr; errMsg=""; return render();
+    }
+    a[k]=v; errMsg="";
+    if(k==="audienceType"){ if(!hostedSydney(a)){ a.room=""; a.speakers=""; a.speakerNames=[]; a.mics=[]; } if(a.qa && !qaOpts().some(function(o){return o.v===a.qa;})){ a.qa=""; a.qaMod=""; a.moderation=""; a.modName=""; } }
+    if(k==="qa" && !/online/i.test(v)){ a.qaMod=""; a.moderation=""; a.modName=""; }
+    if(k==="qaMod" && v!=="Moderated"){ a.moderation=""; a.modName=""; }
+    if(k==="moderation" && v!=="Requester's team") a.modName="";
+    render();
+    if(ADV.indexOf(k)>=0) setTimeout(function(){ if(step<activeSteps().length-1){step++;render();} },180);
+  };});
+  Array.prototype.forEach.call(document.querySelectorAll(".num[data-nk]"),function(b){ b.onclick=function(){
+    saveInputs(); var k=b.getAttribute("data-nk"), n=+b.getAttribute("data-v"); a[k]=String(n);
+    if(k==="speakers") a.speakerNames=Array.apply(null,{length:n}).map(function(_,i){return (a.speakerNames||[])[i]||"";});
+    if(k==="preCount") a.preSpeakers=Array.apply(null,{length:n}).map(function(_,i){return (a.preSpeakers||[])[i]||{name:"",based:"",unconfirmed:false};});
+    errMsg=""; render();
+  };});
+  Array.prototype.forEach.call(document.querySelectorAll("[data-yn]"),function(b){ b.onclick=function(){ saveInputs(); a[b.getAttribute("data-yn")]=b.getAttribute("data-v"); errMsg=""; render(); }; });
+  ["f-date","f-dateUnc"].forEach(function(id){ var e=$("#"+id); if(e) e.onchange=previewDate; }); previewDate();
+  Array.prototype.forEach.call(document.querySelectorAll("[data-tbc]"),function(c){ c.onchange=function(){ saveInputs(); errMsg=""; render(); }; });
+  $("#back").onclick=function(){ saveInputs(); step=Math.max(0,step-1); errMsg=""; render(); };
+  $("#next").onclick=function(){
+    saveInputs();
+    var bad=function(m){ errMsg=m; return render(); };
+    if(key==="basics"){
+      if(!a.name||!/^\S+@\S+\.\S+$/.test(a.email)) return bad("Please enter your name and a valid email.");
+      if(!a.team) return bad("Please enter your team.");
+      if(!a.primaryContact) return bad("Please say whether you are the primary event contact.");
+      if(a.primaryContact==="No"&&!a.contactName) return bad("Please enter the primary event contact's name.");
+      if(a.contactEmail&&!/^\S+@\S+\.\S+$/.test(a.contactEmail)) return bad("The primary contact's email doesn't look right.");
+      if(!a.eventName) return bad("Please enter the event name.");
+      if((!a.date&&!a.dateTbc)||(!a.time&&!a.timeTbc)||(!a.endTime&&!a.endTbc)) return bad("Please choose the date and times, or tick 'not sure yet'.");
+      if(!a.timeTbc&&!a.endTbc&&a.endTime<=a.time) return bad("End time must be after the start time.");
+      if(a.inPerson===""&&a.online==="") return bad("Please enter how many in person and/or online attendees you expect.");
+      if(Number(a.online)>0&&!a.onlineWho) return bad("Please say who is watching the online stream.");
+    } else if(key==="audience"){
+      if(!a.audienceType) return bad("Pick an audience type to continue.");
+      if(hostedSydney(a)&&!a.room) return bad("Pick the room you would like.");
+    } else if(key==="presenters"){
+      if(!a.speakers) return bad("Pick how many in person speakers are presenting.");
+      if(!a.mics.length) return bad("Pick at least one mic option.");
+    } else if(key==="content"){
+      if(!a.content.length) return bad("Pick at least one option (or 'None of these').");
+    } else if(key==="prerec"){
+      if(!a.preCount) return bad("Pick how many people need to be pre-recorded.");
+      if((a.preSpeakers||[]).some(function(p){return (!p.name&&!p.unconfirmed)||(!p.based&&!p.unconfirmed);})) return bad("For each person, enter a full name and where they're based (or tick Unconfirmed speaker).");
+    } else if(key==="slides"){
+      if(!a.slideControl) return bad("Pick who controls the slides.");
+      if(!a.script) return bad("Please say whether a script or speaker notes are included.");
+    } else if(key==="moderation"){
+      if(!a.moderation) return bad("Pick who moderates the Q&A.");
+      if(a.moderation==="Requester's team"&&!a.modName) return bad("Enter the name of the moderator from your team.");
+    } else if(key==="extras"){
+      if(onlineInvolved(a)&&!a.teamsConfirm) return bad("Please tick to confirm the online platform.");
+      if(!a.timer) return bad("Please say whether you need an on-screen speaker timer.");
+    } else if(key==="deliverables"){
+      if(!a.deliverables) return bad("Pick what you need delivered.");
+      if(wantsOnDemand(a)){
+        if(!a.publishWhen&&!a.publishTbc) return bad("Please say when the on-demand recording is needed, or tick 'not sure yet'.");
+        if(!a.publishWhere.length) return bad("Pick where the recording is being published.");
+      }
+    } else if(key==="facilities"){
+      if(!a.facilitiesAck) return bad("Please tick to confirm you understand.");
+    } else if(key!=="review" && key!=="resources" && !a[key]){ return bad("Pick an option to continue."); }
+    errMsg="";
+    if(key==="review") return submit();
+    step++; render();
+  };
+  saveDraft();
+}
+function saveInputs(){
+  ["name","email","team","contactName","contactEmail","eventName","date","time","endTime","notes","inPerson","online","modName","publishWhen"].forEach(function(k){ var e=$("#f-"+k); if(e) a[k]=e.value.trim(); });
+  ["dateTbc","timeTbc","endTbc","dateUnc","teamsConfirm","facilitiesAck","publishTbc","preSupport"].forEach(function(k){ var e=$("#f-"+k); if(e) a[k]=e.checked; });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-sp]"),function(e){ if(!Array.isArray(a.speakerNames)) a.speakerNames=[]; a.speakerNames[+e.getAttribute("data-sp")]=e.value.trim(); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-ps]"),function(e){
+    var pp=(a.preSpeakers||[])[+e.getAttribute("data-ps")]; if(!pp) return;
+    if(e.getAttribute("data-f")==="unconfirmed") pp.unconfirmed=e.checked; else pp[e.getAttribute("data-f")]=e.value.trim();
+  });
+}
+
+// Send the request: one document, created through Firestore's REST API.
+// Every field is a string (the whole submission goes in `json`), which is
+// all the rules accept from a form that isn't signed in.
+function submit(){
+  if(sending) return;
+  var now = new Date().toISOString();
+  var rec = Object.assign({}, a, {createdAt: now});
+  var data = {
+    json: JSON.stringify(rec),
+    eventName: String(rec.eventName).slice(0,160),
+    requesterName: String(rec.name).slice(0,80),
+    requesterEmail: String(rec.email).slice(0,120),
+    eventDate: rec.dateTbc ? "" : (rec.date||""),
+    createdAt: now,
+    status: "pending",
+    intakeToken: INTAKE_TOKEN
+  };
+  var fields = {};
+  Object.keys(data).forEach(function(k){ fields[k] = { stringValue: data[k] }; });
+  sending = true; sendError = ""; render();
+  fetch(SUBMIT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: fields })
+  })
+    .then(function(res){
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      return res.json();
+    })
+    .then(function(doc){
+      var name = (doc && doc.name) || "";
+      rec.reference = name.slice(name.lastIndexOf("/")+1);
+      sending = false;
+      submitted = {rec: rec};
+      clearDraft();
+      render();
+      window.scrollTo(0,0);
+    })
+    .catch(function(err){
+      sending = false;
+      sendError = (err && /HTTP 403/.test(err.message))
+        ? "This copy of the form has been retired, so the request couldn't be sent."
+        : "Couldn't send the request just now. Check you're online and try again.";
+      render();
+    });
+}
+
+function makePdf(r){
+  var jsPDF=window.jspdf.jsPDF; var doc=new jsPDF({unit:"pt",format:"a4"});
+  var W=595,H=842,M=40,CW=W-2*M,LX=M+8,VX=M+170;
+  var P=[29,23,101],K=[47,111,237],SOFT=[233,234,247],INK=[20,18,58],MUT=[96,99,132],LINE=[220,222,238],AMB=[178,106,0],AMBS=[255,242,217];
+  var fill=function(c){doc.setFillColor(c[0],c[1],c[2]);}, tc=function(c){doc.setTextColor(c[0],c[1],c[2]);}, dc=function(c){doc.setDrawColor(c[0],c[1],c[2]);};
+  var dateNice=dateStr(r), timeNice=timeRange(r);
+  var aud=AUD_SHORT[r.audienceType]||r.audienceType||"-";
+  var delivShort=r.deliverables==="Both"?"Live stream + On-demand edit":(r.deliverables||"-");
+
+  fill(P);doc.rect(0,0,W,128,"F");
+  fill(K);doc.rect(0,128,W,6,"F");
+  tc([255,255,255]);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text("LIVE EVENT REQUEST  |  LIVE EVENTS TEAM",M,38);
+  var nm=doc.splitTextToSize(r.eventName||"Untitled event",470).slice(0,2);
+  doc.setFontSize(24);doc.text(nm,M,nm.length>1?66:72);
+  doc.setFont("helvetica","normal");doc.setFontSize(11);
+  doc.text(doc.splitTextToSize(dateNice+"   |   "+timeNice+(r.room?"   |   "+r.room:""),W-2*M)[0],M,114);
+
+  var y=158;
+  var need=function(h){ if(y+h>H-60){ doc.addPage(); y=50; } };
+
+  var tiles=[["IN PERSON",r.inPerson||"-"],["ONLINE",r.online||"-"],["AUDIENCE TYPE",aud],["DELIVERABLE",delivShort]];
+  var tw=(CW-30)/4;
+  tiles.forEach(function(t,i){
+    var x=M+i*(tw+10);
+    fill(SOFT);doc.roundedRect(x,y,tw,54,8,8,"F");
+    fill(i%2?K:P);doc.roundedRect(x,y+10,3,34,1.5,1.5,"F");
+    tc(MUT);doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.text(t[0],x+12,y+18);
+    tc(INK);doc.setFontSize(11);doc.text(doc.splitTextToSize(String(t[1]),tw-20).slice(0,2),x+12,y+34);
+  });
+  y+=76;
+
+  function section(title,color){
+    need(48); fill(color||P);doc.roundedRect(M,y,4,16,2,2,"F");
+    tc(INK);doc.setFont("helvetica","bold");doc.setFontSize(12.5);doc.text(title,M+12,y+12); y+=28;
+  }
+  function kv(label,val){
+    var w=doc.splitTextToSize(String(val),CW-VX+M-8);
+    need(w.length*14+12);
+    tc(MUT);doc.setFont("helvetica","bold");doc.setFontSize(8);doc.text(doc.splitTextToSize(label.toUpperCase(),150).slice(0,2),LX,y+9);
+    tc(INK);doc.setFont("helvetica","normal");doc.setFontSize(11);doc.text(w,VX,y+10);
+    y+=Math.max(w.length*14,label.length>26?22:0)+8; dc(LINE);doc.setLineWidth(.6);doc.line(M,y-3,W-M,y-3);
+  }
+
+  sections(r).forEach(function(sec,i){
+    var rr=sec[1].filter(keepRow); if(!rr.length) return;
+    y+=8; section(sec[0],i%2?K:P);
+    rr.forEach(function(x){ kv(x[0],Array.isArray(x[1])?x[1].join("\n"):x[1]); });
+  });
+
+  var fl=flags(r);
+  if(fl.length){
+    y+=8;
+    var wl=fl.map(function(f){ return doc.splitTextToSize("- "+f,CW-36); });
+    var hh=wl.reduce(function(n,w){ return n+w.length*14; },0)+44;
+    need(hh+10);
+    fill(AMBS);doc.roundedRect(M,y,CW,hh,10,10,"F");
+    fill(AMB);doc.roundedRect(M,y+8,4,hh-16,2,2,"F");
+    tc(AMB);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text("FOR THE LIVE EVENTS TEAM'S ATTENTION",M+18,y+22);
+    doc.setFont("helvetica","normal");doc.setFontSize(10.5);
+    var fy=y+40; wl.forEach(function(w){ doc.text(w,M+18,fy); fy+=w.length*14; });
+    y+=hh+14;
+  }
+
+  var n=doc.getNumberOfPages();
+  for(var i=1;i<=n;i++){
+    doc.setPage(i);
+    fill(K);doc.rect(0,H-6,W,6,"F");
+    dc(LINE);doc.setLineWidth(.6);doc.line(M,H-40,W-M,H-40);
+    tc(MUT);doc.setFont("helvetica","normal");doc.setFontSize(8.5);
+    doc.text("Submitted "+new Date(r.createdAt).toLocaleString()+"   |   Sent to the Live Events Team"+(r.reference?"   |   Ref "+r.reference:""),M,H-24);
+    doc.text("Page "+i+" of "+n,W-M,H-24,{align:"right"});
+  }
+  return doc.output("blob");
+}
+function downloadBlob(blob,filename){
+  var url=URL.createObjectURL(blob); var el=document.createElement("a"); el.href=url; el.download=filename;
+  document.body.appendChild(el); el.click(); el.remove(); setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+}
+function savePdf(r){
+  var base="Live Event Request - "+(r.eventName||"event").replace(/[^\w\- ]+/g,"").trim();
+  try{
+    if(window.jspdf){ downloadBlob(makePdf(r),base+".pdf"); }
+    else { downloadBlob(new Blob([lines(r)],{type:"text/plain;charset=utf-8"}),base+".txt"); }
+  }catch(e){ toast("Couldn't create the download.",4000); }
+}
+function stageSvg(){
+  var folds=function(x0,dir){ return [8,22,36,50].map(function(d){ return '<path d="M'+(x0+dir*d)+' 0L'+(x0+dir*(d-6))+' 220" stroke="#2a050b" stroke-opacity=".45" stroke-width="3"/>'; }).join(""); };
+  return '<svg class="stage-svg" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'+
+  '<defs>'+
+    '<linearGradient id="stBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b0a2c"/><stop offset="1" stop-color="#1D1765"/></linearGradient>'+
+    '<linearGradient id="stBeam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".6"/><stop offset="1" stop-color="#9fc1ff" stop-opacity="0"/></linearGradient>'+
+    '<radialGradient id="stFloor" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".9"/><stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient>'+
+    '<linearGradient id="stCurt" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#46090f"/><stop offset=".55" stop-color="#8d1526"/><stop offset="1" stop-color="#46090f"/></linearGradient>'+
+  '</defs>'+
+  '<rect width="600" height="220" fill="url(#stBg)"/>'+
+  '<rect y="168" width="600" height="52" fill="#24160c" opacity=".6"/>'+
+  '<g><polygon class="beam b1" points="94,10 6,205 300,205" fill="url(#stBeam)"/><polygon class="beam b2" points="506,10 300,205 594,205" fill="url(#stBeam)"/></g>'+
+  '<ellipse cx="300" cy="192" rx="200" ry="26" fill="url(#stFloor)"/>'+
+  '<path d="M0 0H72L60 220H0Z" fill="url(#stCurt)"/>'+folds(0,1)+
+  '<path d="M600 0H528L540 220H600Z" fill="url(#stCurt)"/>'+folds(600,-1)+
+  '<rect width="72" height="9" fill="#c9a23a"/><rect x="528" width="72" height="9" fill="#c9a23a"/>'+
+  '<circle cx="94" cy="10" r="6" fill="#fff"/><circle cx="506" cy="10" r="6" fill="#fff"/>'+
+  '</svg>';
+}
+function renderDone(){
+  var rec = submitted.rec;
+  $("#main").innerHTML = '<div class="stage">'+stageSvg()+'<div class="stage-in"><div class="big">🎉</div><h2>Request submitted!</h2>'+
+  '<p>Thanks! It\'s with the Live Events Team, who\'ll review it and work out how best to support your event.</p></div></div>'+
+  '<div class="done" style="padding-top:18px">'+
+  (rec.reference?'<div class="ref">Reference '+esc(rec.reference)+'</div>':"")+
+  '<p class="sub">Keep a copy for yourself, or email it to the team as well.</p>'+
+  '<div class="actions" style="justify-content:center">'+
+    '<button type="button" class="btn p" id="pdf">📄 Download a PDF of your request</button>'+
+  '</div>'+
+  '<div class="actions" style="justify-content:center">'+
+    '<a class="btn o" target="_blank" rel="noopener" href="'+mailBrief(rec)+'">✉️ Email a copy via your email app</a>'+
+    '<a class="btn o" target="_blank" rel="noopener" href="'+outlookLink(rec)+'">🌐 Email a copy via Outlook on the web</a>'+
+  '</div>'+
+  '<p class="note">Questions? Contact <b>'+esc(LIVE_EVENTS_EMAIL)+'</b>.</p>'+
+  '<div class="actions" style="justify-content:center"><button type="button" class="btn g" id="again">Submit another request</button></div></div>';
+  $("#pdf").onclick=function(){ savePdf(rec); };
+  $("#again").onclick=function(){ var n=a.name,e=a.email,t=a.team; a=Object.assign(blank(),{name:n,email:e,team:t}); submitted=null; step=0; sendError=""; render(); window.scrollTo(0,0); };
+}
+
+loadDraft();
+render();
+})();
+</script>
+</body>
+</html>

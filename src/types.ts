@@ -723,6 +723,67 @@ export type ItineraryAddition = {
 // is staying. Each attendee books their own; this is just the record of
 // it. Written and updated by the page through Firestore's REST API to
 // /itineraryPages/{token}/travel, free text throughout.
+// ── Live event requests ──────────────────────────────────────────────────
+// A request for the Live Events (video) team's support, submitted from the
+// Live event request form on SharePoint (src/liveEventRequestForm.template
+// .html, built by src/liveEventRequestExport.ts). The form writes one of
+// these to /liveEventRequests through Firestore's REST API without signing
+// in; the rules take the create only when `intakeToken` matches the token
+// in /settings/liveEventIntake, so a form can be retired by rotating it.
+// The Video team reviews them on their board's Live event requests panel.
+
+export type LiveEventRequestStatus = "pending" | "approved" | "declined";
+
+export type LiveEventDecision = {
+  status: "approved" | "declined";
+  // The team's message to the requester: a reason, next steps.
+  note: string;
+  decidedAt: string;
+  decidedById: string;
+  decidedByName: string;
+};
+
+export type LiveEventRequest = {
+  id: string;
+  // Everything the form captured, serialised; the shape is
+  // LiveEventSubmission in src/liveEventRequests.ts. Kept as one string so
+  // the form only ever writes string fields and the rules can cap its size.
+  json: string;
+  // Headline fields the form writes alongside, so the panel can list and
+  // sort without parsing every submission.
+  eventName: string;
+  requesterName: string;
+  requesterEmail: string;
+  // YYYY-MM-DD, or "" when the date is still to be confirmed.
+  eventDate: string;
+  createdAt: string;
+  status: LiveEventRequestStatus;
+  intakeToken: string;
+  // Set in Waypoint by the Video team.
+  decision?: LiveEventDecision;
+  teamNotes?: string;
+  teamNotesUpdatedAt?: string;
+  // Reserved for the confirmation email, once the Entra app can send one.
+  confirmationSentAt?: string;
+};
+
+// The form's configuration, in /settings/liveEventIntake: the token baked
+// into every downloaded copy of the form, where the live copy is on
+// SharePoint, the mailboxes it names and the links behind its resource
+// buttons (the runsheet templates and recording guides, hosted wherever
+// the team keeps them).
+export type LiveEventIntake = {
+  token?: string;
+  sharePointUrl?: string;
+  teamEmail?: string;
+  facilitiesEmail?: string;
+  runsheetBlankUrl?: string;
+  runsheetExampleUrl?: string;
+  guideObsUrl?: string;
+  guidePhoneUrl?: string;
+  updatedAt?: string;
+};
+
 export type ItineraryTravel = {
   id: string;
   name: string;

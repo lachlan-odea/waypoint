@@ -22,6 +22,8 @@ import type {
   Hub,
   ItineraryAddition,
   ItineraryTravel,
+  LiveEventIntake,
+  LiveEventRequest,
   MarketingEvent,
   Notification,
   Project,
@@ -886,4 +888,57 @@ export function subscribeActivityShare(
 
 export async function setActivityShare(patch: ActivityShare): Promise<void> {
   await setDoc(activityShareDoc(), { ...patch, updatedAt: new Date().toISOString() }, { merge: true });
+}
+
+// ── Live event requests ──────────────────────────────────────────────────
+// Submissions from the Live event request form on SharePoint, at
+// /liveEventRequests. The form creates them (see the rules); Waypoint
+// reads them all and writes the team's decisions and notes onto them. The
+// form's configuration is one document, /settings/liveEventIntake.
+
+const liveEventRequestsCol = () => collection(db, "liveEventRequests");
+const liveEventIntakeDoc = () => doc(collection(db, "settings"), "liveEventIntake");
+
+export function subscribeLiveEventRequests(
+  onChange: (requests: LiveEventRequest[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    liveEventRequestsCol(),
+    (snap) =>
+      onChange(
+        snap.docs.map((d) => ({ ...(d.data() as Omit<LiveEventRequest, "id">), id: d.id })),
+      ),
+    onError,
+  );
+}
+
+export async function updateLiveEventRequest(
+  id: string,
+  patch: Partial<Omit<LiveEventRequest, "id">>,
+): Promise<void> {
+  await updateDoc(doc(liveEventRequestsCol(), id), patch);
+}
+
+export async function deleteLiveEventRequest(id: string): Promise<void> {
+  await deleteDoc(doc(liveEventRequestsCol(), id));
+}
+
+export function subscribeLiveEventIntake(
+  onChange: (intake: LiveEventIntake) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    liveEventIntakeDoc(),
+    (snap) => onChange((snap.data() as LiveEventIntake | undefined) ?? {}),
+    onError,
+  );
+}
+
+export async function setLiveEventIntake(patch: LiveEventIntake): Promise<void> {
+  await setDoc(
+    liveEventIntakeDoc(),
+    { ...patch, updatedAt: new Date().toISOString() },
+    { merge: true },
+  );
 }

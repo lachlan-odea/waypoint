@@ -3,6 +3,8 @@ import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
   Campaign,
   ActivityShare,
+  LiveEventIntake,
+  LiveEventRequest,
   MarketingEvent,
   Notification,
   Speaker,
@@ -47,6 +49,11 @@ import {
   subscribeSpeakers,
   subscribeActivityShare,
   setActivityShare as firestoreSetActivityShare,
+  subscribeLiveEventIntake,
+  subscribeLiveEventRequests,
+  setLiveEventIntake as firestoreSetLiveEventIntake,
+  updateLiveEventRequest as firestoreUpdateLiveEventRequest,
+  deleteLiveEventRequest as firestoreDeleteLiveEventRequest,
   setSpeaker as firestoreSetSpeaker,
   deleteSpeaker as firestoreDeleteSpeaker,
   subscribeCampaigns,
@@ -72,6 +79,8 @@ import { MyDesk } from "./components/MyDesk";
 import { SocialCalendar } from "./components/SocialCalendar";
 import { CampaignsView } from "./components/CampaignsView";
 import { CampaignsPanel } from "./components/CampaignsPanel";
+import { LiveEventRequestsPanel } from "./components/LiveEventRequestsPanel";
+import { LiveEventFormModal } from "./components/LiveEventFormModal";
 import { EventsView } from "./components/EventsView";
 import { NewMenu, type NewKind } from "./components/NewMenu";
 import { Login } from "./components/Login";
@@ -93,6 +102,7 @@ import {
   PROJECT_STATUSES,
   resolveSocialConfig,
   DEFAULT_WORKSPACE_ID,
+  LIVE_EVENT_REQUESTS_WORKSPACE_ID,
   SUPER_USER_EMAILS,
 } from "./constants";
 import { projectStatusTone } from "./statusTone";
@@ -363,6 +373,26 @@ export default function App() {
     if (!sessionDesignerId) return;
     return subscribeSpeakers(setSpeakers, (err) => {
       console.warn("Couldn't load speakers", err);
+    });
+  }, [sessionDesignerId]);
+
+  // Live event requests sent in by the form on SharePoint, and the form's
+  // own settings, for the Video board's panel. A missing rule (the
+  // collection is denied until it's deployed) only logs: the panel then
+  // shows nothing rather than every board showing a sync error.
+  const [liveEventRequests, setLiveEventRequests] = useState<LiveEventRequest[]>([]);
+  const [liveEventIntake, setLiveEventIntake] = useState<LiveEventIntake>({});
+  const [liveEventFormOpen, setLiveEventFormOpen] = useState(false);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeLiveEventRequests(setLiveEventRequests, (err) => {
+      console.warn("Couldn't load live event requests", err);
+    });
+  }, [sessionDesignerId]);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeLiveEventIntake(setLiveEventIntake, (err) => {
+      console.warn("Couldn't load the live event form settings", err);
     });
   }, [sessionDesignerId]);
 
@@ -1695,6 +1725,21 @@ export default function App() {
           />
         ) : view === "board" ? (
           <>
+            {/* The Video team's inbox: requests from the Live event request
+                form on SharePoint, to approve or decline, and the approved
+                events still ahead. */}
+            {currentWorkspaceId === LIVE_EVENT_REQUESTS_WORKSPACE_ID && (
+              <LiveEventRequestsPanel
+                requests={liveEventRequests}
+                intake={liveEventIntake}
+                currentDesigner={currentDesigner}
+                onUpdate={firestoreUpdateLiveEventRequest}
+                onDelete={firestoreDeleteLiveEventRequest}
+                onOpenForm={() => setLiveEventFormOpen(true)}
+                storageKey={`waypoint.board.${currentWorkspaceId}.liveEventRequestsCollapsed`}
+              />
+            )}
+
             {/* Campaigns any of this team's live projects are feeding. */}
             <CampaignsPanel
               campaigns={campaigns}
@@ -2154,6 +2199,14 @@ export default function App() {
             setNewWebinarOpen(false);
             openItem("campaign", c.id, "brief");
           }}
+        />
+      )}
+
+      {liveEventFormOpen && (
+        <LiveEventFormModal
+          intake={liveEventIntake}
+          onSaveIntake={firestoreSetLiveEventIntake}
+          onClose={() => setLiveEventFormOpen(false)}
         />
       )}
 
