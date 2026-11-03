@@ -794,7 +794,13 @@ export type LiveEventBlackout = {
 // without who set them.
 export type PublicBlackout = Pick<LiveEventBlackout, "start" | "end" | "reason">;
 
+// Who to list as the contact for one of the team's regular events (see
+// TEAM_EVENT_PRESETS), keyed by the preset's name. Kept in settings rather
+// than the source: the repo is public.
+export type LiveEventPresetContact = { name: string; email: string };
+
 export type LiveEventIntake = {
+  presetContacts?: Record<string, LiveEventPresetContact>;
   token?: string;
   sharePointUrl?: string;
   teamEmail?: string;

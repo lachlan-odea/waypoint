@@ -9801,8 +9801,8 @@ a.button-link:hover {
   border: 1px dashed var(--wp-status-review-fg);
 }
 .ler-cal-key.blackout {
-  background: repeating-linear-gradient(135deg, var(--ink-200) 0 3px, transparent 3px 6px);
-  border: 1px solid var(--border);
+  background: repeating-linear-gradient(135deg, var(--wp-status-blocked-fg) 0 3px, var(--wp-status-blocked-bg) 3px 6px);
+  border: 1px solid var(--wp-status-blocked-fg);
 }
 .ler-cal-grid {
   display: grid;
@@ -9834,7 +9834,11 @@ a.button-link:hover {
   opacity: 0.6;
 }
 .ler-cal-cell.blackout {
-  background: repeating-linear-gradient(135deg, var(--ink-100) 0 6px, var(--surface) 6px 12px);
+  background: repeating-linear-gradient(135deg, var(--wp-status-blocked-bg) 0 6px, var(--surface) 6px 12px);
+  border-color: var(--wp-status-blocked-fg);
+}
+.ler-cal-cell.blackout .ler-cal-add {
+  color: var(--wp-status-blocked-fg);
 }
 .ler-cal-cell.today .ler-cal-daynum {
   background: var(--wtg-cobalt);
@@ -9901,10 +9905,33 @@ a.button-link:hover {
   margin-right: 4px;
 }
 .ler-cal-bo {
-  background: var(--ink-100);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+  border: 1px solid var(--wp-status-blocked-fg);
   font-weight: 600;
+}
+.ler-cal-bos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+.ler-cal-bos .eyebrow {
+  margin-right: 4px;
+}
+.ler-cal-bo-pill {
+  border: 1px solid var(--wp-status-blocked-fg);
+  background: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ler-cal-bo-pill strong {
+  margin-right: 4px;
 }
 .ler-cal-foot {
   margin: 8px 0 0;
@@ -9966,4 +9993,20 @@ a.button-link:hover {
   background: var(--wtg-cobalt);
   border-color: var(--wtg-cobalt);
   color: #fff;
+}
+.ler-contact-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 150px 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.ler-contact-ev {
+  font-size: 13px;
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  .ler-contact-row {
+    grid-template-columns: 1fr;
+  }
 }

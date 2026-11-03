@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { LiveEventIntake } from "../types";
+import type { LiveEventIntake, LiveEventPresetContact } from "../types";
+import { TEAM_EVENT_PRESETS } from "../liveEventRequests";
 import {
   LIVE_EVENT_FORM_FILE_NAME,
   checkIntake,
@@ -69,6 +70,26 @@ export function LiveEventFormModal({ intake, onSaveIntake, onDeleteRequest, onCl
     guidePhoneUrl: intake.guidePhoneUrl ?? "",
   });
   const [url, setUrl] = useState(intake.sharePointUrl ?? "");
+  const [contacts, setContacts] = useState<Record<string, LiveEventPresetContact>>(() =>
+    Object.fromEntries(
+      TEAM_EVENT_PRESETS.map((p) => [
+        p.eventName,
+        { name: intake.presetContacts?.[p.eventName]?.name ?? "", email: intake.presetContacts?.[p.eventName]?.email ?? "" },
+      ]),
+    ),
+  );
+  const contactsPatch = (): Record<string, LiveEventPresetContact> =>
+    Object.fromEntries(
+      Object.entries(contacts).map(([k, c]) => [k, { name: c.name.trim(), email: c.email.trim() }]),
+    );
+  const contactsDirty = TEAM_EVENT_PRESETS.some(
+    (p) =>
+      contacts[p.eventName].name.trim() !== (intake.presetContacts?.[p.eventName]?.name ?? "").trim() ||
+      contacts[p.eventName].email.trim() !== (intake.presetContacts?.[p.eventName]?.email ?? "").trim(),
+  );
+  const contactsValid = Object.values(contacts).every(
+    (c) => !c.email.trim() || /^\S+@\S+\.\S+$/.test(c.email.trim()),
+  );
   const [busy, setBusy] = useState<"settings" | "download" | "link" | "rotate" | "check" | null>(null);
   const [check, setCheck] = useState<{ ok: boolean; text: string } | null>(null);
   const [message, setMessage] = useState("");
@@ -97,12 +118,14 @@ export function LiveEventFormModal({ intake, onSaveIntake, onDeleteRequest, onCl
     runsheetExampleUrl: links.runsheetExampleUrl.trim(),
     guideObsUrl: links.guideObsUrl.trim(),
     guidePhoneUrl: links.guidePhoneUrl.trim(),
+    presetContacts: contactsPatch(),
   });
 
   const settingsDirty =
     teamEmail.trim() !== (intake.teamEmail ?? "").trim() ||
     facilitiesEmail.trim() !== (intake.facilitiesEmail ?? "").trim() ||
-    LINK_FIELDS.some((f) => links[f.key].trim() !== (intake[f.key] ?? "").trim());
+    LINK_FIELDS.some((f) => links[f.key].trim() !== (intake[f.key] ?? "").trim()) ||
+    contactsDirty;
   const linksValid = LINK_FIELDS.every((f) => isHttpsUrl(links[f.key]));
   const emailsValid =
     (!teamEmail.trim() || /^\S+@\S+\.\S+$/.test(teamEmail.trim())) &&
@@ -272,10 +295,41 @@ export function LiveEventFormModal({ intake, onSaveIntake, onDeleteRequest, onCl
                     </label>
                   ))}
                 </div>
+                <h4 className="ler-sub-h">Contacts for the regular events</h4>
+                <p className="muted small">
+                  Who <strong>Add event</strong> lists as the contact when the team picks one of
+                  these. Kept here rather than in the app's source. Nothing to re-download: this
+                  isn't part of the form.
+                </p>
+                <div className="ler-form-grid">
+                  {TEAM_EVENT_PRESETS.map((p) => (
+                    <div className="ler-contact-row" key={p.eventName}>
+                      <span className="ler-contact-ev">{p.eventName}</span>
+                      <input
+                        aria-label={`${p.eventName} contact name`}
+                        value={contacts[p.eventName].name}
+                        onChange={(e) =>
+                          setContacts((cur) => ({ ...cur, [p.eventName]: { ...cur[p.eventName], name: e.target.value } }))
+                        }
+                        placeholder="Contact name"
+                      />
+                      <input
+                        aria-label={`${p.eventName} contact email`}
+                        value={contacts[p.eventName].email}
+                        onChange={(e) =>
+                          setContacts((cur) => ({ ...cur, [p.eventName]: { ...cur[p.eventName], email: e.target.value } }))
+                        }
+                        placeholder="Their email"
+                        inputMode="email"
+                      />
+                    </div>
+                  ))}
+                </div>
+                {!contactsValid && <p className="field-hint warn">One of the contact emails doesn't look right.</p>}
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
-                  disabled={busy !== null || !settingsDirty || !linksValid || !emailsValid}
+                  disabled={busy !== null || !settingsDirty || !linksValid || !emailsValid || !contactsValid}
                   onClick={saveSettings}
                 >
                   {busy === "settings" ? "Saving…" : "Save settings"}

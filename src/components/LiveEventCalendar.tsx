@@ -13,6 +13,8 @@ type Props = {
   onAddEvent: (dateIso: string) => void;
   onAddBlackout: () => void;
   onEditBlackout: (blackout: LiveEventBlackout) => void;
+  // Set when the periods couldn't be loaded, so an empty calendar says so.
+  blackoutsError?: string;
 };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -58,10 +60,15 @@ export function LiveEventCalendar({
   onAddEvent,
   onAddBlackout,
   onEditBlackout,
+  blackoutsError,
 }: Props) {
   const thisMonth = today.slice(0, 7);
   const [month, setMonth] = useState(thisMonth);
   const cells = useMemo(() => monthCells(month), [month]);
+  const upcomingBlackouts = useMemo(
+    () => blackouts.filter((b) => b.end >= today).sort((a, b) => a.start.localeCompare(b.start)),
+    [blackouts, today],
+  );
 
   const byDate = useMemo(() => {
     const map = new Map<string, LiveEventRequest[]>();
@@ -135,9 +142,6 @@ export function LiveEventCalendar({
           const periods = blackoutsOn(iso, blackouts);
           const items = byDate.get(iso) ?? [];
           const past = iso < today;
-          // The period's name shows on its first day and again at the
-          // start of each later week it runs into.
-          const labelHere = (b: LiveEventBlackout) => b.start === iso || i % 7 === 0 || iso.endsWith("-01");
           return (
             <div
               key={iso}
@@ -166,7 +170,7 @@ export function LiveEventCalendar({
                   title={`${b.reason || "No bookings"}: ${blackoutRange(b)}. Click to change.`}
                   onClick={() => onEditBlackout(b)}
                 >
-                  {labelHere(b) ? b.reason || "No bookings" : " "}
+                  {b.reason || "No bookings"}
                 </button>
               ))}
               {items.map((r) => {
@@ -188,6 +192,35 @@ export function LiveEventCalendar({
           );
         })}
       </div>
+
+      {blackoutsError ? (
+        <p className="field-hint warn ler-cal-foot">
+          Couldn't load the no-booking periods ({blackoutsError}). If the Firestore rules for
+          live event blackouts haven't been deployed yet, that's why.
+        </p>
+      ) : (
+        <div className="ler-cal-bos">
+          <span className="eyebrow">Blocked out</span>
+          {upcomingBlackouts.length === 0 ? (
+            <span className="muted small">No periods blocked out yet. Use Block out dates.</span>
+          ) : (
+            upcomingBlackouts.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                className="ler-cal-bo-pill"
+                title="Show this period and change it"
+                onClick={() => {
+                  setMonth(b.start.slice(0, 7));
+                  onEditBlackout(b);
+                }}
+              >
+                <strong>{b.reason || "No bookings"}</strong> {blackoutRange(b)}
+              </button>
+            ))
+          )}
+        </div>
+      )}
 
       {undated > 0 && (
         <p className="muted small ler-cal-foot">
