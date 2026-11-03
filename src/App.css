@@ -2840,10 +2840,10 @@ a.share-btn {
 }
 
 /* My Desk Styles */
+/* My Desk sits on the item-page shell (pages.css), full width like a
+   campaign page; the shell owns the spacing. */
 .mydesk {
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0;
 }
 
 .mydesk-header {
@@ -10096,4 +10096,55 @@ a.button-link:hover {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   vertical-align: middle;
+}
+
+/* ── My Desk on the item-page shell ───────────────────────────────────── */
+/* The attention cards sit in the Overview's main column, which spaces its
+   children itself. */
+.item-grid-main .mydesk-notifications {
+  margin-bottom: 0;
+}
+/* Today's list, peeked at from the Overview. */
+.desk-peek {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.desk-peek li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  padding-left: 14px;
+  position: relative;
+}
+.desk-peek li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--wtg-cobalt);
+}
+.desk-peek-text {
+  color: var(--text);
+}
+/* The Checklist tab's "add a project to today" row. */
+.desk-addproject {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.desk-addproject select {
+  max-width: 420px;
+}
+.mydesk .item-card .deadline-list {
+  margin: 0;
 }

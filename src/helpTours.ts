@@ -23,11 +23,13 @@ const TOURS: Record<string, Tour> = {
   myDesk: {
     title: "My Desk",
     steps: [
-      { target: ".mydesk-header", title: "Your start page", body: "Everything that's yours, in one place: your work across every team, anything waiting on your review, your notifications and a private checklist nobody else sees." },
+      { target: ".item-band", title: "Your start page", body: "Built like a campaign page. The band has your day's numbers — live projects, overdue, due this week, for review, today's list — your teams, and on the right how long until your next deadline, or how much is overdue." },
+      { target: ".item-tabs", title: "One tab each", body: "Overview is what needs attention. My work is every project assigned to you across every team. Checklist is your private list. Campaigns appears when you own one or your projects feed one. Notifications is what people have sent you. The desk remembers the tab you were on." },
+      { target: ".item-strip", title: "The week ahead", body: "A cell per day with what's due and what's on your list, today first; overdue work sits in front in red. Click a cell to jump to the work or the list for that day." },
+      { target: ".item-grid", title: "Overview", body: "High priority, overdue and due-soon cards, then your next deadlines and, if you own campaigns, their milestones to tick off. Down the side: today's list and what needs you — review requests, mentions and replies." },
       { target: ".mywork-section", title: "My work", body: "Your projects from every team, high priority first, each card marked with its team. Switch to Kanban to see everything assigned to you by status — Planning, Active, On hold, Completed, Cancelled — and drag a card between columns to change its status; List puts one project per line. Click a card to open the project." },
+      { target: ".desk-panels", title: "Your checklist", body: "Add anything you need to do today, or pick one of your projects from the dropdown to put it on the list. Unticked items roll forward each morning and say how many times they've rolled. Set a reminder to park an item until its time arrives; done items sweep themselves out after a fortnight." },
       { target: ".mydesk-notify", title: "Notifications", body: "Mentions, replies, likes and review requests land here. Open one to jump to the project; clear them all when you've caught up." },
-      { target: ".desk-panels", title: "Your checklist", body: "Add anything you need to do today. Unticked items roll forward each morning and say how many times they've rolled. Set a reminder to park an item until its time arrives; done items sweep themselves out after a fortnight." },
-      { target: ".mydesk-grid", title: "Your projects and campaigns", body: "The projects assigned to you, soonest due first, the ones flagged for your review, and the campaigns you own with their next milestones. Tick a milestone here when it's happened." },
       NEW,
       NAV,
     ],
