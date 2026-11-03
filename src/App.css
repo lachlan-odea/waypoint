@@ -689,6 +689,67 @@ textarea {
   background: rgba(55, 30, 225, 0.08);
   color: var(--primary);
 }
+/* Views nested under another (Big Rocks under Executive Dashboard) open
+   in a flyout beside the row on hover, focus or →, like the + New menu's
+   Webinar. The parent carries a caret and stays highlighted while a child
+   is open. The flyout's ::before bridges the gap to the row, so the
+   pointer can cross without the flyout closing. */
+.nav-li {
+  position: relative;
+}
+.nav-flyout {
+  display: none;
+  top: 0;
+}
+.nav-li:hover > .nav-flyout,
+.nav-li:focus-within > .nav-flyout,
+.nav-li.flyout-open > .nav-flyout {
+  display: block;
+}
+.nav-flyout::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: 8px;
+}
+.nav-caret {
+  margin-left: auto;
+  flex: 0 0 auto;
+  opacity: 0.6;
+}
+.nav-flyout .new-menu-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-flyout .new-menu-item:hover {
+  background: var(--surface-2);
+}
+.nav-flyout .new-menu-item.active {
+  background: var(--cobalt-050);
+  color: var(--primary);
+}
+.nav-flyout .new-menu-item.active .new-menu-hint {
+  color: var(--primary);
+  opacity: 0.8;
+}
+.sidebar.collapsed .nav-flyout {
+  left: calc(100% + 8px);
+}
+@media (max-width: 720px) {
+  /* The drawer has no hover: the child sits under its parent instead. */
+  .nav-flyout {
+    display: block;
+    position: static;
+    margin: 2px 0 2px 10px;
+    min-width: 0;
+  }
+  .nav-flyout::before {
+    display: none;
+  }
+}
 .dot-avatar {
   width: 28px;
   height: 28px;

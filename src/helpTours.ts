@@ -16,7 +16,7 @@ const NEW: TourStep = {
 const NAV: TourStep = {
   target: ".sidebar-nav",
   title: "Get around from the sidebar",
-  body: "Teams are the boards; the views below them are the shared plans: Executive Dashboard, Big Rocks, Campaigns, Events, the Social calendar, Analytics and the Archive. Drag a project card onto a team to move it there.",
+  body: "Teams are the boards; the views below them are the shared plans: Executive Dashboard (hover it for Big Rocks), Campaigns, Events, the Social calendar, Analytics and the Archive. Drag a project card onto a team to move it there.",
 };
 
 const TOURS: Record<string, Tour> = {

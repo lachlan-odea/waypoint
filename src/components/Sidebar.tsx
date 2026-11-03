@@ -42,10 +42,18 @@ type Props = {
 };
 
 // The shell nav (design system §7 "Tiles & app navigation"): plain line
-// icons, no coloured tiles. Each team board is a folder.
-const VIEW_NAV: { view: SidebarView; label: string; icon: IconName }[] = [
-  { view: "executiveDashboard", label: "Executive Dashboard", icon: "presentation-board-chart-graph" },
-  { view: "bigRocks", label: "Big Rocks", icon: "flag" },
+// icons, no coloured tiles. Each team board is a folder. A view with
+// `children` carries a caret and shows them in a flyout beside the row on
+// hover, focus or →, like the + New menu's Webinar; it stays highlighted
+// while a child is open.
+type NavItem = { view: SidebarView; label: string; icon: IconName; hint?: string; children?: NavItem[] };
+const VIEW_NAV: NavItem[] = [
+  {
+    view: "executiveDashboard",
+    label: "Executive Dashboard",
+    icon: "presentation-board-chart-graph",
+    children: [{ view: "bigRocks", label: "Big Rocks", icon: "flag", hint: "The team's priorities, and what serves each" }],
+  },
   { view: "campaigns", label: "Campaigns", icon: "target" },
   { view: "events", label: "Events", icon: "calendar" },
   { view: "socialCalendar", label: "Social calendar", icon: "file" },
@@ -53,10 +61,10 @@ const VIEW_NAV: { view: SidebarView; label: string; icon: IconName }[] = [
   { view: "archived", label: "Archived", icon: "archive-documents-box-big" },
 ];
 
-function NavIcon({ name }: { name: IconName }) {
+function NavIcon({ name, size = 20 }: { name: IconName; size?: number }) {
   return (
     <span className="nav-icon" aria-hidden>
-      <Icon name={name} size={20} />
+      <Icon name={name} size={size} />
     </span>
   );
 }
@@ -85,6 +93,10 @@ export function Sidebar({
     null,
   );
   const myHub = hubs.find((h) => h.id === currentDesigner.hubId);
+  // The view whose flyout the keyboard has opened. Hover opens one through
+  // CSS (:hover on the row keeps it open across the gap); this is for → and
+  // focus, where there's nothing to hover.
+  const [flyout, setFlyout] = useState<SidebarView | null>(null);
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="sidebar-head">
@@ -170,18 +182,78 @@ export function Sidebar({
 
         {!collapsed && <div className="nav-section">View</div>}
         <ul className="designer-list">
-          {VIEW_NAV.map((item) => (
-            <li key={item.view}>
-              <button
-                className={`designer-btn ${view === item.view ? "active" : ""}`}
-                onClick={() => onSelectView(item.view)}
-                title={item.label}
+          {VIEW_NAV.map((item) => {
+            const childOpen = item.children?.some((c) => c.view === view) ?? false;
+            return (
+              <li
+                key={item.view}
+                className={`nav-li ${item.children ? "has-children" : ""} ${flyout === item.view ? "flyout-open" : ""}`}
+                onBlur={(e) => {
+                  // Leaving the row and its flyout altogether closes it.
+                  if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFlyout(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" && flyout === item.view) setFlyout(null);
+                }}
               >
-                <NavIcon name={item.icon} />
-                {!collapsed && <span className="designer-name">{item.label}</span>}
-              </button>
-            </li>
-          ))}
+                <button
+                  className={`designer-btn ${view === item.view || childOpen ? "active" : ""}`}
+                  onClick={() => onSelectView(item.view)}
+                  title={item.children ? `${item.label} · ${item.children.map((c) => c.label).join(", ")} beside it` : item.label}
+                  aria-haspopup={item.children ? "menu" : undefined}
+                  aria-expanded={item.children ? flyout === item.view || undefined : undefined}
+                  onKeyDown={(e) => {
+                    if (item.children && e.key === "ArrowRight") {
+                      e.preventDefault();
+                      setFlyout(item.view);
+                      // The flyout is in the DOM already; it just needs a
+                      // paint with the class on before it can take focus.
+                      window.requestAnimationFrame(() =>
+                        e.currentTarget.parentElement?.querySelector<HTMLButtonElement>(".nav-flyout button")?.focus(),
+                      );
+                    }
+                  }}
+                >
+                  <NavIcon name={item.icon} />
+                  {!collapsed && <span className="designer-name">{item.label}</span>}
+                  {item.children && !collapsed && (
+                    <Icon name="chevron-right" size={14} className="nav-caret" />
+                  )}
+                </button>
+                {item.children && (
+                  <ul className="new-menu-list new-menu-flyout flyout-right nav-flyout" role="menu" aria-label={`${item.label} views`}>
+                    {item.children.map((c) => (
+                      <li key={c.view} role="none">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className={`new-menu-item ${view === c.view ? "active" : ""}`}
+                          aria-current={view === c.view ? "page" : undefined}
+                          onClick={() => {
+                            setFlyout(null);
+                            onSelectView(c.view);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "ArrowLeft") {
+                              e.preventDefault();
+                              setFlyout(null);
+                              e.currentTarget.closest(".nav-li")?.querySelector<HTMLButtonElement>(".designer-btn")?.focus();
+                            }
+                          }}
+                        >
+                          <span className="new-menu-label">
+                            <Icon name={c.icon} size={14} className="nav-flyout-icon" />
+                            {c.label}
+                          </span>
+                          {c.hint && <span className="new-menu-hint">{c.hint}</span>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
