@@ -104,7 +104,7 @@ Dark mode, text size, profile photo, password. Super users also manage:
 | UI | React 19, TypeScript, Vite 8, hand-written CSS (`src/App.css`), Recharts, vite-plugin-pwa |
 | Data | Firebase Firestore with offline persistence; live `onSnapshot` subscriptions throughout |
 | Auth | Firebase Auth, email + password, restricted to the WiseTech email domain |
-| Backend | Firebase Cloud Functions v2 on Node 20 (`functions/`): Teams ingest, and membership emails sent through Microsoft Graph as the Entra app |
+| Backend | Firebase Cloud Functions v2 on Node 22 (`functions/`): Teams ingest, and membership emails sent through Microsoft Graph as the Entra app |
 | Hosting | GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to `main` |
 
 ### Design system
@@ -140,7 +140,7 @@ firebase deploy --only firestore:rules
 
 A new collection is denied until its rule is live, so any PR that adds one says so.
 
-**Cloud Functions** live in `functions/` (Node 20). Deploy with:
+**Cloud Functions** live in `functions/` (Node 22). Deploy with:
 
 ```bash
 firebase deploy --only functions
