@@ -1,8 +1,23 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
+import * as logger from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { MAIL_SECRETS, sendMail } from "./graphMail";
+import { joinWords, renderEmail, type EmailContent } from "./emailTemplate";
+import {
+  campaignAdditions,
+  describeCampaignDates,
+  describeEventDates,
+  eventLeadAdditions,
+  normaliseName,
+  projectAdditions,
+  type Additions,
+  type CampaignDoc,
+  type EventDoc,
+  type ProjectDoc,
+} from "./membership";
 
 initializeApp();
 const db = getFirestore();
@@ -107,119 +122,250 @@ export const createProject = onRequest(
   },
 );
 
-// Public URL of the deployed Waypoint app — used in email bodies so the
-// reviewer can deep-link straight to the project. Update if the hosting
-// path ever changes.
-const WAYPOINT_APP_URL = "https://lachlan-odea.github.io/waypoint/";
-
-type ProjectDoc = {
-  id?: string;
-  title?: string;
-  brand?: string;
-  priority?: string;
-  dueDate?: string;
-  workspaceId?: string;
-  reviewerIds?: string[];
-};
-
-type DesignerDoc = {
-  name?: string;
-  email?: string;
-};
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-// Fires whenever a project is created or updated. When reviewerIds gains
-// new entries, write a doc to /mail for each newly added reviewer; the
-// Firebase Trigger Email extension (installed separately via the Firebase
-// console) watches /mail and delivers via the configured SMTP provider.
+// ── Membership emails ──────────────────────────────────────────────────
+// Whenever someone is added to a project (assigned or asked to review), a
+// campaign (made the owner), a webinar (lead, a role on the team or a
+// section's owner) or an event (named as the marketing or sales lead), they
+// get one email saying so, sent through Microsoft Graph as the Entra app
+// (graphMail.ts). Whoever made the change is never emailed about it: the
+// client stamps `updatedBy` on every save (setProject / setCampaign /
+// setEvent in src/firestore.ts), and that id is dropped from the list.
+// Anyone can turn these off from My Desk → Notifications, which sets
+// `emailAlerts: false` on their designer doc.
 //
 // Idempotency note: a Firestore retry could double-fire and produce a
 // duplicate email. Acceptable for low volume; revisit with an
 // idempotency-key store if duplicates become a problem.
-export const notifyReviewerAssigned = onDocumentWritten(
+
+// Public URL of the deployed Waypoint app, for the button in each email.
+// Update if the hosting path ever changes.
+const WAYPOINT_APP_URL = "https://lachlan-odea.github.io/waypoint/";
+
+type DesignerDoc = {
+  id?: string;
+  name?: string;
+  email?: string;
+  // false when they've turned membership emails off; missing means on.
+  emailAlerts?: boolean;
+};
+
+async function designerById(id: string): Promise<DesignerDoc | null> {
+  const snap = await db.collection("designers").doc(id).get();
+  return snap.exists ? (snap.data() as DesignerDoc) : null;
+}
+
+async function allDesigners(): Promise<DesignerDoc[]> {
+  const snap = await db.collection("designers").get();
+  return snap.docs.map((d) => ({ ...(d.data() as DesignerDoc), id: d.id }));
+}
+
+async function workspaceName(id: string): Promise<string> {
+  const snap = await db.collection("workspaces").doc(id).get();
+  const name = snap.exists ? ((snap.data() as { name?: string }).name ?? "") : "";
+  return name || id;
+}
+
+function firstNameOf(d: DesignerDoc): string {
+  return (d.name ?? "").trim().split(/\s+/)[0] || "there";
+}
+
+// "Alice added you to the project "X" on Waypoint as an assignee." With
+// several reasons the sentence ends in a colon and the template lists them.
+function introFor(actor: string | null, what: string, reasons: string[]): string {
+  const lead = actor
+    ? `${actor} added you to ${what} on Waypoint`
+    : `you've been added to ${what} on Waypoint`;
+  return reasons.length === 1 ? `${lead} ${reasons[0]}.` : `${lead}:`;
+}
+
+type Composed = { subject: string; content: EmailContent };
+
+// Email each newly added person, except whoever made the change and anyone
+// who has turned email alerts off. One failure is logged and doesn't stop
+// the others.
+async function emailAdditions(
+  additions: Additions,
+  updatedBy: string | undefined,
+  compose: (reasons: string[], actor: string | null) => Composed,
+): Promise<void> {
+  if (updatedBy) additions.delete(updatedBy);
+  if (additions.size === 0) return;
+  const actorDoc = updatedBy ? await designerById(updatedBy) : null;
+  const actor = actorDoc?.name?.trim() || null;
+  for (const [id, reasons] of additions) {
+    const d = await designerById(id);
+    if (!d?.email || d.emailAlerts === false) continue;
+    const { subject, content } = compose(reasons, actor);
+    try {
+      await sendMail({
+        to: [d.email],
+        subject,
+        html: renderEmail(firstNameOf(d), content),
+      });
+    } catch (err) {
+      logger.error("Membership email not sent", { to: d.email, subject, error: String(err) });
+    }
+  }
+}
+
+export const notifyProjectMembers = onDocumentWritten(
   {
     document: "projects/{projectId}",
     region: "us-central1",
+    secrets: MAIL_SECRETS,
   },
   async (event) => {
     const after = event.data?.after.data() as ProjectDoc | undefined;
-    if (!after) return; // Project deleted — nothing to notify on.
-
+    if (!after) return; // Deleted: nothing to say.
     const before = event.data?.before.data() as ProjectDoc | undefined;
-    const beforeIds = new Set(before?.reviewerIds ?? []);
-    const newReviewerIds = (after.reviewerIds ?? []).filter(
-      (id) => !beforeIds.has(id),
-    );
-    if (newReviewerIds.length === 0) return;
+    const additions = projectAdditions(before, after);
+    if (additions.size === 0) return;
 
     const projectId = event.params.projectId;
-    const title = (after.title ?? "a project").trim() || "a project";
-    const projectUrl = `${WAYPOINT_APP_URL}?project=${encodeURIComponent(projectId)}`;
+    const title = (after.title ?? "").trim() || "a project";
+    const team = after.workspaceId ? await workspaceName(after.workspaceId) : "";
+    // ?project= is the deep link App.tsx already handles: it switches to the
+    // project's team before opening the page.
+    const url = `${WAYPOINT_APP_URL}?project=${encodeURIComponent(projectId)}`;
 
-    for (const reviewerId of newReviewerIds) {
-      const snap = await db.collection("designers").doc(reviewerId).get();
-      if (!snap.exists) continue;
-      const designer = snap.data() as DesignerDoc;
-      if (!designer.email) continue;
-
-      const firstName = (designer.name ?? "").split(" ")[0] || "there";
-      const metaRows = [
-        after.brand ? ["Brand", after.brand] : null,
-        after.priority ? ["Priority", after.priority] : null,
-        after.dueDate ? ["Due", after.dueDate] : null,
-      ].filter(Boolean) as [string, string][];
-
-      const textBody = [
-        `Hi ${firstName},`,
-        ``,
-        `You've been asked to review "${title}" on Waypoint.`,
-        ...metaRows.map(([k, v]) => `${k}: ${v}`),
-        ``,
-        `Open in Waypoint: ${projectUrl}`,
-        ``,
-        `— Waypoint`,
-      ].join("\n");
-
-      const htmlBody = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; max-width: 540px; color: #1d2433;">
-          <h2 style="font-size: 18px; margin: 0 0 8px;">Please review &ldquo;${escapeHtml(title)}&rdquo;</h2>
-          <p style="margin: 8px 0; color: #475569;">
-            Hi ${escapeHtml(firstName)}, you've been asked to review a project on Waypoint.
-          </p>
-          ${
-            metaRows.length === 0
-              ? ""
-              : `<table style="border-collapse: collapse; font-size: 14px; margin: 16px 0;">
-                  ${metaRows
-                    .map(
-                      ([k, v]) =>
-                        `<tr><td style="padding: 4px 12px 4px 0; color: #64748b;">${escapeHtml(
-                          k,
-                        )}</td><td>${escapeHtml(v)}</td></tr>`,
-                    )
-                    .join("")}
-                </table>`
-          }
-          <a href="${projectUrl}" style="display: inline-block; background: #4f46e5; color: white; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600;">Open in Waypoint</a>
-        </div>
-      `.trim();
-
-      await db.collection("mail").add({
-        to: [designer.email],
-        message: {
-          subject: `[Waypoint] Please review "${title}"`,
-          text: textBody,
-          html: htmlBody,
+    await emailAdditions(additions, after.updatedBy, (reasons, actor) => {
+      const reviewOnly = reasons.length === 1 && reasons[0] === "as a reviewer";
+      const heading = reviewOnly
+        ? `Please review "${title}"`
+        : `You've been added to "${title}"`;
+      return {
+        subject: `[Waypoint] ${heading}`,
+        content: {
+          heading,
+          intro: introFor(actor, `the project "${title}"`, reasons),
+          reasons,
+          rows: [
+            ["Team", team],
+            ["Brand", after.brand ?? ""],
+            ["Priority", after.priority ?? ""],
+            ["Due", after.dueDate ?? ""],
+          ],
+          ctaLabel: "Open in Waypoint",
+          ctaUrl: url,
         },
-      });
+      };
+    });
+  },
+);
+
+// Keep in step with TYPES / DELIVERY_OPTS in src/webinarKit.ts.
+const WEBINAR_TYPE_LABELS: Record<string, string> = {
+  tl: "Thought Leadership",
+  pdd: "Product Deep Dive",
+  mpu: "Market Update",
+};
+
+function capitalise(s: string): string {
+  return s ? s[0].toUpperCase() + s.slice(1) : s;
+}
+
+export const notifyCampaignMembers = onDocumentWritten(
+  {
+    document: "campaigns/{campaignId}",
+    region: "us-central1",
+    secrets: MAIL_SECRETS,
+  },
+  async (event) => {
+    const after = event.data?.after.data() as CampaignDoc | undefined;
+    if (!after) return;
+    const before = event.data?.before.data() as CampaignDoc | undefined;
+    const additions = campaignAdditions(before, after);
+    if (additions.size === 0) return;
+
+    const campaignId = event.params.campaignId;
+    const name = (after.name ?? "").trim() || "a campaign";
+    const url = `${WAYPOINT_APP_URL}#campaign/${encodeURIComponent(campaignId)}/overview`;
+    const kit = after.webinar;
+
+    await emailAdditions(additions, after.updatedBy, (reasons, actor) => {
+      if (kit) {
+        return {
+          subject: `[Waypoint] You've been added to the webinar "${name}"`,
+          content: {
+            heading: `You've been added to "${name}"`,
+            intro: introFor(actor, `the webinar "${name}"`, reasons),
+            reasons,
+            rows: [
+              ["Go-live", kit.goLive ?? ""],
+              ["Series type", WEBINAR_TYPE_LABELS[kit.type ?? ""] ?? kit.type ?? ""],
+              ["Delivery", kit.delivery === "prerecorded" ? "Pre-recorded" : kit.delivery === "live" ? "Live" : ""],
+              ["Stage", capitalise(kit.stage ?? "")],
+              ["Brand", after.brand ?? ""],
+            ],
+            ctaLabel: "Open the webinar",
+            ctaUrl: url,
+          },
+        };
+      }
+      return {
+        subject: `[Waypoint] You now own the campaign "${name}"`,
+        content: {
+          heading: `You now own "${name}"`,
+          intro: introFor(actor, `the campaign "${name}"`, reasons),
+          reasons,
+          rows: [
+            ["Brand", after.brand ?? ""],
+            ["Type", after.category ?? ""],
+            ["Runs", describeCampaignDates(after)],
+          ],
+          ctaLabel: "Open the campaign",
+          ctaUrl: url,
+        },
+      };
+    });
+  },
+);
+
+export const notifyEventLeads = onDocumentWritten(
+  {
+    document: "events/{eventId}",
+    region: "us-central1",
+    secrets: MAIL_SECRETS,
+  },
+  async (event) => {
+    const after = event.data?.after.data() as EventDoc | undefined;
+    if (!after) return;
+    const before = event.data?.before.data() as EventDoc | undefined;
+    const named = eventLeadAdditions(before, after);
+    if (named.length === 0) return;
+
+    // Leads are typed as names; only those that match someone on Waypoint
+    // can be emailed.
+    const designers = await allDesigners();
+    const additions: Additions = new Map();
+    for (const { name, reason } of named) {
+      const key = normaliseName(name);
+      const match = designers.find((d) => d.id && normaliseName(d.name ?? "") === key);
+      if (!match?.id) continue;
+      const list = additions.get(match.id) ?? [];
+      if (!list.includes(reason)) list.push(reason);
+      additions.set(match.id, list);
     }
+    if (additions.size === 0) return;
+
+    const eventId = event.params.eventId;
+    const name = (after.name ?? "").trim() || "an event";
+    const url = `${WAYPOINT_APP_URL}#event/${encodeURIComponent(eventId)}/overview`;
+
+    await emailAdditions(additions, after.updatedBy, (reasons, actor) => ({
+      subject: `[Waypoint] You've been added to the event "${name}"`,
+      content: {
+        heading: `You've been added to "${name}"`,
+        intro: introFor(actor, `the event "${name}"`, reasons),
+        reasons: reasons.length > 1 ? [joinWords(reasons)] : reasons,
+        rows: [
+          ["When", describeEventDates(after)],
+          ["Where", after.location ?? ""],
+          ["Division", after.division ?? ""],
+        ],
+        ctaLabel: "Open the event",
+        ctaUrl: url,
+      },
+    }));
   },
 );
