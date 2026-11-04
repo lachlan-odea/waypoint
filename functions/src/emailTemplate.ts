@@ -17,7 +17,14 @@ const PERIWINKLE = "#B7B3FF";
 const MUTED = "#5B6478";
 const BORDER = "#E3E6F0";
 const PAGE = "#F3F4FA";
-const FONT = `"DM Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
+// Single quotes only: this sits inside double-quoted style attributes.
+const FONT = `'DM Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`;
+// The same Google Fonts build the app loads (index.html). Apple Mail, iOS
+// Mail and a few others honour it; Outlook and Gmail fall through to the
+// stack above.
+const FONT_URL =
+  "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&display=swap";
+const RADIUS = "10px";
 
 // Hosted with the app; a PNG because Outlook won't render SVG.
 const APP_ICON_URL = "https://lachlan-odea.github.io/waypoint/app-icon.png";
@@ -141,15 +148,22 @@ export function renderEmail(firstName: string, c: EmailContent): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(c.heading)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="${FONT_URL}" rel="stylesheet">
+<style>
+  @import url('${FONT_URL}');
+  body, td, p, h1, a, li, div { font-family: ${FONT}; }
+</style>
 </head>
 <body style="margin: 0; padding: 0; background: ${PAGE};">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background: ${PAGE}; border-collapse: collapse;">
 <tr><td align="center" style="padding: 28px 16px;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width: 560px; width: 100%; background: #FFFFFF; border: 1px solid ${BORDER}; border-top: 4px solid ${COBALT}; border-radius: 12px; border-collapse: separate;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width: 560px; width: 100%; background: #FFFFFF; border: 1px solid ${BORDER}; border-top: 4px solid ${COBALT}; border-radius: ${RADIUS}; border-collapse: separate;">
     <tr><td style="padding: 22px 28px 0;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
         <tr>
-          <td style="padding-right: 10px; vertical-align: middle;"><img src="${APP_ICON_URL}" width="32" height="32" alt="" style="display: block; width: 32px; height: 32px; border-radius: 8px;"></td>
+          <td style="padding-right: 10px; vertical-align: middle;"><img src="${APP_ICON_URL}" width="32" height="32" alt="" style="display: block; width: 32px; height: 32px; border-radius: ${RADIUS};"></td>
           <td style="vertical-align: middle; font-family: ${FONT}; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: ${BLUE};">Waypoint</td>
         </tr>
       </table>
@@ -172,8 +186,8 @@ export function renderEmail(firstName: string, c: EmailContent): string {
     </td></tr>
     <tr><td style="padding: 24px 28px 26px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
-        <tr><td style="background: ${COBALT}; border-radius: 8px;">
-          <a href="${escapeHtml(c.ctaUrl)}" style="display: inline-block; padding: 11px 20px; font-family: ${FONT}; font-size: 14px; font-weight: 700; color: #FFFFFF; text-decoration: none; border-radius: 8px;">${escapeHtml(c.ctaLabel)}</a>
+        <tr><td style="background: ${COBALT}; border-radius: ${RADIUS};">
+          <a href="${escapeHtml(c.ctaUrl)}" style="display: inline-block; padding: 11px 16px; font-family: ${FONT}; font-size: 14px; line-height: 16px; font-weight: 600; color: #FFFFFF !important; text-decoration: none !important; border-radius: ${RADIUS};">${escapeHtml(c.ctaLabel)}</a>
         </td></tr>
       </table>
     </td></tr>
