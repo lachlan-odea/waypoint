@@ -10146,3 +10146,41 @@ a.button-link:hover {
 .mydesk .item-card .deadline-list {
   margin: 0;
 }
+
+/* The desk's band carries the page buttons (Help, + New, the phone's
+   menu), so the + New dropdown has to escape the band's rounded box. */
+.item-desk .item-band {
+  overflow: visible;
+}
+.item-desk .item-band::before {
+  border-radius: var(--radius);
+}
+.item-desk .item-band-actions {
+  align-items: center;
+  gap: 8px;
+}
+.item-band .help-btn {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.item-band .help-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+.item-band .help-btn svg {
+  color: #fff;
+}
+.item-band .new-menu-primary > .primary {
+  background: #fff;
+  color: var(--wtg-blue);
+}
+.item-band .new-menu-primary > .primary:hover {
+  background: var(--wtg-sky-100);
+}
+.item-band .mobile-nav-btn {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}

@@ -30,7 +30,7 @@ const TOURS: Record<string, Tour> = {
       { target: ".mywork-section", title: "My work", body: "Your projects from every team, high priority first, each card marked with its team. Switch to Kanban to see everything assigned to you by status — Planning, Active, On hold, Completed, Cancelled — and drag a card between columns to change its status; List puts one project per line. Click a card to open the project." },
       { target: ".desk-panels", title: "Your checklist", body: "Add anything you need to do today, or pick one of your projects from the dropdown to put it on the list. Unticked items roll forward each morning and say how many times they've rolled. Set a reminder to park an item until its time arrives; done items sweep themselves out after a fortnight." },
       { target: ".mydesk-notify", title: "Notifications", body: "Mentions, replies, likes and review requests land here. Open one to jump to the project; clear them all when you've caught up." },
-      NEW,
+      { target: ".item-band .new-menu", title: "Create anything from + New", body: "The desk's buttons live in the band: Help for this tour, and + New for projects, campaigns, events and social posts. A project opens its page straight away; a campaign, event or post opens its editor on its own page." },
       NAV,
     ],
   },

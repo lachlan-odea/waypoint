@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type {
   Campaign,
   DeskItem,
@@ -68,6 +68,9 @@ interface MyDeskProps {
   campaignsByProject: Map<string, Campaign[]>;
   workspaces: Workspace[];
   onStatusChange: (projectId: string, status: ProjectStatus) => void;
+  // The page's buttons — Help, + New, the phone's menu — which sit in the
+  // band's actions slot because the desk has no topbar of its own.
+  actions?: ReactNode;
 }
 
 // The desk is built on the same shell as a project, campaign or event page
@@ -134,6 +137,7 @@ export function MyDesk({
   campaignsByProject,
   workspaces,
   onStatusChange,
+  actions,
 }: MyDeskProps) {
   const [deskItems, setDeskItems] = useState<DeskItem[]>([]);
   const [deskError, setDeskError] = useState<string | null>(null);
@@ -573,6 +577,7 @@ export function MyDesk({
           </>
         }
         facts={facts}
+        actions={actions}
         tabs={tabs}
         tab={here}
         onTab={(id) => setTab(id as DeskTab)}

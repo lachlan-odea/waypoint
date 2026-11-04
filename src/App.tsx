@@ -1473,6 +1473,8 @@ export default function App() {
           </>
         ) : (
           <>
+        {/* My Desk has no topbar: its band carries the page's buttons. */}
+        {view !== "myDesk" && (
         <header className="topbar">
           <button
             type="button"
@@ -1489,14 +1491,6 @@ export default function App() {
                 "Analytics"
               ) : view === "archived" ? (
                 "Archived projects"
-              ) : view === "myDesk" ? (
-                <>
-                  My Desk
-                  <span className="topbar-sub">
-                    {" "}
-                    — your work at a glance
-                  </span>
-                </>
               ) : view === "executiveDashboard" ? (
                 "Executive Dashboard"
               ) : view === "bigRocks" ? (
@@ -1528,9 +1522,7 @@ export default function App() {
                             (w) => w.id === archiveTeamFilter,
                           )?.name ?? archiveTeamFilter)
                     }`
-                  : view === "myDesk"
-                    ? "Focus on your assigned projects, deadlines, and priorities"
-                    : view === "executiveDashboard"
+                  : view === "executiveDashboard"
                       ? "Every team and programme on one page: what needs attention, the next fortnight, how teams are tracking and what moved"
                       : view === "bigRocks"
                         ? "What the team is working towards, and the projects, campaigns, webinars, posts and events serving each rock"
@@ -1606,6 +1598,7 @@ export default function App() {
             <NewMenu variant="primary" onPick={startNew} />
           </div>
         </header>
+        )}
 
         {status && <div className="banner">{status}</div>}
 
@@ -1696,6 +1689,21 @@ export default function App() {
             workspaces={availableWorkspaces}
             onOpenCampaign={openCampaign}
             onStatusChange={setProjectStatus}
+            actions={
+              <>
+                <button
+                  type="button"
+                  className="icon-btn mobile-nav-btn"
+                  onClick={() => setNavOpen(true)}
+                  aria-label="Open menu"
+                  aria-expanded={drawerOpen}
+                >
+                  ☰
+                </button>
+                <HelpButton onClick={() => setTourOpen(true)} />
+                <NewMenu variant="primary" onPick={startNew} />
+              </>
+            }
             onToggleMilestone={(campaign, milestoneId) =>
               saveCampaign({
                 ...campaign,
