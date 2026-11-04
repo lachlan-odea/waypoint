@@ -106,6 +106,12 @@ import { HelpTour } from "./components/HelpTour";
 import { showDesktopAlert } from "./desktopNotifications";
 import { tourFor } from "./helpTours";
 import { allSeries, kitOf } from "./webinarKit";
+
+// A live event request to open on arrival, from ?request=<id>: the link in
+// the Live Events Team's new-request email. Read once, at load; the app
+// then starts on the Video board with that request open, and the parameter
+// is taken off the address bar below.
+const LAUNCH_REQUEST_ID = new URLSearchParams(window.location.search).get("request");
 import { NewWebinarModal } from "./components/webinar/NewWebinarModal";
 import { Icon } from "./components/Icon";
 import { ProfileSetup } from "./components/ProfileSetup";
@@ -158,7 +164,7 @@ export default function App() {
   const isMobile = useMediaQuery("(max-width: 720px)");
   const [navOpen, setNavOpen] = useState(false);
   const drawerOpen = isMobile && navOpen;
-  const [view, setView] = useState<SidebarView>("myDesk");
+  const [view, setView] = useState<SidebarView>(LAUNCH_REQUEST_ID ? "board" : "myDesk");
   // The project, campaign or event open as a page, from the address bar.
   const route = useItemRoute();
   // The Help button's guided tour of the page on screen. Closes when the
@@ -236,7 +242,10 @@ export default function App() {
   // Which workspace tab is currently active (Design / Video / Marketing).
   // Persisted per browser so a refresh keeps you on the same workspace.
   const [currentWorkspaceId, setCurrentWorkspaceIdState] = useState<string>(
-    () => localStorage.getItem("waypoint.workspaceId") || DEFAULT_WORKSPACE_ID,
+    () =>
+      LAUNCH_REQUEST_ID
+        ? LIVE_EVENT_REQUESTS_WORKSPACE_ID
+        : localStorage.getItem("waypoint.workspaceId") || DEFAULT_WORKSPACE_ID,
   );
   function setCurrentWorkspaceId(id: string) {
     setCurrentWorkspaceIdState(id);
@@ -586,6 +595,17 @@ export default function App() {
       console.warn("Bad ?new payload", err);
     }
   }, [sessionDesignerId]);
+
+  // The ?request= parameter has done its work (LAUNCH_REQUEST_ID, read at
+  // load), so take it off the address bar; a refresh shouldn't reopen it.
+  useEffect(() => {
+    if (!LAUNCH_REQUEST_ID) return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("request")) return;
+    params.delete("request");
+    const url = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, "", url);
+  }, []);
 
   // Project id handed to an already-running installed app by the PWA launch
   // queue, parked here until the workspace has loaded and we can resolve it.
@@ -1826,6 +1846,7 @@ export default function App() {
                 onDeleteBlackout={deleteLiveEventBlackout}
                 blackoutsError={liveEventBlackoutsError || undefined}
                 onOpenForm={() => setLiveEventFormOpen(true)}
+                initialOpenId={LAUNCH_REQUEST_ID}
                 storageKey={`waypoint.board.${currentWorkspaceId}.liveEventRequestsCollapsed`}
               />
             )}

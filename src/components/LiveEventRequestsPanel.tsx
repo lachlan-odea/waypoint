@@ -35,6 +35,9 @@ type Props = {
   blackoutsError?: string;
   // Opens the form's set-up: download, SharePoint link, settings.
   onOpenForm: () => void;
+  // A request to open as soon as it's loaded: the one a new-request email
+  // linked to (?request=<id>, read by App.tsx).
+  initialOpenId?: string | null;
   // localStorage key for the collapsed state; the view sits beside it.
   storageKey: string;
 };
@@ -81,6 +84,7 @@ export function LiveEventRequestsPanel({
   onDeleteBlackout,
   blackoutsError,
   onOpenForm,
+  initialOpenId,
   storageKey,
 }: Props) {
   const today = todayIso();
@@ -96,7 +100,9 @@ export function LiveEventRequestsPanel({
     writeStored(viewKey, v);
   }
   const [filter, setFilter] = useState<Filter>("pending");
-  const [openId, setOpenId] = useState<string | null>(null);
+  // The modal shows once the request is in `requests`, so a linked id
+  // waits for the subscription to deliver it.
+  const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
   const [adding, setAdding] = useState<string | null>(null);
   const [blackoutEdit, setBlackoutEdit] = useState<{ blackout: LiveEventBlackout | null; date: string } | null>(
     null,
