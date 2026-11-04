@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Icon } from "./Icon";
+import { requestTourShow } from "../tourShow";
 
 // A guided walk through the page you're on: each step spotlights one part
 // of the page (the rest dims) and explains it in a card beside it. The page
@@ -10,6 +11,10 @@ export type TourStep = {
   // A CSS selector for the element to spotlight. Left out, or matching
   // nothing on this page, the step shows as a card in the middle.
   target?: string;
+  // The view the page has to switch to for the target to exist — a tab,
+  // say. Sent to the page (useTourShow in src/tourShow.ts) before the step
+  // is measured.
+  show?: string;
   title: string;
   body: string;
 };
@@ -49,18 +54,28 @@ export function HelpTour({ title, steps, onClose }: Props) {
     setBox({ x: r.left, y: r.top, w: r.width, h: r.height });
   }, [step.target]);
 
-  // Bring the target into view, then measure once it has settled.
+  // Ask the page to show the right view, bring the target into view, then
+  // measure once it has settled. The page switches on its own render, so
+  // the later passes catch a target that wasn't there on the first.
   useLayoutEffect(() => {
-    const el = step.target ? (document.querySelector(step.target) as HTMLElement | null) : null;
-    if (el) el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
-    measure();
-    const t1 = window.setTimeout(measure, 180);
-    const t2 = window.setTimeout(measure, 450);
+    if (step.show) requestTourShow(step.show);
+    let scrolled = false;
+    const pass = () => {
+      const el = step.target ? (document.querySelector(step.target) as HTMLElement | null) : null;
+      if (el && !scrolled) {
+        scrolled = true;
+        el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+      }
+      measure();
+    };
+    pass();
+    const t1 = window.setTimeout(pass, 180);
+    const t2 = window.setTimeout(pass, 450);
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
     };
-  }, [step.target, measure]);
+  }, [step.target, step.show, measure]);
 
   useEffect(() => {
     const onChange = () => measure();

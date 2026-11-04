@@ -2840,10 +2840,10 @@ a.share-btn {
 }
 
 /* My Desk Styles */
+/* My Desk sits on the item-page shell (pages.css), full width like a
+   campaign page; the shell owns the spacing. */
 .mydesk {
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0;
 }
 
 .mydesk-header {
@@ -10077,4 +10077,110 @@ a.button-link:hover {
   .ler-contact-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Your own column on a team board, listed first. */
+.team-column.mine {
+  border-color: var(--wtg-cobalt);
+}
+.team-col-you {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--cobalt-050);
+  color: var(--wtg-cobalt);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* ── My Desk on the item-page shell ───────────────────────────────────── */
+/* The attention cards sit in the Overview's main column, which spaces its
+   children itself. */
+.item-grid-main .mydesk-notifications {
+  margin-bottom: 0;
+}
+/* Today's list, peeked at from the Overview. */
+.desk-peek {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.desk-peek li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  padding-left: 14px;
+  position: relative;
+}
+.desk-peek li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--wtg-cobalt);
+}
+.desk-peek-text {
+  color: var(--text);
+}
+/* The Checklist tab's "add a project to today" picker. */
+.desk-addproject {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 560px;
+  margin-bottom: 16px;
+}
+.mydesk .item-card .deadline-list {
+  margin: 0;
+}
+
+/* The desk's band carries the page buttons (Help, + New, the phone's
+   menu), so the + New dropdown has to escape the band's rounded box. */
+.item-desk .item-band {
+  overflow: visible;
+}
+.item-desk .item-band::before {
+  border-radius: var(--radius);
+}
+.item-desk .item-band-actions {
+  align-items: center;
+  gap: 8px;
+}
+.item-band .help-btn {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.item-band .help-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+.item-band .help-btn svg {
+  color: #fff;
+}
+.item-band .new-menu-primary > .primary {
+  background: #fff;
+  color: var(--wtg-blue);
+}
+.item-band .new-menu-primary > .primary:hover {
+  background: var(--wtg-sky-100);
+}
+.item-band .mobile-nav-btn {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
 }

@@ -32,7 +32,9 @@ export type StripCell = {
 export type Fact = { label: string; value: ReactNode };
 
 type Props = {
-  kind: ItemKind;
+  // The three routed items, plus My Desk, which borrows the shell.
+  kind: ItemKind | "desk";
+  // Empty on a top-level page like My Desk, which has nowhere to go up to.
   crumbs: Crumb[];
   eyebrow: ReactNode;
   title: string;
@@ -69,6 +71,7 @@ export function ItemPage({
 }: Props) {
   return (
     <div className={`item-page item-${kind}`}>
+      {crumbs.length > 0 && (
       <nav className="item-crumbs" aria-label="Where you are">
         {crumbs.map((c, i) => (
           <span key={`${c.label}-${i}`} className="item-crumb">
@@ -83,6 +86,7 @@ export function ItemPage({
           </span>
         ))}
       </nav>
+      )}
 
       <header className="item-band">
         <div className="item-band-main">
