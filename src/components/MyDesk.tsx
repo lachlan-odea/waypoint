@@ -12,6 +12,7 @@ import { Avatar } from "./Avatar";
 import { CampaignsPanel } from "./CampaignsPanel";
 import { MyWork } from "./MyWork";
 import { ProjectPicker } from "./ProjectPicker";
+import { useTourShow } from "../tourShow";
 import {
   describeNotification,
   notificationTag,
@@ -160,6 +161,12 @@ export function MyDesk({
       // per-browser preference only
     }
   }
+
+  // The help tour's steps name the tab they describe; switch to it so the
+  // spotlight has something to land on.
+  useTourShow((id) => {
+    if ((TABS as readonly string[]).includes(id)) setTab(id as DeskTab);
+  });
 
   // Live-subscribe to just this person's checklist.
   useEffect(() => {
