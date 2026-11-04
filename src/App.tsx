@@ -30,6 +30,7 @@ import {
   deleteHub as firestoreDeleteHub,
   setDesignerHub as firestoreSetDesignerHub,
   setDesignerPhotoUrl as firestoreSetDesignerPhotoUrl,
+  setDesignerEmailAlerts as firestoreSetDesignerEmailAlerts,
   setDesignerReviewer as firestoreSetDesignerReviewer,
   setDesignerSuperUser as firestoreSetDesignerSuperUser,
   setNotification as firestoreSetNotification,
@@ -2189,6 +2190,11 @@ export default function App() {
             setNotificationsOpen(false);
           }}
           onClearAll={clearAllNotifications}
+          emailAlertsOn={currentDesigner.emailAlerts !== false}
+          emailAddress={currentDesigner.email}
+          onSetEmailAlerts={(on) =>
+            firestoreSetDesignerEmailAlerts(currentDesigner.id, on)
+          }
         />
       )}
 

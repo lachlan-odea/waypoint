@@ -12,7 +12,7 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { auth, db } from "./firebase";
 import { DEFAULT_WORKSPACE_ID, SEED_HUBS, SEED_WORKSPACES } from "./constants";
 import type {
   ActivityShare,
@@ -296,9 +296,12 @@ export async function claimDesignerProfile(
       };
     });
     if (touched) {
+      // Stamped as the claimer so the membership emails don't tell them
+      // they've been "added" to every project they already had.
       batch.update(d.ref, {
         assigneeIds: nextAssignees,
         comments: nextComments,
+        updatedBy: newId,
       });
     }
   });
@@ -315,8 +318,16 @@ export async function claimDesignerProfile(
   return next;
 }
 
+// Every full save of a project, campaign or event carries the signed-in
+// user's id as `updatedBy`, so the membership-email Cloud Functions can
+// leave out whoever made the change (see UpdatedBy in types.ts).
+function stamped<T extends object>(data: T): T & { updatedBy?: string } {
+  const uid = auth.currentUser?.uid;
+  return uid ? { ...data, updatedBy: uid } : data;
+}
+
 export async function setProject(p: Project): Promise<void> {
-  await setDoc(doc(projectsCol(), p.id), p);
+  await setDoc(doc(projectsCol(), p.id), stamped(p));
 }
 
 export async function deleteProject(id: string): Promise<void> {
@@ -354,6 +365,19 @@ export async function setDesignerPhotoUrl(
   await setDoc(
     doc(designersCol(), designerId),
     { photoUrl: trimmed },
+    { merge: true },
+  );
+}
+
+// Whether being added to a project, campaign, webinar or event emails this
+// person. Read by the Cloud Functions in functions/src/index.ts.
+export async function setDesignerEmailAlerts(
+  designerId: string,
+  on: boolean,
+): Promise<void> {
+  await setDoc(
+    doc(designersCol(), designerId),
+    { emailAlerts: on },
     { merge: true },
   );
 }
@@ -559,7 +583,7 @@ export function subscribeCampaignsForProject(
 }
 
 export async function setCampaign(campaign: Campaign): Promise<void> {
-  await setDoc(doc(campaignsCol(), campaign.id), campaign);
+  await setDoc(doc(campaignsCol(), campaign.id), stamped(campaign));
 }
 
 // ── Campaign pages ─────────────────────────────────────────────────────
@@ -617,7 +641,7 @@ export function subscribeEvents(
 }
 
 export async function setEvent(event: MarketingEvent): Promise<void> {
-  await setDoc(doc(eventsCol(), event.id), event);
+  await setDoc(doc(eventsCol(), event.id), stamped(event));
 }
 
 export async function deleteEvent(id: string): Promise<void> {

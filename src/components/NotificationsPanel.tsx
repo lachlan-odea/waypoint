@@ -16,6 +16,12 @@ type Props = {
   onClose: () => void;
   onOpenProject: (projectId: string, notificationId: string) => void;
   onClearAll: () => void;
+  // Membership emails (Designer.emailAlerts): sent when you're added to a
+  // project, campaign, webinar or event. The address they go to, if the
+  // profile has one.
+  emailAlertsOn: boolean;
+  emailAddress?: string;
+  onSetEmailAlerts: (on: boolean) => Promise<void>;
 };
 
 export function NotificationsPanel({
@@ -24,6 +30,9 @@ export function NotificationsPanel({
   onClose,
   onOpenProject,
   onClearAll,
+  emailAlertsOn,
+  emailAddress,
+  onSetEmailAlerts,
 }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -48,6 +57,19 @@ export function NotificationsPanel({
     const ok = await enableDesktopAlerts();
     setAlertsOn(ok);
     setAlertsBusy(false);
+  }
+
+  // Email alerts: a flag on the designer doc, read by the Cloud Functions.
+  const [emailBusy, setEmailBusy] = useState(false);
+  async function toggleEmail() {
+    setEmailBusy(true);
+    try {
+      await onSetEmailAlerts(!emailAlertsOn);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setEmailBusy(false);
+    }
   }
 
   return (
@@ -94,6 +116,25 @@ export function NotificationsPanel({
               </button>
             </div>
           )}
+          <div className="notif-alerts">
+            <div>
+              <b>Email alerts</b>
+              <span className="muted small">
+                {emailAlertsOn
+                  ? `An email${emailAddress ? ` to ${emailAddress}` : ""} when someone assigns you a project, asks you to review one, or adds you to a campaign, webinar or event.`
+                  : "Get an email when you're added to a project, campaign, webinar or event."}
+              </span>
+            </div>
+            <button
+              type="button"
+              className={`btn btn-sm ${emailAlertsOn ? "btn-secondary" : "btn-primary"}`}
+              onClick={toggleEmail}
+              disabled={emailBusy}
+              aria-pressed={emailAlertsOn}
+            >
+              {emailAlertsOn ? "Turn off" : "Turn on"}
+            </button>
+          </div>
           {sorted.length === 0 ? (
             <p className="muted">
               You'll see a notification here when someone @-mentions you.

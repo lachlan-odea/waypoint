@@ -52,6 +52,19 @@ export type Designer = {
   // from isSuperUser — a designer can be one, both, or neither. Toggled
   // from Settings by a super user.
   isReviewer?: boolean;
+  // Whether being added to a project, campaign, webinar or event emails
+  // this person (functions/src/index.ts). Missing means yes; switched off
+  // from My Desk → Notifications.
+  emailAlerts?: boolean;
+};
+
+// Stamped on every project, campaign and event save by src/firestore.ts:
+// the Firebase UID of whoever saved it. The membership-email Cloud
+// Functions read it so the person who made a change isn't emailed about
+// their own change. Missing on documents written from outside the app
+// (the Teams ingest) and on ones saved before the field existed.
+export type UpdatedBy = {
+  updatedBy?: string;
 };
 
 // A named container that scopes projects + notifications (Design, Video,
@@ -114,7 +127,7 @@ export type Project = {
   comments: Comment[];
   createdAt: string;
   source?: "manual" | "outlook" | "teams";
-};
+} & UpdatedBy;
 
 export type Notification = {
   id: string;
@@ -371,7 +384,7 @@ export type Campaign = {
   // rocks through it — see src/bigRocks.ts.
   bigRockIds?: string[];
   createdAt: string;
-};
+} & UpdatedBy;
 
 // A Big Rock: one of the few things the marketing team is working towards,
 // as the Head of Marketing defines them in Settings → Big Rocks. Campaigns
@@ -659,7 +672,7 @@ export type MarketingEvent = {
   itinerarySharePointUrl?: string;
   createdAt: string;
   source?: "import" | "manual";
-};
+} & UpdatedBy;
 
 // What kind of thing an itinerary item is. Each has its own mark on the
 // page's timeline: meetings a filled circle, stand and setup a hollow one,
