@@ -9,7 +9,7 @@ import { defineSecret, defineString } from "firebase-functions/params";
 //
 // Set the three secrets with `firebase functions:secrets:set <NAME>`; the
 // sender is an ordinary string parameter, answered at the first deploy and
-// kept in functions/.env.
+// kept in functions/.env.wtg-waypoint (committed; it is not a secret).
 export const GRAPH_TENANT_ID = defineSecret("GRAPH_TENANT_ID");
 export const GRAPH_CLIENT_ID = defineSecret("GRAPH_CLIENT_ID");
 export const GRAPH_CLIENT_SECRET = defineSecret("GRAPH_CLIENT_SECRET");

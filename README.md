@@ -154,7 +154,7 @@ Mail is sent through **Microsoft Graph as the Entra app** (`functions/src/graphM
 
 1. In the Entra app registration, grant the Microsoft Graph **application** permission `Mail.Send` and give admin consent, then create a client secret. Restrict the app to the sending mailbox with an Exchange Online application access policy (`New-ApplicationAccessPolicy -AppId <client id> -PolicyScopeGroupId <sender or mail-enabled group> -AccessRight RestrictAccess`), so the secret can only ever send as that mailbox.
 2. Store the three secrets: `firebase functions:secrets:set GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID` and `GRAPH_CLIENT_SECRET`.
-3. `firebase deploy --only functions`. The first deploy asks for `GRAPH_SENDER` (the mailbox's user principal name) and writes it to `functions/.env`; it also offers to delete the retired `notifyReviewerAssigned` function, which these replace. Accept both.
+3. `firebase deploy --only functions`. The first deploy asks for `GRAPH_SENDER` (the mailbox's user principal name) and writes it to `functions/.env.wtg-waypoint`, which is committed since it is not a secret; it also offers to delete the retired `notifyReviewerAssigned` function, which these replace. Accept both.
 
 The Trigger Email extension and its `mail` collection are no longer used and can be uninstalled from the console.
 
