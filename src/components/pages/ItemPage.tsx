@@ -44,6 +44,10 @@ type Props = {
   facts: Fact[];
   // Buttons for the right of the facts row: open on SharePoint, copy link…
   actions?: ReactNode;
+  // The phone's ☰ menu button, for a page with no top bar of its own (My
+  // Desk). Pinned to the band's top corner at phone widths so it sits where
+  // every other page keeps it, not at the end of the facts row.
+  nav?: ReactNode;
   tabs: PageTab[];
   tab: string;
   onTab: (id: string) => void;
@@ -62,6 +66,7 @@ export function ItemPage({
   chips,
   facts,
   actions,
+  nav,
   tabs,
   tab,
   onTab,
@@ -89,6 +94,7 @@ export function ItemPage({
       )}
 
       <header className="item-band">
+        {nav && <div className="item-band-nav">{nav}</div>}
         <div className="item-band-main">
           <div className="eyebrow item-band-eyebrow">{eyebrow}</div>
           <h1 className="item-band-title">{title}</h1>
