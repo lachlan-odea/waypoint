@@ -1711,17 +1711,19 @@ export default function App() {
             workspaces={availableWorkspaces}
             onOpenCampaign={openCampaign}
             onStatusChange={setProjectStatus}
+            nav={
+              <button
+                type="button"
+                className="icon-btn mobile-nav-btn"
+                onClick={() => setNavOpen(true)}
+                aria-label="Open menu"
+                aria-expanded={drawerOpen}
+              >
+                ☰
+              </button>
+            }
             actions={
               <>
-                <button
-                  type="button"
-                  className="icon-btn mobile-nav-btn"
-                  onClick={() => setNavOpen(true)}
-                  aria-label="Open menu"
-                  aria-expanded={drawerOpen}
-                >
-                  ☰
-                </button>
                 <HelpButton onClick={() => setTourOpen(true)} />
                 <NewMenu variant="primary" onPick={startNew} />
               </>

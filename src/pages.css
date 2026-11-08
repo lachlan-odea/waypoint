@@ -173,6 +173,11 @@
   gap: 6px;
   flex-wrap: wrap;
 }
+/* The phone's menu button, in the band's top corner (see the ≤720px block).
+   Wider screens have the sidebar, so the slot is empty there. */
+.item-band-nav {
+  display: none;
+}
 .item-band .btn-ghost {
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -1065,6 +1070,16 @@ button.item-strip-cell:hover {
   }
   .item-band-actions {
     margin-left: 0;
+  }
+  .item-band-nav {
+    display: block;
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1;
+  }
+  .item-band:has(.item-band-nav) .item-band-main {
+    padding-right: 48px;
   }
   .item-kvs {
     grid-template-columns: 76px minmax(0, 1fr);
