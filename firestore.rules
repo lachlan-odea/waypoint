@@ -221,6 +221,13 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+    // Feature ideas and bug reports from Settings → Suggest a feature
+    // (src/components/SuggestFeatureModal.tsx). Any signed-in user sends
+    // one; super users review, update and remove them, gated in the UI like
+    // the other shared configuration.
+    match /suggestions/{suggestionId} {
+      allow read, write: if request.auth != null;
+    }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any
     // signed-in user. Reads are constrained by the ownerId == uid filter the

@@ -10184,3 +10184,173 @@ a.button-link:hover {
   border-color: rgba(255, 255, 255, 0.3);
   color: #fff;
 }
+
+/* ── Suggest a feature (Settings) ─────────────────────────────────── */
+/* The thanks card after a suggestion is sent. */
+.suggest-thanks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 18px 8px 6px;
+  color: var(--text);
+}
+.suggest-thanks svg {
+  color: var(--accent);
+}
+.suggest-thanks h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.suggest-thanks p {
+  margin: 0;
+  max-width: 38ch;
+}
+
+/* Super-user review list. */
+.suggestions-seg {
+  max-width: 260px;
+}
+.suggestions-empty {
+  padding: 18px 0;
+  text-align: center;
+}
+.suggestions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.suggestion-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.suggestion-row.open {
+  background: var(--surface-2);
+}
+.suggestion-summary {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "kind title status"
+    "kind meta status";
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: center;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+.suggestion-summary:hover {
+  background: var(--surface-2);
+}
+.suggestion-kind {
+  grid-area: kind;
+  align-self: start;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.suggestion-kind.kind-bug {
+  color: var(--danger, #b42318);
+  border-color: currentColor;
+}
+.suggestion-kind.kind-feature {
+  color: var(--accent);
+  border-color: currentColor;
+}
+.suggestion-title {
+  grid-area: title;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggestion-meta {
+  grid-area: meta;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggestion-status {
+  grid-area: status;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.suggestion-status.status-new {
+  background: var(--accent);
+  color: #fff;
+}
+.suggestion-status.status-planned {
+  background: var(--accent-wash, var(--surface-2));
+  color: var(--accent);
+}
+.suggestion-status.status-done {
+  color: var(--success, #067647);
+}
+.suggestion-detail {
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.suggestion-details {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+.suggestion-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.suggestion-facts dt {
+  color: var(--muted);
+}
+.suggestion-facts dd {
+  margin: 0;
+}
+.suggestion-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.suggestion-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+@media (max-width: 560px) {
+  .suggestion-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "kind status"
+      "title title"
+      "meta meta";
+  }
+}

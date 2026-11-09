@@ -34,6 +34,7 @@ import type {
   SocialConfig,
   SocialPost,
   Speaker,
+  Suggestion,
   Workspace,
   WorkspaceData,
 } from "./types";
@@ -1065,4 +1066,39 @@ export async function publishLiveEventPublic(token: string, blackouts: PublicBla
 
 export async function deleteLiveEventPublic(token: string): Promise<void> {
   await deleteDoc(liveEventPublicDoc(token));
+}
+
+// ── Suggestions ────────────────────────────────────────────────────────
+// Feature ideas and bug reports from Settings → Suggest a feature.
+const suggestionsCol = () => collection(db, "suggestions");
+
+export async function createSuggestion(data: Omit<Suggestion, "id">): Promise<string> {
+  const ref = doc(suggestionsCol());
+  await setDoc(ref, data);
+  return ref.id;
+}
+
+export function subscribeSuggestions(
+  onChange: (suggestions: Suggestion[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    suggestionsCol(),
+    (snap) =>
+      onChange(
+        snap.docs.map((d) => ({ ...(d.data() as Omit<Suggestion, "id">), id: d.id })),
+      ),
+    onError,
+  );
+}
+
+export async function updateSuggestion(
+  id: string,
+  patch: Partial<Omit<Suggestion, "id">>,
+): Promise<void> {
+  await updateDoc(doc(suggestionsCol(), id), { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteSuggestion(id: string): Promise<void> {
+  await deleteDoc(doc(suggestionsCol(), id));
 }

@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import type { BigRock, Designer, Hub, SocialConfig, Workspace } from "../types";
+import type { BigRock, Designer, Hub, SocialConfig, Suggestion, Workspace } from "../types";
 import { changePassword } from "../firebase";
 import { Avatar } from "./Avatar";
 import { ManageSocialModal } from "./ManageSocialModal";
 import { ManageBigRocksModal } from "./ManageBigRocksModal";
+import { SuggestFeatureModal } from "./SuggestFeatureModal";
+import { SuggestionsReviewModal } from "./SuggestionsReviewModal";
+import { isOpenSuggestion } from "../suggestions";
 import { APP_BUILT_AT, versionLabel } from "../version";
 import {
   DEFAULT_WORK_END_HOUR,
@@ -45,6 +48,12 @@ type Props = {
   // batch save behind the editor. Super users edit them from here.
   bigRocks: BigRock[];
   bigRockUsage: Map<string, number>;
+  // Suggestions sent from this window (everyone) and reviewed here (super
+  // users). The list is empty for anyone who isn't a super user.
+  suggestions: Suggestion[];
+  onCreateSuggestion: (suggestion: Omit<Suggestion, "id">) => Promise<void>;
+  onUpdateSuggestion: (id: string, patch: Partial<Omit<Suggestion, "id">>) => Promise<void>;
+  onDeleteSuggestion: (id: string) => Promise<void>;
   onSaveBigRocks: (rocks: BigRock[], removedIds: string[]) => Promise<void>;
   darkMode: boolean;
   onDarkModeChange: (enabled: boolean) => void;
@@ -101,6 +110,10 @@ export function SettingsModal({
   onRelabelSocialCategory,
   bigRocks,
   bigRockUsage,
+  suggestions,
+  onCreateSuggestion,
+  onUpdateSuggestion,
+  onDeleteSuggestion,
   onSaveBigRocks,
   darkMode,
   onDarkModeChange,
@@ -127,6 +140,9 @@ export function SettingsModal({
   const [manageHubsOpen, setManageHubsOpen] = useState(false);
   const [manageSocialOpen, setManageSocialOpen] = useState(false);
   const [manageRocksOpen, setManageRocksOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [reviewSuggestionsOpen, setReviewSuggestionsOpen] = useState(false);
+  const openSuggestions = suggestions.filter(isOpenSuggestion).length;
 
   useEffect(() => {
     // Suspend the Settings Escape handler while a sub-modal is up — that
@@ -303,6 +319,37 @@ export function SettingsModal({
             </p>
           </section>
 
+          <section className="modal-section">
+            <h3>Suggest a feature</h3>
+            <p className="muted small">
+              Got an idea for Waypoint, something that could work better, or a bug
+              to report? Send it to the people who build it. Your name and the
+              version you're on go with it.
+            </p>
+            {isSuperUser && (
+              <p className="muted small">
+                {suggestions.length === 0
+                  ? "Nobody has sent a suggestion yet."
+                  : openSuggestions === 0
+                    ? `${suggestions.length} sent, all decided.`
+                    : `${openSuggestions} open of ${suggestions.length} sent.`}
+              </p>
+            )}
+            <div className="section-actions">
+              {isSuperUser && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setReviewSuggestionsOpen(true)}
+                >
+                  Review suggestions{openSuggestions > 0 ? ` (${openSuggestions})` : ""} →
+                </button>
+              )}
+              <button className="primary" onClick={() => setSuggestOpen(true)}>
+                <Icon name="lightbulb" size={14} /> Suggest a feature
+              </button>
+            </div>
+          </section>
+
           <ProfilePhotoSection
             currentDesigner={currentDesigner}
             onSave={onUpdatePhotoUrl}
@@ -456,6 +503,23 @@ export function SettingsModal({
           usage={bigRockUsage}
           onSave={onSaveBigRocks}
           onClose={() => setManageRocksOpen(false)}
+        />
+      )}
+
+      {suggestOpen && (
+        <SuggestFeatureModal
+          currentDesigner={currentDesigner}
+          onSubmit={onCreateSuggestion}
+          onClose={() => setSuggestOpen(false)}
+        />
+      )}
+
+      {reviewSuggestionsOpen && (
+        <SuggestionsReviewModal
+          suggestions={suggestions}
+          onUpdate={onUpdateSuggestion}
+          onDelete={onDeleteSuggestion}
+          onClose={() => setReviewSuggestionsOpen(false)}
         />
       )}
 

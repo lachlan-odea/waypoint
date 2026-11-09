@@ -171,6 +171,9 @@ type DesignerDoc = {
   email?: string;
   // false when they've turned membership emails off; missing means on.
   emailAlerts?: boolean;
+  // Super users review the suggestions sent from Settings, so each new
+  // one is emailed to them (notifySuggestion).
+  isSuperUser?: boolean;
 };
 
 async function allDesigners(): Promise<Map<string, DesignerDoc>> {
@@ -521,6 +524,97 @@ export const notifyLiveEventRequest = onDocumentCreated(
       });
     } catch (err) {
       logger.error("Live event request email not sent", { to, requestId, error: String(err) });
+    }
+  },
+);
+
+// ── Suggestions ────────────────────────────────────────────────────────
+// Settings → Suggest a feature writes a document to /suggestions
+// (src/components/SuggestFeatureModal.tsx). Each one is emailed to every
+// super user with email alerts on, except the sender, with the idea or bug
+// in the sender's words and the build they were on, so nothing sits unseen
+// until someone opens Settings.
+type SuggestionDoc = {
+  kind?: "feature" | "improvement" | "bug";
+  title?: string;
+  details?: string;
+  where?: string;
+  submittedById?: string;
+  submittedByName?: string;
+  submittedByEmail?: string;
+  createdAt?: string;
+  appVersion?: string;
+  status?: string;
+};
+
+const SUGGESTION_KIND_LABELS: Record<NonNullable<SuggestionDoc["kind"]>, string> = {
+  feature: "New feature",
+  improvement: "Improvement",
+  bug: "Bug",
+};
+
+export const notifySuggestion = onDocumentCreated(
+  {
+    document: "suggestions/{suggestionId}",
+    region: "us-central1",
+    secrets: MAIL_SECRETS,
+  },
+  async (event) => {
+    const doc = event.data?.data() as SuggestionDoc | undefined;
+    if (!doc) return;
+
+    const kind = doc.kind && doc.kind in SUGGESTION_KIND_LABELS ? doc.kind : "feature";
+    const kindLabel = SUGGESTION_KIND_LABELS[kind];
+    const title = (doc.title ?? "").trim() || `Untitled ${kindLabel.toLowerCase()}`;
+    const sender = (doc.submittedByName ?? "").trim() || "Someone";
+    const senderEmail = (doc.submittedByEmail ?? "").trim();
+    const details = (doc.details ?? "").trim();
+    const where = (doc.where ?? "").trim();
+    const suggestionId = event.params.suggestionId;
+
+    const designers = await allDesigners();
+    const recipients = [...designers.values()].filter(
+      (d) =>
+        d.isSuperUser === true &&
+        !!d.email &&
+        d.emailAlerts !== false &&
+        d.id !== doc.submittedById,
+    );
+    if (recipients.length === 0) {
+      logger.info("Suggestion received but no super user to email", { suggestionId });
+      return;
+    }
+
+    const verb = kind === "bug" ? "reported a bug" : kind === "improvement" ? "suggested an improvement" : "suggested a feature";
+    const content: EmailContent = {
+      kicker: "Suggestion",
+      heading: `${kindLabel}: "${title}"`,
+      intro: `${sender} ${verb} from Waypoint's Settings${where ? `, about ${where}` : ""}. It's waiting in Settings → Suggest a feature → Review suggestions.`,
+      rows: [
+        ["Type", kindLabel],
+        ["From", [sender, senderEmail].filter(Boolean).join(", ")],
+        ["Where", where],
+        ["Version", (doc.appVersion ?? "").trim()],
+        ["Sent", doc.createdAt ? formatDate(doc.createdAt) : ""],
+      ],
+      about: details ? { title: kind === "bug" ? "What happened" : "In their words", text: details } : undefined,
+      links: senderEmail
+        ? [{ label: `Reply to ${sender}`, url: `mailto:${senderEmail}?subject=${encodeURIComponent(`Re: your Waypoint suggestion – ${title}`)}` }]
+        : [],
+      ctaLabel: "Open Waypoint",
+      ctaUrl: WAYPOINT_APP_URL,
+    };
+
+    for (const d of recipients) {
+      try {
+        await sendMail({
+          to: [d.email as string],
+          subject: `[Waypoint] ${kindLabel} from ${sender}: ${title}`,
+          html: renderEmail(firstNameOf(d), content),
+        });
+      } catch (err) {
+        logger.error("Suggestion email not sent", { to: d.email, suggestionId, error: String(err) });
+      }
     }
   },
 );

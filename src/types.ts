@@ -874,3 +874,31 @@ export type ItineraryTravel = {
   createdAt: string;
   updatedAt: string;
 };
+
+// ── Suggestions ────────────────────────────────────────────────────────
+// Ideas and bug reports sent from Settings → Suggest a feature, stored in
+// /suggestions. Everyone can send one; super users review them from the
+// same section (and are emailed as each arrives, functions/src/index.ts).
+export type SuggestionKind = "feature" | "improvement" | "bug";
+export type SuggestionStatus = "new" | "planned" | "done" | "declined";
+
+export type Suggestion = {
+  id: string;
+  kind: SuggestionKind;
+  title: string;
+  details: string;
+  // Where in Waypoint it applies, in the sender's words ("Social calendar",
+  // "My Desk → Checklist"). May be empty.
+  where: string;
+  submittedById: string;
+  submittedByName: string;
+  submittedByEmail: string;
+  createdAt: string;
+  // The build it was sent from (versionLabel()), so a bug can be matched to
+  // a version.
+  appVersion: string;
+  status: SuggestionStatus;
+  // A super user's note on the decision. Kept with the suggestion.
+  notes?: string;
+  updatedAt?: string;
+};
