@@ -1,4 +1,5 @@
 import type { Campaign, CampaignMilestone, MilestoneType, SocialPost } from "./types";
+import { isHttpUrl } from "./socialPosts";
 
 // Does this milestone get a post on the Social calendar? Only if its type
 // is still in the list and marked social.
@@ -134,3 +135,29 @@ export const PHASE_LABEL: Record<CampaignPhase, string> = {
   finished: "Finished",
   evergreen: "Evergreen",
 };
+
+export function newMilestoneId(): string {
+  return `ms-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+// Trim the rows and sort them by date, or say what is wrong with them.
+export function cleanMilestones(
+  milestones: CampaignMilestone[],
+): { ok: true; milestones: CampaignMilestone[] } | { ok: false; error: string } {
+  const clean = milestones
+    .map((m) => ({
+      ...m,
+      label: m.label.trim(),
+      url: m.url?.trim() || undefined,
+      description: m.description?.trim() || undefined,
+    }))
+    .filter((m) => m.label && m.date)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (clean.length !== milestones.length) {
+    return { ok: false, error: "Every milestone needs a date and a type — remove any blank rows." };
+  }
+  if (clean.some((m) => m.url && !isHttpUrl(m.url))) {
+    return { ok: false, error: "Milestone links need to be full web addresses, starting with https://" };
+  }
+  return { ok: true, milestones: clean };
+}

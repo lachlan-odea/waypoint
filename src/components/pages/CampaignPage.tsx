@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type {
   BigRock,
   Campaign,
+  CampaignMilestone,
   Designer,
   MilestoneType,
   Project,
@@ -37,6 +38,9 @@ import { ActivityPortalLink, ActivityPortalListItem } from "../ActivityPortalLin
 import { useActivityPortal } from "../../activityPortal";
 import { LinkifiedText } from "../LinkifiedText";
 import { CampaignModal } from "../CampaignModal";
+import { cleanMilestones } from "../../campaigns";
+import { CampaignMilestonesEditor } from "../CampaignMilestonesEditor";
+import { ProjectPicker } from "../ProjectPicker";
 import { BigRockChips } from "../BigRockPicker";
 import { rocksFor } from "../../bigRocks";
 import { MilestonePostLink } from "../MilestonePostLink";
@@ -308,9 +312,9 @@ function WebinarCampaignPage({
             onDelete={onDelete}
           />
         ) : here === "milestones" ? (
-          <MilestonesTab campaign={campaign} socialPosts={socialPosts} onSave={onSave} onOpenSocialPost={onOpenSocialPost} onTab={onTab} />
+          <MilestonesTab campaign={campaign} milestoneTypes={milestoneTypes} socialPosts={socialPosts} onSave={onSave} onOpenSocialPost={onOpenSocialPost} />
         ) : here === "projects" ? (
-          <ProjectsTab campaign={campaign} linkedProjects={linkedProjects} designers={designers} workspaces={workspaces} onOpenProject={onOpenProject} onTab={onTab} />
+          <ProjectsTab campaign={campaign} linkedProjects={linkedProjects} projects={projects} designers={designers} workspaces={workspaces} onOpenProject={onOpenProject} onSave={onSave} />
         ) : here === "files" ? (
           <KitFilesTab api={api} />
         ) : here === "activity" ? (
@@ -506,16 +510,16 @@ function PlainCampaignPage({
           onDelete={onDelete}
         />
       ) : tab === "milestones" ? (
-        <MilestonesTab campaign={campaign} socialPosts={socialPosts} onSave={onSave} onOpenSocialPost={onOpenSocialPost} onTab={onTab} />
+        <MilestonesTab campaign={campaign} milestoneTypes={milestoneTypes} socialPosts={socialPosts} onSave={onSave} onOpenSocialPost={onOpenSocialPost} />
       ) : tab === "projects" ? (
-        <ProjectsTab campaign={campaign} linkedProjects={linkedProjects} designers={designers} workspaces={workspaces} onOpenProject={onOpenProject} onTab={onTab} />
+        <ProjectsTab campaign={campaign} linkedProjects={linkedProjects} projects={projects} designers={designers} workspaces={workspaces} onOpenProject={onOpenProject} onSave={onSave} />
       ) : (
         <ItemGrid
           main={
             <>
               <SideCard title="Up next" aside={<span className="item-hint">{open.length} open</span>}>
                 {open.length === 0 ? (
-                  <EmptyNote>{milestones.length ? "Every milestone is done." : "No milestones yet. Add them on the Details tab."}</EmptyNote>
+                  <EmptyNote>{milestones.length ? "Every milestone is done." : "No milestones yet. Add them on the Milestones tab."}</EmptyNote>
                 ) : (
                   <ul className="item-milestones compact">
                     {open.slice(0, 5).map((m) => {
@@ -675,35 +679,102 @@ function PlainCampaignPage({
 
 function MilestonesTab({
   campaign,
+  milestoneTypes,
   socialPosts,
   onSave,
   onOpenSocialPost,
-  onTab,
 }: {
   campaign: Campaign;
+  milestoneTypes: MilestoneType[];
   socialPosts: SocialPost[];
   onSave: Props["onSave"];
   onOpenSocialPost: (id: string) => void;
-  onTab: (tab: string) => void;
 }) {
   const today = todayIso();
   const milestones = campaign.milestones.slice().sort((a, b) => a.date.localeCompare(b.date));
+  // "Add or edit" swaps the list for the same row editor the Details tab
+  // uses. Changes are held here until Save, so Cancel drops them.
+  const [draft, setDraft] = useState<CampaignMilestone[] | null>(null);
+  const [deletePostIds, setDeletePostIds] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  function startEditing() {
+    setDraft(campaign.milestones.map((m) => ({ ...m })));
+    setDeletePostIds([]);
+    setError(null);
+  }
+  function cancel() {
+    setDraft(null);
+    setDeletePostIds([]);
+    setError(null);
+  }
+  function save() {
+    if (!draft) return;
+    const cleaned = cleanMilestones(draft);
+    if (!cleaned.ok) {
+      setError(cleaned.error);
+      return;
+    }
+    onSave({ ...campaign, milestones: cleaned.milestones }, deletePostIds);
+    cancel();
+  }
   function toggle(id: string) {
     onSave({ ...campaign, milestones: campaign.milestones.map((m) => (m.id === id ? { ...m, done: !m.done } : m)) });
   }
+
+  if (draft) {
+    return (
+      <ItemGrid
+        main={
+          <SideCard
+            title="Milestones"
+            aside={
+              <span className="item-card-actions">
+                <button type="button" className="btn-mini" onClick={cancel}>
+                  Cancel
+                </button>
+                <button type="button" className="btn-mini primary" onClick={save}>
+                  Save
+                </button>
+              </span>
+            }
+          >
+            <p className="muted small" style={{ margin: "0 0 8px" }}>
+              Dated moments inside the campaign. Each shows as a diamond on the
+              campaign bar; tick it once it has happened. A social post milestone
+              also puts a draft post on the Social calendar on its day.
+            </p>
+            <CampaignMilestonesEditor
+              milestones={draft}
+              onChange={setDraft}
+              milestoneTypes={milestoneTypes}
+              startDate={campaign.startDate}
+              endDate={campaign.endDate}
+              evergreen={!!campaign.evergreen}
+              socialPosts={socialPosts}
+              onOpenSocialPost={onOpenSocialPost}
+              onDeletePost={(postId) => setDeletePostIds((cur) => [...cur, postId])}
+            />
+            {error && <p className="login-error">{error}</p>}
+          </SideCard>
+        }
+      />
+    );
+  }
+
   return (
     <ItemGrid
       main={
         <SideCard
           title="Milestones"
           aside={
-            <button type="button" className="link-btn" onClick={() => onTab("details")}>
+            <button type="button" className="link-btn" onClick={startEditing}>
               Add or edit
             </button>
           }
         >
           {milestones.length === 0 ? (
-            <EmptyNote>No milestones yet. Add the dated moments of this campaign on the Details tab.</EmptyNote>
+            <EmptyNote>No milestones yet. Add the dated moments of this campaign with “Add or edit”.</EmptyNote>
           ) : (
             <ul className="item-milestones">
               {milestones.map((m) => {
@@ -751,31 +822,78 @@ function MilestonesTab({
 function ProjectsTab({
   campaign,
   linkedProjects,
+  projects,
   designers,
   workspaces,
   onOpenProject,
-  onTab,
+  onSave,
 }: {
   campaign: Campaign;
   linkedProjects: Project[];
+  // Every board project, for the picker.
+  projects: Project[];
   designers: Designer[];
   workspaces: Workspace[];
   onOpenProject: (id: string) => void;
-  onTab: (tab: string) => void;
+  onSave: Props["onSave"];
 }) {
+  // "Link projects" swaps the cards for the same picker the Details tab
+  // uses. The choice is held here until Save, so Cancel drops it.
+  const [draft, setDraft] = useState<string[] | null>(null);
+
+  function save() {
+    if (!draft) return;
+    onSave({ ...campaign, projectIds: draft });
+    setDraft(null);
+  }
+
+  if (draft) {
+    return (
+      <ItemGrid
+        main={
+          <SideCard
+            title="Projects"
+            aside={
+              <span className="item-card-actions">
+                <button type="button" className="btn-mini" onClick={() => setDraft(null)}>
+                  Cancel
+                </button>
+                <button type="button" className="btn-mini primary" onClick={save}>
+                  Save
+                </button>
+              </span>
+            }
+          >
+            <ProjectPicker
+              projects={projects}
+              workspaces={workspaces}
+              value={draft}
+              onChange={setDraft}
+              placeholder="Search projects to link — the EDM, the landing page, the social assets…"
+            />
+            <span className="field-hint">
+              Every board project doing work for this campaign. Each project's
+              window lists the campaigns it belongs to.
+            </span>
+          </SideCard>
+        }
+      />
+    );
+  }
+
   return (
     <ItemGrid
       main={
         <SideCard
           title="Projects"
           aside={
-            <button type="button" className="link-btn" onClick={() => onTab("details")}>
+            <button type="button" className="link-btn" onClick={() => setDraft([...campaign.projectIds])}>
               Link projects
             </button>
           }
         >
           {linkedProjects.length === 0 ? (
-            <EmptyNote>No board projects linked yet. Link the EDM, the landing page and the social assets on the Details tab.</EmptyNote>
+            <EmptyNote>No board projects linked yet. Link the EDM, the landing page and the social assets with “Link projects”.</EmptyNote>
           ) : (
             <div className="workspace-grid item-project-grid">
               {linkedProjects.map((p) => (

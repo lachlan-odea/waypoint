@@ -10,10 +10,8 @@ import type {
   SocialPost,
   Workspace,
 } from "../types";
-import { isSocialMilestone } from "../campaigns";
-import { isHttpUrl } from "../socialPosts";
-import { MilestonePostLink } from "./MilestonePostLink";
-import { MilestonePostDeleteDialog } from "./MilestonePostDeleteDialog";
+import { cleanMilestones } from "../campaigns";
+import { CampaignMilestonesEditor } from "./CampaignMilestonesEditor";
 import { BRANDS, brandColor, brandForChannel } from "../constants";
 import { formatShort, shiftIso, todayIso } from "../dates";
 import { ActivityPortalLink } from "./ActivityPortalLink";
@@ -103,23 +101,24 @@ export function CampaignModal({
   const [milestones, setMilestones] = useState<CampaignMilestone[]>(() =>
     (initial.milestones ?? []).map((m) => ({ ...m })),
   );
-  // A milestone with a social post, waiting on "delete the post too?".
-  const [removing, setRemoving] = useState<CampaignMilestone | null>(null);
   // Posts to delete when the campaign is saved. Held until then so that
   // cancelling the editor leaves both the milestone and its post alone.
   const [deletePostIds, setDeletePostIds] = useState<string[]>([]);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // The milestone editor's "delete the post too?" prompt is open.
+  const [prompting, setPrompting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (inline) return;
     function onKey(e: KeyboardEvent) {
-      // The delete prompt handles its own Escape.
-      if (e.key === "Escape" && !removing) onCancel();
+      // The milestone editor's "delete the post too?" prompt handles its
+      // own Escape.
+      if (e.key === "Escape" && !prompting) onCancel();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel, removing, inline]);
+  }, [onCancel, prompting, inline]);
 
   // Every campaign needs a start; only a dated one needs an end after it.
   const datesValid =
@@ -138,66 +137,13 @@ export function CampaignModal({
     return id === initial.ownerId ? (initial.owner ?? "") : "";
   }
 
-  // ── milestones ───────────────────────────────────────────────────────
-
-  function patchMilestone(id: string, patch: Partial<CampaignMilestone>) {
-    setMilestones((cur) => cur.map((m) => (m.id === id ? { ...m, ...patch } : m)));
-  }
-
-  function addMilestone() {
-    // Default to the day after the last milestone, or the start date, so a
-    // run of "EDM 1 / EDM 2 / EDM 3" needs a label each and little else.
-    const last = milestones[milestones.length - 1];
-    const date = last?.date ? shiftIso(last.date, 1) : startDate;
-    setMilestones((cur) => [
-      ...cur,
-      { id: newId("ms"), date, label: "", done: false },
-    ]);
-  }
-
-  // A milestone whose post still exists asks about the post first. One
-  // whose post is already gone (or never existed) just goes.
-  function removeMilestone(id: string) {
-    const m = milestones.find((x) => x.id === id);
-    const postId = m?.socialPostId;
-    if (m && postId && socialPosts?.some((p) => p.id === postId)) {
-      setRemoving(m);
-      return;
-    }
-    dropMilestone(id);
-  }
-
-  function dropMilestone(id: string) {
-    setMilestones((cur) => cur.filter((m) => m.id !== id));
-  }
-
-  function confirmRemoval(deletePost: boolean) {
-    if (!removing) return;
-    const postId = removing.socialPostId;
-    if (deletePost && postId) setDeletePostIds((cur) => [...cur, postId]);
-    dropMilestone(removing.id);
-    setRemoving(null);
-  }
-
   // ── save ─────────────────────────────────────────────────────────────
 
   function submit() {
     if (!canSave) return;
-    const cleanMilestones = milestones
-      .map((m) => ({
-        ...m,
-        label: m.label.trim(),
-        url: m.url?.trim() || undefined,
-        description: m.description?.trim() || undefined,
-      }))
-      .filter((m) => m.label && m.date)
-      .sort((a, b) => a.date.localeCompare(b.date));
-    if (cleanMilestones.length !== milestones.length) {
-      setError("Every milestone needs a date and a type — remove any blank rows.");
-      return;
-    }
-    if (cleanMilestones.some((m) => m.url && !isHttpUrl(m.url))) {
-      setError("Milestone links need to be full web addresses, starting with https://");
+    const cleaned = cleanMilestones(milestones);
+    if (!cleaned.ok) {
+      setError(cleaned.error);
       return;
     }
     const campaign: Campaign = {
@@ -216,7 +162,7 @@ export function CampaignModal({
       // Left off rather than stored as false, like the other optional fields.
       evergreen: evergreen || undefined,
       color,
-      milestones: cleanMilestones,
+      milestones: cleaned.milestones,
       projectIds,
       bigRockIds: bigRockIds.length ? bigRockIds : undefined,
       // Kept from before the activity portal, so a campaign page already
@@ -227,12 +173,6 @@ export function CampaignModal({
     };
     onSave(campaign, deletePostIds);
   }
-
-  // A milestone can fall before any campaign's start, and after a dated
-  // one's end; an evergreen campaign has no end to fall after.
-  const isOutside = (m: CampaignMilestone) =>
-    !!m.date && (m.date < startDate || (!evergreen && m.date > endDate));
-  const outside = milestones.filter(isOutside).length;
 
   const linkedProjects = projectIds
     .map((id) => projects.find((p) => p.id === id))
@@ -452,103 +392,18 @@ export function CampaignModal({
               campaign bar; tick it once it has happened. A social post milestone
               also puts a draft post on the Social calendar on its day.
             </p>
-            {milestones.length === 0 ? (
-              <p className="muted small">No milestones yet.</p>
-            ) : (
-              <div className="camp-ms-list">
-                {milestones.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`camp-ms-row ${isOutside(m) ? "outside" : ""}`}
-                  >
-                    <label className="camp-ms-done" title="Done">
-                      <input
-                        type="checkbox"
-                        checked={m.done}
-                        onChange={(e) => patchMilestone(m.id, { done: e.target.checked })}
-                      />
-                    </label>
-                    <input
-                      type="date"
-                      value={m.date}
-                      onChange={(e) => patchMilestone(m.id, { date: e.target.value })}
-                    />
-                    <select
-                      value={m.label}
-                      onChange={(e) => patchMilestone(m.id, { label: e.target.value })}
-                      aria-label="Milestone type"
-                    >
-                      <option value="" disabled>
-                        Choose a type…
-                      </option>
-                      {milestoneTypes.map((t) => (
-                        <option key={t.id} value={t.label}>
-                          {t.label}
-                        </option>
-                      ))}
-                      {/* A milestone whose type predates the list, or was
-                          since renamed or removed, keeps its own text. */}
-                      {m.label &&
-                        !milestoneTypes.some((t) => t.label === m.label) && (
-                          <option value={m.label}>{m.label}</option>
-                        )}
-                    </select>
-                    {m.socialPostId ? (
-                      onOpenSocialPost && (
-                        <MilestonePostLink
-                          milestone={m}
-                          socialPosts={socialPosts ?? []}
-                          onOpen={onOpenSocialPost}
-                        />
-                      )
-                    ) : isSocialMilestone(m, milestoneTypes) ? (
-                      <span className="field-hint camp-ms-post-hint">
-                        Creates a draft social post on save
-                      </span>
-                    ) : (
-                      // Social milestones link to their post; the rest can
-                      // carry a link to their asset for the SharePoint page.
-                      <input
-                        type="url"
-                        className="camp-ms-url"
-                        value={m.url ?? ""}
-                        placeholder="Link (optional)"
-                        aria-label={`Link for ${m.label || "this milestone"}`}
-                        onChange={(e) => patchMilestone(m.id, { url: e.target.value })}
-                      />
-                    )}
-                    <button
-                      type="button"
-                      className="link-btn"
-                      onClick={() => removeMilestone(m.id)}
-                    >
-                      Remove
-                    </button>
-                    <input
-                      className="camp-ms-desc"
-                      value={m.description ?? ""}
-                      maxLength={200}
-                      placeholder="Short description (optional)"
-                      aria-label={`Description for ${m.label || "this milestone"}`}
-                      onChange={(e) => patchMilestone(m.id, { description: e.target.value })}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-            {outside > 0 && (
-              <p className="field-hint warn">
-                {outside === 1
-                  ? "One milestone falls outside the campaign dates."
-                  : `${outside} milestones fall outside the campaign dates.`}{" "}
-                That's allowed, but check it's intended.
-              </p>
-            )}
-            <div className="section-actions" style={{ justifyContent: "flex-start" }}>
-              <button type="button" className="btn-mini" onClick={addMilestone}>
-                + Add milestone
-              </button>
-            </div>
+            <CampaignMilestonesEditor
+              milestones={milestones}
+              onChange={setMilestones}
+              milestoneTypes={milestoneTypes}
+              startDate={startDate}
+              endDate={endDate}
+              evergreen={evergreen}
+              socialPosts={socialPosts}
+              onOpenSocialPost={onOpenSocialPost}
+              onDeletePost={(postId) => setDeletePostIds((cur) => [...cur, postId])}
+              onPrompting={setPrompting}
+            />
           </div>
 
           {error && <p className="login-error">{error}</p>}
@@ -584,18 +439,6 @@ export function CampaignModal({
   return (
     <div className={inline ? "item-editor-wrap" : "modal-overlay"}>
       {editor}
-      {removing && (() => {
-        const post = socialPosts?.find((p) => p.id === removing.socialPostId);
-        return post ? (
-          <MilestonePostDeleteDialog
-            milestone={removing}
-            post={post}
-            onDeletePost={() => confirmRemoval(true)}
-            onKeepPost={() => confirmRemoval(false)}
-            onCancel={() => setRemoving(null)}
-          />
-        ) : null;
-      })()}
     </div>
   );
 }
