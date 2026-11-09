@@ -406,6 +406,12 @@ button.item-strip-cell:hover {
   font-weight: 700;
   color: var(--wtg-blue);
 }
+/* A card head's Save / Cancel pair, e.g. the Milestones tab's editor. */
+.item-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .item-card-body {
   padding: 14px 16px;
   display: flex;
