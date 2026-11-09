@@ -10,6 +10,7 @@ import type {
   MarketingEvent,
   Notification,
   Speaker,
+  Suggestion,
   Project,
   ProjectStatus,
   SocialConfig,
@@ -68,6 +69,10 @@ import {
   subscribeCampaigns,
   subscribeBigRocks,
   saveBigRocks as firestoreSaveBigRocks,
+  subscribeSuggestions,
+  createSuggestion as firestoreCreateSuggestion,
+  updateSuggestion as firestoreUpdateSuggestion,
+  deleteSuggestion as firestoreDeleteSuggestion,
   subscribeSocialConfig,
   subscribeSocialPosts,
   subscribeWorkspace,
@@ -915,6 +920,20 @@ export default function App() {
     const email = currentDesigner?.email?.toLowerCase();
     return !!email && (SUPER_USER_EMAILS as readonly string[]).includes(email);
   }, [currentDesigner]);
+
+  // Feature suggestions and bug reports, for Settings. Only super users
+  // review them, so only they subscribe; everyone else just sends.
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  useEffect(() => {
+    if (!sessionDesignerId || !isSuperUser) return;
+    const unsubscribe = subscribeSuggestions(setSuggestions, (err) => {
+      console.warn("Couldn't load suggestions", err);
+    });
+    return () => {
+      unsubscribe();
+      setSuggestions([]);
+    };
+  }, [sessionDesignerId, isSuperUser]);
 
   const superUsers = useMemo(() => {
     if (!workspace) return [];
@@ -2171,6 +2190,10 @@ export default function App() {
           onRelabelSocialCategory={firestoreRelabelSocialPostCategory}
           bigRocks={bigRocks}
           bigRockUsage={bigRockUsage}
+          suggestions={suggestions}
+          onCreateSuggestion={(s) => firestoreCreateSuggestion(s).then(() => {})}
+          onUpdateSuggestion={firestoreUpdateSuggestion}
+          onDeleteSuggestion={firestoreDeleteSuggestion}
           onSaveBigRocks={firestoreSaveBigRocks}
           darkMode={darkMode}
           onDarkModeChange={setDarkMode}
