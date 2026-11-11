@@ -228,6 +228,24 @@ service cloud.firestore {
     match /suggestions/{suggestionId} {
       allow read, write: if request.auth != null;
     }
+    // LinkedIn (functions/src/linkedin.ts). The connected account's token
+    // lives in /linkedinPrivate and is only ever touched by the functions,
+    // which don't go through these rules: no client may read or write it.
+    // What the functions publish for the app (the connection's status, each
+    // page's followers and 30 days, each post's results) is read-only to
+    // signed-in users, so nobody can plant numbers or fake a connection.
+    // Which page a channel posts to is /settings/linkedin, above.
+    match /linkedinPrivate/{docId} {
+      allow read, write: if false;
+    }
+    match /linkedin/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    match /linkedinPostStats/{statId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any
     // signed-in user. Reads are constrained by the ownerId == uid filter the

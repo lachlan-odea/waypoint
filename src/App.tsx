@@ -1805,6 +1805,7 @@ export default function App() {
             onCreateHandled={() => setNewPostRequest(0)}
             exportRequest={exportRequest}
             onExportHandled={() => setExportRequest(0)}
+            isSuperUser={isSuperUser}
           />
         ) : view === "events" ? (
           <EventsView

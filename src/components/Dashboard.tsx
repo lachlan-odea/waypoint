@@ -11,6 +11,7 @@ import { formatShort, shiftIso, todayIso } from "../dates";
 import { campaignPhaseTone, eventStatusTone, projectStatusTone, socialStatusTone } from "../statusTone";
 import { Icon, type IconName, type IconTone } from "./Icon";
 import { StatusChip } from "./pages/ItemPage";
+import { LinkedInDashboardSection } from "./LinkedInInsights";
 
 // The Executive Dashboard: the head of marketing's one page. The numbers
 // across every team and programme, then the programmes themselves
@@ -338,6 +339,12 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, bigRocks,
           </Panel>
         </div>
       </Section>
+
+      <LinkedInDashboardSection
+        socialPosts={socialPosts}
+        onOpenSocialPost={onOpenSocialPost}
+        onOpenCalendar={() => onOpenView("socialCalendar")}
+      />
 
       {/* ── Teams ─────────────────────────────────────────────────────── */}
       <Section eyebrow="Across the teams" title="Teams and projects" summary={`${live.length} live project${live.length === 1 ? "" : "s"} across ${workspaces.length} team${workspaces.length === 1 ? "" : "s"} · ${projects.length} on the boards in all`}>

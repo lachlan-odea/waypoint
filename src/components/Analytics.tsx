@@ -45,6 +45,7 @@ import { campaignPhaseTone } from "../statusTone";
 import { formatShort, shiftIso, todayIso } from "../dates";
 import { Icon, type IconName, type IconTone } from "./Icon";
 import { StatusChip } from "./pages/ItemPage";
+import { LinkedInAnalyticsSection } from "./LinkedInInsights";
 
 type Props = {
   // Every project across every workspace. Analytics filters this down based
@@ -642,6 +643,8 @@ export function Analytics({
           </Panel>
         </div>
       </Section>
+
+      <LinkedInAnalyticsSection socialPosts={socialPosts} from={from} to={to} rangeLabel={rangeLabel} />
 
       <Section
         eyebrow={`${rangeLabel} · all teams`}

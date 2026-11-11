@@ -622,3 +622,15 @@ export const notifySuggestion = onDocumentCreated(
 function wantsPublish(s: ReturnType<typeof parseSubmission>): boolean {
   return s.deliverables === "On-demand edit" || s.deliverables === "Both";
 }
+
+// ── LinkedIn ───────────────────────────────────────────────────────────
+// Publishing to the company pages and reading their statistics back; see
+// linkedin.ts.
+export {
+  linkedinAuthCallback,
+  linkedinConnect,
+  linkedinDisconnect,
+  linkedinNightlySync,
+  linkedinPublish,
+  linkedinSyncNow,
+} from "./linkedin";

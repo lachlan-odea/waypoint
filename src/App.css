@@ -10354,3 +10354,353 @@ a.button-link:hover {
       "meta meta";
   }
 }
+
+/* ── LinkedIn: publishing, the Performance tab, Settings ───────────────── */
+
+/* Post editor → Publish: the direct route to the page. */
+.soc-direct {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.soc-direct-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.soc-direct-file .btn-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.soc-direct-filename {
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.soc-direct-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--wtg-peach);
+  border-radius: var(--radius);
+  background: #fff4ec;
+  color: var(--ink-900);
+  font-size: 13px;
+}
+.soc-direct-confirm > span {
+  flex: 1 1 220px;
+}
+:root.dark-mode .soc-direct-confirm {
+  background: rgba(255, 191, 152, 0.14);
+  border-color: rgba(255, 191, 152, 0.4);
+  color: var(--text);
+}
+.soc-publish-error {
+  margin: 0;
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+}
+:root.dark-mode .soc-publish-error {
+  background: rgba(255, 120, 108, 0.18);
+  color: #ffdad6;
+}
+.soc-manual > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 2px 0;
+}
+.soc-manual[open] > summary {
+  margin-bottom: 8px;
+}
+.soc-manual > * + * {
+  margin-top: 8px;
+}
+.soc-post-stats {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.soc-post-stats h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.soc-post-stats dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+  margin: 0 0 8px;
+}
+.soc-post-stats dl > div {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  background: var(--surface);
+}
+.soc-post-stats dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.soc-post-stats dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Social calendar → Performance. */
+.li-perf {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.li-perf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.li-perf-head .soc-summary {
+  margin: 0;
+}
+.li-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.li-page-title {
+  margin: 0;
+  font-size: 16px;
+}
+.li-perf .kpi-value {
+  font-variant-numeric: tabular-nums;
+}
+.li-perf .kpi-sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+.li-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.li-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.li-table th,
+.li-table td {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+.li-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.li-table th {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+  background: var(--surface-2);
+}
+.li-table th.num,
+.li-table td.num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.li-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+.li-sort {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.li-sort:hover,
+.li-sort.active {
+  color: var(--text);
+}
+.li-sort:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: 4px;
+}
+.li-td-date {
+  white-space: nowrap;
+  color: var(--muted);
+}
+.li-td-post {
+  min-width: 260px;
+  max-width: 520px;
+}
+.li-post-link {
+  display: block;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--wtg-cobalt);
+  text-align: left;
+  cursor: pointer;
+}
+:root.dark-mode .li-post-link {
+  color: var(--wtg-periwinkle);
+}
+.li-post-link:hover {
+  text-decoration: underline;
+}
+.li-post-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.li-post-meta {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.li-post-meta a {
+  color: inherit;
+  white-space: nowrap;
+}
+
+/* Settings → LinkedIn. */
+.li-settings h4.li-subhead {
+  margin: 14px 0 6px;
+  font-size: 13px;
+}
+.li-orgs,
+.li-mappings {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.li-orgs li,
+.li-mappings li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.li-mappings li > span:first-child {
+  flex: 1 1 200px;
+}
+.li-org-id {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+.li-redirect {
+  display: block;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.li-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+.li-add input,
+.li-add select {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+/* LinkedIn on the Executive Dashboard and Analytics. */
+.li-ins-subhead {
+  margin: 4px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+a.ex-row {
+  color: inherit;
+  text-decoration: none;
+}
+.li-ins-figure {
+  white-space: nowrap;
+  font-size: 14px;
+  color: var(--text);
+}
+.li-ins-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.li-ins-page + .li-ins-page {
+  margin-top: 20px;
+}
+.li-ins-pagename {
+  margin: 0;
+  font-size: 15px;
+}
+.li-ins-table th.num,
+.li-ins-table td.num {
+  text-align: right;
+  white-space: nowrap;
+}
+.li-ins-post {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-weight: 600;
+  color: var(--wtg-cobalt);
+  text-decoration: none;
+}
+:root.dark-mode .li-ins-post {
+  color: var(--wtg-periwinkle);
+}
+.li-ins-post:hover {
+  text-decoration: underline;
+}
+.li-ins-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}

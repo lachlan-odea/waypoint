@@ -23,6 +23,8 @@ import { publishCampaignPagesForPost } from "../campaignExport";
 import { socialPostTitle } from "../socialPosts";
 import { SocialPostCard } from "./SocialPostCard";
 import { SocialPostModal } from "./SocialPostModal";
+import { LinkedInPerformance } from "./LinkedInPerformance";
+import { useLinkedIn } from "../linkedin";
 import { ExportCsvModal } from "./ExportCsvModal";
 import {
   csvFileName,
@@ -62,6 +64,9 @@ type Props = {
   onCreateHandled?: () => void;
   exportRequest?: number;
   onExportHandled?: () => void;
+  // Super users can publish a post straight to its LinkedIn page and
+  // refresh the Performance tab on demand.
+  isSuperUser: boolean;
 };
 
 type Editing =
@@ -176,7 +181,11 @@ export function SocialCalendar({
   onCreateHandled,
   exportRequest,
   onExportHandled,
+  isSuperUser,
 }: Props) {
+  // The LinkedIn connection, the pages' numbers and each post's results,
+  // for the Performance tab and the post editor.
+  const linkedIn = useLinkedIn(true);
   // null until the first snapshot lands, so the empty state can't flash
   // before the import has been read.
   const [posts, setPosts] = useState<SocialPost[] | null>(null);
@@ -194,7 +203,7 @@ export function SocialCalendar({
     () => new Set(),
   );
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<"calendar" | "library">("calendar");
+  const [tab, setTab] = useState<"calendar" | "library" | "performance">("calendar");
   const [editing, setEditing] = useState<Editing | null>(null);
   const [dropOver, setDropOver] = useState<string | null>(null);
   // The in-view import. App runs the same seed on sign-in, but silently;
@@ -574,18 +583,22 @@ export function SocialCalendar({
             className="btn-mini"
             onClick={() => setMonth((m) => shiftMonth(m, -1))}
             aria-label="Previous month"
-            disabled={tab === "library"}
+            disabled={tab !== "calendar"}
           >
             <Icon name="chevron-left" size={16} />
           </button>
           <h2 className="soc-month-title">
-            {tab === "library" ? "Evergreen library" : monthLabel}
+            {tab === "library"
+              ? "Evergreen library"
+              : tab === "performance"
+                ? "LinkedIn performance"
+                : monthLabel}
           </h2>
           <button
             className="btn-mini"
             onClick={() => setMonth((m) => shiftMonth(m, 1))}
             aria-label="Next month"
-            disabled={tab === "library"}
+            disabled={tab !== "calendar"}
           >
             <Icon name="chevron-right" size={16} />
           </button>
@@ -654,11 +667,19 @@ export function SocialCalendar({
             >
               Evergreen{libraryCount > 0 ? ` (${libraryCount})` : ""}
             </button>
+            <button
+              role="tab"
+              aria-selected={tab === "performance"}
+              className={tab === "performance" ? "active" : ""}
+              onClick={() => setTab("performance")}
+            >
+              Performance
+            </button>
           </div>
         </div>
       </div>
 
-      {posts !== null && all.length > 0 && (
+      {posts !== null && all.length > 0 && tab !== "performance" && (
         <div className="soc-filters" role="group" aria-label="Filter by type">
           <span className="soc-filters-label">Type</span>
           <div className="filter-quick soc-types">
@@ -746,6 +767,18 @@ export function SocialCalendar({
             </button>
           </div>
         </div>
+      ) : tab === "performance" ? (
+        <LinkedInPerformance
+          linkedIn={linkedIn}
+          posts={all}
+          isSuperUser={isSuperUser}
+          channelFilter={channelFilter}
+          query={query}
+          onOpenPost={(id) => {
+            const post = all.find((x) => x.id === id);
+            if (post) setEditing({ mode: "edit", post });
+          }}
+        />
       ) : tab === "library" ? (
         <>
           <p className="muted small soc-summary">
@@ -1002,6 +1035,8 @@ export function SocialCalendar({
           projects={projects}
           workspaces={workspaces}
           bigRocks={bigRocks}
+          linkedIn={linkedIn}
+          isSuperUser={isSuperUser}
           onCancel={() => setEditing(null)}
           onSave={savePost}
           onOpenProject={openProject}
@@ -1019,6 +1054,8 @@ export function SocialCalendar({
           projects={projects}
           workspaces={workspaces}
           bigRocks={bigRocks}
+          linkedIn={linkedIn}
+          isSuperUser={isSuperUser}
           onCancel={() => setEditing(null)}
           onSave={savePost}
           onDelete={() => removePost(editing.post.id)}
