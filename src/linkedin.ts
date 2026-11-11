@@ -212,8 +212,13 @@ export function roleLabel(role: string): string {
 // their errors for people, so the message is used as it comes.
 export function linkedInErrorMessage(err: unknown): string {
   const code = (err as { code?: string } | null)?.code ?? "";
-  if (code === "functions/not-found" || code === "functions/unavailable") {
-    return "The LinkedIn functions aren't deployed yet, or couldn't be reached.";
+  const message = err instanceof Error ? err.message : String(err);
+  // A function that doesn't exist answers 404 with no CORS headers, which
+  // the browser hides, so the SDK can only say a bare "internal". The
+  // functions' own internal errors always carry a sentence.
+  const bareInternal = code === "functions/internal" && /^internal$/i.test(message.trim());
+  if (code === "functions/not-found" || code === "functions/unavailable" || bareInternal) {
+    return "The LinkedIn functions couldn't be reached. They probably haven't been deployed yet: set the LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET secrets, then run firebase deploy --only functions from this branch.";
   }
   if (code === "functions/deadline-exceeded") {
     return "That took too long to answer. Check the page on LinkedIn before trying again, in case it went through.";
