@@ -62,6 +62,15 @@ export type LinkedInPage = {
   shares30d?: number;
   // Interactions over impressions, 0–1.
   engagement30d?: number;
+  // One entry per day of the last 30, oldest first.
+  daily?: {
+    date: string;
+    impressions: number;
+    clicks: number;
+    reactions: number;
+    comments: number;
+    shares: number;
+  }[];
   postCount?: number;
   updatedAt?: string;
 };
