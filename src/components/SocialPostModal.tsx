@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   BigRock,
   Project,
@@ -15,6 +15,19 @@ import {
   linkedInComposeUrl,
   linkedInPostText,
 } from "../socialPosts";
+import {
+  canPostAs,
+  formatCount,
+  formatRate,
+  LINKEDIN_FILE_ACCEPT,
+  LINKEDIN_MAX_COPY_CHARS,
+  LINKEDIN_MAX_FILE_BYTES,
+  linkedInErrorMessage,
+  linkedInFileType,
+  linkedInPublish,
+  pageForChannel,
+  type LinkedInData,
+} from "../linkedin";
 import { LinkedInGlyph } from "./LinkedInGlyph";
 import { AssetPreview } from "./AssetPreview";
 import { ProjectPicker } from "./ProjectPicker";
@@ -40,6 +53,10 @@ type Props = {
   workspaces: Workspace[];
   // The team's Big Rocks, for the post's own rock tags.
   bigRocks: BigRock[];
+  // The LinkedIn connection and the pages' statistics. Publishing straight
+  // to a page is offered to super users once a page admin has connected.
+  linkedIn: LinkedInData;
+  isSuperUser: boolean;
   onCancel: () => void;
   onSave: (post: SocialPost) => void;
   onDelete?: () => void;
@@ -63,6 +80,8 @@ export function SocialPostModal({
   projects,
   workspaces,
   bigRocks,
+  linkedIn,
+  isSuperUser,
   onCancel,
   onSave,
   onDelete,
@@ -95,6 +114,16 @@ export function SocialPostModal({
   // Feedback after handing off to LinkedIn — whether the copy made it onto
   // the clipboard, mostly.
   const [shareNote, setShareNote] = useState<string | null>(null);
+  // Publishing straight to the page: the file going with the post, its alt
+  // text, the "are you sure" step, and how the call went.
+  const [file, setFile] = useState<File | null>(null);
+  const [altText, setAltText] = useState("");
+  const [confirmingPublish, setConfirmingPublish] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  // A new post needs one id for both the publish call and the save after it.
+  const [postId] = useState(() => initial.id ?? newPostId());
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -138,7 +167,7 @@ export function SocialPostModal({
     const finalDate = overrides.date ?? date;
     const trimmedUrl = postUrl.trim();
     return {
-      id: initial.id ?? newPostId(),
+      id: postId,
       // A dated post lives in its date's month. An undated one keeps the
       // month it was filed under so it stays visible in that month's tray.
       month: finalDate
@@ -162,6 +191,10 @@ export function SocialPostModal({
       projectId: projectId || undefined,
       bigRockIds: bigRockIds.length ? bigRockIds : undefined,
       publishedAt: initial.publishedAt,
+      // Set by the LinkedIn functions; carried through so a save doesn't
+      // drop them.
+      linkedinUrn: initial.linkedinUrn,
+      linkedinOrgId: initial.linkedinOrgId,
       createdAt: initial.createdAt ?? new Date().toISOString(),
       source: initial.source ?? "manual",
       ...overrides,
@@ -208,6 +241,88 @@ export function SocialPostModal({
         date: date || todayIso(),
       }),
     );
+  }
+
+  // ── Publishing straight to the LinkedIn page ──────────────────────────
+  const page = pageForChannel(channel, linkedIn.mappings);
+  const org = page
+    ? linkedIn.status?.organizations?.find((o) => o.id === page.orgId)
+    : undefined;
+  const connected = linkedIn.status?.connected === true;
+  const alreadyLive = !!initial.linkedinUrn;
+  const pageName = org?.name ?? channel.trim();
+  const memberName = linkedIn.status?.memberName ?? "The connected account";
+  const liveStats = initial.linkedinUrn
+    ? linkedIn.stats.find((s) => s.urn === initial.linkedinUrn)
+    : linkedIn.stats.find((s) => s.postId === postId);
+  const fileIsImage = !!file && linkedInFileType(file).startsWith("image/");
+  const linkCard = !file && isUrl(ctaLink);
+  const copyLength = copy.trim().length;
+
+  // Why the Publish button can't be used, or null when it can.
+  let publishBlocker: string | null = null;
+  if (copyLength === 0) {
+    publishBlocker = "Add some copy first.";
+  } else if (copyLength > LINKEDIN_MAX_COPY_CHARS) {
+    publishBlocker = `LinkedIn takes ${LINKEDIN_MAX_COPY_CHARS.toLocaleString()} characters at most; this is ${copyLength.toLocaleString()}.`;
+  } else if (!page) {
+    publishBlocker = `The "${channel.trim() || "(no channel)"}" channel isn't linked to a LinkedIn page yet. Link it in Settings → LinkedIn.`;
+  } else if (!org) {
+    publishBlocker = `${memberName} has no role on that LinkedIn page, so someone who administers it needs to connect in Settings → LinkedIn.`;
+  } else if (!canPostAs(org)) {
+    publishBlocker = `${memberName} isn't allowed to post as ${org.name}.`;
+  }
+
+  function chooseFile(next: File | null) {
+    setPublishError(null);
+    if (!next) {
+      setFile(null);
+      return;
+    }
+    if (!linkedInFileType(next)) {
+      setPublishError(
+        "LinkedIn takes a JPG, PNG or GIF image, or a PDF, PowerPoint or Word document here. Video still has to be posted from LinkedIn itself.",
+      );
+      return;
+    }
+    if (next.size > LINKEDIN_MAX_FILE_BYTES) {
+      setPublishError("That file is over 20 MB. Use a smaller export.");
+      return;
+    }
+    setFile(next);
+  }
+
+  // Post it to the page, then save the post as published with its live
+  // link. The save happens here, not behind a "remember to save", because
+  // by then the post is public whatever the form says.
+  async function publishNow() {
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const result = await linkedInPublish({
+        postId,
+        channel: channel.trim(),
+        text: copy.trim(),
+        link: isUrl(ctaLink) ? ctaLink.trim() : undefined,
+        title: topic.trim(),
+        altText: fileIsImage ? altText.trim() : undefined,
+        file,
+      });
+      onSave(
+        buildPost({
+          status: "published",
+          publishedAt: result.publishedAt,
+          date: date || todayIso(),
+          postUrl: result.url || undefined,
+          linkedinUrn: result.urn || undefined,
+          linkedinOrgId: result.orgId,
+        }),
+      );
+    } catch (err) {
+      setPublishError(linkedInErrorMessage(err));
+      setPublishing(false);
+      setConfirmingPublish(false);
+    }
   }
 
   return (
@@ -476,53 +591,190 @@ export function SocialPostModal({
 
           <div className="modal-section soc-publish">
             <h3>Publish</h3>
-            <div className="soc-publish-actions">
-              <button
-                type="button"
-                className="btn-mini soc-linkedin-btn"
-                onClick={openLinkedIn}
-                disabled={!copy.trim()}
-                title={
-                  copy.trim()
-                    ? "Open LinkedIn's composer with this copy"
-                    : "Add some copy first"
-                }
-              >
-                <LinkedInGlyph />
-                Post on LinkedIn
-              </button>
-              {status !== "published" && (
-                <button
-                  type="button"
-                  className="btn-mini"
-                  onClick={markPublished}
-                  disabled={!canSave}
-                  title="Set the status to Published and save"
-                >
-                  Mark as published
-                </button>
-              )}
-            </div>
-            {shareNote && <p className="soc-publish-note">{shareNote}</p>}
-            <ol className="soc-publish-steps">
-              <li>
-                In the composer, click the name at the top and choose the{" "}
-                <strong>{channel.trim() || "brand"}</strong> page as the author.
-              </li>
-              <li>
-                Check the copy came through (it's on your clipboard if not),
-                then attach the asset from the link above.
-              </li>
-              <li>
-                Post it, paste the live link below and mark it published.
-              </li>
-            </ol>
+
+            {alreadyLive ? (
+              <p className="soc-publish-note">
+                On the {pageName} page
+                {initial.publishedAt
+                  ? ` since ${new Date(initial.publishedAt).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}`
+                  : ""}
+                . Edits here don't change the live post.
+              </p>
+            ) : connected && isSuperUser ? (
+              <div className="soc-direct">
+                <div className="soc-direct-file">
+                  <input
+                    ref={fileInput}
+                    type="file"
+                    accept={LINKEDIN_FILE_ACCEPT}
+                    hidden
+                    onChange={(e) => {
+                      chooseFile(e.target.files?.[0] ?? null);
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-mini"
+                    onClick={() => fileInput.current?.click()}
+                    disabled={publishing}
+                  >
+                    <Icon name="upload" size={13} /> {file ? "Change file" : "Attach image or document"}
+                  </button>
+                  {file ? (
+                    <>
+                      <span className="soc-direct-filename">
+                        {file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB
+                      </span>
+                      <button
+                        type="button"
+                        className="link-btn"
+                        onClick={() => chooseFile(null)}
+                        disabled={publishing}
+                      >
+                        Remove
+                      </button>
+                    </>
+                  ) : (
+                    <span className="field-hint">
+                      {linkCard
+                        ? "No file: the CTA link goes out as a link card, with the title and image read from its page."
+                        : "Optional. JPG, PNG, GIF, PDF, PowerPoint or Word, up to 20 MB. The asset links above aren't uploaded for you."}
+                    </span>
+                  )}
+                </div>
+                {fileIsImage && (
+                  <label className="field">
+                    <span>Alt text</span>
+                    <input
+                      value={altText}
+                      onChange={(e) => setAltText(e.target.value)}
+                      placeholder="What the image shows, for screen readers"
+                      maxLength={300}
+                      disabled={publishing}
+                    />
+                  </label>
+                )}
+
+                {confirmingPublish ? (
+                  <div className="soc-direct-confirm" role="group" aria-label="Confirm publishing">
+                    <span>
+                      {publishing
+                        ? `Publishing to ${pageName}…`
+                        : `This posts publicly as ${pageName} straight away${
+                            file ? `, with ${file.name}` : linkCard ? ", with a link card" : ""
+                          }.`}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-mini soc-linkedin-btn"
+                      onClick={publishNow}
+                      disabled={publishing}
+                    >
+                      {publishing ? "Publishing…" : "Yes, publish"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-mini"
+                      onClick={() => setConfirmingPublish(false)}
+                      disabled={publishing}
+                    >
+                      Not yet
+                    </button>
+                  </div>
+                ) : (
+                  <div className="soc-publish-actions">
+                    <button
+                      type="button"
+                      className="btn-mini soc-linkedin-btn"
+                      onClick={() => {
+                        setPublishError(null);
+                        setConfirmingPublish(true);
+                      }}
+                      disabled={!!publishBlocker}
+                      title={publishBlocker ?? `Post this to the ${pageName} page now`}
+                    >
+                      <LinkedInGlyph />
+                      Publish to {pageName || "LinkedIn"}
+                    </button>
+                    <span className="field-hint">
+                      Posts as the page, then marks this published with its live link.
+                    </span>
+                  </div>
+                )}
+                {publishBlocker && copyLength > 0 && (
+                  <p className="field-hint warn">{publishBlocker}</p>
+                )}
+                {publishError && (
+                  <p className="soc-publish-error" role="alert">
+                    {publishError}
+                  </p>
+                )}
+              </div>
+            ) : connected ? (
+              <p className="field-hint">
+                A super user can publish this straight to the {pageName || "LinkedIn"} page from
+                here. Otherwise post it by hand below.
+              </p>
+            ) : null}
+
+            {!alreadyLive && (
+              <details className="soc-manual" open={!(connected && isSuperUser) || undefined}>
+                <summary>{connected && isSuperUser ? "Or post it by hand" : "Post it by hand"}</summary>
+                <div className="soc-publish-actions">
+                  <button
+                    type="button"
+                    className="btn-mini"
+                    onClick={openLinkedIn}
+                    disabled={!copy.trim()}
+                    title={
+                      copy.trim()
+                        ? "Open LinkedIn's composer with this copy"
+                        : "Add some copy first"
+                    }
+                  >
+                    <LinkedInGlyph />
+                    Open LinkedIn's composer
+                  </button>
+                  {status !== "published" && (
+                    <button
+                      type="button"
+                      className="btn-mini"
+                      onClick={markPublished}
+                      disabled={!canSave}
+                      title="Set the status to Published and save"
+                    >
+                      Mark as published
+                    </button>
+                  )}
+                </div>
+                {shareNote && <p className="soc-publish-note">{shareNote}</p>}
+                <ol className="soc-publish-steps">
+                  <li>
+                    In the composer, click the name at the top and choose the{" "}
+                    <strong>{channel.trim() || "brand"}</strong> page as the author.
+                  </li>
+                  <li>
+                    Check the copy came through (it's on your clipboard if not),
+                    then attach the asset from the link above.
+                  </li>
+                  <li>
+                    Post it, paste the live link below and mark it published.
+                  </li>
+                </ol>
+              </details>
+            )}
+
             <label className="field">
               <span>Live post link</span>
               <input
                 value={postUrl}
                 onChange={(e) => setPostUrl(e.target.value)}
                 placeholder="https://www.linkedin.com/posts/…"
+                readOnly={alreadyLive}
               />
               {isUrl(postUrl) && (
                 <a
@@ -535,7 +787,7 @@ export function SocialPostModal({
                 </a>
               )}
             </label>
-            {initial.publishedAt && (
+            {initial.publishedAt && !alreadyLive && (
               <p className="field-hint">
                 Marked published{" "}
                 {new Date(initial.publishedAt).toLocaleString(undefined, {
@@ -544,6 +796,39 @@ export function SocialPostModal({
                 })}
                 .
               </p>
+            )}
+
+            {liveStats && liveStats.impressions !== undefined && (
+              <div className="soc-post-stats">
+                <h4>Performance on LinkedIn</h4>
+                <dl>
+                  {(
+                    [
+                      ["Impressions", formatCount(liveStats.impressions)],
+                      ["Clicks", formatCount(liveStats.clicks)],
+                      ["Reactions", formatCount(liveStats.reactions)],
+                      ["Comments", formatCount(liveStats.comments)],
+                      ["Reposts", formatCount(liveStats.shares)],
+                      ["Engagement", formatRate(liveStats.engagement)],
+                    ] as const
+                  ).map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {liveStats.updatedAt && (
+                  <p className="field-hint">
+                    Organic only, as of{" "}
+                    {new Date(liveStats.updatedAt).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                    . Refreshed every night.
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>

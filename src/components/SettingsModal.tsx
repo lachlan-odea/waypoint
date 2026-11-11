@@ -20,7 +20,12 @@ import {
   timeZoneOffsetLabel,
 } from "../timezones";
 import { Icon } from "./Icon";
-import { OUTLOOK_ADDIN_MANIFEST_URL, OUTLOOK_ADDIN_STORE_URL } from "../constants";
+import {
+  OUTLOOK_ADDIN_MANIFEST_URL,
+  OUTLOOK_ADDIN_STORE_URL,
+  SOCIAL_CHANNELS,
+} from "../constants";
+import { LinkedInSettingsSection } from "./LinkedInSettingsSection";
 
 type Props = {
   currentDesigner: Designer;
@@ -241,6 +246,8 @@ export function SettingsModal({
               </div>
             </section>
           )}
+
+          {isSuperUser && <LinkedInSettingsSection channels={[...SOCIAL_CHANNELS]} />}
 
           {isSuperUser && (
             <section className="modal-section">

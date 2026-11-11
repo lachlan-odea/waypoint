@@ -290,10 +290,16 @@ export type SocialPost = {
   // Big Rocks the post serves directly (BigRock ids), on top of any it
   // picks up through its project or campaign milestone — see src/bigRocks.ts.
   bigRockIds?: string[];
-  // Link to the live post on LinkedIn once it's up. Pasted by whoever posted
-  // it — publishing goes through LinkedIn's own composer, so there's no API
-  // response to take this from.
+  // Link to the live post on LinkedIn once it's up. Filled in when the post
+  // is published from Waypoint (functions/src/linkedin.ts) or matched to a
+  // post on the page by the nightly sync; pasted by hand when it went out
+  // through LinkedIn's own composer.
   postUrl?: string;
+  // LinkedIn's id for the live post ("urn:li:share:…") and the page it's
+  // on. Set by the functions, never typed: they stop the post being
+  // published twice and tie it to its statistics.
+  linkedinUrn?: string;
+  linkedinOrgId?: string;
   // ISO timestamp of when someone marked the post published in Waypoint.
   publishedAt?: string;
   createdAt: string;
