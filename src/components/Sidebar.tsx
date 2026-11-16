@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { Designer, Hub, Workspace } from "../types";
 import { workspaceIcon } from "../workspaceIcon";
-import { Avatar } from "./Avatar";
 import { HubClocks } from "./HubClocks";
 import { Icon, type IconName } from "./Icon";
 import { WaypointLogo } from "./brand/WaypointLogo";
@@ -23,7 +22,6 @@ type Props = {
   currentDesigner: Designer;
   collapsed: boolean;
   view: SidebarView;
-  unreadNotifications: number;
   workspaces: Workspace[];
   // Configured office locations, rendered as a live clock strip.
   hubs: Hub[];
@@ -36,9 +34,6 @@ type Props = {
   onSelectView: (view: SidebarView) => void;
   // The + New menu: a project, a campaign, an event or a social post.
   onNew: (kind: NewKind) => void;
-  onOpenNotifications: () => void;
-  onOpenSettings: () => void;
-  onLogout: () => void;
 };
 
 // The shell nav (design system §7 "Tiles & app navigation"): plain line
@@ -73,7 +68,6 @@ export function Sidebar({
   currentDesigner,
   collapsed,
   view,
-  unreadNotifications,
   workspaces,
   hubs,
   currentWorkspaceId,
@@ -82,9 +76,6 @@ export function Sidebar({
   onToggleCollapsed,
   onSelectView,
   onNew,
-  onOpenNotifications,
-  onOpenSettings,
-  onLogout,
 }: Props) {
   // Which workspace item the dragged project is currently hovering over.
   // Local state so the highlight stays in sync without round-tripping through
@@ -92,7 +83,6 @@ export function Sidebar({
   const [dropOverWorkspaceId, setDropOverWorkspaceId] = useState<string | null>(
     null,
   );
-  const myHub = hubs.find((h) => h.id === currentDesigner.hubId);
   // The view whose flyout the keyboard has opened. Hover opens one through
   // CSS (:hover on the row keeps it open across the gap); this is for → and
   // focus, where there's nothing to hover.
@@ -275,59 +265,6 @@ export function Sidebar({
           })}
         </ul>
       </nav>
-
-      {/* The signed-in user, pinned at the bottom (§9 Shell). */}
-      <div className="sidebar-user">
-        <Avatar designer={currentDesigner} />
-        {!collapsed && (
-          <div className="sidebar-user-info">
-            <div className="sidebar-user-name">{currentDesigner.name}</div>
-            {myHub ? (
-              <div className="hub-tag" title={myHub.timeZone}>
-                {myHub.name}
-              </div>
-            ) : (
-              <div className="muted small">Signed in</div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="sidebar-foot">
-        <button
-          className="icon-btn notif-bell"
-          onClick={onOpenNotifications}
-          title={
-            unreadNotifications > 0
-              ? `${unreadNotifications} unread notification${unreadNotifications === 1 ? "" : "s"}`
-              : "Notifications"
-          }
-          aria-label="Notifications"
-        >
-          <Icon name="bell-notification" size={18} />
-          {unreadNotifications > 0 && (
-            <span className="notif-badge" aria-label="Unread notifications">
-              {unreadNotifications > 9 ? "9+" : unreadNotifications}
-            </span>
-          )}
-        </button>
-        <button
-          className="icon-btn"
-          onClick={onOpenSettings}
-          title="Settings"
-          aria-label="Settings"
-        >
-          <Icon name="settings" size={18} />
-        </button>
-        <button
-          className="icon-btn"
-          onClick={onLogout}
-          title="Log out"
-          aria-label="Log out"
-        >
-          <Icon name="log-out" size={18} />
-        </button>
-      </div>
     </aside>
   );
 }

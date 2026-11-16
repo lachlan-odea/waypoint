@@ -84,6 +84,7 @@ import { SharePointGuideModal } from "./components/SharePointGuideModal";
 import { ActivityPortalContext, activityItemUrl } from "./activityPortal";
 import { publishItineraryPage } from "./itineraryExport";
 import { Sidebar, type SidebarView } from "./components/Sidebar";
+import { AppHeader } from "./components/AppHeader";
 import { ProjectCard } from "./components/ProjectCard";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { CreateProjectModal } from "./components/CreateProjectModal";
@@ -700,16 +701,10 @@ export default function App() {
     [workspace, currentWorkspaceId],
   );
 
-  const visibleProjects = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    if (!q) return workspaceProjects;
-    return workspaceProjects.filter((p) =>
-      [p.title, p.client, p.brand, contentTypesSearchText(p)]
-        .join(" ")
-        .toLowerCase()
-        .includes(q),
-    );
-  }, [workspaceProjects, filter]);
+  // The board shows every project on the team — the universal header's search
+  // is how you jump to a specific one now. (The Archive keeps its own text
+  // filter below, since it also drives that page's team-count pills.)
+  const visibleProjects = workspaceProjects;
 
   // Every workspace is visible to everyone — workspace membership only
   // controls who shows up *inside* a workspace (the Team columns, assignee
@@ -1349,6 +1344,65 @@ export default function App() {
     openSetup: () => setActivityGuideOpen(true),
   };
 
+  // The current page's own buttons, folded into the universal header. Every
+  // page gets Help + New; some views add an extra (Export, the activity page,
+  // Manage Big Rocks). An open item page (route set) shows only Help + New.
+  const headerActions = (
+    <>
+      {!route && (view === "campaigns" || view === "events" || view === "socialCalendar") && (
+        <button
+          className="btn-mini"
+          onClick={() => setExportRequest(nextRequest())}
+          disabled={
+            view === "campaigns"
+              ? campaigns.length === 0
+              : view === "events"
+                ? events.length === 0
+                : socialPostsForUsage.length === 0
+          }
+          title={
+            view === "campaigns"
+              ? "Download the campaigns in a date range as a CSV file"
+              : view === "events"
+                ? "Download the events in a date range as a CSV file"
+                : "Download the posts in a date range as a CSV file"
+          }
+        >
+          Export CSV
+        </button>
+      )}
+      {!route && view === "executiveDashboard" && (
+        <>
+          {activityShare.sharePointUrl && (
+            <a className="btn btn-secondary" href={activityShare.sharePointUrl} target="_blank" rel="noopener noreferrer" title="The marketing activity page on SharePoint">
+              <Icon name="external-link" size={14} /> Activity page
+            </a>
+          )}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setActivityGuideOpen(true)}
+            title="A single page for SharePoint showing every campaign, webinar and event, each opening to its own information page. It keeps itself up to date."
+          >
+            <Icon name="browser" size={14} /> {activityShare.sharePointUrl ? "Update activity page" : "Put activity on SharePoint"}
+          </button>
+        </>
+      )}
+      {!route && view === "bigRocks" && isSuperUser && (
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => setManageRocksOpen(true)}
+          title="Define, reorder, retire or remove the team's Big Rocks"
+        >
+          <Icon name="flag" size={14} /> Manage Big Rocks
+        </button>
+      )}
+      <HelpButton onClick={() => setTourOpen(true)} />
+      <NewMenu variant="primary" onPick={startNew} />
+    </>
+  );
+
   return (
     <ActivityPortalContext.Provider value={activityPortal}>
     <div className={`app ${drawerOpen ? "nav-open" : ""}`}>
@@ -1356,7 +1410,6 @@ export default function App() {
         currentDesigner={currentDesigner}
         collapsed={isMobile ? false : collapsed}
         view={navView}
-        unreadNotifications={unreadNotifications}
         workspaces={availableWorkspaces}
         hubs={workspace.hubs}
         currentWorkspaceId={currentWorkspaceId}
@@ -1376,39 +1429,37 @@ export default function App() {
           setNavOpen(false);
         }}
         onNew={startNew}
-        onOpenNotifications={() => {
-          setNotificationsOpen(true);
-          setNavOpen(false);
-        }}
-        onOpenSettings={() => {
-          setSettingsOpen(true);
-          setNavOpen(false);
-        }}
-        onLogout={logout}
       />
       {drawerOpen && (
         <div className="nav-scrim" onClick={() => setNavOpen(false)} aria-hidden />
       )}
 
       <main className="main" ref={mainRef}>
+        <AppHeader
+          currentDesigner={currentDesigner}
+          hubs={workspace.hubs}
+          unreadNotifications={unreadNotifications}
+          projects={workspace.projects}
+          campaigns={campaigns}
+          events={events}
+          workspaces={availableWorkspaces}
+          onOpenProject={openProject}
+          onOpenCampaign={openCampaign}
+          onOpenEvent={openEvent}
+          onOpenNotifications={() => {
+            setNotificationsOpen(true);
+            setNavOpen(false);
+          }}
+          onOpenSettings={() => {
+            setSettingsOpen(true);
+            setNavOpen(false);
+          }}
+          onLogout={logout}
+          onOpenNav={() => setNavOpen(true)}
+          actions={headerActions}
+        />
         {route ? (
           <>
-            <header className="topbar topbar-item">
-              <button
-                type="button"
-                className="icon-btn mobile-nav-btn"
-                onClick={() => setNavOpen(true)}
-                aria-label="Open menu"
-                aria-expanded={drawerOpen}
-              >
-                ☰
-              </button>
-              <span className="topbar-item-kind">{route.kind}</span>
-              <div className="topbar-actions">
-                <HelpButton onClick={() => setTourOpen(true)} />
-                <NewMenu variant="primary" onPick={startNew} />
-              </div>
-            </header>
             {status && <div className="banner">{status}</div>}
             {route.kind === "project" && routedProject ? (
               <ProjectPage
@@ -1517,15 +1568,6 @@ export default function App() {
         {/* My Desk has no topbar: its band carries the page's buttons. */}
         {view !== "myDesk" && (
         <header className="topbar">
-          <button
-            type="button"
-            className="icon-btn mobile-nav-btn"
-            onClick={() => setNavOpen(true)}
-            aria-label="Open menu"
-            aria-expanded={drawerOpen}
-          >
-            ☰
-          </button>
           <div>
             <h1 className="page-title">
               {view === "analytics" ? (
@@ -1578,65 +1620,14 @@ export default function App() {
             </p>
           </div>
           <div className="topbar-actions">
-            {(view === "board" || view === "archived") && (
+            {view === "archived" && (
               <input
                 className="search"
-                placeholder="Search projects…"
+                placeholder="Filter archived…"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
               />
             )}
-            {(view === "campaigns" || view === "events" || view === "socialCalendar") && (
-              <button
-                className="btn-mini"
-                onClick={() => setExportRequest(nextRequest())}
-                disabled={
-                  view === "campaigns"
-                    ? campaigns.length === 0
-                    : view === "events"
-                      ? events.length === 0
-                      : socialPostsForUsage.length === 0
-                }
-                title={
-                  view === "campaigns"
-                    ? "Download the campaigns in a date range as a CSV file"
-                    : view === "events"
-                      ? "Download the events in a date range as a CSV file"
-                      : "Download the posts in a date range as a CSV file"
-                }
-              >
-                Export CSV
-              </button>
-            )}
-            {view === "executiveDashboard" && (
-              <>
-                {activityShare.sharePointUrl && (
-                  <a className="btn btn-secondary" href={activityShare.sharePointUrl} target="_blank" rel="noopener noreferrer" title="The marketing activity page on SharePoint">
-                    <Icon name="external-link" size={14} /> Activity page
-                  </a>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setActivityGuideOpen(true)}
-                  title="A single page for SharePoint showing every campaign, webinar and event, each opening to its own information page. It keeps itself up to date."
-                >
-                  <Icon name="browser" size={14} /> {activityShare.sharePointUrl ? "Update activity page" : "Put activity on SharePoint"}
-                </button>
-              </>
-            )}
-            {view === "bigRocks" && isSuperUser && (
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setManageRocksOpen(true)}
-                title="Define, reorder, retire or remove the team's Big Rocks"
-              >
-                <Icon name="flag" size={14} /> Manage Big Rocks
-              </button>
-            )}
-            <HelpButton onClick={() => setTourOpen(true)} />
-            <NewMenu variant="primary" onPick={startNew} />
           </div>
         </header>
         )}
@@ -1730,23 +1721,6 @@ export default function App() {
             workspaces={availableWorkspaces}
             onOpenCampaign={openCampaign}
             onStatusChange={setProjectStatus}
-            nav={
-              <button
-                type="button"
-                className="icon-btn mobile-nav-btn"
-                onClick={() => setNavOpen(true)}
-                aria-label="Open menu"
-                aria-expanded={drawerOpen}
-              >
-                ☰
-              </button>
-            }
-            actions={
-              <>
-                <HelpButton onClick={() => setTourOpen(true)} />
-                <NewMenu variant="primary" onPick={startNew} />
-              </>
-            }
             onToggleMilestone={(campaign, milestoneId) =>
               saveCampaign({
                 ...campaign,

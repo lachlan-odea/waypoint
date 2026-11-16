@@ -786,20 +786,6 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sidebar-foot {
-  border-top: 1px solid var(--border);
-  padding: 10px 12px;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.sidebar.collapsed .sidebar-foot {
-  padding: 12px;
-  gap: 8px;
-}
 .notif-bell {
   position: relative;
 }
@@ -819,32 +805,6 @@ textarea {
   padding: 0 4px;
   box-sizing: border-box;
 }
-/* Pinned at the bottom, above the footer actions. */
-.sidebar-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-top: 1px solid var(--border);
-  margin-top: auto;
-}
-.sidebar.collapsed .sidebar-user {
-  padding: 12px 18px;
-  justify-content: center;
-}
-.sidebar-user-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.sidebar-user-name {
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* Sidebar in Midnight, the same in light and dark mode (§9 Shell). It
    carries its own text colours so nothing inside it reads the page's
    --text/--muted, which are tuned for white or slate surfaces. Violet is
@@ -862,9 +822,7 @@ textarea {
   border-right-color: var(--wp-field-line);
   color: var(--side-text);
 }
-.sidebar-head,
-.sidebar-user,
-.sidebar-foot {
+.sidebar-head {
   border-color: var(--side-line);
 }
 .sidebar .icon-btn {
@@ -947,12 +905,6 @@ textarea {
 .sidebar .hub-clock.off-hours .hub-clock-time,
 .sidebar .hub-clock-gap {
   color: var(--side-muted);
-}
-.sidebar .notif-badge {
-  box-shadow: 0 0 0 2px var(--wtg-navy);
-}
-.sidebar .sidebar-user-name {
-  font-weight: 600;
 }
 
 /* Login screen */
@@ -1232,7 +1184,10 @@ textarea {
 /* Main */
 .main {
   overflow: auto;
-  padding: 24px 28px 48px;
+  /* No top padding: the sticky header owns the top edge, so nothing can
+     scroll up into a strip above it. The header's own padding gives the
+     space above the search. */
+  padding: 0 28px 48px;
 }
 .topbar {
   display: flex;
@@ -1279,6 +1234,250 @@ textarea {
   border-color: var(--primary);
   background: var(--surface);
   box-shadow: var(--focus-ring);
+}
+
+/* ===== Universal header (§9 Shell) =====================================
+   Across the top of the content area: a global search on the left, then the
+   notifications bell and the signed-in user's menu on the right. Sticky to
+   the top of the scrolling main, full-bleed across its padding. */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 -28px 20px;
+  padding: 16px 28px;
+  background: var(--bg);
+}
+/* Screens without a page topbar (My Desk, an open item page) would otherwise
+   sit right under the header now that it has no divider — give them air. */
+.main > .mydesk,
+.main > .item-page:not(.item-desk) {
+  margin-top: 24px;
+}
+
+/* Search ---------------------------------------------------------------- */
+.app-search {
+  position: relative;
+  flex: 1 1 420px;
+  max-width: 560px;
+}
+.app-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+.app-search-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 56px 0 38px;
+  border-radius: var(--radius);
+  border: 1px solid var(--ink-200);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  font-size: 14px;
+  transition: all 0.12s var(--ease);
+}
+.app-search-input:focus {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+/* The ⌘K / Ctrl K hint, shown while the search is empty and unfocused. */
+.app-search-hint {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+.app-search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(20, 30, 48, 0.12);
+  z-index: 50;
+  max-height: 60vh;
+  overflow: auto;
+}
+.app-search-empty {
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.app-search-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font-size: 14px;
+}
+.app-search-result:hover,
+.app-search-result:focus-visible {
+  background: var(--bg);
+  outline: none;
+}
+.app-search-result-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-search-kind {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Right cluster: page actions, notifications + user menu ---------------- */
+.app-header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* The current page's own buttons (Help, + New, Export …), set off from the
+   account controls by a hairline divider. */
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 4px;
+  padding-right: 10px;
+  border-right: 1px solid var(--border);
+}
+.app-user-menu {
+  position: relative;
+}
+.app-user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  cursor: pointer;
+  color: var(--text);
+}
+.app-user-trigger:hover {
+  background: var(--surface);
+  border-color: var(--border);
+}
+.app-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+  min-width: 0;
+}
+.app-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.app-user-hub {
+  font-size: 12px;
+  color: var(--muted);
+}
+.app-user-caret {
+  color: var(--muted);
+}
+.app-user-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(20, 30, 48, 0.12);
+  z-index: 50;
+}
+.app-user-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font-size: 14px;
+}
+.app-user-item:hover,
+.app-user-item:focus-visible {
+  background: var(--bg);
+  outline: none;
+}
+
+/* Phones: ☰ + actions + user on the top row (wrapping if tight), search
+   full-width beneath. */
+@media (max-width: 720px) {
+  .app-header {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    margin: 0 -14px 14px;
+    padding: 12px 14px;
+  }
+  .app-search {
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
+  }
+  .app-header-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 8px;
+  }
+  .app-header-actions {
+    border-right: none;
+    margin-right: 0;
+    padding-right: 0;
+  }
+  .app-user-info {
+    display: none;
+  }
 }
 .primary {
   display: inline-flex;
@@ -6651,7 +6850,7 @@ a.button-link:hover {
 
   /* --- Main column and top bar ----------------------------------------- */
   .main {
-    padding: 12px 14px calc(40px + env(safe-area-inset-bottom));
+    padding: 0 14px calc(40px + env(safe-area-inset-bottom));
   }
   .topbar {
     display: grid;
@@ -9126,12 +9325,6 @@ a.button-link:hover {
 }
 :root.dark-mode .ev-cal-check i {
   background: var(--ink-700);
-}
-
-/* The user block and the footer sit on the field without rules above them. */
-.sidebar .sidebar-user,
-.sidebar .sidebar-foot {
-  border-color: transparent;
 }
 
 /* Project card task strip: one segment per task, like the webinar cards. */
