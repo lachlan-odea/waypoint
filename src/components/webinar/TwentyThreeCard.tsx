@@ -8,6 +8,7 @@ import {
   twentyThreeAddSpeakers,
   twentyThreeCreateWebinar,
   twentyThreeErrorMessage,
+  twentyThreePullResults,
   type TwentyThreeCreateResult,
 } from "../../twentyThree";
 import { Icon } from "../Icon";
@@ -285,6 +286,65 @@ function CreateDialog({
           </button>
         </footer>
       </div>
+    </div>
+  );
+}
+
+// "Pull results", on the kit’s Results section: fills the Performance
+// numbers from TwentyThree for a webinar that was created from Waypoint.
+export function TwentyThreeResultsCard({ api }: { api: KitApi }) {
+  const { ctx, readOnly } = api;
+  const liveId = str(ctx.V("landing").ttLiveId);
+  const pulledAt = str(ctx.V("results").ttPulledAt);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [missing, setMissing] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  async function pull() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    setNote(null);
+    setMissing([]);
+    try {
+      const r = await twentyThreePullResults(api.campaign.id);
+      setNote(r.filled.length ? `Filled in: ${r.filled.join(", ")}.` : "TwentyThree has no numbers for this webinar yet.");
+      setMissing(r.filled.length ? r.missing : []);
+    } catch (err) {
+      setError(twentyThreeErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="item-card kit-tt">
+      <div className="kit-tt-main">
+        <h3>Results from TwentyThree</h3>
+        {liveId ? (
+          <p>
+            Fills in the Performance numbers below from TwentyThree, replacing what’s there.
+            {pulledAt ? ` Last pulled ${formatShort(pulledAt.slice(0, 10))}.` : ""}
+          </p>
+        ) : (
+          <p>Available for a webinar created with Generate landing page, in the Landing page section.</p>
+        )}
+        {note && <p role="status">{note}</p>}
+        {missing.length > 0 && <p>Not available from TwentyThree, so fill in by hand: {missing.join(", ")}.</p>}
+        {error && (
+          <p className="kit-hint warn" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+      {liveId && !readOnly && (
+        <div className="kit-tt-actions">
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={pull}>
+            <Icon name="download" size={16} /> {busy ? "Pulling…" : "Pull results"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

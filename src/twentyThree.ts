@@ -42,6 +42,17 @@ export async function twentyThreeAddSpeakers(campaignId: string): Promise<Twenty
   return (await call({ campaignId })).data;
 }
 
+export type TwentyThreeResults = { filled: string[]; missing: string[] };
+
+// Fill the kit’s Performance numbers from TwentyThree. The function
+// writes them onto the kit; this says which it found and which it didn’t.
+export async function twentyThreePullResults(campaignId: string): Promise<TwentyThreeResults> {
+  const call = httpsCallable<{ campaignId: string }, TwentyThreeResults>(functions, "twentyThreePullResults", {
+    timeout: 120_000,
+  });
+  return (await call({ campaignId })).data;
+}
+
 export function twentyThreeErrorMessage(err: unknown): string {
   const code = (err as { code?: string } | null)?.code ?? "";
   const message = err instanceof Error ? err.message : String(err);

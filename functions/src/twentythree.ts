@@ -31,10 +31,14 @@ import {
   kitSpeakers,
   oauthHeader,
   pickUrl,
+  resultsFromFunnel,
+  resultsFromMetrics,
   rfc3986,
   splitTitle,
   type KitDoc,
   type KitSpeaker,
+  type Metric,
+  type Results,
 } from "./twentythreeText";
 
 const TT_DOMAIN = defineSecret("TWENTYTHREE_DOMAIN");
@@ -525,5 +529,114 @@ export const twentyThreeAddSpeakers = onCall(
     const warnings: string[] = [];
     const { added, headshots } = await addSpeakers(c, liveId, kitSpeakers(kit), existing, warnings);
     return { speakersAdded: added, headshotsAdded: headshots, warnings };
+  },
+);
+
+// ── Results ────────────────────────────────────────────────────────────
+
+// Keep in step with the results fields in src/webinarKit.ts.
+const RESULT_LABELS: Record<keyof Results, string> = {
+  pageViews: "Landing page views",
+  regs: "Registrants",
+  atts: "Live attendees",
+  odViews: "On-demand views",
+  liveEng: "Live average engagement",
+  odEng: "On-demand average engagement",
+  qna: "Q&A questions asked",
+  polls: "Poll responses",
+  leads: "Leads identified",
+};
+
+// Fill the kit’s Performance numbers from TwentyThree: the webinar’s own
+// metrics, the Audience funnel for page visits and registrations, and
+// counts of the questions asked and poll answers given. A number
+// TwentyThree doesn’t give is left as it is.
+export const twentyThreePullResults = onCall(
+  { region: REGION, cors: ALLOWED_ORIGINS, secrets: TT_SECRETS, invoker: "public", timeoutSeconds: 120 },
+  async (req): Promise<{ filled: string[]; missing: string[] }> => {
+    const caller = await requireSignedIn(req);
+    const campaignId = String((req.data as { campaignId?: unknown } | null)?.campaignId ?? "").trim();
+    if (!campaignId || campaignId.includes("/")) throw new HttpsError("invalid-argument", "Which webinar?");
+    const c = creds();
+    const ref = db().collection("campaigns").doc(campaignId);
+    const kit = ((await ref.get()).data() as { webinar?: KitDoc } | undefined)?.webinar;
+    if (!kit) throw new HttpsError("not-found", "That webinar no longer exists.");
+    const liveId = String(kit.values?.landing?.ttLiveId ?? "").trim();
+    if (!liveId) throw new HttpsError("failed-precondition", "Create the webinar in TwentyThree first.");
+
+    let results: Results = {};
+    try {
+      const res = await tt(
+        c,
+        "GET",
+        "/live/metrics",
+        { live_id: liveId, include_private_p: "true", update_p: "true" },
+        "read metrics",
+      );
+      const metrics = (Array.isArray(res.data) ? res.data : []) as Metric[];
+      // The metric names aren’t documented; logged so the matching in
+      // resultsFromMetrics can be checked against what really comes back.
+      logger.info("twentythree: metrics", { liveId, metrics: metrics.map((m) => `${m.metric}=${m.value}`) });
+      results = resultsFromMetrics(metrics);
+    } catch (err) {
+      fail(err, "read the webinar’s metrics");
+    }
+
+    // The rest is best effort: each fills a gap, and none stops the others.
+    try {
+      const res = await tt(c, "GET", "/audience/funnel", { objects: liveId, resolve_recordings_p: "true" }, "read funnel");
+      logger.info("twentythree: funnel", { liveId, funnel: res.data });
+      results = { ...resultsFromFunnel(res.data), ...results };
+    } catch (err) {
+      logger.warn("twentythree: funnel", err);
+    }
+    try {
+      const res = await tt(c, "GET", "/poll/list", { object_id: liveId }, "list polls");
+      const polls = (Array.isArray(res.data) ? res.data : []) as { answer_count?: unknown }[];
+      if (polls.length) results.polls = polls.reduce((sum, p) => sum + (Number(p.answer_count) || 0), 0);
+    } catch (err) {
+      logger.warn("twentythree: polls", err);
+    }
+    try {
+      const res = await tt(
+        c,
+        "GET",
+        "/comment/list",
+        { object_id: liveId, comment_type: "question", size: "500" },
+        "list questions",
+      );
+      const questions = Array.isArray(res.data) ? res.data.length : 0;
+      if (questions) results.qna = questions;
+    } catch (err) {
+      logger.warn("twentythree: questions", err);
+    }
+
+    const keys = Object.keys(RESULT_LABELS) as (keyof Results)[];
+    const found = keys.filter((k) => results[k] !== undefined);
+    if (found.length) {
+      const at = new Date().toISOString();
+      await db().runTransaction(async (tx) => {
+        const k = ((await tx.get(ref)).data() as { webinar?: KitDoc } | undefined)?.webinar;
+        if (!k) return;
+        const patch: Record<string, unknown> = { "webinar.values.results.ttPulledAt": at, "webinar.updatedAt": at };
+        for (const key of found) patch[`webinar.values.results.${key}`] = results[key];
+        patch["webinar.activity"] = [
+          {
+            id: `a-${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`,
+            section: "results",
+            what: "pulled results from TwentyThree",
+            detail: found.map((key) => RESULT_LABELS[key]).join(", "),
+            by: caller.uid,
+            at,
+          },
+          ...(Array.isArray(k.activity) ? k.activity : []),
+        ].slice(0, 300);
+        tx.update(ref, patch);
+      });
+    }
+    return {
+      filled: found.map((k) => RESULT_LABELS[k]),
+      missing: keys.filter((k) => !found.includes(k)).map((k) => RESULT_LABELS[k]),
+    };
   },
 );

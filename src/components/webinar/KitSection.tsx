@@ -18,7 +18,7 @@ import { Icon } from "../Icon";
 import { EmptyNote, ItemGrid, KeyValues, ReadyCount, ReadyWhen, SideCard, StatusChip } from "../pages/ItemPage";
 import { KitField } from "./KitField";
 import type { KitApi } from "./kitApi";
-import { TwentyThreeCard } from "./TwentyThreeCard";
+import { TwentyThreeCard, TwentyThreeResultsCard } from "./TwentyThreeCard";
 
 // One kit section as the campaign page's body: the fields in the main
 // column; status, schedule, owner and the "ready when" list up the side;
@@ -41,6 +41,7 @@ export function KitSection({ sectionKey, api }: { sectionKey: string; api: KitAp
             {s.intro && <p className="kit-intro">{s.intro}</p>}
           </div>
           {s.k === "landing" && <TwentyThreeCard api={api} />}
+          {s.k === "results" && <TwentyThreeResultsCard api={api} />}
           <div className="item-card kit-formcard">
             <div className="kit-fields">
               {fields.map((f, i) => (

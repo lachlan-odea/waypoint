@@ -145,3 +145,73 @@ export function pickUrl(data: unknown, domain: string): string {
   }
   return "";
 }
+
+// ── Results ────────────────────────────────────────────────────────────
+
+export type Metric = { metric: string; value: string; formated: string };
+
+type ResultKey = "pageViews" | "regs" | "atts" | "odViews" | "liveEng" | "odEng" | "qna" | "polls" | "leads";
+
+// Kit field (values.results) → the number or duration found for it.
+export type Results = Partial<Record<ResultKey, number | string>>;
+
+const count = (v: unknown): number | null => {
+  const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v.replace(/,/g, "")) : NaN;
+  return isFinite(n) && n >= 0 ? Math.round(n) : null;
+};
+
+// Seconds as the kit writes a duration: "23m 43s".
+export function duration(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = Math.round(secs % 60);
+  return m ? `${m}m ${String(s).padStart(2, "0")}s` : `${s}s`;
+}
+
+const ON_DEMAND = /on_?demand|recording|vod/;
+const RATE = /(^|_)(rate|percent|pct|share|ratio)(_|$)/;
+const TIME = /engag|watch|view_?time|play_?time|duration/;
+
+// TwentyThree’s webinar metrics come as a list of named numbers, and the
+// names aren’t in its reference. They’re matched here by what they say;
+// anything unmatched is left for a person to fill in.
+export function resultsFromMetrics(metrics: Metric[]): Results {
+  const out: Results = {};
+  const rows = metrics
+    .map((m) => ({ key: String(m.metric ?? "").toLowerCase(), value: m.value }))
+    .filter((m) => m.key);
+  const find = (test: (key: string) => boolean) => rows.find((m) => test(m.key) && count(m.value) != null);
+  const num = (field: ResultKey, test: (key: string) => boolean) => {
+    const m = find(test);
+    if (m) out[field] = count(m.value)!;
+  };
+  const time = (field: ResultKey, test: (key: string) => boolean) => {
+    const m = find(test);
+    if (!m) return;
+    const secs = count(m.value)!;
+    if (secs > 0) out[field] = duration(secs);
+  };
+  const plain = (k: string) => !RATE.test(k) && !TIME.test(k);
+  const average = (k: string) => /avg|average|mean/.test(k);
+  num("regs", (k) => /regist|sign_?up/.test(k) && plain(k) && !/unregist/.test(k));
+  num("atts", (k) => /attend|participant/.test(k) && plain(k) && !ON_DEMAND.test(k));
+  num("pageViews", (k) => /visit|page_?view/.test(k) && plain(k));
+  num("odViews", (k) => ON_DEMAND.test(k) && /view|play|attend/.test(k) && plain(k));
+  num("leads", (k) => /identified/.test(k) && plain(k));
+  num("qna", (k) => /question/.test(k) && plain(k));
+  num("polls", (k) => /poll/.test(k) && /answer|response|vote/.test(k) && plain(k));
+  time("liveEng", (k) => TIME.test(k) && average(k) && !ON_DEMAND.test(k) && !RATE.test(k));
+  time("odEng", (k) => TIME.test(k) && average(k) && ON_DEMAND.test(k) && !RATE.test(k));
+  return out;
+}
+
+// Landing page visits and registrations from the Audience funnel, for
+// whichever of the two the metrics didn’t give.
+export function resultsFromFunnel(funnel: unknown): Results {
+  const f = (funnel && typeof funnel === "object" ? funnel : {}) as Record<string, unknown>;
+  const out: Results = {};
+  const visits = count(f.visits);
+  const conversions = count(f.conversions);
+  if (visits) out.pageViews = visits;
+  if (conversions) out.regs = conversions;
+  return out;
+}
