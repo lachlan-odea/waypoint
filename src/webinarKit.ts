@@ -434,7 +434,7 @@ export const SECTIONS: SectionSpec[] = [
       { k: "duration", p: true, t: "text", label: "Duration", half: true },
       { k: "sessions", p: true, t: "area", label: "Date and time (include time zone)", rows: 2 },
       { k: "ft", p: true, t: "text", label: "Final webinar title", links: ["style"] },
-      { k: "hero", t: "asset", label: "Hero image or video", hint: "Paste a link to the asset." },
+      { k: "hero", t: "asset", label: "Hero image or video", hint: "Paste a link to the asset. For Generate landing page to send it to TwentyThree, use a public image link that opens without signing in, such as an IntelligenceBank share link." },
       { k: "summary", t: "area", label: "Summary", rows: 6, links: ["landing"] },
       { k: "learn", t: "list", label: "‘What you’ll learn’ bullet points", hint: "One per line.", min: 3, max: 5, rows: 4 },
       { k: "speakers", t: "group", kind: "speaker", cols: ["name", "title", "email", "bio", "headshot"], label: "Speaker details", hint: "Name, title, high-res headshot and a 2–3 sentence bio. TwentyThree needs an email address to list a speaker; they aren’t emailed from here." },

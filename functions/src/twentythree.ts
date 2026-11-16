@@ -208,10 +208,13 @@ async function fetchImage(raw: string): Promise<Upload | string> {
   } catch {
     return "the link couldn't be reached";
   }
+  if (res.status === 401 || res.status === 403) {
+    return "the link needs a sign-in. Use a public link that opens the image without signing in";
+  }
   if (!res.ok) return `the link answered ${res.status}`;
   const type = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
   if (!IMAGE_TYPES.includes(type)) {
-    return "the link doesn't open an image directly (it may need a sign-in)";
+    return "the link doesn't open an image directly. Use a public link that opens the image without signing in";
   }
   const bytes = await res.arrayBuffer();
   if (bytes.byteLength > MAX_IMAGE_BYTES) return "the image is over 10 MB";
