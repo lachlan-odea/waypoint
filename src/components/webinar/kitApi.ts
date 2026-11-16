@@ -196,7 +196,7 @@ export function useKitApi(
           bio: str(item.d.bio),
           headshot: str(item.d.headshot).trim(),
           linkedin: existing?.linkedin,
-          email: existing?.email,
+          email: str(item.d.email).trim() || existing?.email,
           notes: existing?.notes,
           createdAt: existing?.createdAt ?? now,
           updatedAt: now,

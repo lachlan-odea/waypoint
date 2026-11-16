@@ -637,4 +637,4 @@ export {
 
 // ── TwentyThree ────────────────────────────────────────────────────────
 // Creating a webinar's registration page from its kit; see twentythree.ts.
-export { twentyThreeCreateWebinar } from "./twentythree";
+export { twentyThreeAddSpeakers, twentyThreeCreateWebinar } from "./twentythree";

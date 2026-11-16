@@ -31,6 +31,17 @@ export async function twentyThreeCreateWebinar(input: TwentyThreeCreateInput): P
   return (await call(input)).data;
 }
 
+export type TwentyThreeSpeakersResult = { speakersAdded: number; warnings: string[] };
+
+// Send the kit’s speakers to a webinar that already exists in TwentyThree,
+// skipping anyone it already lists.
+export async function twentyThreeAddSpeakers(campaignId: string): Promise<TwentyThreeSpeakersResult> {
+  const call = httpsCallable<{ campaignId: string }, TwentyThreeSpeakersResult>(functions, "twentyThreeAddSpeakers", {
+    timeout: 300_000,
+  });
+  return (await call({ campaignId })).data;
+}
+
 export function twentyThreeErrorMessage(err: unknown): string {
   const code = (err as { code?: string } | null)?.code ?? "";
   const message = err instanceof Error ? err.message : String(err);

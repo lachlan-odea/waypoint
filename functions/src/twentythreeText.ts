@@ -102,7 +102,7 @@ export function describeWebinar(kit: KitDoc): string {
   return out.join("\n");
 }
 
-export type KitSpeaker = { name: string; title: string; bio: string; headshot: string; speakerId: string };
+export type KitSpeaker = { name: string; title: string; bio: string; headshot: string; email: string; speakerId: string };
 
 // The kit's speakers who haven't declined, in the order they're listed.
 export function kitSpeakers(kit: KitDoc): KitSpeaker[] {
@@ -114,6 +114,7 @@ export function kitSpeakers(kit: KitDoc): KitSpeaker[] {
       title: text(i.d!.title),
       bio: text(i.d!.bio),
       headshot: text(i.d!.headshot),
+      email: text(i.d!.email),
       speakerId: text(i.d!.speakerId),
     }));
 }

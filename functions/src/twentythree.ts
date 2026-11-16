@@ -34,6 +34,7 @@ import {
   rfc3986,
   splitTitle,
   type KitDoc,
+  type KitSpeaker,
 } from "./twentythreeText";
 
 const TT_DOMAIN = defineSecret("TWENTYTHREE_DOMAIN");
@@ -200,6 +201,57 @@ async function fetchImage(raw: string): Promise<Upload | string> {
   return { bytes, type, name: `image.${type.split("/")[1].replace("jpeg", "jpg")}` };
 }
 
+// ── Speakers ───────────────────────────────────────────────────────────
+
+const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+// Add the kit’s speakers to a webinar, in kit order, skipping anyone
+// TwentyThree already lists by name. Never invited from here: Digital sends
+// invitations from TwentyThree when the session is ready. TwentyThree needs
+// an email address for each speaker, taken from the kit row or, failing
+// that, the speaker directory.
+async function addSpeakers(
+  c: Creds,
+  liveId: string,
+  speakers: KitSpeaker[],
+  existing: string[],
+  warnings: string[],
+): Promise<number> {
+  let added = 0;
+  for (const sp of speakers) {
+    if (existing.some((n) => sameName(n, sp.name))) continue;
+    try {
+      let email = sp.email;
+      if (!email && sp.speakerId && !sp.speakerId.includes("/")) {
+        const dir = await db().collection("speakers").doc(sp.speakerId).get();
+        email = String((dir.data() as { email?: string } | undefined)?.email ?? "").trim();
+      }
+      if (!email) {
+        warnings.push(`${sp.name} wasn’t added: TwentyThree needs an email address for each speaker. Add one, then choose Add speakers.`);
+        continue;
+      }
+      const { title, company } = splitTitle(sp.title);
+      const params: Params = { live_id: liveId, name: sp.name, email, send_invitation_p: "false" };
+      if (title) params.title = title;
+      if (company) params.company = company;
+      if (sp.bio) params.bio = sp.bio;
+      const res = await tt(c, "POST", "/live/speaker/add", params, "add speaker");
+      added++;
+      const speakerId = String((res.data as { live_speaker_id?: unknown } | undefined)?.live_speaker_id ?? "");
+      if (sp.headshot && speakerId) {
+        const img = await fetchImage(sp.headshot);
+        if (typeof img === "string") warnings.push(`${sp.name}’s headshot wasn’t added: ${img}.`);
+        else await tt(c, "POST", "/live/speaker/set-avatar", { live_speaker_id: speakerId }, "set avatar", img);
+      }
+    } catch (err) {
+      logger.warn("twentythree: speaker", err);
+      const why = err instanceof TwentyThreeError ? err.detail.slice(0, 160) : "something went wrong";
+      warnings.push(`${sp.name} needs checking in TwentyThree (${why}).`);
+    }
+  }
+  return added;
+}
+
 // ── Creating the webinar ───────────────────────────────────────────────
 
 type CreateInput = {
@@ -335,36 +387,8 @@ export const twentyThreeCreateWebinar = onCall(
         });
       });
 
-      // 2. Speakers, in kit order. Never invited from here: Digital sends
-      // invitations from TwentyThree when the session is ready.
-      let speakersAdded = 0;
-      for (const sp of kitSpeakers(kit)) {
-        try {
-          let email = "";
-          if (sp.speakerId && !sp.speakerId.includes("/")) {
-            const dir = await db().collection("speakers").doc(sp.speakerId).get();
-            email = String((dir.data() as { email?: string } | undefined)?.email ?? "").trim();
-          }
-          const { title, company } = splitTitle(sp.title);
-          const params: Params = { live_id: liveId, name: sp.name, send_invitation_p: "false" };
-          if (title) params.title = title;
-          if (company) params.company = company;
-          if (sp.bio) params.bio = sp.bio;
-          if (email) params.email = email;
-          const added = await tt(c, "POST", "/live/speaker/add", params, "add speaker");
-          speakersAdded++;
-          const speakerId = String((added.data as { live_speaker_id?: unknown } | undefined)?.live_speaker_id ?? "");
-          if (sp.headshot && speakerId) {
-            const img = await fetchImage(sp.headshot);
-            if (typeof img === "string") warnings.push(`${sp.name}'s headshot wasn't added: ${img}.`);
-            else await tt(c, "POST", "/live/speaker/set-avatar", { live_speaker_id: speakerId }, "set avatar", img);
-          }
-        } catch (err) {
-          logger.warn("twentythree: speaker", err);
-          const why = err instanceof TwentyThreeError ? err.detail.slice(0, 160) : "something went wrong";
-          warnings.push(`${sp.name} needs checking in TwentyThree (${why}).`);
-        }
-      }
+      // 2. Speakers.
+      const speakersAdded = await addSpeakers(c, liveId, kitSpeakers(kit), [], warnings);
 
       // 3. The hero image as the webinar's thumbnail.
       const hero = String(kit.values?.landing?.hero ?? "").trim();
@@ -412,5 +436,34 @@ export const twentyThreeCreateWebinar = onCall(
     } finally {
       await lockRef.delete().catch(() => undefined);
     }
+  },
+);
+
+// Send the kit’s speakers to a webinar that’s already been created: the
+// ones added to the kit since, or held back for want of an email address.
+export const twentyThreeAddSpeakers = onCall(
+  { region: REGION, cors: ALLOWED_ORIGINS, secrets: TT_SECRETS, invoker: "public", timeoutSeconds: 300 },
+  async (req): Promise<{ speakersAdded: number; warnings: string[] }> => {
+    await requireSignedIn(req);
+    const campaignId = String((req.data as { campaignId?: unknown } | null)?.campaignId ?? "").trim();
+    if (!campaignId || campaignId.includes("/")) throw new HttpsError("invalid-argument", "Which webinar?");
+    const c = creds();
+    const snap = await db().collection("campaigns").doc(campaignId).get();
+    const kit = (snap.data() as { webinar?: KitDoc } | undefined)?.webinar;
+    if (!kit) throw new HttpsError("not-found", "That webinar no longer exists.");
+    const liveId = String(kit.values?.landing?.ttLiveId ?? "").trim();
+    if (!liveId) throw new HttpsError("failed-precondition", "Create the webinar in TwentyThree first.");
+
+    // Who’s already there, so nobody is added twice.
+    let existing: string[] = [];
+    try {
+      const listed = await tt(c, "GET", "/live/speaker/list", { live_id: liveId, include_unapproved_p: "true" }, "list speakers");
+      existing = (Array.isArray(listed.data) ? listed.data : []).map((r) => String((r as { name?: unknown }).name ?? ""));
+    } catch (err) {
+      fail(err, "list the webinar’s speakers");
+    }
+    const warnings: string[] = [];
+    const speakersAdded = await addSpeakers(c, liveId, kitSpeakers(kit), existing, warnings);
+    return { speakersAdded, warnings };
   },
 );

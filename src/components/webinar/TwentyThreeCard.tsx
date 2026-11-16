@@ -4,6 +4,7 @@ import { formatShort } from "../../dates";
 import { localTimeZone, supportedTimeZones, timeZoneOffsetLabel } from "../../timezones";
 import {
   durationMinutes,
+  twentyThreeAddSpeakers,
   twentyThreeCreateWebinar,
   twentyThreeErrorMessage,
   type TwentyThreeCreateResult,
@@ -24,22 +25,55 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
   const liveId = str(v.ttLiveId);
   const url = str(v.ttUrl);
   const [open, setOpen] = useState(false);
-  const [result, setResult] = useState<TwentyThreeCreateResult | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [note, setNote] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   const title = (kit.ft || kit.wt || api.campaign.name || "").trim();
   const speakers = ctx.items("speaker").filter((s) => s.d.status !== "Declined" && has(s.d.name));
+  // TwentyThree won’t list a speaker without an email address: the row’s
+  // own, or the directory’s.
+  const noEmail = speakers
+    .filter((s) => !has(s.d.email) && !has(api.speakers.find((d) => d.id === s.d.speakerId)?.email))
+    .map((s) => str(s.d.name));
   const missing = [
     !has(kit.ft) && "the final webinar title",
     !has(v.summary) && "a summary",
     lines(v.learn).length === 0 && "‘What you’ll learn’ bullets",
     speakers.length === 0 && "speakers",
+    noEmail.length > 0 && `an email address for ${noEmail.join(", ")}`,
   ].filter((x): x is string => !!x);
+
+  async function addSpeakers() {
+    if (sending) return;
+    setSending(true);
+    setError(null);
+    setNote(null);
+    try {
+      const r = await twentyThreeAddSpeakers(api.campaign.id);
+      setWarnings(r.warnings);
+      setNote(
+        r.speakersAdded
+          ? `${r.speakersAdded} speaker${r.speakersAdded === 1 ? "" : "s"} added in TwentyThree.`
+          : r.warnings.length
+            ? null
+            : "Every speaker is already in TwentyThree.",
+      );
+    } catch (err) {
+      setError(twentyThreeErrorMessage(err));
+    } finally {
+      setSending(false);
+    }
+  }
 
   function unlink() {
     if (!window.confirm("Unlink this webinar from TwentyThree? The webinar stays in TwentyThree; Waypoint just forgets it, so a new one can be created.")) {
       return;
     }
-    setResult(null);
+    setWarnings([]);
+    setNote(null);
+    setError(null);
     api.update(
       (k) => setKitValue(setKitValue(setKitValue(k, "landing", "ttLiveId", undefined), "landing", "ttUrl", undefined), "landing", "ttAt", undefined),
       "unlinked the webinar from TwentyThree",
@@ -64,9 +98,18 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
           </p>
         )}
         {!liveId && missing.length > 0 && <p className="kit-hint warn">Still to fill in: {missing.join(", ")}.</p>}
-        {result && result.warnings.length > 0 && (
+        {liveId && noEmail.length > 0 && (
+          <p className="kit-hint warn">No email address yet for {noEmail.join(", ")}, so TwentyThree won’t list them.</p>
+        )}
+        {note && <p role="status">{note}</p>}
+        {error && (
+          <p className="kit-hint warn" role="alert">
+            {error}
+          </p>
+        )}
+        {warnings.length > 0 && (
           <ul className="kit-tt-warn">
-            {result.warnings.map((w) => (
+            {warnings.map((w) => (
               <li key={w}>{w}</li>
             ))}
           </ul>
@@ -79,6 +122,11 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
               <a className="btn btn-secondary btn-sm" href={url} target="_blank" rel="noopener noreferrer">
                 Open in TwentyThree <Icon name="external-link" size={14} />
               </a>
+            )}
+            {!readOnly && speakers.length > 0 && (
+              <button type="button" className="btn btn-secondary btn-sm" disabled={sending} onClick={addSpeakers} title="Send speakers that aren’t in TwentyThree yet">
+                <Icon name="group-user-people" size={14} /> {sending ? "Adding…" : "Add speakers"}
+              </button>
             )}
             {!readOnly && (
               <button type="button" className="link-btn" onClick={unlink}>
@@ -106,7 +154,9 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
           missing={missing}
           onClose={() => setOpen(false)}
           onCreated={(r) => {
-            setResult(r);
+            setWarnings(r.warnings);
+            setNote(null);
+            setError(null);
             setOpen(false);
           }}
         />
