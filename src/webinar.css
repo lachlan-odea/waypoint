@@ -1479,3 +1479,74 @@
 :root.dark-mode .kit-g-ep-name {
   color: var(--wtg-periwinkle);
 }
+
+/* ── Generate landing page (TwentyThree), on the Landing page section ── */
+.kit-tt {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+}
+.kit-tt-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.kit-tt-main h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.kit-tt-main p {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.kit-tt-warn {
+  margin: 2px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--kit-late);
+}
+.kit-tt-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.kit-tt-modal .modal-body p {
+  margin: 0;
+}
+.kit-tt-what {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.kit-tt-sessions {
+  white-space: pre-line;
+}
+.kit-tt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.kit-tt-wide {
+  grid-column: span 2;
+}
+@media (max-width: 640px) {
+  .kit-tt {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .kit-tt-grid {
+    grid-template-columns: 1fr;
+  }
+  .kit-tt-wide {
+    grid-column: auto;
+  }
+}
