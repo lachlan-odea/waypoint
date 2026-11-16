@@ -10897,3 +10897,162 @@ a.ex-row {
   font-size: 11px;
   color: var(--muted);
 }
+
+/* ── Tools page (§7 Tiles & app navigation) ──────────────────────────── */
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.tool-tile {
+  position: relative;
+  display: flex;
+  aspect-ratio: 1 / 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.tool-tile:hover {
+  border-color: var(--border-strong);
+}
+.tool-open {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius);
+}
+.tool-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.tool-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tool-ext {
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex: 0 0 auto;
+}
+.tool-tile:hover .tool-ext {
+  opacity: 1;
+}
+.tool-desc {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.tool-host {
+  margin-top: auto;
+  padding-top: 10px;
+  font-size: 11px;
+  color: var(--ink-400);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.tool-tile:hover .tool-actions,
+.tool-tile:focus-within .tool-actions {
+  opacity: 1;
+}
+/* The "Add a tool" tile — a dashed, centred affordance at the end. */
+.tool-add {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+}
+.tool-add:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+.tool-add-plus {
+  display: inline-grid;
+  place-items: center;
+}
+.tool-add-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Tool add/edit modal */
+.tool-modal {
+  width: min(520px, 94vw);
+}
+.tool-preview {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+.tool-modal-actions {
+  display: flex;
+  gap: 8px;
+}
+.tool-icon-picker,
+.tool-tone-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tool-icon-opt {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.tool-icon-opt:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.tool-icon-opt.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-wash);
+}
+.tool-tone-opt {
+  display: inline-grid;
+  place-items: center;
+  padding: 3px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+.tool-tone-opt.active {
+  border-color: var(--accent);
+}

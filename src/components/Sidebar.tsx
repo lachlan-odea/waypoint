@@ -16,7 +16,8 @@ export type SidebarView =
   | "events"
   | "socialCalendar"
   | "analytics"
-  | "archived";
+  | "archived"
+  | "tools";
 
 type Props = {
   currentDesigner: Designer;
@@ -52,8 +53,8 @@ const VIEW_NAV: NavItem[] = [
   { view: "campaigns", label: "Campaigns", icon: "target" },
   { view: "events", label: "Events", icon: "calendar" },
   { view: "socialCalendar", label: "Social calendar", icon: "file" },
-  { view: "analytics", label: "Analytics", icon: "pie-chart" },
   { view: "archived", label: "Archived", icon: "archive-documents-box-big" },
+  { view: "tools", label: "Tools", icon: "browser" },
 ];
 
 function NavIcon({ name, size = 20 }: { name: IconName; size?: number }) {

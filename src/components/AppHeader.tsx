@@ -5,11 +5,13 @@ import type {
   Hub,
   MarketingEvent,
   Project,
+  Tool,
   Workspace,
 } from "../types";
 import { Avatar } from "./Avatar";
 import { Icon } from "./Icon";
 import { contentTypesSearchText } from "../contentTypes";
+import { normaliseUrl } from "../tools";
 
 type Props = {
   currentDesigner: Designer;
@@ -19,11 +21,13 @@ type Props = {
   projects: Project[];
   campaigns: Campaign[];
   events: MarketingEvent[];
+  tools: Tool[];
   workspaces: Workspace[];
   onOpenProject: (id: string) => void;
   onOpenCampaign: (id: string) => void;
   onOpenEvent: (id: string) => void;
   onOpenNotifications: () => void;
+  onOpenAnalytics: () => void;
   onOpenSettings: () => void;
   onLogout: () => void;
   // The phone's drawer toggle lives here now (the ☰ button).
@@ -36,12 +40,16 @@ type Props = {
 type Result =
   | { kind: "project"; id: string; label: string; sub: string }
   | { kind: "campaign"; id: string; label: string; sub: string }
-  | { kind: "event"; id: string; label: string; sub: string };
+  | { kind: "event"; id: string; label: string; sub: string }
+  // Tools open their link in a new tab rather than a page, so the result
+  // carries the url to open.
+  | { kind: "tool"; id: string; label: string; sub: string; url: string };
 
 const KIND_LABEL: Record<Result["kind"], string> = {
   project: "Project",
   campaign: "Campaign",
   event: "Event",
+  tool: "Tool",
 };
 
 const MAX_RESULTS = 8;
@@ -57,11 +65,13 @@ export function AppHeader({
   projects,
   campaigns,
   events,
+  tools,
   workspaces,
   onOpenProject,
   onOpenCampaign,
   onOpenEvent,
   onOpenNotifications,
+  onOpenAnalytics,
   onOpenSettings,
   onLogout,
   onOpenNav,
@@ -137,8 +147,20 @@ export function AppHeader({
         out.push({ kind: "event", id: e.id, label: e.name, sub: "Event" });
       }
     }
+    for (const t of tools) {
+      if (out.length >= MAX_RESULTS) break;
+      if (matches([t.name, t.description ?? "", t.url].join(" "))) {
+        out.push({
+          kind: "tool",
+          id: t.id,
+          label: t.name,
+          sub: "Tool",
+          url: t.url,
+        });
+      }
+    }
     return out;
-  }, [query, projects, campaigns, events, workspaceName]);
+  }, [query, projects, campaigns, events, tools, workspaceName]);
 
   // Close the search dropdown on an outside click or Escape.
   useEffect(() => {
@@ -179,7 +201,8 @@ export function AppHeader({
     setQuery("");
     if (r.kind === "project") onOpenProject(r.id);
     else if (r.kind === "campaign") onOpenCampaign(r.id);
-    else onOpenEvent(r.id);
+    else if (r.kind === "event") onOpenEvent(r.id);
+    else window.open(normaliseUrl(r.url), "_blank", "noopener,noreferrer");
   }
 
   const showResults = searchOpen && query.trim().length > 0;
@@ -201,7 +224,7 @@ export function AppHeader({
           ref={searchInput}
           type="text"
           className="app-search-input"
-          placeholder="Search projects, campaigns and events…"
+          placeholder="Search projects, campaigns, events and tools…"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -296,6 +319,20 @@ export function AppHeader({
           </button>
           {menuOpen && (
             <ul id={menuId} className="app-user-dropdown" role="menu">
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="app-user-item"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onOpenAnalytics();
+                  }}
+                >
+                  <Icon name="pie-chart" size={16} />
+                  Analytics
+                </button>
+              </li>
               <li role="none">
                 <button
                   type="button"
