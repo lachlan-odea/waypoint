@@ -224,8 +224,35 @@
   .stat { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--ink-200); border-radius: var(--radius); background: var(--ink-50); }
   .stat b { font-family: var(--mono); font-weight: 400; font-size: 20px; color: var(--blue); }
   .stat span { font-size: 12px; color: var(--ink-500); }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; height: 36px; border-radius: var(--radius); border: 1px solid var(--ink-200); background: #fff; color: var(--blue); font-weight: 600; font-size: 13px; text-decoration: none; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; height: 36px; border-radius: var(--radius); border: 1px solid var(--ink-200); background: #fff; color: var(--blue); font-family: inherit; font-weight: 600; font-size: 13px; text-decoration: none; cursor: pointer; }
   .btn:hover { border-color: var(--ink-500); background: var(--ink-50); }
+  .btn.primary { background: var(--cobalt); border-color: var(--cobalt); color: #fff; }
+  .btn.primary:hover { background: var(--blue); border-color: var(--blue); }
+  .btn[disabled] { opacity: 0.6; cursor: default; }
+  .btn:focus-visible, .linkish:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(55, 30, 225, 0.35); }
+
+  /* Deliverables: which team each one comes from, and the forms readers
+     use to add their own and name their team's owner. */
+  .team { display: inline-flex; align-items: center; padding: 0 8px; border-radius: var(--radius); font-size: 11px; font-weight: 600; line-height: 18px; background: var(--ink-100); color: var(--ink-700); white-space: nowrap; }
+  .team.mkt { background: #ecebff; color: var(--cobalt); }
+  .list .row-top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .list .row-acts { display: flex; gap: 12px; }
+  .linkish { font: inherit; font-size: 12px; color: var(--cobalt); background: none; border: 0; border-radius: 4px; padding: 0; cursor: pointer; text-decoration: underline; }
+  .linkish.danger { color: #8a1c16; }
+  .confirm { font-size: 12px; color: #8a1c16; display: inline-flex; gap: 10px; align-items: center; }
+  .form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; padding: 14px; border: 1px solid var(--ink-200); border-radius: var(--radius); background: var(--ink-50); }
+  .form h4 { grid-column: 1 / -1; margin: 0; font-size: 14px; font-weight: 700; color: var(--blue); }
+  .form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--ink-600); min-width: 0; }
+  .form .wide { grid-column: 1 / -1; }
+  .form input:not([type="checkbox"]), .form select { font: inherit; font-size: 14px; font-weight: 400; min-height: 36px; width: 100%; padding: 0 10px; border: 1px solid var(--ink-200); border-radius: var(--radius); background: #fff; color: var(--midnight); }
+  .form input:focus, .form select:focus { outline: none; border-color: var(--cobalt); box-shadow: 0 0 0 3px rgba(55, 30, 225, 0.35); }
+  .form label.check { flex-direction: row; align-items: center; gap: 8px; font-size: 13px; align-self: end; min-height: 36px; }
+  .form .acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .form .err { color: #8a1c16; font-size: 13px; }
+  .side .form { grid-template-columns: minmax(0, 1fr); }
+  .subhead { margin: 6px 0 0; padding-top: 12px; border-top: 1px solid var(--ink-200); font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-500); }
+  .kv dd .linkish { margin-left: 8px; }
+  @media (max-width: 560px) { .form { grid-template-columns: minmax(0, 1fr); } }
   .updated { padding: 24px 0 48px; font-size: 12px; color: var(--ink-500); text-align: center; }
   .updated.detail-foot { padding: 0 0 48px; }
 
@@ -233,7 +260,7 @@
     .detail { grid-template-columns: minmax(0, 1fr); }
   }
   @media print {
-    .toolbar, .back, .notice { display: none; }
+    .toolbar, .back, .notice, .form, .row-acts, .add-row, .kv dd .linkish { display: none; }
     .hero { background: var(--blue) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
@@ -247,6 +274,19 @@
   "use strict";
 
   var FEED_URL = "__ACTIVITY_FEED_URL__";
+  // What readers add to a campaign without signing in: other teams'
+  // deliverables, and who owns the campaign in each team. Listed on every
+  // refresh; written with plain POST / PATCH / DELETE. A copy of the file
+  // from before these existed has no addresses, and then nothing can be added.
+  var DELIVERABLES_URL = "__ACTIVITY_DELIVERABLES_URL__";
+  var OWNERS_URL = "__ACTIVITY_OWNERS_URL__";
+  var CAN_ADD = /^https:\/\//.test(DELIVERABLES_URL) && /^https:\/\//.test(OWNERS_URL);
+  // The teams a deliverable can come from. Everything that arrives from
+  // the planning tool is Marketing's.
+  var TEAMS = __ACTIVITY_TEAMS__;
+  var MARKETING = "Marketing";
+  var NAME_KEY = "activity.yourName";
+  var TEAM_KEY = "activity.yourTeam";
   var REFRESH_MS = 5 * 60 * 1000;
   var DAY_MS = 86400000;
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -262,6 +302,11 @@
   // view and month belong to the Events section: list or calendar, and
   // which month the calendar shows (empty means the current one).
   var ui = { when: "all", q: "", view: "list", month: "" };
+  var extras = [];   // readers' deliverables, across every campaign
+  var owners = [];   // each team's owner, per campaign
+  // The one form that can be open: { type: "deliv" | "owner", id: "" | the entry being corrected }.
+  var form = null;
+  var confirmRemove = "";
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -353,7 +398,7 @@
       foot = (w.lead ? "Lead " + esc(w.lead) : "") + (w.formatLabel ? "<span>" + esc(w.formatLabel) + "</span>" : "");
     } else {
       meta = '<span class="mono">' + (item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)) + "</span>" + (item.category ? "<span>" + esc(item.category) + "</span>" : "");
-      segs = item.milestones.map(function (m) { return { on: m.done }; });
+      segs = deliverablesOf(item).map(function (m) { return { on: m.done }; });
       foot = item.owner ? "Owner " + esc(item.owner) : "";
     }
     return '<a class="card" href="#' + keyOf(item) + '" style="border-left-color:' + color + '">' +
@@ -515,18 +560,108 @@
   }
   function linkBtn(url, label) { url = safeUrl(url); return url ? '<a class="btn" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(label) + ' <span aria-hidden="true">↗</span></a>' : ""; }
 
-  // Milestones read as a dated list of assets. Done ones get a tick, not a
-  // strike: the name and its link still matter to whoever is reading.
-  function milestonesHtml(ms, today) {
-    if (!ms.length) return '<p class="empty" style="padding:12px 0">No milestones yet.</p>';
-    return '<ul class="list">' + ms.map(function (m) {
-      var pill = m.done ? ["complete", "Done"] : m.date === today ? ["live", "Today"] : m.date > today ? ["scheduled", "In " + plural(days(today, m.date), "day")] : ["draft", "Pending"];
-      var link = safeUrl(m.url) ? '<a href="' + esc(m.url) + '" target="_blank" rel="noopener noreferrer">' + esc(m.linkText || "Open link") + " ↗</a>" : "";
-      return '<li><span class="tick ' + (m.done ? "on" : "") + '"></span><span class="date">' + fmt(m.date) + '</span><span class="main-text"><b>' + esc(m.label) + "</b>" + (m.description ? "<small>" + esc(m.description) + "</small>" : "") + link + '</span><span class="st ' + pill[0] + '">' + esc(pill[1]) + "</span></li>";
-    }).join("") + "</ul>";
+  // ── Deliverables ───────────────────────────────────────────────────
+  function saved(key) { try { return localStorage.getItem(key) || ""; } catch (e) { return ""; } }
+  function remember(key, v) { try { localStorage.setItem(key, v); } catch (e) {} }
+
+  // A campaign's deliverables: its milestones from the planning tool, which
+  // are Marketing's, then whatever other teams have added on this page.
+  // In date order, undated ones last.
+  function deliverablesOf(item) {
+    var rows = (item.milestones || []).map(function (m) {
+      return { team: MARKETING, label: m.label, description: m.description, date: m.date, done: m.done, url: m.url, linkText: m.linkText };
+    });
+    extras.forEach(function (x) {
+      if (x.campaignId === item.id) rows.push({ id: x.id, team: x.team, label: x.title, date: x.date, done: x.done, url: x.url, name: x.name });
+    });
+    return rows.sort(function (a, b) {
+      if (!a.date !== !b.date) return a.date ? -1 : 1;
+      return (a.date || "").localeCompare(b.date || "") || String(a.label).localeCompare(String(b.label));
+    });
+  }
+  function teamTag(team) { return '<span class="team' + (team === MARKETING ? " mkt" : "") + '">' + esc(team) + "</span>"; }
+  function teamOptions(selected, teams) {
+    return teams.map(function (t) { return "<option" + (t === selected ? " selected" : "") + ">" + esc(t) + "</option>"; }).join("");
   }
 
-  function renderDetail(item) {
+  // A dated list of assets. Done ones get a tick, not a strike: the name
+  // and its link still matter to whoever is reading.
+  function deliverablesHtml(item, today) {
+    var rows = deliverablesOf(item);
+    var html = "";
+    if (!rows.length) html += '<p class="empty" style="padding:12px 0">No deliverables yet.</p>';
+    else html += '<ul class="list">' + rows.map(function (m) {
+      var pill = m.done ? ["complete", "Done"] : !m.date ? ["draft", "No date"] : m.date === today ? ["live", "Today"] : m.date > today ? ["scheduled", "In " + plural(days(today, m.date), "day")] : ["draft", "Pending"];
+      var link = safeUrl(m.url) ? '<a href="' + esc(m.url) + '" target="_blank" rel="noopener noreferrer">' + esc(m.linkText || "Open link") + " ↗</a>" : "";
+      var acts = "";
+      if (m.id && CAN_ADD) {
+        acts = confirmRemove === m.id
+          ? '<span class="confirm">Remove this deliverable? <button type="button" class="linkish danger" data-act="deliv-remove-yes" data-id="' + esc(m.id) + '">Yes, remove</button><button type="button" class="linkish" data-act="remove-no">No</button></span>'
+          : '<span class="row-acts"><button type="button" class="linkish" data-act="deliv-edit" data-id="' + esc(m.id) + '">Edit</button><button type="button" class="linkish danger" data-act="deliv-remove" data-id="' + esc(m.id) + '">Remove</button></span>';
+      }
+      return '<li><span class="tick ' + (m.done ? "on" : "") + '"></span><span class="date">' + (m.date ? fmt(m.date) : "—") + '</span><span class="main-text"><span class="row-top"><b>' + esc(m.label) + "</b>" + teamTag(m.team) + "</span>" +
+        (m.description ? "<small>" + esc(m.description) + "</small>" : "") + (m.name ? "<small>Added by " + esc(m.name) + "</small>" : "") + link + acts +
+        '</span><span class="st ' + pill[0] + '">' + esc(pill[1]) + "</span></li>";
+    }).join("") + "</ul>";
+    if (CAN_ADD) {
+      if (form && form.type === "deliv") {
+        var entry = form.id ? extras.filter(function (x) { return x.id === form.id; })[0] : null;
+        html += delivFormHtml(item, entry);
+      } else {
+        html += '<div class="add-row"><button type="button" class="btn" data-act="deliv-add">+ Add a deliverable</button></div>';
+      }
+    }
+    return html;
+  }
+  function delivFormHtml(item, entry) {
+    var team = entry ? entry.team : saved(TEAM_KEY);
+    return '<form class="form" data-form="deliv" data-id="' + esc(entry ? entry.id : "") + '" data-campaign="' + esc(item.id) + '" novalidate>' +
+      "<h4>" + (entry ? "Edit deliverable" : "Add your team's deliverable") + "</h4>" +
+      '<label>Team delivering it<select name="team"><option value="">Choose a team</option>' + teamOptions(team, TEAMS) + "</select></label>" +
+      '<label>Due date<input type="date" name="date" value="' + esc(entry ? entry.date : "") + '" /></label>' +
+      '<label class="wide">Deliverable<input type="text" name="title" maxlength="120" placeholder="What is being delivered" value="' + esc(entry ? entry.title : "") + '" /></label>' +
+      '<label class="wide">Link to the asset<input type="url" name="url" maxlength="1000" placeholder="https://" value="' + esc(entry ? entry.url : "") + '" /></label>' +
+      '<label>Your name<input type="text" name="name" maxlength="80" value="' + esc(saved(NAME_KEY) || (entry ? entry.name : "")) + '" /></label>' +
+      '<label class="check"><input type="checkbox" name="done"' + (entry && entry.done ? " checked" : "") + " /> Delivered</label>" +
+      '<div class="acts wide"><button type="submit" class="btn primary">Save</button><button type="button" class="btn" data-act="cancel">Cancel</button><span class="err" role="alert"></span></div>' +
+      "</form>";
+  }
+
+  // Who owns the campaign in each team, under Details. Marketing's is the
+  // campaign's own owner; the rest are added here, one per team.
+  function ownersOf(item) {
+    return owners.filter(function (o) { return o.campaignId === item.id; })
+      .sort(function (a, b) { return TEAMS.indexOf(a.team) - TEAMS.indexOf(b.team); });
+  }
+  function teamOwnersHtml(item) {
+    var mine = ownersOf(item);
+    var rows = item.owner ? [[MARKETING, esc(item.owner)]] : [];
+    mine.forEach(function (o) {
+      var acts = !CAN_ADD ? "" : confirmRemove === o.id
+        ? ' <span class="confirm">Remove? <button type="button" class="linkish danger" data-act="owner-remove-yes" data-id="' + esc(o.id) + '">Yes</button><button type="button" class="linkish" data-act="remove-no">No</button></span>'
+        : '<button type="button" class="linkish" data-act="owner-edit" data-id="' + esc(o.id) + '">Edit</button><button type="button" class="linkish danger" data-act="owner-remove" data-id="' + esc(o.id) + '">Remove</button>';
+      rows.push([o.team, esc(o.owner) + acts]);
+    });
+    var html = '<h4 class="subhead">Team owners</h4>' + (kv(rows) || '<p class="empty" style="padding:0;text-align:left;font-size:13px">No owners yet.</p>');
+    if (!CAN_ADD) return html;
+    var taken = mine.map(function (o) { return o.team; }).concat(item.owner ? [MARKETING] : []);
+    if (form && form.type === "owner") {
+      var entry = form.id ? mine.filter(function (o) { return o.id === form.id; })[0] : null;
+      var free = TEAMS.filter(function (t) { return taken.indexOf(t) < 0; });
+      html += '<form class="form" data-form="owner" data-campaign="' + esc(item.id) + '" novalidate>' +
+        "<h4>" + (entry ? esc(entry.team) + " owner" : "Add your team's owner") + "</h4>" +
+        (entry ? '<input type="hidden" name="team" value="' + esc(entry.team) + '" />'
+          : '<label>Team<select name="team"><option value="">Choose a team</option>' + teamOptions(saved(TEAM_KEY), free) + "</select></label>") +
+        '<label>Owner<input type="text" name="owner" maxlength="120" placeholder="Who to talk to" value="' + esc(entry ? entry.owner : "") + '" /></label>' +
+        '<div class="acts"><button type="submit" class="btn primary">Save</button><button type="button" class="btn" data-act="cancel">Cancel</button><span class="err" role="alert"></span></div>' +
+        "</form>";
+    } else if (taken.length < TEAMS.length) {
+      html += '<div class="add-row"><button type="button" class="btn" data-act="owner-add">+ Add a team owner</button></div>';
+    }
+    return html;
+  }
+
+  function renderDetail(item, keepScroll) {
     var today = todayIso();
     var st = statusOf(item, today);
     var section = sectionOf(item);
@@ -554,7 +689,7 @@
         var img = safeUrl(s.headshot) && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(s.headshot) ? '<img src="' + esc(s.headshot) + '" alt="" />' : '<span class="initials">' + esc(initials(s.name)) + "</span>";
         return "<li>" + img + "<div><b>" + esc(s.name) + "</b><small>" + esc([s.title, s.role].filter(Boolean).join(" · ")) + "</small>" + (s.bio ? "<p>" + esc(s.bio) + "</p>" : "") + "</div></li>";
       }).join("") + "</ul>");
-      main += panel("Milestones", milestonesHtml(item.milestones, today));
+      main += panel("Deliverables", deliverablesHtml(item, today));
       var dated = w.sections.filter(function (s) { return s.due; });
       if (dated.length) side += panel("Schedule", '<ul class="list">' + dated.map(function (s) {
         return '<li><span class="tick ' + (s.done ? "on" : "") + '"></span><span class="date">' + fmt(s.due) + '</span><span class="main-text"><b>' + esc(s.title) + "</b></span></li>";
@@ -562,10 +697,11 @@
     } else {
       tags = '<li class="tag kind">Campaign</li><li class="tag brand">' + esc(item.brand || "") + "</li>" + (item.category ? '<li class="tag line">' + esc(item.category) + "</li>" : "") + '<li class="st ' + st.cls + '">' + esc(st.label) + "</li>";
       lede = item.description ? esc(item.description) : "";
-      var doneCount = item.milestones.filter(function (m) { return m.done; }).length;
-      facts = [["Start", fmtLong(item.startDate)], ["End", item.evergreen ? "Always on" : fmtLong(item.endDate)], ["Milestones", doneCount + "/" + item.milestones.length], ["Owner", esc(item.owner || "—")]];
-      main += panel("Milestones", milestonesHtml(item.milestones, today), doneCount + " of " + item.milestones.length + " delivered");
-      side += panel("Details", kv([["Status", '<span class="st ' + st.cls + '">' + esc(st.label) + "</span>"], ["Runs", item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)], ["Brand", esc(item.brand)], ["Type", esc(item.category)], ["Owner", esc(item.owner)]]));
+      var all = deliverablesOf(item);
+      var doneCount = all.filter(function (m) { return m.done; }).length;
+      facts = [["Start", fmtLong(item.startDate)], ["End", item.evergreen ? "Always on" : fmtLong(item.endDate)], ["Deliverables", doneCount + "/" + all.length], ["Owner", esc(item.owner || "—")]];
+      main += panel("Deliverables", deliverablesHtml(item, today), doneCount + " of " + all.length + " delivered");
+      side += panel("Details", kv([["Status", '<span class="st ' + st.cls + '">' + esc(st.label) + "</span>"], ["Runs", item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)], ["Brand", esc(item.brand)], ["Type", esc(item.category)]]) + teamOwnersHtml(item));
     }
     var backHref = "#" + section + (section === "events" && ui.view === "calendar" ? "/calendar" : "");
     var html = '<header class="hero"><div class="inner"><a class="back" href="' + backHref + '"><span aria-hidden="true">←</span> ' + esc(SECTIONS[section].title) + (section === "events" && ui.view === "calendar" ? " calendar" : "") + "</a>" +
@@ -574,10 +710,12 @@
       '<div class="inner"><div class="detail"><div class="main">' + main + '</div><div class="side">' + side + "</div></div>" +
       updatedLine("detail-foot") + "</div>";
     document.getElementById("app").innerHTML = html;
-    window.scrollTo(0, 0);
+    if (!keepScroll) window.scrollTo(0, 0);
   }
 
-  function render() {
+  // keepScroll: the same page drawn again (a refresh, a form opening), so
+  // the reader stays where they were.
+  function render(keepScroll) {
     if (!data) return;
     var key = (location.hash || "").replace(/^#/, "");
     var parts = key.split("/");
@@ -588,7 +726,7 @@
       return;
     }
     var item = key ? findItem(key) : null;
-    if (item) { renderDetail(item); document.title = item.name + " · Marketing activity"; }
+    if (item) { renderDetail(item, keepScroll); document.title = item.name + " · Marketing activity"; }
     else { renderHome(); document.title = "Marketing activity"; }
   }
 
@@ -607,17 +745,143 @@
       if (!doc) return;
       var json = doc.fields && doc.fields.json && doc.fields.json.stringValue;
       if (!json) throw new Error("No data");
-      data = JSON.parse(json); notice("", ""); render();
+      data = JSON.parse(json); notice("", "");
+      // Not under an open form: redrawing would throw away what's typed.
+      if (!form) render(true);
     }).catch(function (err) {
       notice("warn", "Couldn't refresh just now; showing the last copy. " + (err && err.message ? "(" + err.message + ")" : ""));
     });
+    // Drawn again only when something came back different, so a reader
+    // typing in the search box isn't interrupted for nothing.
+    var before = JSON.stringify([extras, owners]);
+    loadExtras().then(function () { if (!form && JSON.stringify([extras, owners]) !== before) render(true); });
   }
+
+  // ── Readers' deliverables and team owners ──────────────────────────
+  function fstr(f, k) { return f && f[k] && typeof f[k].stringValue === "string" ? f[k].stringValue : ""; }
+  function docId(doc) { var parts = String(doc.name || "").split("/"); return parts[parts.length - 1]; }
+  function docUrl(base, id) { var at = base.indexOf("?"); return base.slice(0, at) + "/" + encodeURIComponent(id) + base.slice(at); }
+  // Every document in a collection, a page at a time.
+  function listAll(base) {
+    var out = [];
+    function page(token) {
+      return fetch(base + "&pageSize=300" + (token ? "&pageToken=" + encodeURIComponent(token) : ""), { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (body) { out = out.concat(body.documents || []); return body.nextPageToken ? page(body.nextPageToken) : out; });
+    }
+    return page("");
+  }
+  function loadExtras() {
+    if (!CAN_ADD) return Promise.resolve();
+    var d = listAll(DELIVERABLES_URL).then(function (docs) {
+      extras = docs.map(function (doc) {
+        var f = doc.fields || {};
+        return { id: docId(doc), campaignId: fstr(f, "campaignId"), team: fstr(f, "team"), title: fstr(f, "title"), date: fstr(f, "date"), url: fstr(f, "url"), done: !!(f.done && f.done.booleanValue), name: fstr(f, "name"), createdAt: fstr(f, "createdAt") };
+      });
+    }).catch(function () { /* keep what we had */ });
+    var o = listAll(OWNERS_URL).then(function (docs) {
+      owners = docs.map(function (doc) {
+        var f = doc.fields || {};
+        return { id: docId(doc), campaignId: fstr(f, "campaignId"), team: fstr(f, "team"), owner: fstr(f, "owner") };
+      });
+    }).catch(function () { /* keep what we had */ });
+    return Promise.all([d, o]);
+  }
+
+  // Saving leaves the form as it is until the save lands, so nothing typed
+  // is lost if it fails.
+  function send(el, url, method, fields) {
+    var err = el.querySelector(".err"); var btn = el.querySelector('button[type="submit"]');
+    err.textContent = ""; btn.disabled = true;
+    fetch(url, { method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: fields }) })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); form = null; return loadExtras(); })
+      .then(function () { render(true); })
+      .catch(function () { btn.disabled = false; err.textContent = "Couldn't save it just now. Check you're online and try again."; });
+  }
+  function val(el, name) { var f = el.elements[name]; return f ? String(f.value || "").trim() : ""; }
+  function fail(el, text) { el.querySelector(".err").textContent = text; }
+
+  // A new deliverable is a POST to the collection; a correction is a PATCH
+  // of the one document, replacing every field.
+  function submitDeliverable(el) {
+    var team = val(el, "team"), title = val(el, "title"), date = val(el, "date"), url = val(el, "url"), name = val(el, "name");
+    if (TEAMS.indexOf(team) < 0) return fail(el, "Choose the team delivering it.");
+    if (!title) return fail(el, "Say what the deliverable is.");
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail(el, "Check the due date.");
+    if (url && !/^https?:\/\//i.test(url)) url = "https://" + url;
+    if (/\s/.test(url)) return fail(el, "The link can't contain spaces.");
+    if (!name) return fail(el, "Put your name in.");
+    remember(NAME_KEY, name); remember(TEAM_KEY, team);
+    var id = el.getAttribute("data-id");
+    var existing = id ? extras.filter(function (x) { return x.id === id; })[0] : null;
+    var now = new Date().toISOString();
+    send(el, id ? docUrl(DELIVERABLES_URL, id) : DELIVERABLES_URL, id ? "PATCH" : "POST", {
+      campaignId: { stringValue: el.getAttribute("data-campaign") },
+      team: { stringValue: team },
+      title: { stringValue: title.slice(0, 120) },
+      date: { stringValue: date },
+      url: { stringValue: url.slice(0, 1000) },
+      done: { booleanValue: !!el.elements.done.checked },
+      name: { stringValue: name.slice(0, 80) },
+      createdAt: { stringValue: existing && existing.createdAt ? existing.createdAt : now },
+      updatedAt: { stringValue: now }
+    });
+  }
+  // One owner per team per campaign: the document is named for the pair,
+  // so saving a team again replaces its owner.
+  function submitOwner(el) {
+    var team = val(el, "team"), owner = val(el, "owner");
+    if (TEAMS.indexOf(team) < 0) return fail(el, "Choose a team.");
+    if (!owner) return fail(el, "Say who the owner is.");
+    remember(TEAM_KEY, team);
+    var campaignId = el.getAttribute("data-campaign");
+    send(el, docUrl(OWNERS_URL, campaignId + "__" + team.toLowerCase().replace(/[^a-z0-9]+/g, "-")), "PATCH", {
+      campaignId: { stringValue: campaignId },
+      team: { stringValue: team },
+      owner: { stringValue: owner.slice(0, 120) },
+      updatedAt: { stringValue: new Date().toISOString() }
+    });
+  }
+  function removeDoc(base, id) {
+    confirmRemove = "";
+    fetch(docUrl(base, id), { method: "DELETE" })
+      .then(function (r) { if (!r.ok && r.status !== 404) throw new Error("HTTP " + r.status); return loadExtras(); })
+      .then(function () { render(true); })
+      .catch(function () { render(true); notice("warn", "Couldn't remove it just now. Check you're online and try again."); });
+  }
+
+  var appEl = document.getElementById("app");
+  appEl.addEventListener("submit", function (e) {
+    var el = e.target; var kind = el.getAttribute && el.getAttribute("data-form");
+    if (!kind) return;
+    e.preventDefault();
+    if (kind === "deliv") submitDeliverable(el); else submitOwner(el);
+  });
+  appEl.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("[data-act]") : null;
+    if (!b) return;
+    var act = b.getAttribute("data-act"), id = b.getAttribute("data-id") || "";
+    if (act === "deliv-add" || act === "deliv-edit") form = { type: "deliv", id: id };
+    else if (act === "owner-add" || act === "owner-edit") form = { type: "owner", id: id };
+    else if (act === "cancel") form = null;
+    else if (act === "deliv-remove" || act === "owner-remove") confirmRemove = id;
+    else if (act === "remove-no") confirmRemove = "";
+    else if (act === "deliv-remove-yes") return removeDoc(DELIVERABLES_URL, id);
+    else if (act === "owner-remove-yes") return removeDoc(OWNERS_URL, id);
+    else return;
+    if (act !== "deliv-remove" && act !== "owner-remove") confirmRemove = "";
+    render(true);
+    if (form && act !== "cancel") {
+      var first = appEl.querySelector(".form select, .form input:not([type=hidden])");
+      if (first) first.focus();
+    }
+  });
 
   try { data = JSON.parse(document.getElementById("activity-snapshot").textContent || "null"); } catch (e) { data = null; }
   render();
   load();
   setInterval(load, REFRESH_MS);
-  window.addEventListener("hashchange", render);
+  window.addEventListener("hashchange", function () { form = null; confirmRemove = ""; render(); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
 })();
 </script>
