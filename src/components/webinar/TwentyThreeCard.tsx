@@ -4,6 +4,7 @@ import { formatShort } from "../../dates";
 import { localTimeZone, supportedTimeZones, timeZoneOffsetLabel } from "../../timezones";
 import {
   durationMinutes,
+  parseSession,
   twentyThreeAddSpeakers,
   twentyThreeCreateWebinar,
   twentyThreeErrorMessage,
@@ -184,8 +185,10 @@ function CreateDialog({
   const id = useId();
   const zones = useMemo(() => supportedTimeZones(), []);
   const [date, setDate] = useState(kit.goLive || "");
-  const [time, setTime] = useState("");
-  const [zone, setZone] = useState(() => localTimeZone());
+  // The kit’s "Date and time" line, read for the start time and zone.
+  const fromKit = useMemo(() => parseSession(kit.sessions), [kit.sessions]);
+  const [time, setTime] = useState(fromKit.time);
+  const [zone, setZone] = useState(() => (fromKit.zone && zones.includes(fromKit.zone) ? fromKit.zone : localTimeZone()));
   const [minutes, setMinutes] = useState(() => String(durationMinutes(kit.duration) ?? 30));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -237,7 +240,7 @@ function CreateDialog({
           </p>
           {kit.sessions.trim() && (
             <p className="muted small kit-tt-sessions">
-              From the kit: {kit.sessions.trim()}
+              {fromKit.time ? "Read from the kit" : "From the kit"}: {kit.sessions.trim()}
             </p>
           )}
           <div className="kit-tt-grid">
@@ -247,7 +250,7 @@ function CreateDialog({
             </label>
             <label className="field">
               <span>Start time</span>
-              <input type="time" value={time} disabled={busy} autoFocus onChange={(e) => setTime(e.target.value)} />
+              <input type="time" value={time} disabled={busy} autoFocus={!fromKit.time} onChange={(e) => setTime(e.target.value)} />
             </label>
             <label className="field kit-tt-wide">
               <span>Time zone</span>

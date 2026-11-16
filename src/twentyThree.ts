@@ -65,3 +65,47 @@ export function durationMinutes(text: string): number | null {
   const top = Math.max(...nums);
   return Math.round(/\bh(ou)?rs?\b|\bh\b/i.test(text) && top <= 10 ? top * 60 : top);
 }
+
+// Time-zone abbreviations people write in the kit → the IANA zone
+// TwentyThree wants. A region's standard and daylight names both map to the
+// one zone, which knows which applies on the day ("3pm AEST" in November
+// is 3pm in Sydney).
+const ZONE_ABBR: Record<string, string> = {
+  AEST: "Australia/Sydney", AEDT: "Australia/Sydney", AET: "Australia/Sydney",
+  ACST: "Australia/Adelaide", ACDT: "Australia/Adelaide",
+  AWST: "Australia/Perth",
+  NZST: "Pacific/Auckland", NZDT: "Pacific/Auckland",
+  SGT: "Asia/Singapore", HKT: "Asia/Hong_Kong", JST: "Asia/Tokyo", IST: "Asia/Kolkata", GST: "Asia/Dubai",
+  GMT: "Europe/London", BST: "Europe/London", UK: "Europe/London",
+  CET: "Europe/Berlin", CEST: "Europe/Berlin",
+  ET: "America/New_York", EST: "America/New_York", EDT: "America/New_York",
+  CT: "America/Chicago", CST: "America/Chicago", CDT: "America/Chicago",
+  MT: "America/Denver", MST: "America/Denver", MDT: "America/Denver",
+  PT: "America/Los_Angeles", PST: "America/Los_Angeles", PDT: "America/Los_Angeles",
+  UTC: "UTC",
+};
+
+// The start time and zone out of the kit's "Date and time" line, e.g.
+// "30 November 2026 - 3pm AEST" or "Session 1: APAC – 2:00pm AEST". With
+// several sessions, the first line that has a time wins.
+export function parseSession(text: string): { time: string; zone: string } {
+  for (const line of text.split("\n")) {
+    // "3pm", "2:00 pm", "10.30am", or a 24-hour "15:00".
+    const m = line.match(/\b(\d{1,2})(?:[:.](\d{2}))?\s*([ap])\.?m\b\.?/i) ?? line.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+    if (!m) continue;
+    let hour = Number(m[1]);
+    const minute = Number(m[2] ?? 0);
+    const half = m[3]?.toLowerCase();
+    if (half && (hour < 1 || hour > 12)) continue;
+    if (half === "p" && hour < 12) hour += 12;
+    if (half === "a" && hour === 12) hour = 0;
+    if (hour > 23 || minute > 59) continue;
+    const after = line.slice((m.index ?? 0) + m[0].length);
+    const abbr = (after.match(/\b[A-Z]{2,4}\b/g) ?? []).find((a) => ZONE_ABBR[a]) ?? (line.match(/\b[A-Z]{2,4}\b/g) ?? []).find((a) => ZONE_ABBR[a]);
+    return {
+      time: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+      zone: abbr ? ZONE_ABBR[abbr] : "",
+    };
+  }
+  return { time: "", zone: "" };
+}
