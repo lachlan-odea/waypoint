@@ -123,9 +123,10 @@ const formEncode = (p: Params) =>
     .map(([k, v]) => `${rfc3986(k)}=${rfc3986(v)}`)
     .join("&");
 
-// One signed call. A file goes as multipart with the other parameters in
-// the query string: OAuth leaves a multipart body out of the signature, so
-// that keeps everything but the file signed.
+// One signed call. A file goes as multipart alongside the other parameters,
+// which TwentyThree reads from the form and counts in the signature; only
+// the file itself is left out of it (`bareSignature` leaves the fields out
+// too, see ttUpload).
 async function tt(
   c: Creds,
   method: "GET" | "POST",
@@ -133,12 +134,13 @@ async function tt(
   params: Params,
   what: string,
   upload?: Upload,
+  bareSignature = false,
 ): Promise<Record<string, unknown>> {
   const base = `https://${c.domain}/api/2${path}`;
   const authorization = oauthHeader({
     method,
     url: base,
-    params,
+    params: upload && bareSignature ? {} : params,
     consumerKey: c.consumerKey,
     consumerSecret: c.consumerSecret,
     token: c.token,
@@ -155,8 +157,8 @@ async function tt(
     signal: AbortSignal.timeout(30_000),
   };
   if (upload) {
-    url = `${base}?${query}`;
     const form = new FormData();
+    for (const [k, v] of Object.entries(params)) form.append(k, v);
     form.append("file", new Blob([upload.bytes], { type: upload.type }), upload.name);
     init.body = form;
   } else if (method === "GET") {
@@ -178,6 +180,21 @@ async function tt(
     throw new TwentyThreeError(res.status, detail, what);
   }
   return json;
+}
+
+// A file upload. TwentyThree’s reference says only the file stays out of
+// the signature; strict OAuth leaves the whole multipart form out. If the
+// first is refused as a bad signature, the second is tried.
+async function ttUpload(c: Creds, path: string, params: Params, what: string, upload: Upload) {
+  try {
+    return await tt(c, "POST", path, params, what, upload);
+  } catch (err) {
+    const auth =
+      err instanceof TwentyThreeError &&
+      (err.status === 401 || err.status === 403 || /signature|authenticat/i.test(err.detail));
+    if (!auth) throw err;
+    return tt(c, "POST", path, params, what, upload, true);
+  }
 }
 
 // An image from a link in the kit, if the link really is one. SharePoint
@@ -205,8 +222,23 @@ async function fetchImage(raw: string): Promise<Upload | string> {
 
 const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
-// Add the kit’s speakers to a webinar, in kit order, skipping anyone
-// TwentyThree already lists by name. Never invited from here: Digital sends
+// A speaker TwentyThree already lists for the webinar.
+type Listed = { name: string; id: string; hasAvatar: boolean };
+
+// The headshot from the kit as a speaker’s avatar. True when it was set.
+async function setAvatar(c: Creds, speakerId: string, sp: KitSpeaker, warnings: string[]): Promise<boolean> {
+  const img = await fetchImage(sp.headshot);
+  if (typeof img === "string") {
+    warnings.push(`${sp.name}’s headshot wasn’t added: ${img}.`);
+    return false;
+  }
+  await ttUpload(c, "/live/speaker/set-avatar", { live_speaker_id: speakerId }, "set avatar", img);
+  return true;
+}
+
+// Add the kit’s speakers to a webinar, in kit order. Anyone TwentyThree
+// already lists by name isn’t added again, but is given their headshot if
+// they have none. Never invited from here: Digital sends
 // invitations from TwentyThree when the session is ready. TwentyThree needs
 // an email address for each speaker, taken from the kit row or, failing
 // that, the speaker directory.
@@ -214,13 +246,18 @@ async function addSpeakers(
   c: Creds,
   liveId: string,
   speakers: KitSpeaker[],
-  existing: string[],
+  existing: Listed[],
   warnings: string[],
-): Promise<number> {
+): Promise<{ added: number; headshots: number }> {
   let added = 0;
+  let headshots = 0;
   for (const sp of speakers) {
-    if (existing.some((n) => sameName(n, sp.name))) continue;
     try {
+      const listed = existing.find((e) => sameName(e.name, sp.name));
+      if (listed) {
+        if (!listed.hasAvatar && listed.id && sp.headshot && (await setAvatar(c, listed.id, sp, warnings))) headshots++;
+        continue;
+      }
       let email = sp.email;
       if (!email && sp.speakerId && !sp.speakerId.includes("/")) {
         const dir = await db().collection("speakers").doc(sp.speakerId).get();
@@ -238,18 +275,14 @@ async function addSpeakers(
       const res = await tt(c, "POST", "/live/speaker/add", params, "add speaker");
       added++;
       const speakerId = String((res.data as { live_speaker_id?: unknown } | undefined)?.live_speaker_id ?? "");
-      if (sp.headshot && speakerId) {
-        const img = await fetchImage(sp.headshot);
-        if (typeof img === "string") warnings.push(`${sp.name}’s headshot wasn’t added: ${img}.`);
-        else await tt(c, "POST", "/live/speaker/set-avatar", { live_speaker_id: speakerId }, "set avatar", img);
-      }
+      if (sp.headshot && speakerId && (await setAvatar(c, speakerId, sp, warnings))) headshots++;
     } catch (err) {
       logger.warn("twentythree: speaker", err);
       const why = err instanceof TwentyThreeError ? err.detail.slice(0, 160) : "something went wrong";
       warnings.push(`${sp.name} needs checking in TwentyThree (${why}).`);
     }
   }
-  return added;
+  return { added, headshots };
 }
 
 // ── Creating the webinar ───────────────────────────────────────────────
@@ -388,7 +421,7 @@ export const twentyThreeCreateWebinar = onCall(
       });
 
       // 2. Speakers.
-      const speakersAdded = await addSpeakers(c, liveId, kitSpeakers(kit), [], warnings);
+      const { added: speakersAdded } = await addSpeakers(c, liveId, kitSpeakers(kit), [], warnings);
 
       // 3. The hero image as the webinar's thumbnail.
       const hero = String(kit.values?.landing?.hero ?? "").trim();
@@ -396,7 +429,7 @@ export const twentyThreeCreateWebinar = onCall(
         try {
           const img = await fetchImage(hero);
           if (typeof img === "string") warnings.push(`The hero image wasn't added: ${img}.`);
-          else await tt(c, "POST", "/live/upload-image", { live_id: liveId, type: "thumbnail" }, "upload image", img);
+          else await ttUpload(c, "/live/upload-image", { live_id: liveId, type: "thumbnail" }, "upload image", img);
         } catch (err) {
           logger.warn("twentythree: hero", err);
           warnings.push("The hero image wasn't added. Upload it in TwentyThree.");
@@ -443,7 +476,7 @@ export const twentyThreeCreateWebinar = onCall(
 // ones added to the kit since, or held back for want of an email address.
 export const twentyThreeAddSpeakers = onCall(
   { region: REGION, cors: ALLOWED_ORIGINS, secrets: TT_SECRETS, invoker: "public", timeoutSeconds: 300 },
-  async (req): Promise<{ speakersAdded: number; warnings: string[] }> => {
+  async (req): Promise<{ speakersAdded: number; headshotsAdded: number; warnings: string[] }> => {
     await requireSignedIn(req);
     const campaignId = String((req.data as { campaignId?: unknown } | null)?.campaignId ?? "").trim();
     if (!campaignId || campaignId.includes("/")) throw new HttpsError("invalid-argument", "Which webinar?");
@@ -455,15 +488,39 @@ export const twentyThreeAddSpeakers = onCall(
     if (!liveId) throw new HttpsError("failed-precondition", "Create the webinar in TwentyThree first.");
 
     // Who’s already there, so nobody is added twice.
-    let existing: string[] = [];
+    let existing: Listed[] = [];
     try {
-      const listed = await tt(c, "GET", "/live/speaker/list", { live_id: liveId, include_unapproved_p: "true" }, "list speakers");
-      existing = (Array.isArray(listed.data) ? listed.data : []).map((r) => String((r as { name?: unknown }).name ?? ""));
+      // The speaker list is opened with the webinar’s own token.
+      const live = await tt(c, "GET", "/live/list", { live_id: liveId, include_private_p: "true" }, "look up");
+      const row = (Array.isArray(live.data) ? live.data[0] : undefined) as { token?: unknown } | undefined;
+      const token = String(row?.token ?? "");
+      if (!token) {
+        throw new HttpsError(
+          "not-found",
+          "That webinar couldn’t be found in TwentyThree. If it was deleted there, choose Unlink and create it again.",
+        );
+      }
+      const listed = await tt(
+        c,
+        "GET",
+        "/live/speaker/list",
+        { live_id: liveId, token, include_unapproved_p: "true" },
+        "list speakers",
+      );
+      existing = (Array.isArray(listed.data) ? listed.data : []).map((r) => {
+        const x = r as { name?: unknown; live_speaker_id?: unknown; has_avatar_p?: unknown };
+        const avatar = x.has_avatar_p;
+        return {
+          name: String(x.name ?? ""),
+          id: String(x.live_speaker_id ?? ""),
+          hasAvatar: avatar === true || avatar === 1 || avatar === "1" || avatar === "true",
+        };
+      });
     } catch (err) {
       fail(err, "list the webinar’s speakers");
     }
     const warnings: string[] = [];
-    const speakersAdded = await addSpeakers(c, liveId, kitSpeakers(kit), existing, warnings);
-    return { speakersAdded, warnings };
+    const { added, headshots } = await addSpeakers(c, liveId, kitSpeakers(kit), existing, warnings);
+    return { speakersAdded: added, headshotsAdded: headshots, warnings };
   },
 );

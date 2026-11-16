@@ -54,13 +54,12 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
     try {
       const r = await twentyThreeAddSpeakers(api.campaign.id);
       setWarnings(r.warnings);
-      setNote(
-        r.speakersAdded
-          ? `${r.speakersAdded} speaker${r.speakersAdded === 1 ? "" : "s"} added in TwentyThree.`
-          : r.warnings.length
-            ? null
-            : "Every speaker is already in TwentyThree.",
-      );
+      const n = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+      const did = [
+        r.speakersAdded ? n(r.speakersAdded, "speaker") : "",
+        r.headshotsAdded ? n(r.headshotsAdded, "headshot") : "",
+      ].filter(Boolean);
+      setNote(did.length ? `${did.join(" and ")} added in TwentyThree.` : r.warnings.length ? null : "Every speaker is already in TwentyThree.");
     } catch (err) {
       setError(twentyThreeErrorMessage(err));
     } finally {
@@ -125,7 +124,7 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
               </a>
             )}
             {!readOnly && speakers.length > 0 && (
-              <button type="button" className="btn btn-secondary btn-sm" disabled={sending} onClick={addSpeakers} title="Send speakers that aren’t in TwentyThree yet">
+              <button type="button" className="btn btn-secondary btn-sm" disabled={sending} onClick={addSpeakers} title="Send speakers and headshots that aren’t in TwentyThree yet">
                 <Icon name="group-user-people" size={14} /> {sending ? "Adding…" : "Add speakers"}
               </button>
             )}

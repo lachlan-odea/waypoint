@@ -31,7 +31,7 @@ export async function twentyThreeCreateWebinar(input: TwentyThreeCreateInput): P
   return (await call(input)).data;
 }
 
-export type TwentyThreeSpeakersResult = { speakersAdded: number; warnings: string[] };
+export type TwentyThreeSpeakersResult = { speakersAdded: number; headshotsAdded: number; warnings: string[] };
 
 // Send the kit’s speakers to a webinar that already exists in TwentyThree,
 // skipping anyone it already lists.
