@@ -36,6 +36,35 @@ function activityPageUrl(shareToken: string): string {
   );
 }
 
+// What readers of the page add to a campaign without signing in, through
+// Firestore's REST API (see the activityPages rules): other teams'
+// deliverables, and who owns the campaign in each team. Both hang off the
+// public copy, so they share its token: a new token starts them afresh.
+function activityCollectionUrl(shareToken: string, name: "deliverables" | "teamOwners"): string {
+  const { projectId, apiKey } = firebaseConfig;
+  return (
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
+    `/documents/activityPages/${shareToken}/${name}?key=${apiKey}`
+  );
+}
+
+// The teams a deliverable can come from. A campaign's milestones are
+// always Marketing's; the others are picked by whoever adds a deliverable
+// on the page. firestore.rules holds the same list and refuses any other
+// team, so change both together.
+export const DELIVERABLE_TEAMS = [
+  "Product",
+  "Commercial Finance",
+  "Marketing",
+  "eLearning",
+  "Sales",
+  "Languages",
+  "Customer Experience",
+  "Partner Management",
+  "Communications",
+  "Legal and Licensing",
+];
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -189,6 +218,9 @@ export function activityPageHtml(shareToken: string, data: ActivityPageData): st
     __ACTIVITY_TITLE__: escapeHtml("Marketing activity"),
     __ACTIVITY_SNAPSHOT__: snapshot,
     __ACTIVITY_FEED_URL__: activityPageUrl(shareToken),
+    __ACTIVITY_DELIVERABLES_URL__: activityCollectionUrl(shareToken, "deliverables"),
+    __ACTIVITY_OWNERS_URL__: activityCollectionUrl(shareToken, "teamOwners"),
+    __ACTIVITY_TEAMS__: JSON.stringify(DELIVERABLE_TEAMS).replace(/</g, "\u003c"),
     // The app icon, inline, so the tab shows the mark wherever the file
     // is hosted.
     __ACTIVITY_FAVICON__: "data:image/svg+xml," + encodeURIComponent(appIconSvg.trim()),

@@ -59,6 +59,69 @@ service cloud.firestore {
         && request.resource.data.json is string
         && request.resource.data.json.size() < 950000;
       allow delete: if request.auth != null;
+
+      // Deliverables other teams add to a campaign on the page, without
+      // signing in. The same anyone-with-the-token model as an itinerary's
+      // travel entries: whoever holds the page can add one, correct it
+      // (the link, the date, delivered or not) and take it off again.
+      // Every field is checked and capped, the team must be one of the
+      // known ones (the list in src/activityExport.ts), and a deliverable
+      // can't be moved to another campaign.
+      match /deliverables/{deliverableId} {
+        allow get, list: if true;
+        allow create, update: if token.matches('^[0-9a-f]{32}$')
+          && exists(/databases/$(database)/documents/activityPages/$(token))
+          && request.resource.data.keys().hasOnly([
+            'campaignId', 'team', 'title', 'date', 'url', 'done', 'name', 'createdAt', 'updatedAt'
+          ])
+          && request.resource.data.campaignId is string
+          && request.resource.data.campaignId.size() > 0
+          && request.resource.data.campaignId.size() <= 80
+          && (resource == null || request.resource.data.campaignId == resource.data.campaignId)
+          && request.resource.data.team in [
+            'Product', 'Commercial Finance', 'Marketing', 'eLearning', 'Sales', 'Languages',
+            'Customer Experience', 'Partner Management', 'Communications', 'Legal and Licensing'
+          ]
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 120
+          && request.resource.data.date is string
+          && request.resource.data.date.matches('^([0-9]{4}-[0-9]{2}-[0-9]{2})?$')
+          && request.resource.data.url is string
+          && request.resource.data.url.size() <= 1000
+          && request.resource.data.url.matches('^(https?://.+)?$')
+          && request.resource.data.done is bool
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 80
+          && request.resource.data.createdAt is string
+          && request.resource.data.createdAt.size() <= 40
+          && request.resource.data.updatedAt is string
+          && request.resource.data.updatedAt.size() <= 40;
+        allow delete: if token.matches('^[0-9a-f]{32}$');
+      }
+
+      // Who owns a campaign in each team, shown under its Details. One
+      // document per campaign and team, written the same way.
+      match /teamOwners/{ownerId} {
+        allow get, list: if true;
+        allow create, update: if token.matches('^[0-9a-f]{32}$')
+          && exists(/databases/$(database)/documents/activityPages/$(token))
+          && request.resource.data.keys().hasOnly(['campaignId', 'team', 'owner', 'updatedAt'])
+          && request.resource.data.campaignId is string
+          && request.resource.data.campaignId.size() > 0
+          && request.resource.data.campaignId.size() <= 80
+          && request.resource.data.team in [
+            'Product', 'Commercial Finance', 'Marketing', 'eLearning', 'Sales', 'Languages',
+            'Customer Experience', 'Partner Management', 'Communications', 'Legal and Licensing'
+          ]
+          && request.resource.data.owner is string
+          && request.resource.data.owner.size() > 0
+          && request.resource.data.owner.size() <= 120
+          && request.resource.data.updatedAt is string
+          && request.resource.data.updatedAt.size() <= 40;
+        allow delete: if token.matches('^[0-9a-f]{32}$');
+      }
     }
     // App-wide settings documents, such as the activity page's token and
     // SharePoint link. Signed-in users only.
