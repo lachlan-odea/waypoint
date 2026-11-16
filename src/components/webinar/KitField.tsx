@@ -652,7 +652,7 @@ function Group({ f, sec, api, bare }: { f: FieldSpec; sec: string; api: KitApi; 
             onChange={(e) => {
               const sp = api.speakers.find((s) => s.id === e.target.value);
               if (!sp) return;
-              api.addItem("speaker", f.list, { name: sp.name, title: sp.title, bio: sp.bio, headshot: sp.headshot, speakerId: sp.id }, sec);
+              api.addItem("speaker", f.list, { name: sp.name, title: sp.title, bio: sp.bio, headshot: sp.headshot, ...(sp.email ? { email: sp.email } : {}), speakerId: sp.id }, sec);
             }}
           >
             <option value="">Add from the speaker directory…</option>
