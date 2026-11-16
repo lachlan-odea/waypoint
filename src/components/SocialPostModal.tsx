@@ -21,7 +21,9 @@ import {
   formatRate,
   LINKEDIN_FILE_ACCEPT,
   LINKEDIN_MAX_COPY_CHARS,
-  LINKEDIN_MAX_FILE_BYTES,
+  linkedInFileIsVideo,
+  linkedInFileProblem,
+  type LinkedInPublishProgress,
   linkedInErrorMessage,
   linkedInFileType,
   linkedInPublish,
@@ -120,6 +122,7 @@ export function SocialPostModal({
   const [altText, setAltText] = useState("");
   const [confirmingPublish, setConfirmingPublish] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [publishStage, setPublishStage] = useState<LinkedInPublishProgress | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   // A new post needs one id for both the publish call and the save after it.
@@ -279,18 +282,22 @@ export function SocialPostModal({
       setFile(null);
       return;
     }
-    if (!linkedInFileType(next)) {
-      setPublishError(
-        "LinkedIn takes a JPG, PNG or GIF image, or a PDF, PowerPoint or Word document here. Video still has to be posted from LinkedIn itself.",
-      );
-      return;
-    }
-    if (next.size > LINKEDIN_MAX_FILE_BYTES) {
-      setPublishError("That file is over 20 MB. Use a smaller export.");
+    const problem = linkedInFileProblem(next);
+    if (problem) {
+      setPublishError(problem);
       return;
     }
     setFile(next);
   }
+
+  const fileIsVideo = !!file && linkedInFileIsVideo(file);
+  // What the confirm strip says while a publish is under way.
+  const publishingLabel =
+    publishStage?.stage === "uploading"
+      ? `Uploading the video… ${Math.round(publishStage.fraction * 100)}%. Keep this window open.`
+      : fileIsVideo
+        ? `Posting to ${pageName}. LinkedIn is processing the video, which can take a few minutes.`
+        : `Publishing to ${pageName}…`;
 
   // Post it to the page, then save the post as published with its live
   // link. The save happens here, not behind a "remember to save", because
@@ -298,16 +305,20 @@ export function SocialPostModal({
   async function publishNow() {
     setPublishing(true);
     setPublishError(null);
+    setPublishStage(null);
     try {
-      const result = await linkedInPublish({
-        postId,
-        channel: channel.trim(),
-        text: copy.trim(),
-        link: isUrl(ctaLink) ? ctaLink.trim() : undefined,
-        title: topic.trim(),
-        altText: fileIsImage ? altText.trim() : undefined,
-        file,
-      });
+      const result = await linkedInPublish(
+        {
+          postId,
+          channel: channel.trim(),
+          text: copy.trim(),
+          link: isUrl(ctaLink) ? ctaLink.trim() : undefined,
+          title: topic.trim(),
+          altText: fileIsImage ? altText.trim() : undefined,
+          file,
+        },
+        setPublishStage,
+      );
       onSave(
         buildPost({
           status: "published",
@@ -321,6 +332,7 @@ export function SocialPostModal({
     } catch (err) {
       setPublishError(linkedInErrorMessage(err));
       setPublishing(false);
+      setPublishStage(null);
       setConfirmingPublish(false);
     }
   }
@@ -622,7 +634,7 @@ export function SocialPostModal({
                     onClick={() => fileInput.current?.click()}
                     disabled={publishing}
                   >
-                    <Icon name="upload" size={13} /> {file ? "Change file" : "Attach image or document"}
+                    <Icon name="upload" size={13} /> {file ? "Change file" : "Attach image, video or document"}
                   </button>
                   {file ? (
                     <>
@@ -642,7 +654,7 @@ export function SocialPostModal({
                     <span className="field-hint">
                       {linkCard
                         ? "No file: the CTA link goes out as a link card, with the title and image read from its page."
-                        : "Optional. JPG, PNG, GIF, PDF, PowerPoint or Word, up to 20 MB. The asset links above aren't uploaded for you."}
+                        : "Optional. An image (JPG, PNG, GIF) or document (PDF, PowerPoint, Word) up to 20 MB, or an MP4 video up to 500 MB. The asset links above aren't uploaded for you."}
                     </span>
                   )}
                 </div>
@@ -663,7 +675,7 @@ export function SocialPostModal({
                   <div className="soc-direct-confirm" role="group" aria-label="Confirm publishing">
                     <span>
                       {publishing
-                        ? `Publishing to ${pageName}…`
+                        ? publishingLabel
                         : `This posts publicly as ${pageName} straight away${
                             file ? `, with ${file.name}` : linkCard ? ", with a link card" : ""
                           }.`}
