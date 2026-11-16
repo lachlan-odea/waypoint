@@ -236,7 +236,7 @@
   .team { display: inline-flex; align-items: center; padding: 0 8px; border-radius: var(--radius); font-size: 11px; font-weight: 600; line-height: 18px; background: var(--ink-100); color: var(--ink-700); white-space: nowrap; }
   .team.mkt { background: #ecebff; color: var(--cobalt); }
   .list .row-top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-  .list .row-acts { display: flex; gap: 12px; }
+  .list .row-acts, .list .row-links { display: flex; flex-wrap: wrap; gap: 2px 12px; }
   .linkish { font: inherit; font-size: 12px; color: var(--cobalt); background: none; border: 0; border-radius: 4px; padding: 0; cursor: pointer; text-decoration: underline; }
   .linkish.danger { color: #8a1c16; }
   .confirm { font-size: 12px; color: #8a1c16; display: inline-flex; gap: 10px; align-items: center; }
@@ -399,7 +399,8 @@
     } else {
       meta = '<span class="mono">' + (item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)) + "</span>" + (item.category ? "<span>" + esc(item.category) + "</span>" : "");
       segs = deliverablesOf(item).map(function (m) { return { on: m.done }; });
-      foot = item.owner ? "Owner " + esc(item.owner) : "";
+      // No owner on the card: a campaign's owners, team by team, are on
+      // its page under Details.
     }
     return '<a class="card" href="#' + keyOf(item) + '" style="border-left-color:' + color + '">' +
       '<div class="top"><div><div class="kind">' + kindLabel + "</div><h3>" + esc(item.name) + "</h3></div>" +
@@ -572,7 +573,7 @@
       return { team: MARKETING, label: m.label, description: m.description, date: m.date, done: m.done, url: m.url, linkText: m.linkText };
     });
     extras.forEach(function (x) {
-      if (x.campaignId === item.id) rows.push({ id: x.id, team: x.team, label: x.title, date: x.date, done: x.done, url: x.url, name: x.name });
+      if (x.campaignId === item.id) rows.push({ id: x.id, team: x.team, label: x.title, date: x.date, done: x.done, url: x.url, workItemUrl: x.workItemUrl, name: x.name });
     });
     return rows.sort(function (a, b) {
       if (!a.date !== !b.date) return a.date ? -1 : 1;
@@ -592,7 +593,11 @@
     if (!rows.length) html += '<p class="empty" style="padding:12px 0">No deliverables yet.</p>';
     else html += '<ul class="list">' + rows.map(function (m) {
       var pill = m.done ? ["complete", "Done"] : !m.date ? ["draft", "No date"] : m.date === today ? ["live", "Today"] : m.date > today ? ["scheduled", "In " + plural(days(today, m.date), "day")] : ["draft", "Pending"];
-      var link = safeUrl(m.url) ? '<a href="' + esc(m.url) + '" target="_blank" rel="noopener noreferrer">' + esc(m.linkText || "Open link") + " ↗</a>" : "";
+      // Two links at most: the asset itself, and the work item tracking it.
+      var links = [[m.url, m.linkText || (m.workItemUrl ? "Asset" : "Open link")], [m.workItemUrl, "Work item"]]
+        .filter(function (l) { return safeUrl(l[0]); })
+        .map(function (l) { return '<a href="' + esc(l[0]) + '" target="_blank" rel="noopener noreferrer">' + esc(l[1]) + " ↗</a>"; }).join("");
+      var link = links ? '<span class="row-links">' + links + "</span>" : "";
       var acts = "";
       if (m.id && CAN_ADD) {
         acts = confirmRemove === m.id
@@ -621,6 +626,7 @@
       '<label>Due date<input type="date" name="date" value="' + esc(entry ? entry.date : "") + '" /></label>' +
       '<label class="wide">Deliverable<input type="text" name="title" maxlength="120" placeholder="What is being delivered" value="' + esc(entry ? entry.title : "") + '" /></label>' +
       '<label class="wide">Link to the asset<input type="url" name="url" maxlength="1000" placeholder="https://" value="' + esc(entry ? entry.url : "") + '" /></label>' +
+      '<label class="wide">Link to the work item<input type="url" name="workItemUrl" maxlength="1000" placeholder="https://" value="' + esc(entry ? entry.workItemUrl : "") + '" /></label>' +
       '<label>Your name<input type="text" name="name" maxlength="80" value="' + esc(saved(NAME_KEY) || (entry ? entry.name : "")) + '" /></label>' +
       '<label class="check"><input type="checkbox" name="done"' + (entry && entry.done ? " checked" : "") + " /> Delivered</label>" +
       '<div class="acts wide"><button type="submit" class="btn primary">Save</button><button type="button" class="btn" data-act="cancel">Cancel</button><span class="err" role="alert"></span></div>' +
@@ -699,7 +705,7 @@
       lede = item.description ? esc(item.description) : "";
       var all = deliverablesOf(item);
       var doneCount = all.filter(function (m) { return m.done; }).length;
-      facts = [["Start", fmtLong(item.startDate)], ["End", item.evergreen ? "Always on" : fmtLong(item.endDate)], ["Deliverables", doneCount + "/" + all.length], ["Owner", esc(item.owner || "—")]];
+      facts = [["Start", fmtLong(item.startDate)], ["End", item.evergreen ? "Always on" : fmtLong(item.endDate)], ["Deliverables", doneCount + "/" + all.length]];
       main += panel("Deliverables", deliverablesHtml(item, today), doneCount + " of " + all.length + " delivered");
       side += panel("Details", kv([["Status", '<span class="st ' + st.cls + '">' + esc(st.label) + "</span>"], ["Runs", item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)], ["Brand", esc(item.brand)], ["Type", esc(item.category)]]) + teamOwnersHtml(item));
     }
@@ -776,7 +782,7 @@
     var d = listAll(DELIVERABLES_URL).then(function (docs) {
       extras = docs.map(function (doc) {
         var f = doc.fields || {};
-        return { id: docId(doc), campaignId: fstr(f, "campaignId"), team: fstr(f, "team"), title: fstr(f, "title"), date: fstr(f, "date"), url: fstr(f, "url"), done: !!(f.done && f.done.booleanValue), name: fstr(f, "name"), createdAt: fstr(f, "createdAt") };
+        return { id: docId(doc), campaignId: fstr(f, "campaignId"), team: fstr(f, "team"), title: fstr(f, "title"), date: fstr(f, "date"), url: fstr(f, "url"), workItemUrl: fstr(f, "workItemUrl"), done: !!(f.done && f.done.booleanValue), name: fstr(f, "name"), createdAt: fstr(f, "createdAt") };
       });
     }).catch(function () { /* keep what we had */ });
     var o = listAll(OWNERS_URL).then(function (docs) {
@@ -804,12 +810,13 @@
   // A new deliverable is a POST to the collection; a correction is a PATCH
   // of the one document, replacing every field.
   function submitDeliverable(el) {
-    var team = val(el, "team"), title = val(el, "title"), date = val(el, "date"), url = val(el, "url"), name = val(el, "name");
+    var team = val(el, "team"), title = val(el, "title"), date = val(el, "date"), url = val(el, "url"), work = val(el, "workItemUrl"), name = val(el, "name");
     if (TEAMS.indexOf(team) < 0) return fail(el, "Choose the team delivering it.");
     if (!title) return fail(el, "Say what the deliverable is.");
     if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail(el, "Check the due date.");
     if (url && !/^https?:\/\//i.test(url)) url = "https://" + url;
-    if (/\s/.test(url)) return fail(el, "The link can't contain spaces.");
+    if (work && !/^https?:\/\//i.test(work)) work = "https://" + work;
+    if (/\s/.test(url) || /\s/.test(work)) return fail(el, "A link can't contain spaces.");
     if (!name) return fail(el, "Put your name in.");
     remember(NAME_KEY, name); remember(TEAM_KEY, team);
     var id = el.getAttribute("data-id");
@@ -821,6 +828,7 @@
       title: { stringValue: title.slice(0, 120) },
       date: { stringValue: date },
       url: { stringValue: url.slice(0, 1000) },
+      workItemUrl: { stringValue: work.slice(0, 1000) },
       done: { booleanValue: !!el.elements.done.checked },
       name: { stringValue: name.slice(0, 80) },
       createdAt: { stringValue: existing && existing.createdAt ? existing.createdAt : now },
