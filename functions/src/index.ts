@@ -632,6 +632,7 @@ export {
   linkedinDisconnect,
   linkedinNightlySync,
   linkedinPublish,
+  linkedinReleasePost,
   linkedinSyncNow,
   linkedinVideoPart,
   linkedinVideoStart,

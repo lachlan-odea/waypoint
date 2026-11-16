@@ -24,7 +24,7 @@ import { HttpsError, onCall, onRequest, type CallableRequest } from "firebase-fu
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
-import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore, type Firestore } from "firebase-admin/firestore";
 import { randomBytes } from "node:crypto";
 import {
   fromLittleText,
@@ -1013,6 +1013,50 @@ export const linkedinPublish = onCall(
     return { urn, url, publishedAt, orgId: org.id, pageName: org.name };
   },
 );
+
+// A post that was published from here and then deleted on LinkedIn can go
+// out again, but only once LinkedIn itself confirms it's gone: this asks
+// for the post, and if LinkedIn no longer has it, clears the live link and
+// the id that blocks a second publish and sets the post back to Ready.
+// While the post is still up, nothing changes, so this can't be used to
+// put the same post on the page twice.
+export const linkedinReleasePost = onCall(callable, async (req) => {
+  await requireSuperUser(req);
+  const postId = str((req.data as { postId?: unknown } | null)?.postId);
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(postId)) throw new HttpsError("invalid-argument", "Missing the post.");
+  const postRef = db().collection("socialPosts").doc(postId);
+  const stored = (await postRef.get()).data() as { linkedinUrn?: string; status?: string } | undefined;
+  const urn = stored?.linkedinUrn;
+  if (!stored || !urn) return { released: true };
+
+  const connection = await getConnection();
+  let gone: boolean;
+  try {
+    const post = await liJson<{ lifecycleState?: string }>(
+      connection.accessToken,
+      `/rest/posts/${enc(urn)}?viewContext=AUTHOR`,
+      "post lookup",
+    );
+    gone = post.lifecycleState === "DELETED";
+  } catch (err) {
+    if (err instanceof LinkedInError && (err.status === 404 || err.status === 410)) gone = true;
+    else throw asHttpsError(err);
+  }
+  if (!gone) return { released: false };
+
+  await postRef.update({
+    linkedinUrn: FieldValue.delete(),
+    linkedinOrgId: FieldValue.delete(),
+    postUrl: FieldValue.delete(),
+    publishedAt: FieldValue.delete(),
+    ...(stored.status === "published" ? { status: "pending" } : {}),
+  });
+  await db().doc(`linkedinPrivate/publish-${postId}`).delete().catch(() => undefined);
+  // Its numbers describe a post that no longer exists.
+  await db().collection("linkedinPostStats").doc(statsDocId(urn)).delete().catch(() => undefined);
+  logger.info("Released a post deleted on LinkedIn", { postId, urn });
+  return { released: true };
+});
 
 // ── Statistics ─────────────────────────────────────────────────────────
 

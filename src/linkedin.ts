@@ -259,6 +259,14 @@ export async function linkedInSyncNow(): Promise<LinkedInSyncSummary> {
   return (await call()).data;
 }
 
+// Ask LinkedIn whether a published post is still up. If it has been deleted
+// there, the function clears its live link so it can be published again
+// and this resolves true; false means it's still live and nothing changed.
+export async function linkedInReleasePost(postId: string): Promise<boolean> {
+  const call = httpsCallable<{ postId: string }, { released: boolean }>(functions, "linkedinReleasePost");
+  return (await call({ postId })).data.released;
+}
+
 export type LinkedInPublishInput = {
   postId: string;
   channel: string;
