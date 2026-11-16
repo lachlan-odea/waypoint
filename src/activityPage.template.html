@@ -399,7 +399,8 @@
     } else {
       meta = '<span class="mono">' + (item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)) + "</span>" + (item.category ? "<span>" + esc(item.category) + "</span>" : "");
       segs = deliverablesOf(item).map(function (m) { return { on: m.done }; });
-      foot = item.owner ? "Owner " + esc(item.owner) : "";
+      // No owner on the card: a campaign's owners, team by team, are on
+      // its page under Details.
     }
     return '<a class="card" href="#' + keyOf(item) + '" style="border-left-color:' + color + '">' +
       '<div class="top"><div><div class="kind">' + kindLabel + "</div><h3>" + esc(item.name) + "</h3></div>" +
@@ -704,7 +705,7 @@
       lede = item.description ? esc(item.description) : "";
       var all = deliverablesOf(item);
       var doneCount = all.filter(function (m) { return m.done; }).length;
-      facts = [["Start", fmtLong(item.startDate)], ["End", item.evergreen ? "Always on" : fmtLong(item.endDate)], ["Deliverables", doneCount + "/" + all.length], ["Owner", esc(item.owner || "—")]];
+      facts = [["Start", fmtLong(item.startDate)], ["End", item.evergreen ? "Always on" : fmtLong(item.endDate)], ["Deliverables", doneCount + "/" + all.length]];
       main += panel("Deliverables", deliverablesHtml(item, today), doneCount + " of " + all.length + " delivered");
       side += panel("Details", kv([["Status", '<span class="st ' + st.cls + '">' + esc(st.label) + "</span>"], ["Runs", item.evergreen ? "From " + fmt(item.startDate) + " · always on" : fmt(item.startDate) + " – " + fmt(item.endDate)], ["Brand", esc(item.brand)], ["Type", esc(item.category)]]) + teamOwnersHtml(item));
     }
