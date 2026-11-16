@@ -1184,7 +1184,10 @@ textarea {
 /* Main */
 .main {
   overflow: auto;
-  padding: 24px 28px 48px;
+  /* No top padding: the sticky header owns the top edge, so nothing can
+     scroll up into a strip above it. The header's own padding gives the
+     space above the search. */
+  padding: 0 28px 48px;
 }
 .topbar {
   display: flex;
@@ -1244,8 +1247,8 @@ textarea {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin: -24px -28px 20px;
-  padding: 12px 28px;
+  margin: 0 -28px 20px;
+  padding: 16px 28px;
   background: var(--bg);
 }
 /* Screens without a page topbar (My Desk, an open item page) would otherwise
@@ -1454,8 +1457,8 @@ textarea {
   .app-header {
     flex-wrap: wrap;
     gap: 10px 12px;
-    margin: -12px -14px 14px;
-    padding: 10px 14px;
+    margin: 0 -14px 14px;
+    padding: 12px 14px;
   }
   .app-search {
     order: 3;
@@ -6847,7 +6850,7 @@ a.button-link:hover {
 
   /* --- Main column and top bar ----------------------------------------- */
   .main {
-    padding: 12px 14px calc(40px + env(safe-area-inset-bottom));
+    padding: 0 14px calc(40px + env(safe-area-inset-bottom));
   }
   .topbar {
     display: grid;
