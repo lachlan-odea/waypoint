@@ -236,6 +236,7 @@ function CreateDialog({
             <strong>{title}</strong>
             <span className="muted small">
               {speakerCount} speaker{speakerCount === 1 ? "" : "s"} · created private, speakers aren’t emailed
+              {api.ctx.V("landing")["emailSeq|od"] === true ? " · on-demand on" : " · on-demand off"}
             </span>
           </p>
           {kit.sessions.trim() && (

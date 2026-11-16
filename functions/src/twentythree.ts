@@ -376,6 +376,9 @@ export const twentyThreeCreateWebinar = onCall(
       const name = (kit.ft || kit.wt || kit.name || "").trim();
       if (!name) throw new HttpsError("failed-precondition", "Add the final webinar title first.");
 
+      // "On-demand recording enabled", ticked on the kit’s email sequence.
+      const onDemand = kit.values?.landing?.["emailSeq|od"] === true;
+
       // 1. The webinar itself, private until Digital publishes it.
       let liveId = "";
       let token = "";
@@ -393,6 +396,8 @@ export const twentyThreeCreateWebinar = onCall(
             start_time: `${startTime.replace("T", " ")}:00`,
             duration_minutes: String(minutes),
             timezone,
+            // On demand needs a recording to show.
+            ...(onDemand ? { auto_record_p: "true" } : {}),
           },
           "create",
         );
@@ -426,6 +431,16 @@ export const twentyThreeCreateWebinar = onCall(
           "webinar.updatedAt": at,
         });
       });
+
+      // On demand is a setting on an existing webinar, not part of creating one.
+      if (onDemand) {
+        try {
+          await tt(c, "POST", "/live/update", { live_id: liveId, enable_ondemand_p: "true" }, "enable on demand");
+        } catch (err) {
+          logger.warn("twentythree: on demand", err);
+          warnings.push("On-demand wasn’t switched on. Turn it on in TwentyThree.");
+        }
+      }
 
       // 2. Speakers.
       const { added: speakersAdded } = await addSpeakers(c, liveId, kitSpeakers(kit), [], warnings);
