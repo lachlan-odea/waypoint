@@ -669,10 +669,200 @@ type PublishRequest = {
   title?: unknown;
   altText?: unknown;
   file?: { name?: unknown; type?: unknown; base64?: unknown } | null;
+  // A video already uploaded in parts, in place of `file`.
+  videoSessionId?: unknown;
 };
 
 function str(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
+}
+
+// The connection and the page a channel posts to, having checked the
+// connected member is allowed to post as it.
+async function postingPage(channel: string): Promise<{ connection: Connection; org: OrgAccess }> {
+  const connection = await getConnection();
+  const mapping = (await pageMappings()).find((p) => sameChannel(p.channel, channel));
+  if (!mapping) {
+    throw new HttpsError(
+      "failed-precondition",
+      `The "${channel || "(no channel)"}" channel isn't linked to a LinkedIn page. A super user links channels to pages in Settings → LinkedIn.`,
+    );
+  }
+  const org = connection.organizations.find((o) => o.id === mapping.orgId);
+  if (!org) {
+    throw new HttpsError(
+      "permission-denied",
+      `${connection.memberName} doesn't have a role on LinkedIn page ${mapping.orgId}. Someone who administers that page needs to connect LinkedIn in Settings.`,
+    );
+  }
+  if (!org.roles.some((r) => POSTING_ROLES.includes(r))) {
+    throw new HttpsError("permission-denied", `${connection.memberName} can see ${org.name} but isn't allowed to post as it. They need the Content admin or Super admin role on the page.`);
+  }
+  return { connection, org };
+}
+
+// ── Video ──────────────────────────────────────────────────────────────
+// A video is far too big for one call (LinkedIn takes up to 500 MB), and
+// LinkedIn's upload addresses can't be used from a browser, so it comes
+// through here in the 4 MB parts LinkedIn asks for: linkedinVideoStart
+// registers the upload and remembers LinkedIn's instructions, the app sends
+// each part to linkedinVideoPart, which passes it on and keeps the receipt
+// (an ETag), and linkedinPublish joins the parts and posts.
+
+const MIN_VIDEO_BYTES = 75 * 1024;
+const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
+
+type VideoPart = { uploadUrl: string; firstByte: number; lastByte: number };
+
+// /linkedinPrivate/video-{id}. Holds LinkedIn's signed upload addresses, so
+// it lives with the token where no client can read it.
+type VideoSession = {
+  uid: string;
+  orgId: string;
+  video: string;
+  uploadToken: string;
+  fileName: string;
+  parts: VideoPart[];
+  // Part index → the ETag LinkedIn returned for it.
+  etags?: Record<string, string>;
+  createdAt: number;
+};
+
+const videoSessionRef = (id: string) => db().doc(`linkedinPrivate/video-${id}`);
+
+async function loadVideoSession(id: string, uid: string): Promise<VideoSession> {
+  if (!/^[0-9a-f]{32}$/.test(id)) throw new HttpsError("invalid-argument", "Unknown video upload.");
+  const snap = await videoSessionRef(id).get();
+  const session = snap.data() as VideoSession | undefined;
+  if (!session || session.uid !== uid) {
+    throw new HttpsError("not-found", "That video upload has expired. Attach the video again.");
+  }
+  return session;
+}
+
+export const linkedinVideoStart = onCall(callable, async (req) => {
+  const caller = await requireSuperUser(req);
+  const data = (req.data ?? {}) as { channel?: unknown; fileSizeBytes?: unknown; fileName?: unknown };
+  const size = Number(data.fileSizeBytes);
+  if (!Number.isInteger(size) || size < MIN_VIDEO_BYTES) {
+    throw new HttpsError("invalid-argument", "That video is too small for LinkedIn (under 75 KB).");
+  }
+  if (size > MAX_VIDEO_BYTES) throw new HttpsError("invalid-argument", "LinkedIn takes videos up to 500 MB.");
+
+  try {
+    const { connection, org } = await postingPage(str(data.channel));
+    const init = await liJson<{
+      value?: { video?: string; uploadToken?: string; uploadInstructions?: VideoPart[] };
+    }>(connection.accessToken, "/rest/videos?action=initializeUpload", "video upload set-up", {
+      method: "POST",
+      body: {
+        initializeUploadRequest: {
+          owner: orgUrn(org.id),
+          fileSizeBytes: size,
+          uploadCaptions: false,
+          uploadThumbnail: false,
+        },
+      },
+    });
+    const video = init.value?.video;
+    const parts = (init.value?.uploadInstructions ?? []).map((p) => ({
+      uploadUrl: String(p.uploadUrl),
+      firstByte: Number(p.firstByte),
+      lastByte: Number(p.lastByte),
+    }));
+    if (!video || parts.length === 0) throw new Error("LinkedIn didn't return upload instructions for the video.");
+
+    const sessionId = randomBytes(16).toString("hex");
+    const session: VideoSession = {
+      uid: caller.uid,
+      orgId: org.id,
+      video,
+      uploadToken: init.value?.uploadToken ?? "",
+      fileName: str(data.fileName) || "Video",
+      parts,
+      etags: {},
+      createdAt: Date.now(),
+    };
+    await videoSessionRef(sessionId).set(session);
+    return {
+      sessionId,
+      parts: parts.map((p) => ({ firstByte: p.firstByte, lastByte: p.lastByte })),
+    };
+  } catch (err) {
+    throw asHttpsError(err);
+  }
+});
+
+export const linkedinVideoPart = onCall({ ...callable, memory: "512MiB", timeoutSeconds: 120 }, async (req) => {
+  const caller = await requireSuperUser(req);
+  const data = (req.data ?? {}) as { sessionId?: unknown; index?: unknown; base64?: unknown };
+  const session = await loadVideoSession(str(data.sessionId), caller.uid);
+  const index = Number(data.index);
+  const part = Number.isInteger(index) ? session.parts[index] : undefined;
+  if (!part) throw new HttpsError("invalid-argument", "Unknown part of the video.");
+  const bytes = Buffer.from(str(data.base64), "base64");
+  if (bytes.byteLength !== part.lastByte - part.firstByte + 1) {
+    throw new HttpsError("invalid-argument", "A part of the video arrived the wrong size. Attach the video again.");
+  }
+
+  try {
+    // LinkedIn's example sends the part to its signed address with no
+    // sign-in; if that's refused, say who's asking and try once more.
+    const send = (token: string | null) =>
+      fetch(part.uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: bytes,
+      });
+    let res = await send(null);
+    if (res.status === 401 || res.status === 403) {
+      res = await send((await getConnection()).accessToken);
+    }
+    if (!res.ok) throw new LinkedInError(res.status, await res.text(), "video part upload");
+    const etag = res.headers.get("etag");
+    if (!etag) throw new Error("LinkedIn accepted a part of the video but gave no receipt for it.");
+    await videoSessionRef(str(data.sessionId)).update({ [`etags.${index}`]: etag });
+    return { ok: true };
+  } catch (err) {
+    throw asHttpsError(err);
+  }
+});
+
+// Join the uploaded parts into one video and wait for LinkedIn to process
+// it. A video that's still processing after the wait is posted anyway:
+// LinkedIn shows the post once the video is ready.
+async function finalizeVideo(token: string, session: VideoSession): Promise<string> {
+  await li(token, "/rest/videos?action=finalizeUpload", "video upload finish", {
+    method: "POST",
+    body: {
+      finalizeUploadRequest: {
+        video: session.video,
+        uploadToken: session.uploadToken,
+        uploadedPartIds: session.parts.map((_p, i) => session.etags?.[String(i)] ?? ""),
+      },
+    },
+  });
+  for (let i = 0; i < 80; i++) {
+    await sleep(3000);
+    let status: { status?: string; processingFailureReason?: string };
+    try {
+      status = await liJson(token, `/rest/videos/${enc(session.video)}`, "video status");
+    } catch {
+      // Not being able to ask isn't a reason to abandon the post.
+      break;
+    }
+    if (status.status === "AVAILABLE") break;
+    if (status.status === "PROCESSING_FAILED") {
+      throw new HttpsError(
+        "invalid-argument",
+        `LinkedIn couldn't process that video${status.processingFailureReason ? ` (${status.processingFailureReason})` : ""}. It takes MP4, 3 seconds to 30 minutes long.`,
+      );
+    }
+  }
+  return session.video;
 }
 
 // Publish one Social calendar post to the LinkedIn page its channel maps
@@ -681,7 +871,8 @@ function str(v: unknown): string {
 // stored, the live link is written onto it here as well, in case the app
 // never gets the answer.
 export const linkedinPublish = onCall(
-  { ...callable, memory: "1GiB", timeoutSeconds: 300 },
+  // Long enough to wait out LinkedIn processing a video before posting it.
+  { ...callable, memory: "1GiB", timeoutSeconds: 540 },
   async (req) => {
     const caller = await requireSuperUser(req);
     const data = (req.data ?? {}) as PublishRequest;
@@ -704,7 +895,7 @@ export const linkedinPublish = onCall(
       if (!IMAGE_TYPES.includes(type) && !DOCUMENT_TYPES.includes(type)) {
         throw new HttpsError(
           "invalid-argument",
-          "LinkedIn takes a JPG, PNG or GIF image, or a PDF, PowerPoint or Word document here. Video still has to be posted from LinkedIn itself.",
+          "LinkedIn takes a JPG, PNG or GIF image, an MP4 video, or a PDF, PowerPoint or Word document.",
         );
       }
       const bytes = new Uint8Array(Buffer.from(str(data.file.base64), "base64"));
@@ -713,23 +904,22 @@ export const linkedinPublish = onCall(
       file = { name: str(data.file.name) || "Attachment", type, bytes };
     }
 
-    const connection = await getConnection();
-    const mapping = (await pageMappings()).find((p) => sameChannel(p.channel, channel));
-    if (!mapping) {
-      throw new HttpsError(
-        "failed-precondition",
-        `The "${channel || "(no channel)"}" channel isn't linked to a LinkedIn page. A super user links channels to pages in Settings → LinkedIn.`,
-      );
-    }
-    const org = connection.organizations.find((o) => o.id === mapping.orgId);
-    if (!org) {
-      throw new HttpsError(
-        "permission-denied",
-        `${connection.memberName} doesn't have a role on LinkedIn page ${mapping.orgId}. Someone who administers that page needs to connect LinkedIn in Settings.`,
-      );
-    }
-    if (!org.roles.some((r) => POSTING_ROLES.includes(r))) {
-      throw new HttpsError("permission-denied", `${connection.memberName} can see ${org.name} but isn't allowed to post as it. They need the Content admin or Super admin role on the page.`);
+    const { connection, org } = await postingPage(channel);
+
+    // A video was sent up in parts beforehand (linkedinVideoStart and
+    // linkedinVideoPart); check it's this caller's, for this page, and whole.
+    const videoSessionId = str(data.videoSessionId);
+    let video: VideoSession | null = null;
+    if (videoSessionId) {
+      if (file) throw new HttpsError("invalid-argument", "A post takes one attachment: the video or the file, not both.");
+      video = await loadVideoSession(videoSessionId, caller.uid);
+      if (video.orgId !== org.id) {
+        throw new HttpsError("failed-precondition", "That video was uploaded for a different page. Attach it again.");
+      }
+      const missing = video.parts.findIndex((_p, i) => !video?.etags?.[String(i)]);
+      if (missing >= 0) {
+        throw new HttpsError("failed-precondition", "The video didn't finish uploading. Attach it again.");
+      }
     }
 
     // One publish at a time per post, and never twice: a double click, or
@@ -755,7 +945,10 @@ export const linkedinPublish = onCall(
     try {
       let content: Record<string, unknown> | undefined;
       let commentary = text;
-      if (file) {
+      if (video) {
+        const videoUrn = await finalizeVideo(token, video);
+        content = { media: { id: videoUrn, title: (title || video.fileName).slice(0, 400) } };
+      } else if (file) {
         const kind: MediaKind = IMAGE_TYPES.includes(file.type) ? "images" : "documents";
         const assetUrn = await uploadMedia(token, kind, owner, file.bytes, file.type);
         content =
@@ -815,6 +1008,7 @@ export const linkedinPublish = onCall(
     } catch (err) {
       logger.warn("Published, but the post wasn't updated", { postId, urn, error: String(err) });
     }
+    if (videoSessionId) await videoSessionRef(videoSessionId).delete().catch(() => undefined);
 
     return { urn, url, publishedAt, orgId: org.id, pageName: org.name };
   },

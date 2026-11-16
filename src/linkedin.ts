@@ -283,18 +283,24 @@ export type LinkedInPublishResult = {
 };
 
 export const LINKEDIN_MAX_FILE_BYTES = 20 * 1024 * 1024;
+// LinkedIn's own limits for a video: MP4, 75 KB to 500 MB.
+export const LINKEDIN_MAX_VIDEO_BYTES = 500 * 1024 * 1024;
+export const LINKEDIN_MIN_VIDEO_BYTES = 75 * 1024;
 export const LINKEDIN_MAX_COPY_CHARS = 3000;
 
-// What LinkedIn takes as a post's attachment through this route. Video
-// needs a multi-part upload that isn't built yet.
+// What LinkedIn takes as a post's attachment.
 export const LINKEDIN_FILE_ACCEPT =
-  ".jpg,.jpeg,.png,.gif,.pdf,.ppt,.pptx,.doc,.docx,image/jpeg,image/png,image/gif,application/pdf";
+  ".jpg,.jpeg,.png,.gif,.mp4,.pdf,.ppt,.pptx,.doc,.docx,image/jpeg,image/png,image/gif,video/mp4,application/pdf";
+
+export const LINKEDIN_FILE_KINDS =
+  "LinkedIn takes a JPG, PNG or GIF image, an MP4 video, or a PDF, PowerPoint or Word document.";
 
 const TYPE_BY_EXTENSION: Record<string, string> = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   png: "image/png",
   gif: "image/gif",
+  mp4: "video/mp4",
   pdf: "application/pdf",
   ppt: "application/vnd.ms-powerpoint",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -324,16 +330,92 @@ function readBase64(file: File): Promise<string> {
   });
 }
 
-export async function linkedInPublish(input: LinkedInPublishInput): Promise<LinkedInPublishResult> {
+export function linkedInFileIsVideo(file: File): boolean {
+  return linkedInFileType(file) === "video/mp4";
+}
+
+// Why a file can't go with a post, or null when it can.
+export function linkedInFileProblem(file: File): string | null {
+  if (!linkedInFileType(file)) return LINKEDIN_FILE_KINDS;
+  if (linkedInFileIsVideo(file)) {
+    if (file.size > LINKEDIN_MAX_VIDEO_BYTES) return "That video is over 500 MB, LinkedIn's limit. Use a smaller export.";
+    if (file.size < LINKEDIN_MIN_VIDEO_BYTES) return "That video is under 75 KB, too small for LinkedIn.";
+    return null;
+  }
+  return file.size > LINKEDIN_MAX_FILE_BYTES ? "That file is over 20 MB. Use a smaller export." : null;
+}
+
+// Where a publish has got to, for the editor to show. `fraction` is how
+// much of a video has gone up, 0–1.
+export type LinkedInPublishProgress =
+  | { stage: "uploading"; fraction: number }
+  | { stage: "posting" };
+
+function blobBase64(blob: Blob): Promise<string> {
+  return readBase64(blob as File);
+}
+
+// Send a video up through the functions in the parts LinkedIn asks for,
+// three at a time, each retried once. Returns the upload's id, which the
+// publish call then names.
+async function uploadVideo(
+  file: File,
+  channel: string,
+  onProgress?: (p: LinkedInPublishProgress) => void,
+): Promise<string> {
+  type Start = { sessionId: string; parts: { firstByte: number; lastByte: number }[] };
+  const start = httpsCallable<{ channel: string; fileSizeBytes: number; fileName: string }, Start>(
+    functions,
+    "linkedinVideoStart",
+  );
+  const sendPart = httpsCallable<{ sessionId: string; index: number; base64: string }, { ok: boolean }>(
+    functions,
+    "linkedinVideoPart",
+    { timeout: 120_000 },
+  );
+  const { sessionId, parts } = (await start({ channel, fileSizeBytes: file.size, fileName: file.name })).data;
+
+  let sent = 0;
+  let next = 0;
+  onProgress?.({ stage: "uploading", fraction: 0 });
+  const worker = async () => {
+    while (next < parts.length) {
+      const index = next++;
+      const part = parts[index];
+      const base64 = await blobBase64(file.slice(part.firstByte, part.lastByte + 1));
+      try {
+        await sendPart({ sessionId, index, base64 });
+      } catch {
+        await sendPart({ sessionId, index, base64 });
+      }
+      sent += part.lastByte - part.firstByte + 1;
+      onProgress?.({ stage: "uploading", fraction: Math.min(1, sent / file.size) });
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(3, parts.length) }, worker));
+  return sessionId;
+}
+
+export async function linkedInPublish(
+  input: LinkedInPublishInput,
+  onProgress?: (p: LinkedInPublishProgress) => void,
+): Promise<LinkedInPublishResult> {
   const { file, ...rest } = input;
+  const isVideo = !!file && linkedInFileIsVideo(file);
+  const videoSessionId = file && isVideo ? await uploadVideo(file, input.channel, onProgress) : undefined;
+  onProgress?.({ stage: "posting" });
   const payload = {
     ...rest,
-    file: file
-      ? { name: file.name, type: linkedInFileType(file), base64: await readBase64(file) }
-      : null,
+    videoSessionId,
+    file:
+      file && !isVideo
+        ? { name: file.name, type: linkedInFileType(file), base64: await readBase64(file) }
+        : null,
   };
+  // A video post waits for LinkedIn to process the video first, which can
+  // take a few minutes.
   const call = httpsCallable<typeof payload, LinkedInPublishResult>(functions, "linkedinPublish", {
-    timeout: 300_000,
+    timeout: 540_000,
   });
   return (await call(payload)).data;
 }

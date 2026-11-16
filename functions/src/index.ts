@@ -633,6 +633,8 @@ export {
   linkedinNightlySync,
   linkedinPublish,
   linkedinSyncNow,
+  linkedinVideoPart,
+  linkedinVideoStart,
 } from "./linkedin";
 
 // ── TwentyThree ────────────────────────────────────────────────────────
