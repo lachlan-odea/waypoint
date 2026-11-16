@@ -27,6 +27,7 @@ import {
   linkedInErrorMessage,
   linkedInFileType,
   linkedInPublish,
+  linkedInReleasePost,
   pageForChannel,
   type LinkedInData,
 } from "../linkedin";
@@ -123,6 +124,11 @@ export function SocialPostModal({
   const [confirmingPublish, setConfirmingPublish] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishStage, setPublishStage] = useState<LinkedInPublishProgress | null>(null);
+  // Republishing a post that was deleted on LinkedIn: whether LinkedIn has
+  // confirmed it's gone, the check in flight, and what it said if not.
+  const [released, setReleased] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const [releaseNote, setReleaseNote] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   // A new post needs one id for both the publish call and the save after it.
@@ -193,11 +199,11 @@ export function SocialPostModal({
       postUrl: trimmedUrl || undefined,
       projectId: projectId || undefined,
       bigRockIds: bigRockIds.length ? bigRockIds : undefined,
-      publishedAt: initial.publishedAt,
+      publishedAt: released ? undefined : initial.publishedAt,
       // Set by the LinkedIn functions; carried through so a save doesn't
-      // drop them.
-      linkedinUrn: initial.linkedinUrn,
-      linkedinOrgId: initial.linkedinOrgId,
+      // drop them. Gone once the post has been released for republishing.
+      linkedinUrn: released ? undefined : initial.linkedinUrn,
+      linkedinOrgId: released ? undefined : initial.linkedinOrgId,
       createdAt: initial.createdAt ?? new Date().toISOString(),
       source: initial.source ?? "manual",
       ...overrides,
@@ -252,12 +258,39 @@ export function SocialPostModal({
     ? linkedIn.status?.organizations?.find((o) => o.id === page.orgId)
     : undefined;
   const connected = linkedIn.status?.connected === true;
-  const alreadyLive = !!initial.linkedinUrn;
+  const alreadyLive = !!initial.linkedinUrn && !released;
   const pageName = org?.name ?? channel.trim();
   const memberName = linkedIn.status?.memberName ?? "The connected account";
-  const liveStats = initial.linkedinUrn
-    ? linkedIn.stats.find((s) => s.urn === initial.linkedinUrn)
-    : linkedIn.stats.find((s) => s.postId === postId);
+  const liveStats = released
+    ? undefined
+    : initial.linkedinUrn
+      ? linkedIn.stats.find((s) => s.urn === initial.linkedinUrn)
+      : linkedIn.stats.find((s) => s.postId === postId);
+
+  // The post was deleted on LinkedIn and should go out again. LinkedIn is
+  // asked first; only if it confirms the post is gone does the editor drop
+  // back to its unpublished state, with the Publish button available.
+  async function checkDeleted() {
+    setReleasing(true);
+    setReleaseNote(null);
+    try {
+      if (await linkedInReleasePost(postId)) {
+        setReleased(true);
+        setPostUrl("");
+        if (status === "published") setStatus("pending");
+        setConfirmingPublish(false);
+        setPublishError(null);
+      } else {
+        setReleaseNote(
+          "LinkedIn still has this post on the page. Delete it there first, then check again.",
+        );
+      }
+    } catch (err) {
+      setReleaseNote(linkedInErrorMessage(err));
+    } finally {
+      setReleasing(false);
+    }
+  }
   const fileIsImage = !!file && linkedInFileType(file).startsWith("image/");
   const linkCard = !file && isUrl(ctaLink);
   const copyLength = copy.trim().length;
@@ -615,7 +648,28 @@ export function SocialPostModal({
                   : ""}
                 . Edits here don't change the live post.
               </p>
-            ) : connected && isSuperUser ? (
+            ) : null}
+            {alreadyLive && connected && isSuperUser && (
+              <div className="soc-publish-actions">
+                <button type="button" className="btn-mini" onClick={checkDeleted} disabled={releasing}>
+                  {releasing ? "Checking LinkedIn…" : "Deleted it on LinkedIn? Publish again"}
+                </button>
+                <span className="field-hint">
+                  Checks the post is gone from the page, then lets you publish it again from here.
+                </span>
+              </div>
+            )}
+            {alreadyLive && releaseNote && (
+              <p className="soc-publish-error" role="alert">
+                {releaseNote}
+              </p>
+            )}
+            {released && (
+              <p className="soc-publish-note">
+                LinkedIn confirms the post is gone. It's back to Ready and can be published again.
+              </p>
+            )}
+            {alreadyLive ? null : connected && isSuperUser ? (
               <div className="soc-direct">
                 <div className="soc-direct-file">
                   <input
@@ -799,7 +853,7 @@ export function SocialPostModal({
                 </a>
               )}
             </label>
-            {initial.publishedAt && !alreadyLive && (
+            {initial.publishedAt && !alreadyLive && !released && (
               <p className="field-hint">
                 Marked published{" "}
                 {new Date(initial.publishedAt).toLocaleString(undefined, {
