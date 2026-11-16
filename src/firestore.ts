@@ -35,6 +35,7 @@ import type {
   SocialPost,
   Speaker,
   Suggestion,
+  Tool,
   Workspace,
   WorkspaceData,
 } from "./types";
@@ -51,6 +52,7 @@ const campaignsCol = () => collection(db, "campaigns");
 const eventsCol = () => collection(db, "events");
 const speakersCol = () => collection(db, "speakers");
 const bigRocksCol = () => collection(db, "bigRocks");
+const toolsCol = () => collection(db, "tools");
 
 // Backfill missing workspaceId on legacy docs that predate the multi-
 // workspace feature. They all belonged to the original Design workspace.
@@ -886,6 +888,30 @@ export async function setSpeaker(speaker: Speaker): Promise<void> {
 
 export async function deleteSpeaker(id: string): Promise<void> {
   await deleteDoc(doc(speakersCol(), id));
+}
+
+// ── Tools ──────────────────────────────────────────────────────────────
+// The team's shared shortcuts (Tool in types.ts). A small shared list every
+// signed-in user reads and can add to, so one subscription, the same model
+// as speakers.
+
+export function subscribeTools(
+  onChange: (tools: Tool[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    toolsCol(),
+    (snap) => onChange(snap.docs.map((d) => d.data() as Tool)),
+    onError,
+  );
+}
+
+export async function setTool(tool: Tool): Promise<void> {
+  await setDoc(doc(toolsCol(), tool.id), tool);
+}
+
+export async function deleteTool(id: string): Promise<void> {
+  await deleteDoc(doc(toolsCol(), id));
 }
 
 // ── Big Rocks ──────────────────────────────────────────────────────────

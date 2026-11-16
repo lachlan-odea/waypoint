@@ -15,6 +15,7 @@ import type {
   ProjectStatus,
   SocialConfig,
   SocialPost,
+  Tool,
   WorkspaceData,
 } from "./types";
 import { auth, observeAuth, signOut as fbSignOut } from "./firebase";
@@ -69,6 +70,9 @@ import {
   subscribeCampaigns,
   subscribeBigRocks,
   saveBigRocks as firestoreSaveBigRocks,
+  subscribeTools,
+  setTool as firestoreSetTool,
+  deleteTool as firestoreDeleteTool,
   subscribeSuggestions,
   createSuggestion as firestoreCreateSuggestion,
   updateSuggestion as firestoreUpdateSuggestion,
@@ -94,6 +98,7 @@ import { Dashboard } from "./components/Dashboard";
 import { BigRocksView } from "./components/BigRocksView";
 import { ManageBigRocksModal } from "./components/ManageBigRocksModal";
 import { MyDesk } from "./components/MyDesk";
+import { ToolsView } from "./components/ToolsView";
 import { SocialCalendar } from "./components/SocialCalendar";
 import { CampaignsView } from "./components/CampaignsView";
 import { CampaignsPanel } from "./components/CampaignsPanel";
@@ -396,6 +401,15 @@ export default function App() {
   }, [sessionDesignerId]);
   // The editor, from the Big Rocks page's Manage button (Settings has its own).
   const [manageRocksOpen, setManageRocksOpen] = useState(false);
+
+  // The team's shared Tools (shortcuts shown as tiles on the Tools page).
+  const [tools, setTools] = useState<Tool[]>([]);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeTools(setTools, (err) => {
+      console.warn("Couldn't load the tools", err);
+    });
+  }, [sessionDesignerId]);
 
   // Live event requests sent in by the form on SharePoint, and the form's
   // own settings, for the Video board's panel. A missing rule (the
@@ -1442,12 +1456,18 @@ export default function App() {
           projects={workspace.projects}
           campaigns={campaigns}
           events={events}
+          tools={tools}
           workspaces={availableWorkspaces}
           onOpenProject={openProject}
           onOpenCampaign={openCampaign}
           onOpenEvent={openEvent}
           onOpenNotifications={() => {
             setNotificationsOpen(true);
+            setNavOpen(false);
+          }}
+          onOpenAnalytics={() => {
+            closeItem();
+            setView("analytics");
             setNavOpen(false);
           }}
           onOpenSettings={() => {
@@ -1572,6 +1592,8 @@ export default function App() {
             <h1 className="page-title">
               {view === "analytics" ? (
                 "Analytics"
+              ) : view === "tools" ? (
+                "Tools"
               ) : view === "archived" ? (
                 "Archived projects"
               ) : view === "executiveDashboard" ? (
@@ -1597,6 +1619,8 @@ export default function App() {
             <p className="muted small">
               {view === "analytics"
                 ? "Projects, the Social calendar and campaigns — filter by team and date range below"
+                : view === "tools"
+                  ? `${tools.length} shared tool${tools.length === 1 ? "" : "s"} · anyone can add one`
                 : view === "archived"
                   ? `${archivedProjects.length} archived project${archivedProjects.length === 1 ? "" : "s"} · ${
                       archiveTeamFilter === ARCHIVE_ALL_TEAMS
@@ -1642,6 +1666,14 @@ export default function App() {
             socialPosts={socialPostsForUsage}
             socialCategories={socialConfig.categories}
             campaigns={campaigns}
+          />
+        ) : view === "tools" ? (
+          <ToolsView
+            tools={tools}
+            currentDesignerId={currentDesigner.id}
+            currentDesignerName={currentDesigner.name}
+            onSave={(tool) => firestoreSetTool(tool).catch(writeError)}
+            onDelete={(id) => firestoreDeleteTool(id).catch(writeError)}
           />
         ) : view === "archived" ? (
           <section className="workspace-section archived-section">

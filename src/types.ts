@@ -888,6 +888,30 @@ export type ItineraryTravel = {
 export type SuggestionKind = "feature" | "improvement" | "bug";
 export type SuggestionStatus = "new" | "planned" | "done" | "declined";
 
+// ── Tools ──────────────────────────────────────────────────────────────
+// A shared shortcut to something the whole team uses — a brand portal, an
+// asset library, an internal app, a calculator. Anyone signed in can add
+// one; they show as tiles on the Tools page and open in a new tab. Stored
+// in /tools, shared by everyone, the same any-signed-in-user model as
+// speakers.
+export type Tool = {
+  id: string;
+  // What the tile is called.
+  name: string;
+  // Where it opens. A scheme is added on save if one is missing.
+  url: string;
+  // A line on what it's for, shown under the name. May be empty.
+  description?: string;
+  // The tile's glyph and its colour (an Icon name + tone). Default to the
+  // link glyph on a sky tile when unset.
+  icon?: import("./components/Icon").IconName;
+  tone?: import("./components/Icon").IconTone;
+  // Who added it, for the tile's footer.
+  createdById?: string;
+  createdByName?: string;
+  createdAt: string;
+};
+
 export type Suggestion = {
   id: string;
   kind: SuggestionKind;
