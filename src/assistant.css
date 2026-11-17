@@ -1,7 +1,9 @@
 /* The assistant panel (components/AssistantPanel.tsx): docked to the right
-   edge over the page, without a scrim, so the page behind stays usable
-   while a question is open. Design-system rules apply: one radius, borders
-   in place of shadows, the tokens from App.css. */
+   edge over the page. The page behind is dimmed but still usable while a
+   question is open. Design-system rules apply: one radius, borders
+   in place of shadows, the tokens from App.css.
+   It is set apart from the page it sits over by a WiseTech Blue header
+   band, an accent edge, and the dimming of the page behind it. */
 .assistant-panel {
   position: fixed;
   top: 0;
@@ -12,8 +14,40 @@
   display: flex;
   flex-direction: column;
   background: var(--surface);
-  border-left: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
   color: var(--text);
+  /* Closed: off the right edge. It slides in when opened and back out when
+     closed; visibility waits for the slide out to finish. */
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform var(--slide) var(--ease), visibility 0s linear var(--slide);
+  --slide: 260ms;
+}
+.assistant-panel.is-open {
+  transform: none;
+  visibility: visible;
+  transition: transform var(--slide) var(--ease);
+}
+
+/* The page behind, greyed a little while the panel is open. */
+.assistant-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 89;
+  background: rgba(14, 23, 38, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms var(--ease);
+}
+.assistant-scrim.is-open {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistant-panel,
+  .assistant-panel.is-open,
+  .assistant-scrim {
+    transition: none;
+  }
 }
 
 .assistant-head {
@@ -22,19 +56,46 @@
   justify-content: space-between;
   gap: 10px;
   padding: 14px 14px 14px 18px;
-  border-bottom: 1px solid var(--border);
+  background: var(--wtg-blue);
+  color: var(--wtg-white);
 }
 .assistant-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--accent);
+  color: var(--wtg-periwinkle);
 }
 .assistant-title h2 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--wtg-white);
+}
+/* The band's buttons: white on blue in both themes. */
+.assistant-head .icon-btn {
+  color: var(--wtg-white);
+}
+.assistant-head .icon-btn:hover,
+.assistant-head .icon-btn[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--wtg-white);
+}
+.assistant-head .btn-secondary,
+:root.dark-mode .assistant-head .btn-secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.45);
+  color: var(--wtg-white);
+}
+.assistant-head .btn-secondary:hover:not(:disabled),
+:root.dark-mode .assistant-head .btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--wtg-white);
+  color: var(--wtg-white);
+}
+.assistant-head button:focus-visible {
+  outline: 2px solid var(--wtg-white);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 .assistant-head-actions {
   display: flex;
@@ -185,10 +246,15 @@
   padding: 12px 14px 6px;
   border-top: 1px solid var(--border);
 }
+/* Two lines to start; it grows with what's typed (AssistantPanel sets the
+   height) up to about ten lines, then scrolls. */
 .assistant-input {
   flex: 1;
   min-width: 0;
   resize: none;
+  box-sizing: border-box;
+  max-height: 220px;
+  overflow-y: auto;
   padding: 8px 10px;
   font-size: 14px;
   line-height: 1.4;
@@ -207,46 +273,72 @@
   padding: 0 14px 10px;
 }
 
-/* The header button that opens the panel: the sparkle and "Ask AI", both in
-   CargoWise Blue (Cobalt; Violet on dark surfaces, where Cobalt doesn't
-   read). The auto margins centre it in the space between the search and
-   the account controls. */
-.assistant-toggle {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  margin: 0 auto;
-  padding: 0 14px;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--accent);
-  background: transparent;
+/* The button that opens the panel: a Cobalt circle (WiseTech Blue on hover) with the
+   sparkle, fixed to the bottom-right corner of every page, with a soft
+   Cobalt glow around it: the one place Waypoint uses one, asked for so
+   the way in to the assistant catches the eye. On dark surfaces a Violet
+   ring keeps the blue from sinking into the page. It shrinks away while
+   the panel is open. */
+.assistant-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 88;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--wtg-white);
+  background: var(--wtg-cobalt);
   border: 1px solid transparent;
-  border-radius: var(--radius);
+  border-radius: 50%;
+  box-shadow: var(--fab-glow);
   cursor: pointer;
-  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  --fab-glow: 0 0 22px 2px rgba(55, 30, 225, 0.42);
+  transition:
+    background var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    transform var(--dur) var(--ease),
+    opacity var(--dur) var(--ease),
+    visibility 0s;
 }
-.assistant-toggle:hover,
-.assistant-toggle[aria-pressed="true"] {
-  background: var(--accent-wash);
+.assistant-fab:hover {
+  background: var(--wtg-blue);
+  transform: scale(1.06);
+  --fab-glow: 0 0 28px 4px rgba(55, 30, 225, 0.5);
 }
-.assistant-toggle[aria-pressed="true"] {
-  border-color: var(--accent);
-}
-.assistant-toggle:focus-visible {
+.assistant-fab:focus-visible {
   outline: none;
-  box-shadow: var(--focus-ring);
+  box-shadow: var(--focus-ring), var(--fab-glow);
 }
-/* Phones: the header's top row is tight, so it sits with the account
-   controls instead of being centred. */
+:root.dark-mode .assistant-fab {
+  border-color: var(--wtg-periwinkle);
+  --fab-glow: 0 0 22px 2px rgba(183, 179, 255, 0.35);
+}
+.assistant-fab.is-hidden {
+  opacity: 0;
+  transform: scale(0.6);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform var(--dur) var(--ease),
+    opacity var(--dur) var(--ease),
+    visibility 0s linear var(--dur);
+}
 @media (max-width: 720px) {
-  .assistant-toggle {
-    margin: 0 0 0 auto;
-    padding: 0 10px;
+  .assistant-fab {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistant-fab,
+  .assistant-fab.is-hidden {
+    transition: none;
+  }
+  .assistant-fab:hover {
+    transform: none;
   }
 }
 

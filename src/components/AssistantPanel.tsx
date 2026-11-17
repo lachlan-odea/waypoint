@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   AssistantError,
   askAssistant,
@@ -15,6 +15,8 @@ import "../assistant.css";
 
 type Props = {
   open: boolean;
+  // The round button in the corner was clicked.
+  onOpen: () => void;
   // What the assistant can look things up in: the app's data as it stands.
   data: Omit<ActionContext, "today">;
   // Make a change the person has approved. Returns where the changed thing
@@ -56,6 +58,7 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
 // picks up where it left off; it is not saved anywhere.
 export function AssistantPanel({
   open,
+  onOpen,
   data,
   onApplyAction,
   connection,
@@ -84,6 +87,41 @@ export function AssistantPanel({
   useEffect(() => {
     if (open && !showSetup) input.current?.focus();
   }, [open, showSetup]);
+
+  // Ctrl+Shift+Space opens the panel from anywhere in the app, and closes
+  // it again (Cmd on a Mac).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || !e.shiftKey || !(e.ctrlKey || e.metaKey) || e.altKey || e.repeat) return;
+      e.preventDefault();
+      if (open) onClose();
+      else onOpen();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onOpen, onClose]);
+
+  // Escape closes the panel wherever the keyboard is. While a window is
+  // open on the page, Escape belongs to that window, so the panel stays.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (document.querySelector(".modal-overlay")) return;
+      onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  // The question box is as tall as what's in it: two lines when empty,
+  // growing as the person types, up to the max-height in assistant.css.
+  useLayoutEffect(() => {
+    const el = input.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
+  }, [draft, open, showSetup, connection]);
 
   // Keep the newest text in view as it arrives.
   useEffect(() => {
@@ -166,22 +204,37 @@ export function AssistantPanel({
     input.current?.focus();
   }
 
-  if (!open) return null;
-
   const empty = messages.length === 0;
   const firstName = data.me.name.trim().split(/\s+/)[0] || "there";
   const page = data.page;
   const suggestions = (page && PAGE_SUGGESTIONS[page.kind]) ?? SUGGESTIONS;
 
+  // Always rendered, so it can slide in and out: closed, it sits off the
+  // right edge, hidden and inert.
   return (
+    <>
+    {/* Dims the page to bring the panel forward. It doesn't take clicks,
+        so the page stays usable while a question is open. */}
+    <div className={`assistant-scrim${open ? " is-open" : ""}`} aria-hidden="true" />
+    {/* The way in: a round button in the bottom-right corner of every
+        page. It steps aside while the panel, which covers that corner and
+        has its own close button, is open. */}
+    <button
+      type="button"
+      className={`assistant-fab${open ? " is-hidden" : ""}`}
+      onClick={onOpen}
+      aria-label="Ask AI"
+      aria-keyshortcuts="Control+Shift+Space"
+      title="Ask AI (Ctrl+Shift+Space)"
+      tabIndex={open ? -1 : 0}
+      aria-hidden={open}
+    >
+      <Icon name="sparkles" size={26} />
+    </button>
     <aside
-      className="assistant-panel"
+      className={`assistant-panel${open ? " is-open" : ""}`}
       aria-label="Waypoint assistant"
-      // Escape closes the panel only while the keyboard is in it, so it
-      // doesn't also close when Escape dismisses a window on the page.
-      onKeyDown={(e) => {
-        if (e.key === "Escape") onClose();
-      }}
+      inert={!open}
     >
       <header className="assistant-head">
         <div className="assistant-title">
@@ -339,6 +392,7 @@ export function AssistantPanel({
         </>
       )}
     </aside>
+    </>
   );
 }
 
