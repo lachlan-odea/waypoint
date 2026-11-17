@@ -158,7 +158,7 @@ export function AssistantPanel({
       ]);
     } catch (err) {
       if (generation.current !== mine) return;
-      setError(err instanceof AssistantError ? err : new AssistantError("other", "The assistant couldn't answer that. Try again."));
+      setError(err instanceof AssistantError ? err : new AssistantError("other", "Lachy 2.0 couldn't answer that. Try again."));
     } finally {
       if (generation.current === mine) {
         setPending(null);
@@ -223,9 +223,9 @@ export function AssistantPanel({
       type="button"
       className={`assistant-fab${open ? " is-hidden" : ""}`}
       onClick={onOpen}
-      aria-label="Ask AI"
+      aria-label="Lachy 2.0"
       aria-keyshortcuts="Control+Shift+Space"
-      title="Ask AI (Ctrl+Shift+Space)"
+      title="Lachy 2.0 (Ctrl+Shift+Space)"
       tabIndex={open ? -1 : 0}
       aria-hidden={open}
     >
@@ -233,13 +233,13 @@ export function AssistantPanel({
     </button>
     <aside
       className={`assistant-panel${open ? " is-open" : ""}`}
-      aria-label="Waypoint assistant"
+      aria-label="Lachy 2.0"
       inert={!open}
     >
       <header className="assistant-head">
         <div className="assistant-title">
           <Icon name="sparkles" size={18} />
-          <h2>Ask AI</h2>
+          <h2>Lachy 2.0</h2>
         </div>
         <div className="assistant-head-actions">
           {!showSetup && !empty && (
@@ -252,14 +252,14 @@ export function AssistantPanel({
               type="button"
               className="icon-btn"
               onClick={() => setConnecting((c) => !c)}
-              aria-label="Assistant connection"
+              aria-label="Lachy 2.0 connection"
               title="Connection"
               aria-pressed={connecting}
             >
               <Icon name="settings" size={16} />
             </button>
           )}
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close the assistant">
+          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close Lachy 2.0">
             <Icon name="close" size={16} />
           </button>
         </div>
@@ -282,7 +282,7 @@ export function AssistantPanel({
       ) : !connection ? (
         <div className="assistant-scroll">
           <div className="assistant-empty">
-            <p className="assistant-hello">The assistant isn't set up yet</p>
+            <p className="assistant-hello">Lachy 2.0 isn't set up yet</p>
             <p className="muted small">
               A super user needs to connect it once. After that it's ready for everyone, with nothing to
               enter.
@@ -354,7 +354,7 @@ export function AssistantPanel({
           </div>
 
           {page && page.kind !== "list" && (
-            <p className="assistant-context small" title={`The assistant can see you have this ${page.kind} open`}>
+            <p className="assistant-context small" title={`Lachy 2.0 can see you have this ${page.kind} open`}>
               <span className="muted">Looking at</span> <b>{page.title}</b>
             </p>
           )}
@@ -526,9 +526,9 @@ function ConnectionForm({
   return (
     <div className="assistant-scroll">
       <form className="assistant-setup" onSubmit={check}>
-        <p className="assistant-hello">Connect the assistant</p>
+        <p className="assistant-hello">Connect Lachy 2.0</p>
         <p className="muted small">
-          The assistant runs on the company's LLM gateway, which only answers on the company network (the
+          Lachy 2.0 runs on the company's LLM gateway, which only answers on the company network (the
           office or the VPN). Enter the gateway's address and the team's shared key once, and the
           assistant is ready for everyone on Waypoint. They're saved in Waypoint's settings, not in the
           code.
