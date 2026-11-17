@@ -2690,7 +2690,9 @@ a.share-btn {
 .field select,
 .field textarea,
 .modal-section textarea,
-.row input {
+.row input,
+.li-add input,
+.li-add select {
   width: 100%;
   border: 1px solid var(--ink-200);
   border-radius: var(--radius);
@@ -6787,15 +6789,14 @@ a.button-link:hover {
 }
 
 /* Settings page (App's "settings" view). Two groups — Your account, then
-   Workspace admin for super users — each a run of cards that flow into two
-   columns on a wide screen and one on a narrow one. Columns rather than a
+   Workspace admin for super users — each a run of cards that flow into up
+   to three columns across the full width, down to one on a narrow screen. Columns rather than a
    grid so a tall card (Outlook add-in, LinkedIn) doesn't leave a hole
    beside a short one. */
 .settings-page {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  max-width: 1200px;
 }
 .settings-group-title {
   margin: 0 0 14px;
@@ -6808,7 +6809,7 @@ a.button-link:hover {
   margin: -10px 0 14px;
 }
 .settings-cards {
-  columns: 2 380px;
+  columns: 3 380px;
   column-gap: 16px;
 }
 .settings-cards > .modal-section {
@@ -8672,6 +8673,8 @@ a.button-link:hover {
 .field textarea,
 .modal-section textarea,
 .row input,
+.li-add input,
+.li-add select,
 .soc-search,
 .pin-input,
 .auth-form input,
@@ -8701,6 +8704,8 @@ a.button-link:hover {
 .field textarea:focus,
 .modal-section textarea:focus,
 .row input:focus,
+.li-add input:focus,
+.li-add select:focus,
 .soc-search:focus,
 .pin-input:focus,
 .auth-form input:focus,
@@ -10902,7 +10907,13 @@ a.button-link:hover {
 .li-add input,
 .li-add select {
   flex: 1 1 160px;
+  width: auto;
   min-width: 0;
+}
+/* Match the inputs beside it. */
+.li-add .btn-mini {
+  min-height: 36px;
+  padding-inline: 14px;
 }
 
 /* LinkedIn on the Executive Dashboard and Analytics. */
