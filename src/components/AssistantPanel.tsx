@@ -94,7 +94,7 @@ export function AssistantPanel({
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (document.querySelector('.modal-overlay, [role="dialog"]')) return;
+      if (document.querySelector(".modal-overlay")) return;
       onClose();
     };
     window.addEventListener("keydown", onKey);
