@@ -15,6 +15,7 @@ import {
 import { auth, db } from "./firebase";
 import { DEFAULT_WORKSPACE_ID, SEED_HUBS, SEED_WORKSPACES } from "./constants";
 import type {
+  AccessRequest,
   ActivityShare,
   BigRock,
   Campaign,
@@ -168,33 +169,40 @@ export function subscribeWorkspace(
   };
 }
 
-// One-shot read used by the sign-up "claim existing profile" picker. Must be
-// callable without auth, so /designers needs public read in firestore.rules.
-export async function loadDesignerProfiles(): Promise<Designer[]> {
-  const snap = await getDocs(designersCol());
-  return snap.docs.map((d) => d.data() as Designer);
+// Whether this account is a member: it has a /designers profile at its UID.
+// That profile is what Firestore rules check before letting anyone read or
+// write (see isMember() in firestore.rules), and a person may always read
+// their own. Live, so approval lets someone in without a reload and removing
+// their profile shows them the access screen again.
+//
+// The first snapshot can come from the offline cache, which on a new device
+// knows nothing; a "missing" answer from the cache is held back until the
+// server confirms it, so a member isn't flashed the access screen.
+export function watchMembership(
+  uid: string,
+  onChange: (isMember: boolean) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    doc(designersCol(), uid),
+    { includeMetadataChanges: true },
+    (snap) => {
+      if (!snap.exists() && snap.metadata.fromCache) return;
+      onChange(snap.exists());
+    },
+    onError,
+  );
 }
 
-export async function loadDesigner(id: string): Promise<Designer | null> {
-  const snap = await getDoc(doc(designersCol(), id));
-  if (!snap.exists()) return null;
-  return snap.data() as Designer;
-}
-
-// Create a brand-new Designer document for a freshly signed-up user.
-// `id` is the Firebase Auth UID; we pick a friendly color from a palette
-// based on the index of the existing designer count.
 // Steps of the CargoWise palette, each dark enough to carry white text.
 const COLOR_PALETTE = [
   "#371ee1", "#6a5cd8", "#244349", "#a3294d", "#b4501f",
   "#2f6fb0", "#1f7a4d", "#1d1765", "#6b7a12", "#c2335f",
 ];
 
-export async function createDesignerProfile(
-  id: string,
-  name: string,
-  email: string,
-): Promise<Designer> {
+// A new Designer document for an approved user. `id` is their Firebase Auth
+// UID; the colour comes from the palette by how many designers there are.
+async function newDesignerProfile(id: string, name: string, email: string): Promise<Designer> {
   const trimmed = name.trim();
   const initials = trimmed
     .split(/\s+/)
@@ -204,22 +212,20 @@ export async function createDesignerProfile(
     .toUpperCase();
   const existing = await getDocs(designersCol());
   const color = COLOR_PALETTE[existing.size % COLOR_PALETTE.length];
-  const designer: Designer = {
+  return {
     id,
     name: trimmed,
     initials: initials || "??",
     color,
     email,
   };
-  await setDoc(doc(designersCol(), id), designer);
-  return designer;
 }
 
 // Admin-created placeholder designer. Lives in /designers under a
 // "placeholder-…" id so the person shows up in pickers / team rosters
-// immediately. When the real user signs up, they pick this profile from
-// the claim picker on the Login screen and claimDesignerProfile re-keys
-// the doc + every reference to their Firebase UID.
+// immediately. When the real person requests access, the super user who
+// approves it links the request to this profile, and stageProfileClaim
+// re-keys the doc + every reference to their Firebase UID.
 export async function createPlaceholderDesigner(
   name: string,
   email?: string,
@@ -254,13 +260,16 @@ export async function deleteDesigner(id: string): Promise<void> {
   await deleteDoc(doc(designersCol(), id));
 }
 
-// Atomically claim an existing seed designer profile (e.g. d-jess) for a
-// freshly signed-up Firebase user. Creates a new designer doc at the user's
-// UID with the legacy doc's name/initials/color, rewrites every project's
-// assigneeIds and comment likes that reference the old ID, rewrites
-// notifications addressed to the old ID, and deletes the legacy doc — all
-// in a single batched write so partial failures are impossible.
-export async function claimDesignerProfile(
+// Stage, onto `batch`, handing an existing placeholder or seed designer
+// profile (e.g. placeholder-…, d-jess) to an approved user. Creates their
+// designer doc at their UID from the old one (name, colour, roles, hub, as
+// set up in advance), rewrites every project's assigneeIds and comment
+// likes, every team's member list and every notification that reference
+// the old ID, and deletes the old doc. Run by a super user, since only
+// they may create designer profiles; nothing is written until the caller
+// commits, so a failure leaves everything as it was.
+async function stageProfileClaim(
+  batch: ReturnType<typeof writeBatch>,
   oldId: string,
   newId: string,
   email: string,
@@ -270,32 +279,27 @@ export async function claimDesignerProfile(
     throw new Error(`Designer profile "${oldId}" no longer exists.`);
   }
   const legacy = legacySnap.data() as Designer;
-  const next: Designer = {
-    id: newId,
-    name: legacy.name,
-    initials: legacy.initials,
-    color: legacy.color,
-    email,
-  };
-  const [projectsSnap, notificationsSnap] = await Promise.all([
+  const next: Designer = { ...legacy, id: newId, email };
+  const [projectsSnap, confidentialSnap, workspacesSnap, notificationsSnap] = await Promise.all([
     getDocs(projectsCol()),
+    getDocs(confidentialProjectsCol()),
+    getDocs(workspacesCol()),
     getDocs(notificationsCol()),
   ]);
 
-  const batch = writeBatch(db);
   batch.set(doc(designersCol(), newId), next);
 
-  projectsSnap.docs.forEach((d) => {
+  [...projectsSnap.docs, ...confidentialSnap.docs].forEach((d) => {
     const p = d.data() as Project;
     let touched = false;
-    const nextAssignees = p.assigneeIds.map((id) => {
-      if (id === oldId) {
-        touched = true;
-        return newId;
-      }
-      return id;
-    });
-    const nextComments = p.comments.map((c) => {
+    const swap = (id: string) => {
+      if (id !== oldId) return id;
+      touched = true;
+      return newId;
+    };
+    const nextAssignees = (p.assigneeIds ?? []).map(swap);
+    const nextReviewers = p.reviewerIds?.map(swap);
+    const nextComments = (p.comments ?? []).map((c) => {
       const likes = c.likes ?? [];
       if (!likes.includes(oldId)) return c;
       touched = true;
@@ -309,9 +313,17 @@ export async function claimDesignerProfile(
       // they've been "added" to every project they already had.
       batch.update(d.ref, {
         assigneeIds: nextAssignees,
+        ...(nextReviewers ? { reviewerIds: nextReviewers } : {}),
         comments: nextComments,
         updatedBy: newId,
       });
+    }
+  });
+
+  workspacesSnap.docs.forEach((d) => {
+    const memberIds = (d.data() as Workspace).memberIds;
+    if (memberIds?.includes(oldId)) {
+      batch.update(d.ref, { memberIds: memberIds.map((id) => (id === oldId ? newId : id)) });
     }
   });
 
@@ -323,8 +335,97 @@ export async function claimDesignerProfile(
   });
 
   batch.delete(doc(designersCol(), oldId));
-  await batch.commit();
   return next;
+}
+
+// ── Access requests ────────────────────────────────────────────────────
+// Someone without a profile asks to be let in; a super user decides. See
+// AccessRequest in types.ts and /accessRequests in firestore.rules.
+const accessRequestsCol = () => collection(db, "accessRequests");
+
+// The requester's own request, live, or null when they haven't sent one.
+export function watchOwnAccessRequest(
+  uid: string,
+  onChange: (request: AccessRequest | null) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    doc(accessRequestsCol(), uid),
+    (snap) =>
+      onChange(
+        snap.exists() ? { ...(snap.data() as Omit<AccessRequest, "id">), id: snap.id } : null,
+      ),
+    onError,
+  );
+}
+
+// Sent by the requester, from a verified address. The rules check the email
+// against their token and the allowed domain, so it can't be made up.
+export async function createAccessRequest(uid: string, name: string, email: string): Promise<void> {
+  const data: Omit<AccessRequest, "id"> = {
+    name: name.trim(),
+    email,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  };
+  await setDoc(doc(accessRequestsCol(), uid), data);
+}
+
+// Every request, for super users in Settings.
+export function subscribeAccessRequests(
+  onChange: (requests: AccessRequest[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    accessRequestsCol(),
+    (snap) =>
+      onChange(
+        snap.docs.map((d) => ({ ...(d.data() as Omit<AccessRequest, "id">), id: d.id })),
+      ),
+    onError,
+  );
+}
+
+type Decider = { id: string; name: string };
+
+// Lets the requester in: creates their designer profile (or hands them the
+// placeholder `linkProfileId`) and marks the request approved, in one
+// batch. The profile appearing is what opens the app on their screen.
+export async function approveAccessRequest(
+  request: AccessRequest,
+  decider: Decider,
+  linkProfileId?: string,
+): Promise<void> {
+  const batch = writeBatch(db);
+  if (linkProfileId) {
+    await stageProfileClaim(batch, linkProfileId, request.id, request.email);
+  } else {
+    const designer = await newDesignerProfile(request.id, request.name, request.email);
+    batch.set(doc(designersCol(), request.id), designer);
+  }
+  batch.update(doc(accessRequestsCol(), request.id), {
+    status: "approved",
+    decidedAt: new Date().toISOString(),
+    decidedById: decider.id,
+    decidedByName: decider.name,
+    ...(linkProfileId ? { linkedProfileId: linkProfileId } : {}),
+  });
+  await batch.commit();
+}
+
+// Declined requests are kept, so the person sees the answer rather than
+// being able to ask again straight away. Removing the request lets them.
+export async function declineAccessRequest(id: string, decider: Decider): Promise<void> {
+  await updateDoc(doc(accessRequestsCol(), id), {
+    status: "declined",
+    decidedAt: new Date().toISOString(),
+    decidedById: decider.id,
+    decidedByName: decider.name,
+  });
+}
+
+export async function deleteAccessRequest(id: string): Promise<void> {
+  await deleteDoc(doc(accessRequestsCol(), id));
 }
 
 // Every full save of a project, campaign or event carries the signed-in

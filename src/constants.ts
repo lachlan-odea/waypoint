@@ -46,6 +46,11 @@ export const SUPER_USER_EMAILS = [
   "lachlan.odea@wisetechglobal.com",
 ] as const;
 
+// Only addresses at this domain can request access. Firestore rules enforce
+// it on /accessRequests (keep the two in step); the app checks it early so
+// the person hears it before creating an account.
+export const ALLOWED_EMAIL_DOMAIN = "wisetechglobal.com";
+
 // Seed workspaces written into Firestore on first load. Once they exist
 // they're managed in the /workspaces collection; this list only acts as
 // the initial set. The first id is treated as the default workspace for

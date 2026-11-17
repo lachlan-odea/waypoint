@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import type { BigRock, Designer, Hub, SocialConfig, Suggestion, Workspace } from "../types";
+import type {
+  AccessRequest,
+  BigRock,
+  Designer,
+  Hub,
+  SocialConfig,
+  Suggestion,
+  Workspace,
+} from "../types";
+import { AccessRequestsModal } from "./AccessRequestsModal";
 import { changePassword } from "../firebase";
 import { Avatar } from "./Avatar";
 import { ManageSocialModal } from "./ManageSocialModal";
@@ -59,6 +68,14 @@ type Props = {
   onCreateSuggestion: (suggestion: Omit<Suggestion, "id">) => Promise<void>;
   onUpdateSuggestion: (id: string, patch: Partial<Omit<Suggestion, "id">>) => Promise<void>;
   onDeleteSuggestion: (id: string) => Promise<void>;
+  // Requests to join Waypoint. Deciding needs the stored super-user flag,
+  // which is what Firestore rules check (a bootstrap-email super user
+  // without it can't), so it's passed separately from isSuperUser.
+  canDecideAccess: boolean;
+  accessRequests: AccessRequest[];
+  onApproveAccessRequest: (request: AccessRequest, linkProfileId?: string) => Promise<void>;
+  onDeclineAccessRequest: (id: string) => Promise<void>;
+  onDeleteAccessRequest: (id: string) => Promise<void>;
   onSaveBigRocks: (rocks: BigRock[], removedIds: string[]) => Promise<void>;
   darkMode: boolean;
   onDarkModeChange: (enabled: boolean) => void;
@@ -119,6 +136,11 @@ export function SettingsModal({
   onCreateSuggestion,
   onUpdateSuggestion,
   onDeleteSuggestion,
+  canDecideAccess,
+  accessRequests,
+  onApproveAccessRequest,
+  onDeclineAccessRequest,
+  onDeleteAccessRequest,
   onSaveBigRocks,
   darkMode,
   onDarkModeChange,
@@ -147,18 +169,20 @@ export function SettingsModal({
   const [manageRocksOpen, setManageRocksOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [reviewSuggestionsOpen, setReviewSuggestionsOpen] = useState(false);
+  const [accessRequestsOpen, setAccessRequestsOpen] = useState(false);
   const openSuggestions = suggestions.filter(isOpenSuggestion).length;
+  const waitingRequests = accessRequests.filter((r) => r.status === "pending").length;
 
   useEffect(() => {
     // Suspend the Settings Escape handler while a sub-modal is up — that
     // modal owns Escape until it's closed.
-    if (manageUsersOpen || manageHubsOpen || manageSocialOpen || manageRocksOpen) return;
+    if (manageUsersOpen || manageHubsOpen || manageSocialOpen || manageRocksOpen || accessRequestsOpen) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, manageUsersOpen, manageHubsOpen, manageSocialOpen, manageRocksOpen]);
+  }, [onClose, manageUsersOpen, manageHubsOpen, manageSocialOpen, manageRocksOpen, accessRequestsOpen]);
 
   const myHub = hubs.find((h) => h.id === currentDesigner.hubId);
 
@@ -214,6 +238,29 @@ export function SettingsModal({
                   Manage users →
                 </button>
               </div>
+            </section>
+          )}
+
+          {isSuperUser && (
+            <section className="modal-section">
+              <h3>Access requests</h3>
+              <p className="muted small">
+                {!canDecideAccess
+                  ? "Deciding requests needs the Super user flag on your own profile. Turn it on in Manage users."
+                  : waitingRequests === 0
+                    ? "Nobody is waiting to join Waypoint."
+                    : `${waitingRequests} ${waitingRequests === 1 ? "person is" : "people are"} waiting to join Waypoint.`}
+              </p>
+              {canDecideAccess && (
+                <div className="section-actions">
+                  <button
+                    className={waitingRequests > 0 ? "primary" : ""}
+                    onClick={() => setAccessRequestsOpen(true)}
+                  >
+                    Review requests{waitingRequests > 0 ? ` (${waitingRequests})` : ""} →
+                  </button>
+                </div>
+              )}
             </section>
           )}
 
@@ -491,6 +538,17 @@ export function SettingsModal({
           onCreateDesigner={onCreateDesigner}
           onDeleteDesigner={onDeleteDesigner}
           onClose={() => setManageUsersOpen(false)}
+        />
+      )}
+
+      {accessRequestsOpen && (
+        <AccessRequestsModal
+          requests={accessRequests}
+          designers={designers}
+          onApprove={onApproveAccessRequest}
+          onDecline={onDeclineAccessRequest}
+          onDelete={onDeleteAccessRequest}
+          onClose={() => setAccessRequestsOpen(false)}
         />
       )}
 

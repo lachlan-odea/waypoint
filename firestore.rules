@@ -1,47 +1,88 @@
 rules_version = '2';
 
-// Paste these into the Firestore Rules tab of the Firebase console
-// (Build → Firestore Database → Rules). The designers collection is public
-// read so the unauthenticated sign-up screen can show the "claim existing
-// profile" picker; writes still require a signed-in user. All other
-// collections require sign-in for both read and write.
+// Deploy with `firebase deploy --only firestore:rules` (or paste into the
+// Firestore Rules tab of the Firebase console).
+//
+// Who gets in: anyone can create a Firebase Auth account with the public
+// web API key, so being signed in proves nothing. Access goes to members
+// only: a signed-in, non-anonymous account with a /designers profile at
+// its UID. Only a super user can create a profile, which they do by
+// approving an access request (/accessRequests below). Removing someone's
+// profile takes their access away. The token-gated public pages further
+// down (campaign, itinerary and activity pages, the live event form) are
+// the only things reachable without membership.
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isMember() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && exists(/databases/$(database)/documents/designers/$(request.auth.uid));
+    }
     // A super user: the isSuperUser flag stored on their own designer doc.
     // The app also treats SUPER_USER_EMAILS (src/constants.ts) as super
     // users, but the rules only trust the stored flag, so a bootstrap admin
-    // must have it set (Settings → Super users) to see confidential projects.
+    // must have it set (Settings → Super users) to see confidential projects
+    // or decide access requests.
     function isSuperUser() {
-      return request.auth != null
-        && exists(/databases/$(database)/documents/designers/$(request.auth.uid))
+      return isMember()
         && get(/databases/$(database)/documents/designers/$(request.auth.uid)).data.get("isSuperUser", false) == true;
     }
     // Who may see a confidential project: its assignees and super users.
     function canSeeConfidential(data) {
-      return request.auth != null
+      return isMember()
         && (request.auth.uid in data.assigneeIds || isSuperUser());
     }
 
-    // Super users can see every confidential project, so only a super user
-    // may grant or remove the flag; anyone signed in can still edit the
-    // rest of a profile (name, colour, photo, hub).
+    // Members read every profile; anyone signed in can read their own, so
+    // the app can tell whether they're in yet. Creating or deleting a
+    // profile grants or removes access, so only super users do either
+    // (approving a request, adding a placeholder, removing a user). Super
+    // users can see every confidential project, so only a super user may
+    // grant or remove the flag; any member can still edit the rest of a
+    // profile (name, colour, photo, hub).
     match /designers/{designerId} {
-      allow read: if true;
-      allow create: if request.auth != null
-        && (request.resource.data.get("isSuperUser", false) != true || isSuperUser());
-      allow update: if request.auth != null
+      allow get: if isMember()
+        || (request.auth != null && request.auth.uid == designerId);
+      allow list: if isMember();
+      allow create, delete: if isSuperUser();
+      allow update: if isMember()
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["isSuperUser"]) || isSuperUser());
-      allow delete: if request.auth != null;
+    }
+
+    // Requests to join Waypoint, one per account, at the account's UID. The
+    // requester can send one only from a verified email at the allowed
+    // domain (keep in step with ALLOWED_EMAIL_DOMAIN in src/constants.ts),
+    // naming the address on their token, as pending, with nothing else in
+    // it. They can read their own to see the answer, and can't change it;
+    // super users read them all and approve (with the profile, in the same
+    // batch), decline or remove them. A declined request stays, so the
+    // person can't simply ask again until a super user removes it.
+    match /accessRequests/{uid} {
+      allow get: if (request.auth != null && request.auth.uid == uid) || isSuperUser();
+      allow list, update, delete: if isSuperUser();
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower().matches('.+@wisetechglobal[.]com')
+        && request.resource.data.keys().hasOnly(['name', 'email', 'status', 'createdAt'])
+        && request.resource.data.email == request.auth.token.email.lower()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.createdAt is string
+        && request.resource.data.createdAt.size() <= 40;
     }
     match /workspaces/{workspaceId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // A confidential project never lives here: it's in
     // /confidentialProjects below, so a document flagged confidential can't
     // be written to the collection every signed-in user can read.
     match /projects/{projectId} {
-      allow read, delete: if request.auth != null;
-      allow create, update: if request.auth != null
+      allow read, delete: if isMember();
+      allow create, update: if isMember()
         && request.resource.data.get("confidential", false) != true;
     }
     // Confidential Comms projects: readable and writable only by their
@@ -58,33 +99,33 @@ service cloud.firestore {
         && request.resource.data.confidential == true;
     }
     match /notifications/{notificationId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // Office locations / time zones. Shared config every signed-in user
     // reads; writes are gated to super users by the Settings UI, the same
     // trust model as the isSuperUser flag on a designer doc.
     match /hubs/{hubId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // Social calendar posts. One shared plan for the whole team, so the same
     // any-signed-in-user model as projects.
     match /socialPosts/{postId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // Social calendar configuration (categories, company hashtags). A single
     // document, read by everyone; writes are gated to super users by the
     // Settings UI, like hubs.
     match /socialConfig/{docId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // Marketing campaigns shown above (and overlaid on) the Social calendar.
     match /campaigns/{campaignId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // Trade shows and conferences on the Events page. One shared list for
     // the events team, same any-signed-in-user model as campaigns.
     match /events/{eventId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // The one marketing-activity page for SharePoint: every campaign,
     // webinar and event as a single JSON string, readable by anyone with
@@ -93,12 +134,12 @@ service cloud.firestore {
     match /activityPages/{token} {
       allow get: if true;
       allow list: if false;
-      allow create, update: if request.auth != null
+      allow create, update: if isMember()
         && token.matches('^[0-9a-f]{32}$')
         && request.resource.data.keys().hasOnly(['json'])
         && request.resource.data.json is string
         && request.resource.data.json.size() < 950000;
-      allow delete: if request.auth != null;
+      allow delete: if isMember();
 
       // Deliverables other teams add to a campaign on the page, without
       // signing in. The same anyone-with-the-token model as an itinerary's
@@ -173,23 +214,23 @@ service cloud.firestore {
     // App-wide settings documents, such as the activity page's token and
     // SharePoint link. Signed-in users only.
     match /settings/{settingId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // The webinar speaker directory, shared by every signed-in user.
     match /speakers/{speakerId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // The marketing team's Big Rocks (strategic priorities). Read by every
     // signed-in user; written from Settings by super users, gated in the
     // UI like the other shared configuration.
     match /bigRocks/{rockId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // The team's shared Tools (shortcuts shown as tiles on the Tools page).
     // Read and added to by every signed-in user — anyone on the team can
     // add a tool that's useful for everyone.
     match /tools/{toolId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // Public copies of campaigns shared as a SharePoint page, keyed by the
     // campaign's random shareToken (see src/campaignExport.ts). The page is
@@ -200,12 +241,12 @@ service cloud.firestore {
     match /campaignPages/{token} {
       allow get: if true;
       allow list: if false;
-      allow create, update: if request.auth != null
+      allow create, update: if isMember()
         && token.matches('^[0-9a-f]{32}$')
         && request.resource.data.keys().hasOnly(['json'])
         && request.resource.data.json is string
         && request.resource.data.json.size() < 200000;
-      allow delete: if request.auth != null;
+      allow delete: if isMember();
     }
     // Public copies of event itineraries shared as a SharePoint page, keyed
     // by the event's itineraryShareToken (see src/itineraryExport.ts). The
@@ -213,12 +254,12 @@ service cloud.firestore {
     match /itineraryPages/{token} {
       allow get: if true;
       allow list: if false;
-      allow create, update: if request.auth != null
+      allow create, update: if isMember()
         && token.matches('^[0-9a-f]{32}$')
         && request.resource.data.keys().hasOnly(['json'])
         && request.resource.data.json is string
         && request.resource.data.json.size() < 200000;
-      allow delete: if request.auth != null;
+      allow delete: if isMember();
 
       // Additions readers of the page make to its days, without signing in.
       // Anyone holding the token can add one and read them all (the path
@@ -252,7 +293,7 @@ service cloud.firestore {
           && request.resource.data.createdAt is string
           && request.resource.data.createdAt.size() <= 40;
         allow update: if false;
-        allow delete: if request.auth != null;
+        allow delete: if isMember();
       }
 
       // Attendees' own travel and accommodation, entered on the page. The
@@ -296,8 +337,8 @@ service cloud.firestore {
     // pending. Nothing unauthenticated can read a request back; the Video
     // team reads, decides on and removes them from Waypoint.
     match /liveEventRequests/{requestId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
+      allow read: if isMember();
+      allow create: if isMember()
         || (request.resource.data.keys().hasOnly([
           'json', 'eventName', 'requesterName', 'requesterEmail', 'eventDate',
           'createdAt', 'status', 'intakeToken'
@@ -322,12 +363,12 @@ service cloud.firestore {
         && request.resource.data.eventDate.matches('^([0-9]{4}-[0-9]{2}-[0-9]{2})?$')
         && request.resource.data.createdAt is string
         && request.resource.data.createdAt.size() <= 40);
-      allow update, delete: if request.auth != null;
+      allow update, delete: if isMember();
     }
     // Periods the Live Events Team isn't taking bookings for, managed from
     // the Video board.
     match /liveEventBlackouts/{blackoutId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // What a copy of the request form reads back: the blackouts, kept
     // under the current intake token so only the form (which carries the
@@ -335,14 +376,14 @@ service cloud.firestore {
     // the token change.
     match /liveEventPublic/{token} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
     }
     // Feature ideas and bug reports from Settings → Suggest a feature
     // (src/components/SuggestFeatureModal.tsx). Any signed-in user sends
     // one; super users review, update and remove them, gated in the UI like
     // the other shared configuration.
     match /suggestions/{suggestionId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isMember();
     }
     // LinkedIn (functions/src/linkedin.ts). The connected account's token
     // lives in /linkedinPrivate and is only ever touched by the functions,
@@ -355,11 +396,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
     match /linkedin/{docId} {
-      allow read: if request.auth != null;
+      allow read: if isMember();
       allow write: if false;
     }
     match /linkedinPostStats/{statId} {
-      allow read: if request.auth != null;
+      allow read: if isMember();
       allow write: if false;
     }
     // My Desk checklist items are private to one person, so unlike the
@@ -368,14 +409,14 @@ service cloud.firestore {
     // client query already sends; writes check the ownerId on the document
     // itself (both the incoming one and, for deletes, the stored one).
     match /deskItems/{deskItemId} {
-      allow read: if request.auth != null
+      allow read: if isMember()
         && resource.data.ownerId == request.auth.uid;
-      allow create: if request.auth != null
+      allow create: if isMember()
         && request.resource.data.ownerId == request.auth.uid;
-      allow update: if request.auth != null
+      allow update: if isMember()
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == request.auth.uid;
-      allow delete: if request.auth != null
+      allow delete: if isMember()
         && resource.data.ownerId == request.auth.uid;
     }
   }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import type {
+  AccessRequest,
   BigRock,
   Campaign,
   ActivityShare,
@@ -18,7 +19,8 @@ import type {
   Tool,
   WorkspaceData,
 } from "./types";
-import { auth, observeAuth, signOut as fbSignOut } from "./firebase";
+import { observeAuth, signOut as fbSignOut } from "./firebase";
+import type { User } from "firebase/auth";
 import {
   deleteNotification as firestoreDeleteNotification,
   deleteNotificationsForRecipient as firestoreDeleteNotificationsForRecipient,
@@ -76,6 +78,11 @@ import {
   setTool as firestoreSetTool,
   deleteTool as firestoreDeleteTool,
   subscribeSuggestions,
+  watchMembership,
+  subscribeAccessRequests,
+  approveAccessRequest as firestoreApproveAccessRequest,
+  declineAccessRequest as firestoreDeclineAccessRequest,
+  deleteAccessRequest as firestoreDeleteAccessRequest,
   createSuggestion as firestoreCreateSuggestion,
   updateSuggestion as firestoreUpdateSuggestion,
   deleteSuggestion as firestoreDeleteSuggestion,
@@ -138,7 +145,7 @@ import { allSeries, kitOf } from "./webinarKit";
 const LAUNCH_REQUEST_ID = new URLSearchParams(window.location.search).get("request");
 import { NewWebinarModal } from "./components/webinar/NewWebinarModal";
 import { Icon } from "./components/Icon";
-import { ProfileSetup } from "./components/ProfileSetup";
+import { AccessPending } from "./components/AccessPending";
 import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
 import { contentTypesSearchText } from "./contentTypes";
@@ -318,19 +325,48 @@ export default function App() {
     document.documentElement.style.zoom = String(scale);
   }, [textSize]);
 
-  // Watch Firebase auth state. Sets the session designer id to the user's
-  // UID (which is also their Designer doc id) when signed in, or null when
-  // signed out. The Login screen calls signIn/signUp directly and the
-  // resulting auth change flows back through here.
+  // Watch Firebase auth state, then membership. A signed-in account is only
+  // let in once it has a Designer doc at its UID (what Firestore rules call
+  // a member, and only a super user can create one): then the session
+  // designer id is set to that UID. Anyone else signed in is held at the
+  // access request screen (accessUser). Signed out sets both to null. The
+  // Login screen calls signIn/signUp directly and the resulting auth change
+  // flows back through here. Membership is watched live, so approval opens
+  // the app and removing someone's profile closes it.
   //
   // Deploys never sign anyone out: the session lives in Firebase's local
   // persistence and survives the update reload. Anything that forces a
   // re-login should be a deliberate server-side action (revoking refresh
   // tokens), not a build.
+  const [accessUser, setAccessUser] = useState<User | null>(null);
   useEffect(() => {
-    return observeAuth((user) => {
-      setSessionDesignerId(user ? user.uid : null);
+    let unwatchMembership: (() => void) | null = null;
+    const unwatchAuth = observeAuth((user) => {
+      unwatchMembership?.();
+      unwatchMembership = null;
+      setAccessUser(null);
+      if (!user) {
+        setSessionDesignerId(null);
+        return;
+      }
+      setSessionDesignerId(undefined);
+      unwatchMembership = watchMembership(
+        user.uid,
+        (isMember) => {
+          setSessionDesignerId(isMember ? user.uid : null);
+          setAccessUser(isMember ? null : user);
+        },
+        (err) => {
+          console.error("Couldn't check Waypoint access", err);
+          setSessionDesignerId(null);
+          setAccessUser(user);
+        },
+      );
     });
+    return () => {
+      unwatchMembership?.();
+      unwatchAuth();
+    };
   }, []);
 
   // Make sure the seeded workspaces (Design / Video / Marketing) exist in
@@ -598,22 +634,6 @@ export default function App() {
     return counts;
   }, [socialPostsForUsage]);
 
-  // If the workspace loads and the signed-in user has no Designer doc, give
-  // signup a short grace period to finish writing the doc (race window
-  // between observeAuth and the claim/create batch). After that, surface a
-  // ProfileSetup recovery screen so an orphan account can be repaired.
-  const designerExists = !!workspace?.designers.some(
-    (d) => d.id === sessionDesignerId,
-  );
-  const [profileSetupNeeded, setProfileSetupNeeded] = useState(false);
-  useEffect(() => {
-    if (!sessionDesignerId || !workspace || designerExists) {
-      setProfileSetupNeeded(false);
-      return;
-    }
-    const timer = window.setTimeout(() => setProfileSetupNeeded(true), 3000);
-    return () => window.clearTimeout(timer);
-  }, [sessionDesignerId, workspace, designerExists]);
 
   // Auto-dismiss the move-project toast after a few seconds so it doesn't
   // linger. Clicking Undo dismisses earlier.
@@ -1008,6 +1028,21 @@ export default function App() {
       setSuggestions([]);
     };
   }, [sessionDesignerId, isSuperUser]);
+
+  // Requests to join Waypoint, decided by super users in Settings. Only
+  // super users may read them (firestore.rules), so only they subscribe.
+  // Gated on the stored flag the rules trust, like seesAllConfidential.
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  useEffect(() => {
+    if (!sessionDesignerId || !seesAllConfidential) return;
+    const unsubscribe = subscribeAccessRequests(setAccessRequests, (err) => {
+      console.warn("Couldn't load access requests", err);
+    });
+    return () => {
+      unsubscribe();
+      setAccessRequests([]);
+    };
+  }, [sessionDesignerId, seesAllConfidential]);
 
   const superUsers = useMemo(() => {
     if (!workspace) return [];
@@ -1541,21 +1576,17 @@ export default function App() {
     );
   }
 
+  // Signed in, but not (or no longer) a member.
+  if (!sessionDesignerId && accessUser) {
+    return <AccessPending user={accessUser} />;
+  }
+
   if (!sessionDesignerId) {
     return (
       <Login
         onSignedIn={() => {
           /* auth state listener does the rest */
         }}
-      />
-    );
-  }
-
-  if (profileSetupNeeded && workspace && !designerExists) {
-    return (
-      <ProfileSetup
-        uid={sessionDesignerId}
-        email={auth.currentUser?.email ?? ""}
       />
     );
   }
@@ -2501,6 +2532,19 @@ export default function App() {
           onCreateSuggestion={(s) => firestoreCreateSuggestion(s).then(() => {})}
           onUpdateSuggestion={firestoreUpdateSuggestion}
           onDeleteSuggestion={firestoreDeleteSuggestion}
+          canDecideAccess={seesAllConfidential}
+          accessRequests={accessRequests}
+          onApproveAccessRequest={(request, linkProfileId) =>
+            firestoreApproveAccessRequest(
+              request,
+              { id: currentDesigner.id, name: currentDesigner.name },
+              linkProfileId,
+            )
+          }
+          onDeclineAccessRequest={(id) =>
+            firestoreDeclineAccessRequest(id, { id: currentDesigner.id, name: currentDesigner.name })
+          }
+          onDeleteAccessRequest={firestoreDeleteAccessRequest}
           onSaveBigRocks={firestoreSaveBigRocks}
           darkMode={darkMode}
           onDarkModeChange={setDarkMode}

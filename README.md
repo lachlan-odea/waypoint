@@ -125,7 +125,15 @@ npm install
 npm run dev        # http://localhost:5173/waypoint/
 ```
 
-The Firebase web config in `src/firebase.ts` is a public project identifier, not a secret; access is gated by Firestore rules and sign-in. You sign in to the same project as production, so be deliberate about test data.
+The Firebase web config in `src/firebase.ts` is a public project identifier, not a secret; access is gated by Firestore rules and membership. You sign in to the same project as production, so be deliberate about test data.
+
+## Who can get in
+
+Anyone can create a Firebase account with the public API key, so an account alone opens nothing. Firestore rules (`isMember()` in `firestore.rules`) let in only a signed-in, non-anonymous account with a `/designers` profile at its UID, and only a super user can create or delete a profile.
+
+New people choose **Request access** on the sign-in page: name, @wisetechglobal.com email (`ALLOWED_EMAIL_DOMAIN` in `src/constants.ts`) and a password. Firebase sends a verification email, and the access screen (`src/components/AccessPending.tsx`) sends the request to `/accessRequests/{uid}` once the address is verified. The rules only take a request from a verified address at that domain whose email matches the account's. Super users are emailed (`notifyAccessRequest`) and decide in **Settings → Access requests**. Approving creates the person's profile, or hands them a placeholder made in Manage users along with its projects, teams and roles. The app is watching that profile, so it opens on its own and the person gets a "you're in" email (`notifyAccessApproved`). A declined request stays declined until a super user removes it. To take someone's access away, delete their profile in Manage users.
+
+Deciding requests needs the `isSuperUser` flag stored on your profile, because that is what the rules check. Being in `SUPER_USER_EMAILS` is not enough.
 
 ```bash
 npm run build      # tsc -b && vite build → dist/
@@ -229,6 +237,6 @@ It reads the per-event detail tables, turns the portal's date wordings into `sta
 
 - Work goes on a branch and through a pull request; nothing is pushed straight to `main`. Merging to `main` deploys.
 - Don't stack a PR on another open branch — if both merge together the second lands in the first's branch, not `main`.
-- Super-user gating is enforced in the UI, not in Firestore rules: any signed-in user can technically write most collections. That's the right trade for a small trusted team; tighten the rules before opening the app to anyone else.
+- Only approved members can read or write anything (see Who can get in). Beyond that, most super-user gating is enforced in the UI, not in Firestore rules: any member can technically write most collections. That's the right trade for a small trusted team; tighten the rules before opening the app to anyone else.
 - Stored values that are displayed differently (e.g. project status `paused` → "On hold") are rendered through helpers in `src/constants.ts`, never printed raw.
 - Dates are local calendar dates (`YYYY-MM-DD`) handled through `src/dates.ts`; timestamps are ISO strings.

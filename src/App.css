@@ -10548,6 +10548,25 @@ a.button-link:hover {
   }
 }
 
+/* Settings → Access requests reuses the suggestion rows: no kind badge,
+   and the summary is a heading, not a toggle. */
+.suggestion-summary.access-request-summary,
+.suggestion-summary.access-request-summary:hover {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title status"
+    "meta status";
+  background: none;
+  cursor: default;
+}
+.suggestion-status.access-status-pending {
+  background: var(--accent);
+  color: #fff;
+}
+.suggestion-status.access-status-approved {
+  color: var(--success, #067647);
+}
+
 /* ── LinkedIn: publishing, the Performance tab, Settings ───────────────── */
 
 /* Post editor → Publish: the direct route to the page. */

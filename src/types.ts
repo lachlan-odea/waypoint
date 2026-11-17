@@ -969,3 +969,26 @@ export type Suggestion = {
   notes?: string;
   updatedAt?: string;
 };
+
+// Someone asking to be let into Waypoint, stored at /accessRequests/{uid}.
+// Written by the requester once their email is verified (Firestore rules
+// check the address against the token and the allowed domain), decided by
+// a super user in Settings → Access requests. Approving creates their
+// /designers profile, which is what actually grants access.
+export type AccessRequestStatus = "pending" | "approved" | "declined";
+
+export type AccessRequest = {
+  // The requester's Firebase Auth UID, also the document id.
+  id: string;
+  name: string;
+  email: string;
+  status: AccessRequestStatus;
+  createdAt: string;
+  // Set when a super user decides.
+  decidedAt?: string;
+  decidedById?: string;
+  decidedByName?: string;
+  // The existing profile (a placeholder or seed designer) the account was
+  // linked to on approval, if any.
+  linkedProfileId?: string;
+};
