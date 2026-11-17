@@ -88,6 +88,19 @@ export function AssistantPanel({
     if (open && !showSetup) input.current?.focus();
   }, [open, showSetup]);
 
+  // Ctrl+Shift+Space opens the panel from anywhere in the app, and closes
+  // it again (Cmd on a Mac).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || !e.shiftKey || !(e.ctrlKey || e.metaKey) || e.altKey || e.repeat) return;
+      e.preventDefault();
+      if (open) onClose();
+      else onOpen();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onOpen, onClose]);
+
   // Escape closes the panel wherever the keyboard is. While a window is
   // open on the page, Escape belongs to that window, so the panel stays.
   useEffect(() => {
@@ -211,7 +224,8 @@ export function AssistantPanel({
       className={`assistant-fab${open ? " is-hidden" : ""}`}
       onClick={onOpen}
       aria-label="Ask AI"
-      title="Ask AI"
+      aria-keyshortcuts="Control+Shift+Space"
+      title="Ask AI (Ctrl+Shift+Space)"
       tabIndex={open ? -1 : 0}
       aria-hidden={open}
     >
