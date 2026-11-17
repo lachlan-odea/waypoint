@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   Campaign,
   DeskItem,
+  DeskOrder,
   Notification,
   Project,
   ProjectStatus,
@@ -23,6 +24,7 @@ import { DeskChecklist, KEEP_COMPLETED_DAYS } from "./DeskChecklist";
 import {
   applyDeskItemChanges,
   deleteDeskItem,
+  saveDeskOrder,
   setDeskItem,
   subscribeDeskItems,
 } from "../firestore";
@@ -40,7 +42,6 @@ import {
   ItemGrid,
   ItemPage,
   SideCard,
-  type StripCell,
 } from "./pages/ItemPage";
 
 interface MyDeskProps {
@@ -75,7 +76,7 @@ interface MyDeskProps {
 
 // The desk is built on the same shell as a project, campaign or event page
 // (ItemPage): a header band with the greeting, the next deadline and the
-// day's numbers; tabs; a strip of the week ahead; then the body. Overview
+// day's numbers; tabs; then the body. Overview
 // is the landing tab — what needs attention, with today's list and what
 // needs you down the side — and the rest is one tab each.
 type DeskTab = "overview" | "work" | "checklist" | "campaigns" | "notifications";
@@ -85,9 +86,6 @@ const TABS: readonly DeskTab[] = ["overview", "work", "checklist", "campaigns", 
 
 // How far ahead the owner's milestone list looks.
 const MILESTONE_HORIZON_DAYS = 14;
-
-// How many days the strip shows, today first.
-const STRIP_DAYS = 7;
 
 const PRIORITY_ORDER: Record<string, number> = {
   Urgent: 0,
@@ -119,6 +117,9 @@ function stripUndefined<T extends object>(obj: T): T {
   ) as T;
 }
 
+// Before anyone has dragged anything: the agenda's default order.
+const NO_ORDER = { groups: [], tasks: [] };
+
 function newDeskItemId(): string {
   return `desk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -140,6 +141,7 @@ export function MyDesk({
   onStatusChange,
 }: MyDeskProps) {
   const [deskItems, setDeskItems] = useState<DeskItem[]>([]);
+  const [deskOrder, setDeskOrder] = useState<DeskOrder | null>(null);
   const [deskError, setDeskError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
@@ -172,8 +174,9 @@ export function MyDesk({
     if (!currentDesignerId) return;
     return subscribeDeskItems(
       currentDesignerId,
-      (items) => {
+      (items, order) => {
         setDeskItems(items);
+        setDeskOrder(order);
         setDeskError(null);
       },
       (err) => {
@@ -305,7 +308,7 @@ export function MyDesk({
     });
   }
 
-  // Today's list in a new order: number every item by its place and save
+  // One day's ad hoc items in a new order: number every item by its place and save
   // the ones whose number changed, in one batch so the list never shows
   // half-reordered. The subscription picks the local write up at once, so
   // the drop shows straight away.
@@ -316,6 +319,22 @@ export function MyDesk({
       .map((i) => ({ ...i, order: place.get(i.id)! }));
     if (changed.length === 0) return;
     applyDeskItemChanges(changed.map(stripUndefined), []).catch((err) => {
+      console.error(err);
+      setFlash("Couldn't save the new order — check your connection.");
+    });
+  }
+
+  // The To Do agenda's groups or project tasks in a new order. Yours
+  // alone: a project's own task order isn't touched.
+  function reorderAgenda(patch: { groups?: string[]; tasks?: string[] }) {
+    saveDeskOrder({
+      id: `desk-order-${currentDesignerId}`,
+      ownerId: currentDesignerId,
+      kind: "order",
+      groups: deskOrder?.groups ?? [],
+      tasks: deskOrder?.tasks ?? [],
+      ...patch,
+    }).catch((err) => {
       console.error(err);
       setFlash("Couldn't save the new order — check your connection.");
     });
@@ -497,6 +516,9 @@ export function MyDesk({
     (i) => !i.done && !i.remind && i.date <= today,
   );
   const openDeskCount = todayItems.length;
+  // Everything the To Do tab lists: every open ad hoc item, whatever its
+  // day, and every open project task assigned to you.
+  const toDoCount = deskItems.filter((i) => !i.done).length + myProjectTasks.length;
 
   const currentDesigner = workspace.designers.find(
     (d) => d.id === currentDesignerId,
@@ -511,7 +533,7 @@ export function MyDesk({
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "work", label: "My work", count: myProjects.length },
-    { id: "checklist", label: "To Do", count: openDeskCount },
+    { id: "checklist", label: "To Do", count: toDoCount },
     ...(showCampaigns ? [{ id: "campaigns", label: "Campaigns", count: myCampaigns.length }] : []),
     { id: "notifications", label: "Notifications", count: notifications.length + reviewProjects.length },
   ];
@@ -544,41 +566,6 @@ export function MyDesk({
     { label: "For review", value: <b className="mono">{reviewProjects.length}</b> },
     { label: "Today's list", value: <b className="mono">{openDeskCount}</b> },
   ];
-
-  // The week ahead: a cell per day with what's due and what's on your list.
-  // Overdue work, when there is any, sits first in red.
-  const strip: StripCell[] = [];
-  if (overdueTasks.length > 0) {
-    strip.push({
-      key: "overdue",
-      n: "!",
-      label: "Overdue",
-      detail: `${overdueTasks.length} project${overdueTasks.length === 1 ? "" : "s"}`,
-      state: "late",
-      title: overdueTasks.map((p) => p.title).join(", "),
-      onClick: () => setTab("work"),
-    });
-  }
-  for (let i = 0; i < STRIP_DAYS; i++) {
-    const iso = shiftIso(today, i);
-    const date = new Date(`${iso}T00:00:00`);
-    const due = myProjects.filter((p) => p.dueDate === iso);
-    const items = deskItems.filter((it) => !it.done && it.date === iso).length;
-    const parts: string[] = [];
-    if (due.length > 0) parts.push(`${due.length} due`);
-    if (items > 0) parts.push(`${items} on list`);
-    strip.push({
-      key: iso,
-      n: date.toLocaleDateString(undefined, { weekday: "short" }),
-      label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : formatShort(iso),
-      detail: parts.length > 0 ? parts.join(" · ") : "Clear",
-      state: i === 0 ? "current" : due.length > 0 ? "open" : "na",
-      active: i === 0,
-      title: due.length > 0 ? due.map((p) => p.title).join(", ") : undefined,
-      onClick:
-        due.length > 0 ? () => setTab("work") : items > 0 ? () => setTab("checklist") : undefined,
-    });
-  }
 
   const peekNotifications = sortNotifications(notifications).slice(0, 4);
   const peekReviews = reviewProjects.slice(0, 3);
@@ -621,8 +608,6 @@ export function MyDesk({
         tabs={tabs}
         tab={here}
         onTab={(id) => setTab(id as DeskTab)}
-        strip={strip}
-        stripLabel="The week ahead"
       >
         {deskError && (
           <div className="desk-banner error">
@@ -973,14 +958,22 @@ export function MyDesk({
                 />
               </div>
             )}
-            {/* The personal checklist — Today / Upcoming / Completed. */}
+            {/* Everything to do, by when it's due: project tasks assigned
+                to you and your own ad hoc items. */}
             <DeskChecklist
               items={deskItems}
               projects={workspace.projects}
-              onAdd={(text) => addDeskItem(text)}
+              projectTasks={myProjectTasks}
+              order={deskOrder ?? NO_ORDER}
+              onOrder={reorderAgenda}
+              designers={workspace.designers}
+              workspaces={workspaces}
+              currentDesignerId={currentDesignerId}
+              onAdd={(text, date) => addDeskItem(text, date ? { date } : undefined)}
               onPatch={patchDeskItem}
               onReorder={reorderDeskItems}
               onRemove={removeDeskItem}
+              onToggleProjectTask={onToggleProjectTask}
               onOpenProject={onOpenProject}
               onFlash={setFlash}
             />

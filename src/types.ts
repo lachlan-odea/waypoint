@@ -200,6 +200,21 @@ export type DeskItem = {
   order?: number;
 };
 
+// The order someone has dragged their To Do agenda into. One document per
+// person, kept in the deskItems collection (id `desk-order-<uid>`) so it is
+// private to them under the same rule; `kind` tells it from a DeskItem.
+// Ad hoc items carry their own place (DeskItem.order); this holds the rest.
+export type DeskOrder = {
+  id: string;
+  ownerId: string;
+  kind: "order";
+  // Groups, top first: project ids, and "adhoc" for the ad hoc group.
+  groups: string[];
+  // Project tasks, top first, as "projectId:taskId". Personal: the
+  // project's own task order is untouched.
+  tasks: string[];
+};
+
 // Where a social post is in its life. Mirrors the colour code the marketing
 // team used in the original spreadsheet: green cells were published, pink
 // pending, red pulled. "backlog" is reserved for the evergreen library —
