@@ -43,6 +43,11 @@ import type {
 const designersCol = () => collection(db, "designers");
 const workspacesCol = () => collection(db, "workspaces");
 const projectsCol = () => collection(db, "projects");
+// Confidential projects live apart so Firestore rules can keep them from
+// everyone but their assignees and super users (see firestore.rules).
+const confidentialProjectsCol = () => collection(db, "confidentialProjects");
+const projectCol = (p: Pick<Project, "confidential">) =>
+  p.confidential ? confidentialProjectsCol() : projectsCol();
 const notificationsCol = () => collection(db, "notifications");
 const deskItemsCol = () => collection(db, "deskItems");
 const hubsCol = () => collection(db, "hubs");
@@ -329,12 +334,44 @@ function stamped<T extends object>(data: T): T & { updatedBy?: string } {
   return uid ? { ...data, updatedBy: uid } : data;
 }
 
+// Saves to whichever collection the project's `confidential` flag says. A
+// save that changes the flag must go through moveProject instead.
 export async function setProject(p: Project): Promise<void> {
-  await setDoc(doc(projectsCol(), p.id), stamped(p));
+  await setDoc(doc(projectCol(p), p.id), stamped(p));
 }
 
-export async function deleteProject(id: string): Promise<void> {
-  await deleteDoc(doc(projectsCol(), id));
+// Mark a project confidential (or not): it moves between /projects and
+// /confidentialProjects in one batch, so it is never in both or neither.
+export async function moveProject(p: Project): Promise<void> {
+  const from = p.confidential ? projectsCol() : confidentialProjectsCol();
+  const batch = writeBatch(db);
+  batch.delete(doc(from, p.id));
+  batch.set(doc(projectCol(p), p.id), stamped({ ...p, movedAt: new Date().toISOString() }));
+  await batch.commit();
+}
+
+export async function deleteProject(p: Pick<Project, "id" | "confidential">): Promise<void> {
+  await deleteDoc(doc(projectCol(p), p.id));
+}
+
+// The confidential projects this person may see: every one for a super
+// user, otherwise only those they're assigned to. The query has to say so
+// itself, because Firestore refuses a listener that could return a document
+// the rules wouldn't let this person read.
+export function subscribeConfidentialProjects(
+  designerId: string,
+  everyone: boolean,
+  onChange: (projects: Project[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = everyone
+    ? confidentialProjectsCol()
+    : query(confidentialProjectsCol(), where("assigneeIds", "array-contains", designerId));
+  return onSnapshot(
+    q,
+    (snap) => onChange(snap.docs.map((d) => ({ ...withDefaultWorkspace(d.data() as Project), confidential: true }))),
+    onError,
+  );
 }
 
 export async function setNotification(n: Notification): Promise<void> {

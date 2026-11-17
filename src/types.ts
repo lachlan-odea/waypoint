@@ -123,6 +123,16 @@ export type Project = {
   bigRockIds?: string[];
   status?: ProjectStatus;
   archived?: boolean;
+  // A Comms project only its assignees and super users may see. A
+  // confidential project is stored in /confidentialProjects instead of
+  // /projects, where Firestore rules keep it from everyone else, so it never
+  // reaches their browser at all. Always save through setProject /
+  // moveProject in firestore.ts, which pick the collection from this flag.
+  confidential?: boolean;
+  // Set when a project moves between /projects and /confidentialProjects,
+  // so the membership-email function knows the "new" document isn't new
+  // and doesn't email everyone on it again.
+  movedAt?: string;
   milestones: Milestone[];
   comments: Comment[];
   createdAt: string;

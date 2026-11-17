@@ -249,9 +249,13 @@ function count(n: number, singular: string, plural = `${singular}s`): string {
   return n === 0 ? "" : `${n} ${n === 1 ? singular : plural}`;
 }
 
-export const notifyProjectMembers = onDocumentWritten(
+// One trigger per project collection: /projects, and /confidentialProjects
+// for confidential Comms projects (see firestore.rules).
+function projectMembersTrigger(collection: "projects" | "confidentialProjects") {
+  const confidential = collection === "confidentialProjects";
+  return onDocumentWritten(
   {
-    document: "projects/{projectId}",
+    document: `${collection}/{projectId}`,
     region: "us-central1",
     secrets: MAIL_SECRETS,
   },
@@ -259,7 +263,16 @@ export const notifyProjectMembers = onDocumentWritten(
     const after = event.data?.after.data() as ProjectDoc | undefined;
     if (!after) return; // Deleted: nothing to say.
     const before = event.data?.before.data() as ProjectDoc | undefined;
-    const additions = projectAdditions(before, after);
+    // Marking a project confidential (or not) moves it between the two
+    // collections, which looks like a brand-new project here. Nobody was
+    // added, so stay quiet.
+    if (!before && after.movedAt) return;
+    // Reviewers can't open a confidential project, so they're not told about
+    // one: only newly added assignees are.
+    const additions = projectAdditions(
+      before,
+      confidential ? { ...after, reviewerIds: before?.reviewerIds ?? [] } : after,
+    );
     if (additions.size === 0) return;
 
     const projectId = event.params.projectId;
@@ -277,7 +290,9 @@ export const notifyProjectMembers = onDocumentWritten(
       return {
         subject: `[Waypoint] ${heading}`,
         content: {
-          kicker: `${team || "Project"}${team ? " project" : ""}`,
+          kicker: confidential
+            ? `Confidential ${team || ""}${team ? " project" : "project"}`
+            : `${team || "Project"}${team ? " project" : ""}`,
           heading,
           intro: introFor(actor, `the project "${title}"`, reasons),
           reasons,
@@ -300,7 +315,11 @@ export const notifyProjectMembers = onDocumentWritten(
       };
     });
   },
-);
+  );
+}
+
+export const notifyProjectMembers = projectMembersTrigger("projects");
+export const notifyConfidentialProjectMembers = projectMembersTrigger("confidentialProjects");
 
 // Keep in step with TYPES / DELIVERY_OPTS in src/webinarKit.ts.
 const WEBINAR_TYPE_LABELS: Record<string, string> = {

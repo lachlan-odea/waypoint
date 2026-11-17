@@ -7,6 +7,9 @@
 
 export type ProjectDoc = {
   id?: string;
+  confidential?: boolean;
+  // Set when the project moved between /projects and /confidentialProjects.
+  movedAt?: string;
   title?: string;
   overview?: string;
   client?: string;

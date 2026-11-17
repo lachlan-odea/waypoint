@@ -42,6 +42,8 @@ import { countdownFor } from "./countdown";
 
 type Props = {
   project: Project;
+  // Super users can see (and mark) any confidential project.
+  isSuperUser: boolean;
   designers: Designer[];
   reviewers: Designer[];
   workspaces: Workspace[];
@@ -82,8 +84,12 @@ function newMilestoneId(): string {
   return `ms-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+// Only the Comms team's projects can be made confidential.
+const CONFIDENTIAL_TEAM_ID = "comms";
+
 export function ProjectPage({
   project,
+  isSuperUser,
   designers,
   reviewers,
   workspaces,
@@ -123,6 +129,13 @@ export function ProjectPage({
     .filter((p) => p.projectId === project.id)
     .sort((a, b) => (b.date || "0000").localeCompare(a.date || "0000"));
   const projectRocks = rocksFor(project.bigRockIds, bigRocks);
+  const confidential = !!project.confidential;
+  // Shown on Comms projects, and on any project that's already confidential
+  // (one moved off Comms keeps its lock until someone lifts it).
+  const offerConfidential = confidential || project.workspaceId === CONFIDENTIAL_TEAM_ID;
+  // Marking it needs you to be able to see it afterwards; Firestore refuses
+  // otherwise, so say so before they try.
+  const canMarkConfidential = isSuperUser || project.assigneeIds.includes(currentDesignerId);
 
   const tasks = project.milestones;
   const tasksDone = tasks.filter((m) => m.done).length;
@@ -292,12 +305,28 @@ export function ProjectPage({
         { label: project.title || "Untitled project", onClick: tab === "overview" ? undefined : () => onTab("overview") },
         ...(tab === "overview" ? [] : [{ label: tabs.find((t) => t.id === tab)?.label ?? tab }]),
       ]}
-      eyebrow={[workspaceName, project.brand, project.client].filter(Boolean).join(" · ")}
+      eyebrow={[confidential ? "Confidential project" : "", workspaceName, project.brand, project.client]
+        .filter(Boolean)
+        .join(" · ")}
+      notice={
+        confidential ? (
+          <div className="item-band-notice confidential" role="note">
+            <Icon name="lock" size={16} />
+            Confidential project
+            <small>Only its assignees and super users can see it</small>
+          </div>
+        ) : undefined
+      }
       title={project.title || "Untitled project"}
       subtitle={contentTypes.length ? contentTypes.join(" · ") : undefined}
       countdown={countdown}
       chips={
         <>
+          {confidential && (
+            <span className="item-chip confidential">
+              <Icon name="lock" size={12} /> Confidential
+            </span>
+          )}
           <StatusChip status={STATUS_CHIP[status]}>{projectStatusLabel(status)}</StatusChip>
           <span className={`item-chip priority-${project.priority.toLowerCase()}`}>{project.priority}</span>
           {reviewerList.length > 0 && <StatusChip status="review">In review</StatusChip>}
@@ -721,6 +750,32 @@ export function ProjectPage({
                         </select>
                       ),
                     },
+                    ...(offerConfidential
+                      ? [
+                          {
+                            label: "Confidential",
+                            value: (
+                              <label className="item-confidential-toggle">
+                                <input
+                                  type="checkbox"
+                                  checked={confidential}
+                                  disabled={!confidential && !canMarkConfidential}
+                                  onChange={(e) =>
+                                    onChange((p) => ({ ...p, confidential: e.target.checked || undefined }))
+                                  }
+                                />
+                                <span className="item-hint">
+                                  {confidential
+                                    ? "Only its assignees and super users can see it"
+                                    : canMarkConfidential
+                                      ? "Hide it from everyone not assigned"
+                                      : "Assign yourself first to make it confidential"}
+                                </span>
+                              </label>
+                            ),
+                          },
+                        ]
+                      : []),
                     {
                       label: "Big Rocks",
                       value: projectRocks.length ? (

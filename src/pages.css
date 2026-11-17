@@ -59,6 +59,72 @@
 .item-band > * {
   position: relative;
 }
+/* The notice strip runs edge to edge across the top of the band. */
+.item-band.has-notice {
+  padding-top: 0;
+}
+.item-band-notice {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -24px 4px;
+  padding: 8px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+.item-band-notice small {
+  font-weight: 400;
+  opacity: 0.85;
+}
+/* A confidential project: a red strip and a red edge on the band, so it
+   can't be mistaken for an ordinary one at a glance or in a screenshot. */
+.item-band-notice.confidential {
+  background: var(--wp-status-blocked-fg);
+}
+.item-band.has-notice:has(.item-band-notice.confidential) {
+  box-shadow: inset 0 0 0 2px var(--wp-status-blocked-fg);
+}
+.item-confidential-toggle {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+.item-kv dd .item-confidential-toggle input {
+  width: auto;
+  margin: 2px 0 0;
+  accent-color: var(--wp-status-blocked-fg);
+}
+.item-confidential-toggle:has(input:disabled) {
+  cursor: default;
+}
+/* On a board card: the lock that tells an assignee this one is private. */
+.card-confidential {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: var(--radius);
+  background: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+  font-size: 11px;
+  font-weight: 600;
+}
+.item-chip.confidential {
+  background: var(--wp-status-blocked-fg);
+  color: #fff;
+}
+@media (max-width: 720px) {
+  .item-band-notice {
+    margin: 0 -16px 4px;
+    padding: 8px 16px;
+    flex-wrap: wrap;
+  }
+}
 .item-band-main {
   min-width: 0;
 }
