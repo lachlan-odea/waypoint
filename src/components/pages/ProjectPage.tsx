@@ -17,7 +17,7 @@ import {
   socialStatusMeta,
 } from "../../constants";
 import { projectContentTypes } from "../../contentTypes";
-import { daysUntil, formatShort, timeAgo } from "../../dates";
+import { daysUntil, formatShort, timeAgo, todayIso } from "../../dates";
 import { copyText, projectShareUrl } from "../../share";
 import { socialPostTitle } from "../../socialPosts";
 import { Avatar } from "../Avatar";
@@ -127,6 +127,12 @@ export function ProjectPage({
   const tasks = project.milestones;
   const tasksDone = tasks.filter((m) => m.done).length;
   const openTasks = tasks.filter((m) => !m.done);
+  const today = todayIso();
+  const taskLate = (m: Project["milestones"][number]) => !m.done && !!m.dueDate && m.dueDate < today;
+  const taskOwner = (m: Project["milestones"][number]) =>
+    m.assigneeId ? designers.find((d) => d.id === m.assigneeId) : undefined;
+  // Anyone can take a task, not only the project's assignees.
+  const people = designers.slice().sort((a, b) => a.name.localeCompare(b.name));
   const closed = status === "completed" || status === "cancelled";
   const days = closed ? null : daysUntil(project.dueDate || undefined);
   const overdue = days !== null && days < 0;
@@ -189,6 +195,37 @@ export function ProjectPage({
       }));
     }
     setEditingTaskId(null);
+  }
+  // Assign a task (or clear it with ""). The new assignee is notified,
+  // unless they assigned it to themselves.
+  function setTaskAssignee(id: string, assigneeId: string) {
+    const task = project.milestones.find((m) => m.id === id);
+    if (!task || (task.assigneeId ?? "") === assigneeId) return;
+    onChange((p) => ({
+      ...p,
+      milestones: p.milestones.map((m) => (m.id === id ? { ...m, assigneeId: assigneeId || undefined } : m)),
+    }));
+    if (assigneeId && assigneeId !== currentDesignerId) {
+      onNotify([
+        {
+          id: `n-${Date.now()}-${assigneeId}`,
+          workspaceId: project.workspaceId,
+          recipientId: assigneeId,
+          fromName: currentDesignerName,
+          projectId: project.id,
+          kind: "task",
+          snippet: task.dueDate ? `${task.label} (due ${formatShort(task.dueDate)})` : task.label,
+          createdAt: new Date().toISOString(),
+          read: false,
+        },
+      ]);
+    }
+  }
+  function setTaskDue(id: string, dueDate: string) {
+    onChange((p) => ({
+      ...p,
+      milestones: p.milestones.map((m) => (m.id === id ? { ...m, dueDate: dueDate || undefined } : m)),
+    }));
   }
   function moveTask(id: string, dir: -1 | 1) {
     onChange((p) => {
@@ -360,8 +397,10 @@ export function ProjectPage({
                 <EmptyNote>No tasks yet. Add the steps this project goes through.</EmptyNote>
               ) : (
                 <ul className="item-tasks">
-                  {tasks.map((m, i) => (
-                    <li key={m.id} className={m.done ? "done" : ""}>
+                  {tasks.map((m, i) => {
+                    const owner = taskOwner(m);
+                    return (
+                    <li key={m.id} className={m.done ? "done" : taskLate(m) ? "late" : ""}>
                       <button
                         type="button"
                         className="item-tick"
@@ -399,6 +438,33 @@ export function ProjectPage({
                           {m.label}
                         </button>
                       )}
+                      <span className="item-task-meta">
+                        <span className="item-task-who">
+                          {owner && <Avatar designer={owner} size={20} />}
+                          <select
+                            className={`item-task-select${m.assigneeId ? "" : " is-empty"}`}
+                            value={m.assigneeId ?? ""}
+                            aria-label={`Assign ${m.label}`}
+                            onChange={(e) => setTaskAssignee(m.id, e.target.value)}
+                          >
+                            <option value="">Unassigned</option>
+                            {m.assigneeId && !owner && <option value={m.assigneeId}>No longer a member</option>}
+                            {people.map((d) => (
+                              <option key={d.id} value={d.id}>
+                                {d.name}
+                              </option>
+                            ))}
+                          </select>
+                        </span>
+                        <input
+                          type="date"
+                          className={`item-task-date${m.dueDate ? "" : " is-empty"}`}
+                          value={m.dueDate ?? ""}
+                          aria-label={`Due date for ${m.label}`}
+                          title={taskLate(m) ? "Overdue" : undefined}
+                          onChange={(e) => setTaskDue(m.id, e.target.value)}
+                        />
+                      </span>
                       <span className="item-task-tools">
                         <button
                           type="button"
@@ -436,7 +502,8 @@ export function ProjectPage({
                         </button>
                       </span>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
               <form
@@ -456,7 +523,10 @@ export function ProjectPage({
                   Add task
                 </button>
               </form>
-              <p className="item-hint">Click a task to rename it. Enter saves, Escape cancels.</p>
+              <p className="item-hint">
+                Click a task to rename it. Enter saves, Escape cancels. Whoever you assign a task to is notified and
+                sees it on My Desk.
+              </p>
             </SideCard>
           }
           sideTop={
@@ -538,18 +608,28 @@ export function ProjectPage({
                   <EmptyNote>{tasks.length ? "Every task is done." : "No tasks yet. Add them on the Tasks tab."}</EmptyNote>
                 ) : (
                   <ul className="item-tasks">
-                    {openTasks.slice(0, 5).map((m) => (
-                      <li key={m.id}>
-                        <button
-                          type="button"
-                          className="item-tick"
-                          aria-pressed={false}
-                          aria-label={`${m.label}: not done`}
-                          onClick={() => toggleTask(m.id)}
-                        />
-                        <span className="item-task-label">{m.label}</span>
-                      </li>
-                    ))}
+                    {openTasks.slice(0, 5).map((m) => {
+                      const owner = taskOwner(m);
+                      return (
+                        <li key={m.id} className={taskLate(m) ? "late" : ""}>
+                          <button
+                            type="button"
+                            className="item-tick"
+                            aria-pressed={false}
+                            aria-label={`${m.label}: not done`}
+                            onClick={() => toggleTask(m.id)}
+                          />
+                          <span className="item-task-label">{m.label}</span>
+                          {m.dueDate && (
+                            <span className="item-task-due mono">
+                              {taskLate(m) ? "Overdue · " : ""}
+                              {formatShort(m.dueDate)}
+                            </span>
+                          )}
+                          {owner && <Avatar designer={owner} size={20} title={owner.name} />}
+                        </li>
+                      );
+                    })}
                     {openTasks.length > 5 && (
                       <li className="item-more">
                         <button type="button" className="link-btn" onClick={() => onTab("tasks")}>

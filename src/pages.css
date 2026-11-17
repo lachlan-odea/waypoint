@@ -664,6 +664,65 @@ button.item-strip-cell:hover {
 .item-task-tools .flip {
   transform: rotate(180deg);
 }
+/* A task's assignee and due date, between its label and its tools. The
+   controls stay quiet until hovered so a long list still reads as a list. */
+.item-task-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.item-task-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.item-task-select,
+.item-task-date {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.item-task-select {
+  max-width: 160px;
+}
+.item-task-date {
+  width: 132px;
+}
+.item-task-select:hover,
+.item-task-date:hover {
+  border-color: var(--border);
+  background: var(--surface);
+}
+.item-task-select:focus,
+.item-task-date:focus {
+  outline: none;
+  border-color: var(--wtg-cobalt);
+  background: var(--surface);
+  box-shadow: var(--focus-ring);
+}
+/* Unset fields fade back so the ones that are set stand out. */
+.item-task-select.is-empty,
+.item-task-date.is-empty {
+  color: var(--muted);
+}
+.item-tasks li.late .item-task-date,
+.item-tasks li.late .item-task-due {
+  color: var(--wp-status-blocked-fg);
+}
+.item-tasks li.done .item-task-meta {
+  opacity: 0.6;
+}
+.item-task-due {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+}
 .item-tasks li.done .item-task-edit-btn {
   color: var(--muted);
   text-decoration: line-through;
@@ -1089,6 +1148,20 @@ button.item-strip-cell:hover {
   }
   .item-kvs {
     grid-template-columns: 76px minmax(0, 1fr);
+  }
+  /* Task rows wrap: tick and label on top, assignee, date and tools below. */
+  .item-tasks li {
+    flex-wrap: wrap;
+  }
+  .item-tasks li .item-task-label,
+  .item-tasks li .item-task-edit {
+    flex-basis: calc(100% - 30px);
+  }
+  .item-task-meta {
+    margin-left: 30px;
+  }
+  .item-task-tools {
+    margin-left: auto;
   }
 }
 

@@ -63,6 +63,8 @@ interface MyDeskProps {
   onOpenCampaign: (campaignId: string) => void;
   // Flags a milestone done (or not) on a campaign you own.
   onToggleMilestone: (campaign: Campaign, milestoneId: string) => void;
+  // Flags a project task assigned to you done (or not).
+  onToggleProjectTask: (projectId: string, taskId: string) => void;
   // For the My work tab: which campaigns each project feeds, the teams (so
   // every card can say which board it's from) and the status setter behind
   // the kanban's drag-and-drop and the list's in-place select.
@@ -132,6 +134,7 @@ export function MyDesk({
   campaigns,
   onOpenCampaign,
   onToggleMilestone,
+  onToggleProjectTask,
   campaignsByProject,
   workspaces,
   onStatusChange,
@@ -345,6 +348,25 @@ export function MyDesk({
       workspace.projects
         .filter((p) => p.assigneeIds.includes(currentDesignerId) && !p.archived)
         .sort(sortByPriorityThenDue),
+    [workspace.projects, currentDesignerId],
+  );
+
+  // Open tasks assigned to you on any project still in play, whether or not
+  // you're on the project itself. Dated ones first, soonest first.
+  const myProjectTasks = useMemo(
+    () =>
+      workspace.projects
+        .filter((p) => !p.archived && p.status !== "completed" && p.status !== "cancelled")
+        .flatMap((project) =>
+          project.milestones
+            .filter((task) => !task.done && task.assigneeId === currentDesignerId)
+            .map((task) => ({ project, task })),
+        )
+        .sort(
+          (a, b) =>
+            (a.task.dueDate || "9999").localeCompare(b.task.dueDate || "9999") ||
+            a.project.title.localeCompare(b.project.title),
+        ),
     [workspace.projects, currentDesignerId],
   );
 
@@ -670,6 +692,54 @@ export function MyDesk({
                       </section>
                     )}
                 </div>
+
+                {/* Tasks other people (or you) handed you on a project. */}
+                {myProjectTasks.length > 0 && (
+                  <SideCard
+                    title="Your project tasks"
+                    aside={<span className="badge">{myProjectTasks.length}</span>}
+                  >
+                    <ul className="camp-card-ms desk-ms-list">
+                      {myProjectTasks.map(({ project: p, task: t }) => {
+                        const overdue = !!t.dueDate && t.dueDate < today;
+                        return (
+                          <li
+                            key={`${p.id}-${t.id}`}
+                            style={{ ["--camp" as string]: "var(--wtg-cobalt)" } as React.CSSProperties}
+                          >
+                            <label className={`camp-card-ms-row ${overdue ? "overdue" : ""}`}>
+                              <input
+                                type="checkbox"
+                                checked={t.done}
+                                onChange={() => onToggleProjectTask(p.id, t.id)}
+                                title="Tick once it's done"
+                              />
+                              <span className="camp-card-ms-date">
+                                {t.dueDate ? formatShort(t.dueDate) : "No date"}
+                              </span>
+                              <span className="camp-card-ms-label">
+                                {t.label}
+                                <span className="muted">
+                                  {" "}
+                                  · {p.title || "Untitled project"}
+                                  {overdue ? " · overdue" : ""}
+                                </span>
+                              </span>
+                            </label>
+                            <button
+                              type="button"
+                              className="camp-card-project"
+                              onClick={() => onOpenProject(p.id)}
+                              title={`Open ${p.title || "the project"}`}
+                            >
+                              Open
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </SideCard>
+                )}
 
                 <SideCard
                   title="Upcoming deadlines"
