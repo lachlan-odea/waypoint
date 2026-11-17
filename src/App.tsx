@@ -101,6 +101,8 @@ import {
   type AssistantConnection,
 } from "./assistant";
 import type { AssistantAction } from "./assistantActions";
+import type { AssistantPage } from "./assistantTools";
+import { formatShort } from "./dates";
 import { findMentionedDesigners } from "./mentions";
 import { CreateProjectModal } from "./components/CreateProjectModal";
 import { SettingsModal } from "./components/SettingsModal";
@@ -1347,20 +1349,76 @@ export default function App() {
       return { ok: true, link };
     }
 
+    // Tell someone the assistant's change handed them tasks, the way
+    // assigning one by hand does: one notification however many tasks.
+    const notifyTasks = (assigneeId: string | undefined, tasks: Project["milestones"]) => {
+      if (!assigneeId || assigneeId === currentDesigner.id || tasks.length === 0) return;
+      const [first] = tasks;
+      addNotifications([
+        {
+          id: `n-${Date.now()}-${assigneeId}`,
+          workspaceId: project.workspaceId,
+          recipientId: assigneeId,
+          fromName: currentDesigner.name,
+          projectId: project.id,
+          kind: "task",
+          snippet:
+            tasks.length > 1
+              ? `${tasks.length} tasks`
+              : first.dueDate
+                ? `${first.label} (due ${formatShort(first.dueDate)})`
+                : first.label,
+          createdAt: now,
+          read: false,
+        },
+      ]);
+    };
+    const tasksLink = itemHash("project", project.id, "tasks");
+
     if (action.kind === "add_milestones") {
       // Labels someone added by hand since the card was drawn aren't doubled.
       const have = new Set(project.milestones.map((m) => m.label.trim().toLowerCase()));
       const added = action.labels
         .filter((label) => !have.has(label.toLowerCase()))
-        .map((label, i) => ({ id: `m-${Date.now()}-${i}`, label, done: false }));
+        .map((label, i) => ({
+          id: `m-${Date.now()}-${i}`,
+          label,
+          done: false,
+          ...(action.assigneeId ? { assigneeId: action.assigneeId } : {}),
+          ...(action.dueDate ? { dueDate: action.dueDate } : {}),
+        }));
       if (added.length > 0) {
         firestoreSetProject({ ...project, milestones: [...project.milestones, ...added] }).catch(writeError);
+        notifyTasks(action.assigneeId, added);
       }
-      return { ok: true, link };
+      return { ok: true, link: tasksLink };
+    }
+
+    if (action.kind === "update_tasks") {
+      const ids = new Set(action.taskIds);
+      if (!project.milestones.some((m) => ids.has(m.id))) return gone("task");
+      const { assigneeId, dueDate } = action;
+      const milestones = project.milestones.map((m) =>
+        ids.has(m.id)
+          ? {
+              ...m,
+              ...(assigneeId !== undefined ? { assigneeId: assigneeId || undefined } : {}),
+              ...(dueDate !== undefined ? { dueDate: dueDate || undefined } : {}),
+            }
+          : m,
+      );
+      firestoreSetProject({ ...project, milestones }).catch(writeError);
+      // Only the tasks that are newly theirs.
+      const before = new Map(project.milestones.map((m) => [m.id, m.assigneeId ?? ""]));
+      notifyTasks(
+        assigneeId,
+        milestones.filter((m) => ids.has(m.id) && before.get(m.id) !== assigneeId),
+      );
+      return { ok: true, link: tasksLink };
     }
 
     if (action.kind === "set_milestone") {
-      if (!project.milestones.some((m) => m.id === action.milestoneId)) return gone("milestone");
+      if (!project.milestones.some((m) => m.id === action.milestoneId)) return gone("task");
       firestoreSetProject({
         ...project,
         milestones: project.milestones.map((m) => (m.id === action.milestoneId ? { ...m, done: action.done } : m)),
@@ -1534,6 +1592,32 @@ export default function App() {
       : route.kind
     : view;
   const tour = tourFor(tourKey);
+
+  // What the assistant is told the person is looking at.
+  const LIST_TITLES: Record<SidebarView, string> = {
+    myDesk: "My Desk",
+    executiveDashboard: "Executive Dashboard",
+    bigRocks: "Big Rocks",
+    board: `${currentWorkspaceName} board`,
+    campaigns: "Campaigns",
+    events: "Events",
+    socialCalendar: "Social calendar",
+    analytics: "Analytics",
+    archived: "Archive",
+    tools: "Tools",
+  };
+  const assistantPage: AssistantPage = routedProject
+    ? { kind: "project", id: routedProject.id, title: routedProject.title, tab: route?.tab ?? "overview" }
+    : routedCampaign
+      ? {
+          kind: kitOf(routedCampaign) ? "webinar" : "campaign",
+          id: routedCampaign.id,
+          title: routedCampaign.name,
+          tab: route?.tab ?? "overview",
+        }
+      : routedEvent
+        ? { kind: "event", id: routedEvent.id, title: routedEvent.name, tab: route?.tab ?? "overview" }
+        : { kind: "list", title: LIST_TITLES[navView] };
 
   const unassigned = activeProjects
     .filter((p) => p.assigneeIds.length === 0)
@@ -2465,6 +2549,7 @@ export default function App() {
           events,
           socialPosts: socialPostsForUsage,
           bigRocks,
+          page: assistantPage,
           milestoneTypes: socialConfig.milestoneTypes,
           socialCategories: socialConfig.categories.map((c) => c.label),
           contentTypes: socialConfig.contentTypes,

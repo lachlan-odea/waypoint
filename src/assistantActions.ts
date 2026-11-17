@@ -5,13 +5,15 @@
 // through the same save paths as the rest of the app (applyAssistantAction
 // in App.tsx), as that person.
 //
-// What it can propose: a new project, with its milestones; a project's
-// status, due date, priority or assignees; a comment; milestones added to
-// a project, or one ticked off; a campaign milestone; a draft social post.
-// There is nothing here that deletes.
+// What it can propose: a new project, with its tasks; a project's status,
+// due date, priority or assignees; a comment; tasks added to a project,
+// assigned or dated (one or many at once), or one ticked off; a campaign
+// milestone; a draft social post. There is nothing here that deletes.
+// A project's tasks are its `milestones` in the data, and the tools keep
+// that name; what the person reads says "task", like the project page.
 
 import type Anthropic from "@anthropic-ai/sdk";
-import type { MilestoneType, Priority, ProjectStatus } from "./types";
+import type { Milestone, MilestoneType, Priority, Project, ProjectStatus } from "./types";
 import { projectStatusLabel } from "./constants";
 import { formatShort } from "./dates";
 import type { AssistantData } from "./assistantTools";
@@ -42,7 +44,22 @@ export type AssistantAction =
       assigneeIds?: string[];
     }
   | { kind: "add_comment"; projectId: string; text: string }
-  | { kind: "add_milestones"; projectId: string; labels: string[] }
+  | {
+      kind: "add_milestones";
+      projectId: string;
+      labels: string[];
+      // Given to every task added, when set.
+      assigneeId?: string;
+      dueDate?: string;
+    }
+  | {
+      kind: "update_tasks";
+      projectId: string;
+      taskIds: string[];
+      // Only what is changing is present; "" clears it.
+      assigneeId?: string;
+      dueDate?: string;
+    }
   | { kind: "set_milestone"; projectId: string; milestoneId: string; done: boolean }
   | { kind: "add_campaign_milestone"; campaignId: string; date: string; label: string; description: string; url: string }
   | {
@@ -111,7 +128,7 @@ export const ACTION_TOOLS: Anthropic.Tool[] = [
           type: "array",
           items: { type: "string" },
           description:
-            "The project's milestones, in order: its checklist of steps or tasks, each a short label. A milestone is a label and a tick, with no date or owner of its own.",
+            "The project's tasks, in order, each a short label. They start unassigned and undated; to give them an owner or a due date, use propose_task_changes once the person has applied this card.",
         },
       },
     },
@@ -119,7 +136,7 @@ export const ACTION_TOOLS: Anthropic.Tool[] = [
   {
     name: "propose_project_milestones",
     description:
-      "Propose adding milestones to an existing project: its checklist of steps or tasks (people may call them tasks or to-dos). Each is a short label with no date or owner of its own. Only added if the person clicks Apply.",
+      "Propose adding tasks to an existing project (people may also call them to-dos, steps or milestones). Each is a short label; assignee and due_date, if given, go on every task added. Only added if the person clicks Apply.",
     input_schema: {
       type: "object",
       additionalProperties: false,
@@ -127,6 +144,34 @@ export const ACTION_TOOLS: Anthropic.Tool[] = [
       properties: {
         project_id: { type: "string" },
         milestones: { type: "array", items: { type: "string" }, description: "The labels to add, in order." },
+        assignee: { type: "string", description: "Who the new tasks are assigned to: a name or id, or \"me\"." },
+        due_date: { type: "string", description: "YYYY-MM-DD the new tasks are due." },
+      },
+    },
+  },
+  {
+    name: "propose_task_changes",
+    description:
+      "Propose assigning a project's existing tasks to someone, or setting their due date: one task, several, or all of them in one card. Use this for \"assign all the tasks in this project to Sam\". Give assignee, due_date or both. Tasks that already have those values are left out. Only saved if the person clicks Apply.",
+    input_schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["project_id"],
+      properties: {
+        project_id: { type: "string" },
+        tasks: {
+          type: "array",
+          items: { type: "string" },
+          description: "The labels of the tasks to change, as get_project lists them. Leave out to change every task that fits `which`.",
+        },
+        which: {
+          type: "string",
+          enum: ["all", "open", "unassigned"],
+          description:
+            "When `tasks` is left out: all (the default), open (not ticked off), or unassigned (open tasks nobody has).",
+        },
+        assignee: { type: "string", description: "A name or id, or \"me\". An empty string unassigns." },
+        due_date: { type: "string", description: "YYYY-MM-DD, or an empty string to clear the due date." },
       },
     },
   },
@@ -162,14 +207,14 @@ export const ACTION_TOOLS: Anthropic.Tool[] = [
   {
     name: "propose_milestone_done",
     description:
-      "Propose ticking off (or un-ticking) one of a project's milestones. Use get_project to see its milestones. Only saved if the person clicks Apply.",
+      "Propose ticking off (or un-ticking) one of a project's tasks. Use get_project to see them. Only saved if the person clicks Apply.",
     input_schema: {
       type: "object",
       additionalProperties: false,
       required: ["project_id", "milestone"],
       properties: {
         project_id: { type: "string" },
-        milestone: { type: "string", description: "The milestone's label, as get_project lists it." },
+        milestone: { type: "string", description: "The task's label, as get_project lists it." },
         done: { type: "boolean", description: "Defaults to true. False un-ticks it." },
       },
     },
@@ -217,7 +262,8 @@ export const ACTION_STATUS: Record<string, string> = {
   propose_create_project: "Drafting a new project",
   propose_update_project: "Drafting a change",
   propose_comment: "Drafting a comment",
-  propose_project_milestones: "Drafting milestones",
+  propose_project_milestones: "Drafting tasks",
+  propose_task_changes: "Drafting a change",
   propose_milestone_done: "Drafting a change",
   propose_campaign_milestone: "Drafting a milestone",
   propose_social_post: "Drafting a social post",
@@ -313,6 +359,33 @@ function labels(v: unknown): string[] {
 
 const bullets = (items: string[]) => items.map((l) => `• ${l}`).join("\n");
 
+// A long list on a card, cut to what fits with a count of the rest.
+function bulletsUpTo(items: string[], max: number): string {
+  return items.length > max ? `${bullets(items.slice(0, max))}\n…and ${items.length - max} more` : bullets(items);
+}
+
+// One of a project's tasks from its label (or id). get_project lists a
+// task as "Label (assigned to X, due Y)"; the model may hand that whole
+// line back, so the suffix is dropped before matching.
+function task(p: Project, asked: string): Milestone {
+  const q = asked
+    .replace(/^\[(?:done|open)\]\s*/i, "")
+    .replace(/\s*\((?:assigned to|due) [^)]*\)$/i, "")
+    .trim()
+    .toLowerCase();
+  const all = p.milestones ?? [];
+  const exact = all.filter((m) => m.id === asked.trim() || m.label.trim().toLowerCase() === q);
+  const found = exact.length ? exact : all.filter((m) => q && m.label.toLowerCase().includes(q));
+  if (found.length !== 1) {
+    throw new Refused(
+      all.length === 0
+        ? "That project has no tasks."
+        : `Which task is "${asked}"? The project's tasks are: ${all.map((m) => `"${m.label}"`).join(", ")}.`,
+    );
+  }
+  return found[0];
+}
+
 function createProject(ctx: ActionContext, input: Input): Draft {
   const title = str(input.title, 160);
   if (!title) throw new Refused("A project needs a title.");
@@ -350,7 +423,7 @@ function createProject(ctx: ActionContext, input: Input): Draft {
   if (contentTypes.length) details.push(["Content", contentTypes.join(", ")]);
   if (action.overview) details.push(["Overview", action.overview]);
   if (action.briefUrl) details.push(["Brief", action.briefUrl]);
-  if (action.milestones.length) details.push(["Milestones", bullets(action.milestones)]);
+  if (action.milestones.length) details.push(["Tasks", bullets(action.milestones)]);
   return { action, title: `Create project “${title}”`, details };
 }
 
@@ -415,47 +488,91 @@ function projectMilestones(ctx: ActionContext, input: Input): Draft {
   const existing = new Set((p.milestones ?? []).map((m) => m.label.trim().toLowerCase()));
   const asked = labels(input.milestones);
   const fresh = asked.filter((l) => !existing.has(l.toLowerCase()));
-  if (asked.length === 0) throw new Refused("Give at least one milestone label.");
+  if (asked.length === 0) throw new Refused("Give at least one task label.");
   if (fresh.length === 0) {
-    throw new Refused("The project already has all of those milestones. Tell the person so.");
+    throw new Refused("The project already has all of those tasks. Tell the person so.");
   }
+  const assigneeId = str(input.assignee, 200) ? person(ctx, str(input.assignee, 200)) : "";
+  const dueDate = str(input.due_date, 40) ? date(input.due_date, "The due date") : "";
   const details: [string, string][] = [["Add", bullets(fresh)]];
+  if (assigneeId) details.push(["Assigned to", names(ctx, [assigneeId])]);
+  if (dueDate) details.push(["Due", day(dueDate)]);
   if (fresh.length < asked.length) {
     details.push(["Skipped", `${asked.length - fresh.length} already on the project`]);
   }
   return {
-    action: { kind: "add_milestones", projectId: p.id, labels: fresh },
-    title: `Add ${fresh.length === 1 ? "a milestone" : `${fresh.length} milestones`} to “${p.title}”`,
+    action: {
+      kind: "add_milestones",
+      projectId: p.id,
+      labels: fresh,
+      ...(assigneeId ? { assigneeId } : {}),
+      ...(dueDate ? { dueDate } : {}),
+    },
+    title: `Add ${fresh.length === 1 ? "a task" : `${fresh.length} tasks`} to “${p.title}”`,
+    details,
+  };
+}
+
+function taskChanges(ctx: ActionContext, input: Input): Draft {
+  const p = project(ctx, input.project_id);
+  const all = p.milestones ?? [];
+  if (all.length === 0) throw new Refused("That project has no tasks. Tell the person so.");
+
+  const setsAssignee = typeof input.assignee === "string";
+  const setsDue = typeof input.due_date === "string";
+  if (!setsAssignee && !setsDue) throw new Refused("Give an assignee, a due date or both.");
+  const assigneeId = setsAssignee && str(input.assignee, 200) ? person(ctx, str(input.assignee, 200)) : "";
+  const dueDate = setsDue && str(input.due_date, 40) ? date(input.due_date, "The due date") : "";
+
+  const asked = strings(input.tasks);
+  const which = str(input.which, 20).toLowerCase() || "all";
+  if (!["all", "open", "unassigned"].includes(which)) throw new Refused("`which` must be all, open or unassigned.");
+  const chosen = asked.length
+    ? [...new Set(asked.map((label) => task(p, label)))]
+    : all.filter((m) => (which === "all" ? true : which === "open" ? !m.done : !m.done && !m.assigneeId));
+  if (chosen.length === 0) {
+    throw new Refused(`The project has no ${which} tasks. Tell the person so.`);
+  }
+
+  // Only tasks this would change go on the card.
+  const changing = chosen.filter(
+    (m) => (setsAssignee && (m.assigneeId ?? "") !== assigneeId) || (setsDue && (m.dueDate ?? "") !== dueDate),
+  );
+  if (changing.length === 0) {
+    throw new Refused("That wouldn't change anything: those tasks already have those values. Tell the person so.");
+  }
+
+  const details: [string, string][] = [];
+  if (setsAssignee) details.push(["Assign to", assigneeId ? names(ctx, [assigneeId]) : "Nobody (unassign)"]);
+  if (setsDue) details.push(["Due", dueDate ? day(dueDate) : "None (clear the date)"]);
+  details.push(["Tasks", bulletsUpTo(changing.map((m) => m.label), 12)]);
+  if (changing.length < chosen.length) {
+    details.push(["Skipped", `${chosen.length - changing.length} already set that way`]);
+  }
+  return {
+    action: {
+      kind: "update_tasks",
+      projectId: p.id,
+      taskIds: changing.map((m) => m.id),
+      ...(setsAssignee ? { assigneeId } : {}),
+      ...(setsDue ? { dueDate } : {}),
+    },
+    title: `Update ${changing.length === 1 ? "a task" : `${changing.length} tasks`} on “${p.title}”`,
     details,
   };
 }
 
 function milestoneDone(ctx: ActionContext, input: Input): Draft {
   const p = project(ctx, input.project_id);
-  // get_project lists a task as "Label (assigned to X, due Y)"; the model may
-  // hand that whole line back, so drop the suffix before matching.
-  const q = str(input.milestone, 200)
-    .replace(/\s*\((?:assigned to|due) [^)]*\)$/i, "")
-    .trim()
-    .toLowerCase();
-  const all = p.milestones ?? [];
-  const exact = all.filter((m) => m.id === str(input.milestone, 200) || m.label.trim().toLowerCase() === q);
-  const found = exact.length ? exact : all.filter((m) => q && m.label.toLowerCase().includes(q));
-  if (found.length !== 1) {
-    throw new Refused(
-      all.length === 0
-        ? "That project has no milestones."
-        : `Which milestone? The project's milestones are: ${all.map((m) => `"${m.label}"`).join(", ")}.`,
-    );
-  }
+  const found = task(p, str(input.milestone, 200));
   const done = input.done !== false;
-  if (found[0].done === done) {
-    throw new Refused(`"${found[0].label}" is already ${done ? "ticked off" : "open"}. Tell the person so.`);
+  if (found.done === done) {
+    throw new Refused(`"${found.label}" is already ${done ? "ticked off" : "open"}. Tell the person so.`);
   }
   return {
-    action: { kind: "set_milestone", projectId: p.id, milestoneId: found[0].id, done },
-    title: `${done ? "Tick off" : "Reopen"} a milestone on “${p.title}”`,
-    details: [["Milestone", found[0].label]],
+    action: { kind: "set_milestone", projectId: p.id, milestoneId: found.id, done },
+    title: `${done ? "Tick off" : "Reopen"} a task on “${p.title}”`,
+    details: [["Task", found.label]],
   };
 }
 
@@ -521,6 +638,7 @@ const PROPOSERS: Record<string, (ctx: ActionContext, input: Input) => Draft> = {
   propose_update_project: updateProject,
   propose_comment: comment,
   propose_project_milestones: projectMilestones,
+  propose_task_changes: taskChanges,
   propose_milestone_done: milestoneDone,
   propose_campaign_milestone: campaignMilestone,
   propose_social_post: socialPost,

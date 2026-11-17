@@ -36,6 +36,15 @@ const SUGGESTIONS = [
   "Create a project for me",
 ];
 
+// Offered instead when a project, campaign, webinar or event is open: the
+// assistant knows which, so "this" is enough.
+const PAGE_SUGGESTIONS: Record<string, string[]> = {
+  project: ["Summarise this project", "What's left to do here?", "Assign all the open tasks to me"],
+  campaign: ["Summarise this campaign", "What's coming up next on it?", "Which projects are feeding it?"],
+  webinar: ["Where is this webinar up to?", "Which sections are overdue?", "Who's on the team?"],
+  event: ["Summarise this event", "What's still open on the checklist?", "Which projects are linked to it?"],
+};
+
 // The assistant: a chat panel docked to the right edge, opened from the
 // header. It answers questions about the team's work by looking things up
 // in what the app has loaded (assistantTools.ts). It can propose changes,
@@ -161,6 +170,8 @@ export function AssistantPanel({
 
   const empty = messages.length === 0;
   const firstName = data.me.name.trim().split(/\s+/)[0] || "there";
+  const page = data.page;
+  const suggestions = (page && PAGE_SUGGESTIONS[page.kind]) ?? SUGGESTIONS;
 
   return (
     <aside
@@ -234,10 +245,11 @@ export function AssistantPanel({
                 <p className="muted small">
                   I can look through projects, campaigns, webinars, events and the social calendar, and help
                   you draft or summarise. I can also create and update things for you: I'll show each change
-                  first, and nothing is saved until you click Apply.
+                  first, and nothing is saved until you click Apply. I can see which page you have open, so
+                  you can say "this project".
                 </p>
                 <ul className="assistant-suggestions">
-                  {SUGGESTIONS.map((s) => (
+                  {suggestions.map((s) => (
                     <li key={s}>
                       <button type="button" className="assistant-suggestion" onClick={() => send(s)}>
                         {s}
@@ -288,6 +300,11 @@ export function AssistantPanel({
             )}
           </div>
 
+          {page && page.kind !== "list" && (
+            <p className="assistant-context small" title={`The assistant can see you have this ${page.kind} open`}>
+              <span className="muted">Looking at</span> <b>{page.title}</b>
+            </p>
+          )}
           <form
             className="assistant-compose"
             onSubmit={(e) => {
