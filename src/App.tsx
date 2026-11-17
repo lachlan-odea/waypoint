@@ -1235,7 +1235,7 @@ export default function App() {
         dueDate: action.dueDate,
         priority: action.priority,
         assigneeIds: action.assigneeIds,
-        milestones: [],
+        milestones: action.milestones.map((label, i) => ({ id: `m-${Date.now()}-${i}`, label, done: false })),
         comments: [],
         createdAt: now,
         source: "manual",
@@ -1296,6 +1296,18 @@ export default function App() {
         ...(action.priority !== undefined ? { priority: action.priority } : {}),
         ...(action.assigneeIds !== undefined ? { assigneeIds: action.assigneeIds } : {}),
       }).catch(writeError);
+      return { ok: true, link };
+    }
+
+    if (action.kind === "add_milestones") {
+      // Labels someone added by hand since the card was drawn aren't doubled.
+      const have = new Set(project.milestones.map((m) => m.label.trim().toLowerCase()));
+      const added = action.labels
+        .filter((label) => !have.has(label.toLowerCase()))
+        .map((label, i) => ({ id: `m-${Date.now()}-${i}`, label, done: false }));
+      if (added.length > 0) {
+        firestoreSetProject({ ...project, milestones: [...project.milestones, ...added] }).catch(writeError);
+      }
       return { ok: true, link };
     }
 
