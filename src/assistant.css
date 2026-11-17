@@ -274,9 +274,11 @@
 }
 
 /* The button that opens the panel: a WiseTech Blue circle with the
-   sparkle, fixed to the bottom-right corner of every page. No shadow, as
-   everywhere; on dark surfaces a Violet ring keeps the blue from sinking
-   into the page. It shrinks away while the panel is open. */
+   sparkle, fixed to the bottom-right corner of every page, with a soft
+   Cobalt glow around it: the one place Waypoint uses one, asked for so
+   the way in to the assistant catches the eye. On dark surfaces a Violet
+   ring keeps the blue from sinking into the page. It shrinks away while
+   the panel is open. */
 .assistant-fab {
   position: fixed;
   right: 24px;
@@ -291,9 +293,12 @@
   background: var(--wtg-blue);
   border: 1px solid transparent;
   border-radius: 50%;
+  box-shadow: var(--fab-glow);
   cursor: pointer;
+  --fab-glow: 0 0 22px 2px rgba(55, 30, 225, 0.42);
   transition:
     background var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
     transform var(--dur) var(--ease),
     opacity var(--dur) var(--ease),
     visibility 0s;
@@ -301,13 +306,15 @@
 .assistant-fab:hover {
   background: var(--wtg-cobalt);
   transform: scale(1.06);
+  --fab-glow: 0 0 28px 4px rgba(55, 30, 225, 0.5);
 }
 .assistant-fab:focus-visible {
   outline: none;
-  box-shadow: var(--focus-ring);
+  box-shadow: var(--focus-ring), var(--fab-glow);
 }
 :root.dark-mode .assistant-fab {
   border-color: var(--wtg-periwinkle);
+  --fab-glow: 0 0 22px 2px rgba(183, 179, 255, 0.35);
 }
 .assistant-fab.is-hidden {
   opacity: 0;
