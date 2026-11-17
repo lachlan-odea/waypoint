@@ -65,10 +65,10 @@
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .an-seg button:hover {
-  border-color: var(--ink-300);
+  border-color: var(--border-strong);
 }
 .an-seg button[aria-pressed="true"] {
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   border-color: var(--wtg-cobalt);
   color: var(--wtg-cobalt);
 }
@@ -104,7 +104,7 @@
   font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .an-summary {
   margin: 0;
@@ -151,7 +151,7 @@
   font-size: 28px;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .an-stat.alert .an-stat-value {
   color: var(--wp-status-blocked-fg);
@@ -172,7 +172,7 @@
   display: grid;
   place-items: center;
   font-size: 11px;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 
 /* Panels */
@@ -199,7 +199,7 @@
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .an-panel-aside {
   font-size: 12px;
@@ -307,7 +307,7 @@
   border-bottom: 0;
 }
 .an-table tbody tr:hover {
-  background: var(--ink-50);
+  background: var(--bg);
 }
 .an-table th.n,
 .an-table td.n {

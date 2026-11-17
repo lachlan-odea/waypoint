@@ -199,7 +199,7 @@
   color: var(--wtg-blue);
 }
 .item-chip.priority-low {
-  background: var(--ink-100);
+  background: var(--surface-2);
   color: var(--ink-700);
 }
 .item-facts {
@@ -301,7 +301,7 @@
   background: var(--surface-2);
 }
 .item-tab.active {
-  color: var(--wtg-blue);
+  color: var(--heading);
   border-bottom-color: var(--wtg-cobalt);
 }
 .item-tab:focus-visible {
@@ -317,7 +317,7 @@
   color: var(--muted);
 }
 .item-tab.active .item-tab-count {
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   color: var(--wtg-cobalt);
 }
 
@@ -355,7 +355,7 @@ button.item-strip-cell:hover {
 }
 .item-strip-cell.active {
   border-color: var(--wtg-cobalt);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 .item-strip-cell.st-current {
   border-color: var(--wtg-cobalt);
@@ -369,13 +369,13 @@ button.item-strip-cell:hover {
   color: var(--muted);
 }
 .item-strip-check {
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .item-strip-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  border: 1.5px solid var(--ink-300);
+  border: 1.5px solid var(--border-strong);
 }
 .item-strip-dot.st-late {
   border-color: var(--wp-status-blocked-fg);
@@ -404,7 +404,7 @@ button.item-strip-cell:hover {
   margin-top: 4px;
   height: 4px;
   border-radius: var(--radius);
-  background: var(--ink-100);
+  background: var(--surface-2);
 }
 .item-strip-cell.st-done .item-strip-bar {
   background: var(--wtg-cobalt);
@@ -470,7 +470,7 @@ button.item-strip-cell:hover {
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 /* A card head's Save / Cancel pair, e.g. the Milestones tab's editor. */
 .item-card-actions {
@@ -606,7 +606,7 @@ button.item-strip-cell:hover {
   flex: 1;
   height: 8px;
   border-radius: var(--radius);
-  background: var(--ink-100);
+  background: var(--surface-2);
   overflow: hidden;
 }
 .item-progress-bar i {
@@ -638,7 +638,7 @@ button.item-strip-cell:hover {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 1.5px solid var(--ink-300);
+  border: 1.5px solid var(--border-strong);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -749,7 +749,7 @@ button.item-strip-cell:hover {
   cursor: grab;
 }
 .item-task-grip:hover {
-  color: var(--wtg-cobalt);
+  color: var(--link);
   background: var(--surface-2);
 }
 .item-task-grip:active {
@@ -757,7 +757,7 @@ button.item-strip-cell:hover {
 }
 .item-task-grip:focus-visible {
   outline: none;
-  color: var(--wtg-cobalt);
+  color: var(--link);
   box-shadow: var(--focus-ring);
 }
 .item-tasks li.dragging,
@@ -1061,7 +1061,7 @@ button.item-strip-cell:hover {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 1.5px solid var(--ink-300);
+  border: 1.5px solid var(--border-strong);
   background: var(--surface);
   color: #fff;
   display: inline-flex;
@@ -1150,7 +1150,7 @@ button.item-strip-cell:hover {
 }
 .item-link-row:hover {
   border-color: var(--wtg-cobalt);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 .item-link-row:focus-visible {
   outline: none;
@@ -1180,12 +1180,12 @@ button.item-strip-cell:hover {
   color: var(--text);
 }
 .item-flist li svg {
-  color: var(--wtg-blue);
+  color: var(--heading);
   flex: none;
 }
 .item-flist a,
 .item-flist .link-btn {
-  color: var(--wtg-cobalt);
+  color: var(--link);
   font-size: 13px;
   padding: 0;
   text-align: left;
@@ -1261,7 +1261,7 @@ button.item-strip-cell:hover {
 .item-stat-value {
   font-size: 22px;
   font-weight: 500;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .item-stat-label {
   font-size: 12px;
@@ -1414,7 +1414,7 @@ button.item-strip-cell:hover {
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .item-missing {
   display: flex;
@@ -1429,7 +1429,7 @@ button.item-strip-cell:hover {
 .item-missing h2 {
   margin: 0;
   font-size: 20px;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 
 /* Narrow screens */

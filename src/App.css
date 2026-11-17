@@ -75,6 +75,11 @@
   --border-strong: var(--ink-300);
   --text: var(--ink-800);
   --muted: var(--ink-500);
+  /* Text that is WiseTech Blue / Cobalt on a light page. Use these rather
+     than --wtg-blue / --wtg-cobalt for headings and links, so dark mode
+     can lift them off the slate. */
+  --heading: var(--wtg-blue);
+  --link: var(--wtg-cobalt);
   /* The one highlight colour: Cobalt in light mode, Violet on dark surfaces */
   --accent: var(--wtg-cobalt);
   --accent-wash: var(--cobalt-050);
@@ -132,6 +137,18 @@ body,
   --border-strong: var(--ink-500);
   --text: var(--ink-100);
   --muted: var(--ink-300);
+  --heading: #FFFFFF;
+  --link: var(--wtg-periwinkle);
+  --border-subtle: var(--ink-600);
+  --cobalt-050: rgba(183, 179, 255, 0.16);
+  /* The light-mode reds and orange are deep inks that vanish on slate. */
+  --danger: #FF8A80;
+  --urgent: #FF8A80;
+  --high: #F5A572;
+  --low: var(--ink-400);
+  /* The brand field (sidebar, page bands) a shade deeper, so it frames the
+     page instead of glaring beside it. */
+  --wp-field: #15114A;
   /* Primary stays Cobalt; the highlight (selected, destination) is Violet,
      which reads on slate where Cobalt would not. */
   --primary: var(--wtg-cobalt);
@@ -400,6 +417,22 @@ body,
 :root.dark-mode .card-overdue-chip {
   background: #a3294d;
   color: white;
+}
+
+/* White on the lifted dark-mode red would be unreadable; keep the badge on
+   the deep red it uses in light mode. */
+:root.dark-mode .notif-badge {
+  background: #C0392B;
+}
+
+:root.dark-mode .banner {
+  background: #3a1d10;
+  border-color: #7a3415;
+  color: #ffd9c2;
+}
+
+:root.dark-mode .modal-foot .danger:hover {
+  background: rgba(255, 138, 128, 0.12);
 }
 
 :root.dark-mode .modal {
@@ -735,7 +768,7 @@ textarea {
   background: var(--surface-2);
 }
 .nav-flyout .new-menu-item.active {
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   color: var(--primary);
 }
 .nav-flyout .new-menu-item.active .new-menu-hint {
@@ -1204,7 +1237,7 @@ textarea {
   line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 :root.dark-mode .page-title {
   color: var(--text);
@@ -1224,7 +1257,7 @@ textarea {
   height: 36px;
   padding: 0 14px;
   border-radius: var(--radius);
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   background: var(--surface);
   outline: none;
   font-size: 14px;
@@ -1277,7 +1310,7 @@ textarea {
   height: 40px;
   padding: 0 56px 0 38px;
   border-radius: var(--radius);
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
   outline: none;
@@ -2078,10 +2111,10 @@ textarea {
 
 .review-section {
   border-color: var(--wtg-peach);
-  background: var(--ink-50);
+  background: var(--bg);
 }
 .planning-section {
-  border-color: var(--ink-200);
+  border-color: var(--border);
   background: var(--wtg-sky-100);
 }
 .paused-section {
@@ -2089,8 +2122,8 @@ textarea {
   background: #f7f7fc;
 }
 .completed-section {
-  border-color: var(--ink-200);
-  background: var(--ink-50);
+  border-color: var(--border);
+  background: var(--bg);
 }
 .archived-section {
   border-color: #cfcde0;
@@ -2320,10 +2353,10 @@ a.share-btn {
 .modal-foot button {
   min-height: 36px;
   background: var(--surface);
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0 14px;
-  color: var(--wtg-blue);
+  color: var(--heading);
   font-weight: 600;
 }
 .modal-foot button:hover {
@@ -2694,7 +2727,7 @@ a.share-btn {
 .li-add input,
 .li-add select {
   width: 100%;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 8px 10px;
   background: var(--surface);
@@ -3711,8 +3744,8 @@ a.share-btn {
   gap: 6px;
   min-height: 28px;
   background: var(--surface);
-  border: 1px solid var(--ink-200);
-  color: var(--wtg-blue);
+  border: 1px solid var(--border);
+  color: var(--heading);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -6803,7 +6836,7 @@ a.button-link:hover {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .settings-group-title + .settings-group-sub {
   margin: -10px 0 14px;
@@ -7918,17 +7951,17 @@ a.button-link:hover {
 }
 .btn-secondary {
   background: var(--surface);
-  border-color: var(--ink-200);
-  color: var(--wtg-blue);
+  border-color: var(--border);
+  color: var(--heading);
 }
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--wtg-cobalt);
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .btn-ghost {
   background: transparent;
   border-color: transparent;
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .btn-ghost:hover:not(:disabled) {
   background: var(--accent-wash);
@@ -7996,7 +8029,7 @@ a.button-link:hover {
 }
 .icon-missing {
   display: inline-block;
-  border: 1.5px dashed var(--ink-300);
+  border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius);
   color: var(--ink-400);
   font-family: var(--font-mono);
@@ -8031,7 +8064,7 @@ a.button-link:hover {
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .mono,
 .card-due,
@@ -8075,12 +8108,12 @@ a.button-link:hover {
   padding: 0 14px;
   font-size: 13px;
   background: var(--surface);
-  border: 1px solid var(--ink-200);
-  color: var(--wtg-blue);
+  border: 1px solid var(--border);
+  color: var(--heading);
 }
 .topbar-actions .btn-mini:hover:not(:disabled) {
   border-color: var(--wtg-cobalt);
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .topbar-actions .primary,
 .new-menu-primary > .primary {
@@ -8125,7 +8158,7 @@ a.button-link:hover {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--wtg-blue);
+  color: var(--heading);
   text-transform: none;
 }
 .section-head .muted.small {
@@ -8133,20 +8166,20 @@ a.button-link:hover {
   color: var(--muted);
 }
 .collapse-icon {
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .team-section > .section-head {
   padding: 0 2px;
 }
 .team-column {
-  background: var(--ink-50);
-  border: 1px solid var(--ink-200);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .team-col-head {
   padding: 12px 14px;
-  border-bottom: 1px solid var(--ink-200);
+  border-bottom: 1px solid var(--border);
 }
 .team-col-name {
   font-size: 14px;
@@ -8164,19 +8197,19 @@ a.button-link:hover {
 .team-column.drop-over,
 .workspace-section.drop-over {
   border-color: var(--wtg-cobalt);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 
 /* ── Project cards ────────────────────────────────────────────────────── */
 .project-card {
   padding: 16px;
   gap: 8px;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   background: var(--surface);
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .project-card:hover {
-  border-color: var(--ink-300);
+  border-color: var(--border-strong);
   transform: none;
 }
 .project-card.dragging {
@@ -8217,7 +8250,7 @@ a.button-link:hover {
 .card-priority.low,
 .priority-badge.low,
 .task-priority.low {
-  background: var(--ink-100);
+  background: var(--surface-2);
   color: var(--ink-700);
 }
 .card-due {
@@ -8240,7 +8273,7 @@ a.button-link:hover {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--wtg-blue);
+  color: var(--heading);
   line-height: 1.3;
 }
 .project-card.compact .card-title {
@@ -8257,7 +8290,7 @@ a.button-link:hover {
   margin-top: 0;
   padding: 2px 8px;
   background: transparent;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   font-family: var(--font-mono);
   font-weight: 500;
@@ -8287,7 +8320,7 @@ a.button-link:hover {
 .card-progress {
   height: 4px;
   border-radius: var(--radius);
-  background: var(--ink-100);
+  background: var(--surface-2);
 }
 .card-progress-bar {
   background: var(--wtg-cobalt);
@@ -8313,14 +8346,14 @@ a.button-link:hover {
   min-height: 28px;
   font-size: 13px;
   font-weight: 600;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--wtg-blue);
+  color: var(--heading);
   transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .btn-mini:hover:not(:disabled) {
   border-color: var(--wtg-cobalt);
-  color: var(--wtg-cobalt);
+  color: var(--link);
   background: var(--surface);
 }
 .btn-mini.primary {
@@ -8329,21 +8362,21 @@ a.button-link:hover {
   color: #fff;
 }
 .link-btn {
-  color: var(--wtg-cobalt);
+  color: var(--link);
   font-weight: 600;
 }
 .share-btn {
   min-height: 32px;
   padding: 0 12px;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--wtg-blue);
+  color: var(--heading);
   font-size: 12px;
   font-weight: 600;
 }
 .share-btn:hover {
   border-color: var(--wtg-cobalt);
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .icon-btn {
   border-radius: var(--radius);
@@ -8351,8 +8384,8 @@ a.button-link:hover {
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .icon-btn:hover {
-  background: var(--ink-100);
-  color: var(--wtg-blue);
+  background: var(--surface-2);
+  color: var(--heading);
 }
 .icon-btn:focus-visible,
 .btn-mini:focus-visible,
@@ -8369,7 +8402,7 @@ a.button-link:hover {
 .export-row button {
   min-height: 28px;
   padding: 0 12px;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
@@ -8379,12 +8412,12 @@ a.button-link:hover {
 }
 .filter-quick button:hover,
 .export-row button:hover {
-  border-color: var(--ink-300);
+  border-color: var(--border-strong);
   background: var(--surface);
 }
 .filter-quick button.active,
 .filter-quick button.active:hover {
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   border-color: var(--wtg-cobalt);
   color: var(--wtg-cobalt);
   font-weight: 600;
@@ -8395,7 +8428,7 @@ a.button-link:hover {
   background: transparent;
   overflow: visible;
   gap: 2px;
-  border-bottom: 1px solid var(--ink-200);
+  border-bottom: 1px solid var(--border);
 }
 .soc-tabs button {
   position: relative;
@@ -8412,11 +8445,11 @@ a.button-link:hover {
 }
 .soc-tabs button:hover {
   color: var(--text);
-  background: var(--ink-50);
+  background: var(--bg);
 }
 .soc-tabs button.active {
   background: transparent;
-  color: var(--wtg-blue);
+  color: var(--heading);
   border-bottom-color: var(--wtg-cobalt);
   box-shadow: none;
 }
@@ -8473,7 +8506,7 @@ a.button-link:hover {
 }
 .soc-type-pill {
   background: var(--surface) !important;
-  border-color: color-mix(in srgb, var(--category) 60%, var(--ink-200)) !important;
+  border-color: color-mix(in srgb, var(--category) 60%, var(--border)) !important;
   color: var(--category) !important;
 }
 .soc-type-pill:hover {
@@ -8541,14 +8574,14 @@ a.button-link:hover {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   background: transparent;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   color: var(--ink-600);
 }
 .badge {
   font-family: var(--font-mono);
   font-weight: 500;
   font-size: 12px;
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   color: var(--wtg-cobalt);
   padding: 2px 8px;
 }
@@ -8556,7 +8589,7 @@ a.button-link:hover {
   font-family: var(--font-mono);
   font-weight: 500;
   letter-spacing: 0.08em;
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   color: var(--wtg-cobalt);
 }
 .notify-tag.review {
@@ -8565,7 +8598,7 @@ a.button-link:hover {
 }
 .status-select {
   font-weight: 600;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
 }
 .status-select:focus {
   border-color: var(--wtg-cobalt);
@@ -8598,20 +8631,20 @@ a.button-link:hover {
 .notifications-modal,
 .confirm-modal,
 .sp-guide {
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: none;
 }
 .modal-head {
   padding: 18px 20px;
-  border-bottom: 1px solid var(--ink-200);
+  border-bottom: 1px solid var(--border);
 }
 .modal-title,
 .modal-title-static {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--wtg-blue);
+  color: var(--heading);
   line-height: 1.2;
 }
 .modal-sub {
@@ -8624,7 +8657,7 @@ a.button-link:hover {
   font-size: 12px;
   font-weight: 600;
   min-height: 26px;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
 }
 .modal-body {
   padding: 20px;
@@ -8642,7 +8675,7 @@ a.button-link:hover {
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .modal-section:first-child h3,
 .panel h3 {
@@ -8685,7 +8718,7 @@ a.button-link:hover {
 .filter-fields input,
 .filter-fields select {
   min-height: 36px;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
@@ -8729,21 +8762,21 @@ a.button-link:hover {
 }
 .modal-foot {
   padding: 14px 20px;
-  background: var(--ink-50);
-  border-top: 1px solid var(--ink-200);
+  background: var(--bg);
+  border-top: 1px solid var(--border);
 }
 .modal-foot button {
   min-height: 36px;
   padding: 0 16px;
   font-size: 14px;
   font-weight: 600;
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--wtg-blue);
+  color: var(--heading);
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .modal-foot button:hover {
-  border-color: var(--ink-300);
+  border-color: var(--border-strong);
   background: var(--surface);
 }
 .modal-foot .primary,
@@ -8782,8 +8815,8 @@ a.button-link:hover {
   color: var(--muted);
 }
 .modal-head .icon-btn:hover {
-  background: var(--ink-100);
-  color: var(--wtg-blue);
+  background: var(--surface-2);
+  color: var(--heading);
 }
 .modal-grid {
   gap: 14px;
@@ -8801,7 +8834,7 @@ a.button-link:hover {
 .notification-card,
 .filter-bar,
 .dashboard-activity-table {
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
 }
@@ -8814,7 +8847,7 @@ a.button-link:hover {
   font-weight: 700;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .dashboard-section h3 .nav-icon,
 .dashboard-section h3 svg {
@@ -8841,7 +8874,7 @@ a.button-link:hover {
   font-weight: 400;
   font-size: 28px;
   letter-spacing: -0.02em;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .kpi-sub {
   font-size: 14px;
@@ -8859,14 +8892,14 @@ a.button-link:hover {
 .kpi.completed .kpi-value,
 .kpi.paused .kpi-value,
 .kpi.archived .kpi-value {
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .kpi.live .kpi-value {
   color: var(--wp-status-live-fg);
 }
 .ev-kpi-btn.selected {
   border-color: var(--wtg-cobalt);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   box-shadow: none;
 }
 .dashboard-section.dashboard-overdue {
@@ -8879,7 +8912,7 @@ a.button-link:hover {
 .deadline-item,
 .notification-item {
   border-radius: var(--radius);
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   background: var(--surface);
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
@@ -8888,7 +8921,7 @@ a.button-link:hover {
 .project-item:hover,
 .deadline-item:hover {
   border-color: var(--wtg-cobalt);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 .deadline-date {
   background: var(--wtg-blue);
@@ -8910,14 +8943,14 @@ a.button-link:hover {
   text-transform: uppercase;
   color: var(--muted);
   background: var(--surface);
-  border-bottom: 1px solid var(--ink-200);
+  border-bottom: 1px solid var(--border);
 }
 .activity-row,
 .campaign-table td,
 .ev-table td {
   min-height: 44px;
   font-size: 13px;
-  border-color: var(--ink-200);
+  border-color: var(--border);
 }
 .campaign-table td,
 .ev-table td {
@@ -8927,7 +8960,7 @@ a.button-link:hover {
 .activity-row:hover,
 .campaign-table tbody tr:hover td,
 .ev-row:hover td {
-  background: var(--ink-50);
+  background: var(--bg);
 }
 .ev-month-row th {
   font-family: var(--font-sans);
@@ -8935,7 +8968,7 @@ a.button-link:hover {
   font-weight: 700;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--wtg-blue);
+  color: var(--heading);
   border-bottom: 0;
 }
 .activity-due-date,
@@ -8952,7 +8985,7 @@ a.button-link:hover {
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .soc-weekday {
   font-family: var(--font-mono);
@@ -8962,19 +8995,19 @@ a.button-link:hover {
   color: var(--muted);
 }
 .soc-cell {
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   background: var(--surface);
 }
 .soc-cell.weekend {
-  background: var(--ink-50);
+  background: var(--bg);
 }
 .soc-cell.today {
-  border-color: var(--ink-200);
+  border-color: var(--border);
   border-top: 2px solid var(--wtg-cobalt);
   box-shadow: none;
 }
 .soc-cell.today .soc-day {
-  color: var(--wtg-cobalt);
+  color: var(--link);
   font-weight: 500;
 }
 .soc-day {
@@ -8983,12 +9016,12 @@ a.button-link:hover {
 }
 .soc-card {
   border-radius: var(--radius);
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   border-left-width: 3px;
 }
 .soc-card:hover {
   transform: none;
-  border-color: var(--ink-300);
+  border-color: var(--border-strong);
 }
 .soc-card:focus-visible {
   outline: none;
@@ -8999,12 +9032,12 @@ a.button-link:hover {
   color: var(--text);
 }
 .soc-tray {
-  background: var(--ink-50);
-  border: 1px dashed var(--ink-300);
+  background: var(--bg);
+  border: 1px dashed var(--border-strong);
 }
 .soc-legend-item.active {
   border-color: var(--wtg-cobalt);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 .soc-legend-count,
 .soc-type-count {
@@ -9020,19 +9053,19 @@ a.button-link:hover {
 /* ── Campaign and event cards ─────────────────────────────────────────── */
 .camp-card,
 .ev-card {
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   transition: border-color var(--dur) var(--ease);
 }
 .camp-card:hover,
 .ev-card:hover {
-  border-color: var(--ink-300);
+  border-color: var(--border-strong);
 }
 .camp-card-title,
 .ev-name,
 .camp-mini-name,
 .camps-upcoming-name {
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
   letter-spacing: -0.01em;
 }
 .camp-card-dates,
@@ -9053,7 +9086,7 @@ a.button-link:hover {
 .camp-mini-time-bar {
   height: 4px;
   border-radius: var(--radius);
-  background: var(--ink-100);
+  background: var(--surface-2);
 }
 .camp-card-progress-bar,
 .ev-check-fill,
@@ -9069,7 +9102,7 @@ a.button-link:hover {
 }
 .ev-chip {
   border-radius: var(--radius);
-  border: 1px solid color-mix(in srgb, var(--ev) 40%, var(--ink-200));
+  border: 1px solid color-mix(in srgb, var(--ev) 40%, var(--border));
   border-left: 3px solid var(--ev);
   background: color-mix(in srgb, var(--ev) 10%, var(--surface));
   color: var(--ink-900);
@@ -9084,14 +9117,14 @@ a.button-link:hover {
 
 /* ── Login ────────────────────────────────────────────────────────────── */
 .login {
-  background: var(--ink-50);
+  background: var(--bg);
 }
 .login-pattern {
   color: var(--wtg-periwinkle);
   opacity: 0.35;
 }
 .login-card {
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   background: var(--surface);
 }
 .login-title {
@@ -9106,7 +9139,7 @@ a.button-link:hover {
   font-size: 15px;
 }
 .auth-tabs {
-  border-bottom: 1px solid var(--ink-200);
+  border-bottom: 1px solid var(--border);
 }
 .auth-tab {
   font-weight: 600;
@@ -9118,28 +9151,28 @@ a.button-link:hover {
   border-bottom-color: var(--wtg-cobalt);
 }
 .login-tile {
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 .login-tile:hover,
 .login-selected {
   border-color: var(--wtg-cobalt);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 
 /* ── New menu ─────────────────────────────────────────────────────────── */
 .new-menu-list {
-  border: 1px solid var(--ink-200);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: none;
 }
 .new-menu-item:hover,
 .new-menu-item:focus-visible {
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 .new-menu-label {
   font-weight: 600;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .new-menu-hint {
   font-size: 12px;
@@ -9284,7 +9317,7 @@ a.button-link:hover {
 
 /* ── Events calendar cards (the Social calendar card, for an event) ──── */
 .ev-cal-card .soc-card-title {
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .ev-cal-card.compact {
   gap: 2px;
@@ -9323,7 +9356,7 @@ a.button-link:hover {
 }
 .ev-cal-region {
   color: var(--ink-600);
-  border-color: var(--ink-300);
+  border-color: var(--border-strong);
   --category: var(--ink-500);
 }
 .ev-cal-check {
@@ -9338,7 +9371,7 @@ a.button-link:hover {
   flex: 1;
   height: 4px;
   border-radius: var(--radius);
-  background: var(--ink-100);
+  background: var(--surface-2);
   overflow: hidden;
   min-width: 24px;
 }
@@ -9413,7 +9446,7 @@ a.button-link:hover {
   vertical-align: -2px;
 }
 .new-menu-li.flyout-open > .new-menu-item {
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 .new-menu-flyout {
   top: -4px;
@@ -9470,7 +9503,7 @@ a.button-link:hover {
   cursor: pointer;
 }
 .view-seg button[aria-pressed="true"] {
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   color: var(--wtg-cobalt);
 }
 .view-seg button:focus-visible {
@@ -9484,7 +9517,7 @@ a.button-link:hover {
   align-items: start;
 }
 .kanban-col {
-  background: var(--ink-50);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 10px;
@@ -9496,7 +9529,7 @@ a.button-link:hover {
 }
 .kanban-col.drop-over {
   border-color: var(--wtg-cobalt);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 .kanban-col-head {
   display: flex;
@@ -9562,7 +9595,7 @@ a.button-link:hover {
   cursor: default;
 }
 .mywork-table tbody tr:hover {
-  background: var(--ink-50);
+  background: var(--bg);
 }
 .mywork-table tbody tr:last-child td {
   border-bottom: 0;
@@ -9590,7 +9623,7 @@ a.button-link:hover {
 .mywork-open {
   font-size: 14px;
   font-weight: 600;
-  color: var(--wtg-blue);
+  color: var(--heading);
   padding: 0;
   text-align: left;
 }
@@ -9666,7 +9699,7 @@ a.button-link:hover {
 }
 .notif-alerts b {
   font-size: 14px;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .notif-alerts .btn {
   flex: none;
@@ -9698,7 +9731,7 @@ a.button-link:hover {
   justify-content: flex-end;
 }
 .ler-empty {
-  border: 1px dashed var(--ink-300);
+  border: 1px dashed var(--border-strong);
   border-radius: var(--radius);
   padding: 18px 20px;
   display: flex;
@@ -9757,7 +9790,7 @@ a.button-link:hover {
 .ler-card:hover {
   border-color: var(--wtg-cobalt);
   border-left-color: var(--edge);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 .ler-card:focus-visible {
   outline: 2px solid var(--wtg-cobalt);
@@ -9780,7 +9813,7 @@ a.button-link:hover {
   gap: 5px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .ler-card-when .muted {
   font-weight: 500;
@@ -9840,8 +9873,8 @@ a.button-link:hover {
   }
 }
 .ler-tile {
-  background: var(--ink-50);
-  border: 1px solid var(--ink-200);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 10px 12px;
   display: flex;
@@ -9885,7 +9918,7 @@ a.button-link:hover {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .ler-block .field {
   margin: 0 0 8px;
@@ -9914,7 +9947,7 @@ a.button-link:hover {
   margin: 0 0 10px;
   padding: 8px 12px;
   border-left: 3px solid var(--wtg-periwinkle);
-  background: var(--ink-50);
+  background: var(--bg);
   border-radius: 0 var(--radius) var(--radius) 0;
   font-size: 14px;
   white-space: pre-wrap;
@@ -9928,7 +9961,7 @@ a.button-link:hover {
   padding: 10px 14px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--wtg-cobalt);
+  color: var(--link);
   list-style: none;
 }
 .ler-details > summary::-webkit-details-marker {
@@ -9964,7 +9997,7 @@ a.button-link:hover {
   grid-template-columns: 180px 1fr;
   gap: 2px 14px;
   padding: 5px 0;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border);
   font-size: 13px;
 }
 .ler-kv > div:last-child {
@@ -10018,7 +10051,7 @@ a.button-link:hover {
 .ler-retire {
   margin-top: 8px;
   padding: 12px 14px;
-  border: 1px dashed var(--ink-300);
+  border: 1px dashed var(--border-strong);
   border-radius: var(--radius);
 }
 .ler-retire h3 {
@@ -10165,7 +10198,7 @@ a.button-link:hover {
   opacity: 0;
   border: 0;
   background: transparent;
-  color: var(--wtg-cobalt);
+  color: var(--link);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
@@ -10247,7 +10280,7 @@ a.button-link:hover {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .ler-modal-foot {
   display: flex;
@@ -10322,7 +10355,7 @@ a.button-link:hover {
   margin-left: 6px;
   padding: 1px 6px;
   border-radius: 999px;
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   color: var(--wtg-cobalt);
   font-family: var(--font-mono);
   font-size: 10px;
@@ -10825,7 +10858,7 @@ a.button-link:hover {
   padding: 0;
   font: inherit;
   font-weight: 600;
-  color: var(--wtg-cobalt);
+  color: var(--link);
   text-align: left;
   cursor: pointer;
 }
@@ -10957,7 +10990,7 @@ a.ex-row {
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-weight: 600;
-  color: var(--wtg-cobalt);
+  color: var(--link);
   text-decoration: none;
 }
 :root.dark-mode .li-ins-post {

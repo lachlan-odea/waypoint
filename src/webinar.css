@@ -28,7 +28,7 @@
   font-size: 24px;
   line-height: 1.2;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
   letter-spacing: -0.01em;
 }
 .kit-who {
@@ -96,7 +96,7 @@
   gap: 10px;
 }
 .kit-links a {
-  color: var(--wtg-cobalt);
+  color: var(--link);
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -108,7 +108,7 @@
   text-transform: uppercase;
   padding: 1px 6px;
   border-radius: var(--radius);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   color: var(--wtg-cobalt);
   margin-left: 6px;
 }
@@ -219,7 +219,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .kit-fhead p {
   margin: 0;
@@ -259,14 +259,14 @@
 .kit-toggle:hover,
 .kit-seg button:hover,
 .kit-typecard:hover {
-  border-color: var(--ink-300);
+  border-color: var(--border-strong);
 }
 .kit-opt[aria-pressed="true"],
 .kit-toggle[aria-pressed="true"],
 .kit-seg button[aria-pressed="true"],
 .kit-seg button[aria-checked="true"],
 .kit-typecard[aria-pressed="true"] {
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   border-color: var(--wtg-cobalt);
   color: var(--wtg-cobalt);
 }
@@ -297,7 +297,7 @@
 }
 .kit-typecard b {
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .kit-typecard span {
   font-size: 12px;
@@ -311,7 +311,7 @@
   border-radius: var(--radius);
   font-size: 12px;
   font-weight: 600;
-  background: var(--ink-100);
+  background: var(--surface-2);
   color: var(--ink-700);
   white-space: nowrap;
 }
@@ -325,7 +325,7 @@
   color: var(--wtg-blue);
 }
 .kit-chip.brand {
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
   color: var(--wtg-cobalt);
 }
 .kit-chip.ok {
@@ -351,7 +351,7 @@
 .kit-copybox summary {
   cursor: pointer;
   font-size: 13px;
-  color: var(--wtg-cobalt);
+  color: var(--link);
   font-weight: 600;
 }
 .kit-metrics {
@@ -371,7 +371,7 @@
 .kit-mv {
   font-family: var(--font-mono);
   font-size: 22px;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .kit-ml {
   font-size: 12px;
@@ -448,7 +448,7 @@
   gap: 10px;
   font-weight: 700;
   font-size: 14px;
-  color: var(--wtg-blue);
+  color: var(--heading);
   min-width: 0;
 }
 .kit-stamp {
@@ -505,7 +505,7 @@
   font-size: 13px;
 }
 .kit-flist li > svg {
-  color: var(--wtg-blue);
+  color: var(--heading);
   flex: none;
   margin-top: 2px;
 }
@@ -517,7 +517,7 @@
   gap: 2px;
 }
 .kit-fmain a {
-  color: var(--wtg-cobalt);
+  color: var(--link);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -567,7 +567,7 @@
 }
 .kit-next li button:hover {
   border-color: var(--wtg-cobalt);
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 .kit-nn {
   font-family: var(--font-mono);
@@ -750,7 +750,7 @@
   position: relative;
   height: 24px;
   border-radius: var(--radius);
-  background: var(--ink-50);
+  background: var(--bg);
   border: 1px solid var(--border);
 }
 .kit-g-bar {
@@ -912,7 +912,7 @@
   font-size: 26px;
   line-height: 1.15;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
   letter-spacing: -0.02em;
 }
 .wb-head p {
@@ -1036,7 +1036,7 @@
   margin: 4px 0 0;
   font-size: 16px;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
   line-height: 1.25;
 }
 .wb-series,
@@ -1121,7 +1121,7 @@
   margin: 12px 0 8px;
   font-size: 15px;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .wb-due-group h3.late {
   color: var(--kit-late);
@@ -1155,7 +1155,7 @@
   cursor: pointer;
 }
 .wb-drow:hover {
-  background: var(--ink-50);
+  background: var(--bg);
 }
 .wb-dd {
   font-size: 12px;
@@ -1215,12 +1215,12 @@
   font-family: var(--font-mono);
 }
 .wb-tbl tbody tr:hover {
-  background: var(--ink-50);
+  background: var(--bg);
 }
 .wb-tbl tfoot td {
   font-weight: 600;
   border-bottom: 0;
-  background: var(--ink-50);
+  background: var(--bg);
 }
 .wb-sub {
   display: block;
@@ -1231,7 +1231,7 @@
 .wb-gcard h4 {
   margin: 4px 0 8px;
   font-size: 16px;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .wb-gcard p {
   margin: 2px 0 10px;
@@ -1353,7 +1353,7 @@
   margin: 0;
   font-size: 16px;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .sp-title {
   margin: 0;
@@ -1371,7 +1371,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .sp-bio {
   margin: 0;
@@ -1392,7 +1392,7 @@
   flex: none;
   border-radius: 50%;
   object-fit: cover;
-  background: var(--ink-100);
+  background: var(--surface-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1413,7 +1413,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  color: var(--wtg-cobalt);
+  color: var(--link);
   font-weight: 600;
   max-width: 320px;
 }
@@ -1455,7 +1455,7 @@
   flex-direction: column;
   gap: 1px;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
   font-size: 13px;
   text-align: left;
   padding: 0;
@@ -1471,7 +1471,7 @@
   max-width: 120px;
 }
 .kit-g-block.current .kit-g-ep-name {
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 .kit-gantt.stacked .kit-g-block:not(.current) .kit-g-bar {
   opacity: 0.75;
