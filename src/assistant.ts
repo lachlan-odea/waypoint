@@ -140,7 +140,7 @@ async function asAssistantError(err: unknown): Promise<AssistantError> {
   if (err instanceof AssistantError) return err;
   const Client = await sdk();
   if (err instanceof Client.AuthenticationError || err instanceof Client.PermissionDeniedError) {
-    return new AssistantError("auth", "The gateway didn't accept the assistant's key. A super user needs to check the connection.");
+    return new AssistantError("auth", "The gateway didn't accept Lachy 2.0's key. A super user needs to check the connection.");
   }
   if (err instanceof Client.NotFoundError) {
     return new AssistantError("auth", "The gateway doesn't know that model or address. Check the connection.");
@@ -161,7 +161,7 @@ async function asAssistantError(err: unknown): Promise<AssistantError> {
     return new AssistantError("other", `The gateway couldn't answer that (${err.status ?? "error"}).${detail}`);
   }
   console.error(err);
-  return new AssistantError("other", "The assistant couldn't answer that. Try again.");
+  return new AssistantError("other", "Lachy 2.0 couldn't answer that. Try again.");
 }
 
 // Ask the last message in `messages` (a question), given the turns before

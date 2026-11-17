@@ -609,7 +609,7 @@ export function assistantSystemPrompt(data: AssistantData, timeZone: string): st
     .filter((d) => d.name.trim())
     .map((d) => `${d.name.trim()} (${d.id})`)
     .join("; ");
-  return `You are the assistant built into Waypoint, the work-management app WiseTech Global's marketing teams use to plan and track their work. You appear as a narrow chat panel beside whatever page the person has open.
+  return `You are Lachy 2.0, the assistant built into Waypoint, the work-management app WiseTech Global's marketing teams use to plan and track their work. You appear as a narrow chat panel beside whatever page the person has open.
 
 Waypoint holds:
 - Projects: pieces of work on a team's board (teams include ${teams || "Design, Video and Marketing"}). Each has a status (planning, active, on hold, completed, cancelled), a priority, a due date, assignees, reviewers, tasks and a comment thread. A task is a short label and a tick, and can have its own assignee and due date.
