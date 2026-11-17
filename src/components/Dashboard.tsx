@@ -3,7 +3,7 @@ import type { BigRock, Campaign, MarketingEvent, SocialPost, WorkspaceData } fro
 import type { SidebarView } from "./Sidebar";
 import { PROJECT_STATUSES, projectStatusLabel, socialStatusMeta, brandColor } from "../constants";
 import { PHASE_LABEL, campaignPhase } from "../campaigns";
-import { rockWork, unattributed } from "../bigRocks";
+import { UNATTRIBUTED, rockWork, unattributed } from "../bigRocks";
 import { checklistDone, eventPhase, eventStatusMeta, followUpMissing, formatEventDates, formatUsd, EVENT_CHECKLIST } from "../events";
 import { STAGE_LABEL, kitName, kitOf, kitState } from "../webinarKit";
 import { socialPostTitle } from "../socialPosts";
@@ -34,7 +34,9 @@ type Props = {
   onOpenView: (view: SidebarView) => void;
   // The Campaigns page, already on its Webinars view.
   onOpenWebinars: () => void;
-  onOpenBigRocks: () => void;
+  // Opens the Big Rocks page on that rock (or UNATTRIBUTED for the work
+  // on no rock).
+  onOpenBigRocks: (rockId: string) => void;
 };
 
 export function Dashboard({ workspace, campaigns, events, socialPosts, bigRocks, onOpenCampaign, onOpenEvent, onOpenSocialPost, onOpenBoard, onOpenView, onOpenWebinars, onOpenBigRocks }: Props) {
@@ -160,7 +162,7 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, bigRocks,
                 type="button"
                 className="ex-rock"
                 style={{ ["--rock" as string]: w.rock.color } as React.CSSProperties}
-                onClick={onOpenBigRocks}
+                onClick={() => onOpenBigRocks(w.rock.id)}
                 title={`${w.rock.name} on the Big Rocks page`}
               >
                 <span className="ex-rock-head">
@@ -179,7 +181,7 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, bigRocks,
                 </span>
               </button>
             ))}
-            <button type="button" className="ex-rock ex-rock-none" onClick={onOpenBigRocks} title="Live work on no rock, on the Big Rocks page">
+            <button type="button" className="ex-rock ex-rock-none" onClick={() => onOpenBigRocks(UNATTRIBUTED)} title="Live work on no rock, on the Big Rocks page">
               <span className="ex-rock-head">
                 <b>Not on any rock</b>
                 <span className="ex-rock-desc">Live work nothing claims. Tag it from its Details tab.</span>

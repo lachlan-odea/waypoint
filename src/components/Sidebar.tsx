@@ -37,14 +37,18 @@ type Props = {
   onSelectView: (view: SidebarView) => void;
   // The + New menu: a project, a campaign, an event or a social post.
   onNew: (kind: NewKind) => void;
+  // Campaigns → Webinars: the Campaigns page opened straight on its
+  // Webinars tab.
+  onOpenWebinars: () => void;
 };
 
 // The shell nav (design system §7 "Tiles & app navigation"): plain line
 // icons, no coloured tiles. Each team board is a folder. A view with
 // `children` carries a caret and shows them in a flyout beside the row on
 // hover, focus or →, like the + New menu's Webinar; it stays highlighted
-// while a child is open.
-type NavItem = { view: SidebarView; label: string; icon: IconName; hint?: string; children?: NavItem[] };
+// while a child is open. A child with `webinars` isn't a view of its own:
+// it opens its parent's page on the Webinars tab.
+type NavItem = { view: SidebarView; label: string; icon: IconName; hint?: string; webinars?: true; children?: NavItem[] };
 const VIEW_NAV: NavItem[] = [
   {
     view: "executiveDashboard",
@@ -52,7 +56,12 @@ const VIEW_NAV: NavItem[] = [
     icon: "presentation-board-chart-graph",
     children: [{ view: "bigRocks", label: "Big Rocks", icon: "flag", hint: "The team's priorities, and what serves each" }],
   },
-  { view: "campaigns", label: "Campaigns", icon: "target" },
+  {
+    view: "campaigns",
+    label: "Campaigns",
+    icon: "target",
+    children: [{ view: "campaigns", label: "Webinars", icon: "video-camera", hint: "The webinar pipeline, worked through the 2026 kit", webinars: true }],
+  },
   { view: "events", label: "Events", icon: "calendar" },
   { view: "socialCalendar", label: "Social calendar", icon: "file" },
   { view: "archived", label: "Archived", icon: "archive-documents-box-big" },
@@ -79,6 +88,7 @@ export function Sidebar({
   onToggleCollapsed,
   onSelectView,
   onNew,
+  onOpenWebinars,
 }: Props) {
   // Which workspace item the dragged project is currently hovering over.
   // Local state so the highlight stays in sync without round-tripping through
@@ -181,7 +191,7 @@ export function Sidebar({
         {!collapsed && <div className="nav-section">View</div>}
         <ul className="designer-list">
           {VIEW_NAV.map((item) => {
-            const childOpen = item.children?.some((c) => c.view === view) ?? false;
+            const childOpen = item.children?.some((c) => !c.webinars && c.view === view) ?? false;
             return (
               <li
                 key={item.view}
@@ -233,17 +243,22 @@ export function Sidebar({
                 </button>
                 {item.children && (
                   <ul className="new-menu-list new-menu-flyout flyout-right nav-flyout" role="menu" aria-label={`${item.label} views`}>
-                    {item.children.map((c) => (
-                      <li key={c.view} role="none">
+                    {item.children.map((c) => {
+                      // Webinars is a tab of its parent's page, so it never
+                      // shows as the open view itself.
+                      const current = !c.webinars && view === c.view;
+                      return (
+                      <li key={c.label} role="none">
                         <button
                           type="button"
                           role="menuitem"
-                          className={`new-menu-item ${view === c.view ? "active" : ""}`}
-                          aria-current={view === c.view ? "page" : undefined}
+                          className={`new-menu-item ${current ? "active" : ""}`}
+                          aria-current={current ? "page" : undefined}
                           onClick={() => {
                             setFlyout(null);
                             setDismissed(item.view);
-                            onSelectView(c.view);
+                            if (c.webinars) onOpenWebinars();
+                            else onSelectView(c.view);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === "ArrowLeft") {
@@ -260,7 +275,8 @@ export function Sidebar({
                           {c.hint && <span className="new-menu-hint">{c.hint}</span>}
                         </button>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
               </li>
