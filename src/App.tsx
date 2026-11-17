@@ -1758,11 +1758,6 @@ export default function App() {
             setNotificationsOpen(true);
             setNavOpen(false);
           }}
-          assistantOpen={assistantOpen}
-          onToggleAssistant={() => {
-            setAssistantOpen((o) => !o);
-            setNavOpen(false);
-          }}
           onOpenAnalytics={() => {
             closeItem();
             setView("analytics");
@@ -2540,6 +2535,10 @@ export default function App() {
       {/* Always mounted, so the conversation survives closing the panel. */}
       <AssistantPanel
         open={assistantOpen}
+        onOpen={() => {
+          setAssistantOpen(true);
+          setNavOpen(false);
+        }}
         data={{
           me: currentDesigner,
           designers: workspace.designers,

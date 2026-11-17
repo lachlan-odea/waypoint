@@ -273,46 +273,65 @@
   padding: 0 14px 10px;
 }
 
-/* The header button that opens the panel: the sparkle and "Ask AI", both in
-   CargoWise Blue (Cobalt; Violet on dark surfaces, where Cobalt doesn't
-   read). The auto margins centre it in the space between the search and
-   the account controls. */
-.assistant-toggle {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  margin: 0 auto;
-  padding: 0 14px;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--accent);
-  background: transparent;
+/* The button that opens the panel: a WiseTech Blue circle with the
+   sparkle, fixed to the bottom-right corner of every page. No shadow, as
+   everywhere; on dark surfaces a Violet ring keeps the blue from sinking
+   into the page. It shrinks away while the panel is open. */
+.assistant-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 88;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--wtg-white);
+  background: var(--wtg-blue);
   border: 1px solid transparent;
-  border-radius: var(--radius);
+  border-radius: 50%;
   cursor: pointer;
-  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  transition:
+    background var(--dur) var(--ease),
+    transform var(--dur) var(--ease),
+    opacity var(--dur) var(--ease),
+    visibility 0s;
 }
-.assistant-toggle:hover,
-.assistant-toggle[aria-pressed="true"] {
-  background: var(--accent-wash);
+.assistant-fab:hover {
+  background: var(--wtg-cobalt);
+  transform: scale(1.06);
 }
-.assistant-toggle[aria-pressed="true"] {
-  border-color: var(--accent);
-}
-.assistant-toggle:focus-visible {
+.assistant-fab:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
-/* Phones: the header's top row is tight, so it sits with the account
-   controls instead of being centred. */
+:root.dark-mode .assistant-fab {
+  border-color: var(--wtg-periwinkle);
+}
+.assistant-fab.is-hidden {
+  opacity: 0;
+  transform: scale(0.6);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform var(--dur) var(--ease),
+    opacity var(--dur) var(--ease),
+    visibility 0s linear var(--dur);
+}
 @media (max-width: 720px) {
-  .assistant-toggle {
-    margin: 0 0 0 auto;
-    padding: 0 10px;
+  .assistant-fab {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistant-fab,
+  .assistant-fab.is-hidden {
+    transition: none;
+  }
+  .assistant-fab:hover {
+    transform: none;
   }
 }
 
