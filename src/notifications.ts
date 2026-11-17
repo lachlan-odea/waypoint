@@ -10,6 +10,8 @@ export function describeNotification(kind: Notification["kind"]): string {
       return "replied to your comment";
     case "milestone":
       return "mentioned you in a milestone";
+    case "task":
+      return "assigned you a task";
     case "comment":
     default:
       return "mentioned you in a comment";
@@ -25,6 +27,8 @@ export function notificationTag(kind: Notification["kind"]): string {
       return "Reply";
     case "milestone":
       return "Milestone";
+    case "task":
+      return "Task";
     case "comment":
     default:
       return "Mention";

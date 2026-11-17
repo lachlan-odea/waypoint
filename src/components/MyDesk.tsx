@@ -63,6 +63,8 @@ interface MyDeskProps {
   onOpenCampaign: (campaignId: string) => void;
   // Flags a milestone done (or not) on a campaign you own.
   onToggleMilestone: (campaign: Campaign, milestoneId: string) => void;
+  // Flags a project task assigned to you done (or not).
+  onToggleProjectTask: (projectId: string, taskId: string) => void;
   // For the My work tab: which campaigns each project feeds, the teams (so
   // every card can say which board it's from) and the status setter behind
   // the kanban's drag-and-drop and the list's in-place select.
@@ -132,6 +134,7 @@ export function MyDesk({
   campaigns,
   onOpenCampaign,
   onToggleMilestone,
+  onToggleProjectTask,
   campaignsByProject,
   workspaces,
   onStatusChange,
@@ -302,6 +305,22 @@ export function MyDesk({
     });
   }
 
+  // Today's list in a new order: number every item by its place and save
+  // the ones whose number changed, in one batch so the list never shows
+  // half-reordered. The subscription picks the local write up at once, so
+  // the drop shows straight away.
+  function reorderDeskItems(ids: string[]) {
+    const place = new Map(ids.map((id, i) => [id, i]));
+    const changed = deskItems
+      .filter((i) => place.has(i.id) && i.order !== place.get(i.id))
+      .map((i) => ({ ...i, order: place.get(i.id)! }));
+    if (changed.length === 0) return;
+    applyDeskItemChanges(changed.map(stripUndefined), []).catch((err) => {
+      console.error(err);
+      setFlash("Couldn't save the new order — check your connection.");
+    });
+  }
+
   function removeDeskItem(id: string) {
     deleteDeskItem(id).catch((err) => {
       console.error(err);
@@ -345,6 +364,25 @@ export function MyDesk({
       workspace.projects
         .filter((p) => p.assigneeIds.includes(currentDesignerId) && !p.archived)
         .sort(sortByPriorityThenDue),
+    [workspace.projects, currentDesignerId],
+  );
+
+  // Open tasks assigned to you on any project still in play, whether or not
+  // you're on the project itself. Dated ones first, soonest first.
+  const myProjectTasks = useMemo(
+    () =>
+      workspace.projects
+        .filter((p) => !p.archived && p.status !== "completed" && p.status !== "cancelled")
+        .flatMap((project) =>
+          project.milestones
+            .filter((task) => !task.done && task.assigneeId === currentDesignerId)
+            .map((task) => ({ project, task })),
+        )
+        .sort(
+          (a, b) =>
+            (a.task.dueDate || "9999").localeCompare(b.task.dueDate || "9999") ||
+            a.project.title.localeCompare(b.project.title),
+        ),
     [workspace.projects, currentDesignerId],
   );
 
@@ -473,7 +511,7 @@ export function MyDesk({
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "work", label: "My work", count: myProjects.length },
-    { id: "checklist", label: "Checklist", count: openDeskCount },
+    { id: "checklist", label: "To Do", count: openDeskCount },
     ...(showCampaigns ? [{ id: "campaigns", label: "Campaigns", count: myCampaigns.length }] : []),
     { id: "notifications", label: "Notifications", count: notifications.length + reviewProjects.length },
   ];
@@ -588,7 +626,7 @@ export function MyDesk({
       >
         {deskError && (
           <div className="desk-banner error">
-            Your checklist isn't syncing: {deskError}
+            Your To Do list isn't syncing: {deskError}
           </div>
         )}
         {flash && <div className="desk-banner">{flash}</div>}
@@ -670,6 +708,54 @@ export function MyDesk({
                       </section>
                     )}
                 </div>
+
+                {/* Tasks other people (or you) handed you on a project. */}
+                {myProjectTasks.length > 0 && (
+                  <SideCard
+                    title="Your project tasks"
+                    aside={<span className="badge">{myProjectTasks.length}</span>}
+                  >
+                    <ul className="camp-card-ms desk-ms-list">
+                      {myProjectTasks.map(({ project: p, task: t }) => {
+                        const overdue = !!t.dueDate && t.dueDate < today;
+                        return (
+                          <li
+                            key={`${p.id}-${t.id}`}
+                            style={{ ["--camp" as string]: "var(--wtg-cobalt)" } as React.CSSProperties}
+                          >
+                            <label className={`camp-card-ms-row ${overdue ? "overdue" : ""}`}>
+                              <input
+                                type="checkbox"
+                                checked={t.done}
+                                onChange={() => onToggleProjectTask(p.id, t.id)}
+                                title="Tick once it's done"
+                              />
+                              <span className="camp-card-ms-date">
+                                {t.dueDate ? formatShort(t.dueDate) : "No date"}
+                              </span>
+                              <span className="camp-card-ms-label">
+                                {t.label}
+                                <span className="muted">
+                                  {" "}
+                                  · {p.title || "Untitled project"}
+                                  {overdue ? " · overdue" : ""}
+                                </span>
+                              </span>
+                            </label>
+                            <button
+                              type="button"
+                              className="camp-card-project"
+                              onClick={() => onOpenProject(p.id)}
+                              title={`Open ${p.title || "the project"}`}
+                            >
+                              Open
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </SideCard>
+                )}
 
                 <SideCard
                   title="Upcoming deadlines"
@@ -773,12 +859,12 @@ export function MyDesk({
                 title="Today's list"
                 aside={
                   <button type="button" className="desk-link" onClick={() => setTab("checklist")}>
-                    Open checklist
+                    Open To Do
                   </button>
                 }
               >
                 {todayItems.length === 0 ? (
-                  <EmptyNote>Nothing on today's list. Add something on the Checklist tab.</EmptyNote>
+                  <EmptyNote>Nothing on today's list. Add something on the To Do tab.</EmptyNote>
                 ) : (
                   <ul className="desk-peek">
                     {todayItems.slice(0, 6).map((i) => (
@@ -796,7 +882,7 @@ export function MyDesk({
                 )}
                 {todayItems.length > 6 && (
                   <p className="item-hint">
-                    +{todayItems.length - 6} more on the Checklist tab
+                    +{todayItems.length - 6} more on the To Do tab
                   </p>
                 )}
               </SideCard>
@@ -893,6 +979,7 @@ export function MyDesk({
               projects={workspace.projects}
               onAdd={(text) => addDeskItem(text)}
               onPatch={patchDeskItem}
+              onReorder={reorderDeskItems}
               onRemove={removeDeskItem}
               onOpenProject={onOpenProject}
               onFlash={setFlash}

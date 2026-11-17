@@ -317,7 +317,11 @@ function getProject(b: Bench, input: Input) {
     assignees: (p.assigneeIds ?? []).map(b.nameOf).filter(Boolean),
     reviewers: (p.reviewerIds ?? []).map(b.nameOf).filter(Boolean),
     bigRocks: b.rockNames(p.bigRockIds),
-    milestones: (p.milestones ?? []).map((m) => `${m.done ? "[done]" : "[open]"} ${m.label}`),
+    milestones: (p.milestones ?? []).map((m) => {
+      const who = m.assigneeId ? b.nameOf(m.assigneeId) : "";
+      const extra = [who && `assigned to ${who}`, m.dueDate && `due ${m.dueDate}`].filter(Boolean).join(", ");
+      return `${m.done ? "[done]" : "[open]"} ${m.label}${extra ? ` (${extra})` : ""}`;
+    }),
     campaigns: b.campaigns.filter((c) => (c.projectIds ?? []).includes(p.id)).map((c) => ({ id: c.id, name: c.name })),
     events: b.events.filter((e) => (e.projectIds ?? []).includes(p.id)).map((e) => ({ id: e.id, name: e.name })),
     commentsNote:

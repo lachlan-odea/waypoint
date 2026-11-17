@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import type { DeskItem, Project } from "../types";
+import { GripDots } from "./DragGrip";
+import { dropPosition, reorderIds } from "../dragReorder";
 import {
   countdownLabel,
   daysSince,
@@ -17,6 +19,8 @@ interface DeskChecklistProps {
   projects: Project[];
   onAdd: (text: string) => void;
   onPatch: (id: string, patch: Partial<DeskItem>) => void;
+  // Today's list in its new order (item ids, top first).
+  onReorder: (ids: string[]) => void;
   onRemove: (id: string) => void;
   onOpenProject: (id: string) => void;
   onFlash: (message: string) => void;
@@ -209,6 +213,7 @@ export function DeskChecklist({
   projects,
   onAdd,
   onPatch,
+  onReorder,
   onRemove,
   onOpenProject,
   onFlash,
@@ -219,16 +224,42 @@ export function DeskChecklist({
   const [draft, setDraft] = useState("");
   const [undo, setUndo] = useState<DeskItem | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
+  // Drag to reorder Today: the item being dragged and where it would land.
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [drop, setDrop] = useState<{ id: string; position: "before" | "after" } | null>(null);
 
   const today = todayIso();
 
+  // Dragged-into-place items first, by their order; the rest after them,
+  // oldest first, so something just added lands at the bottom.
   const todays = useMemo(
     () =>
       items
         .filter((i) => !i.done && !i.remind && i.date <= today)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+        .sort(
+          (a, b) =>
+            (a.order ?? Infinity) - (b.order ?? Infinity) ||
+            a.createdAt.localeCompare(b.createdAt),
+        ),
     [items, today],
   );
+
+  function endDrag() {
+    setDragging(null);
+    setDrop(null);
+  }
+
+  // Move one place up or down from the keyboard, keeping focus on the grip.
+  function nudge(id: string, dir: -1 | 1) {
+    const ids = todays.map((i) => i.id);
+    const at = ids.indexOf(id);
+    const to = at + dir;
+    if (at < 0 || to < 0 || to >= ids.length) return;
+    onReorder(reorderIds(ids, id, ids[to], dir < 0 ? "before" : "after"));
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>(`[data-desk-grip="${id}"]`)?.focus(),
+    );
+  }
 
   const later = useMemo(
     () =>
@@ -277,6 +308,8 @@ export function DeskChecklist({
       date,
       remind,
       remindTime: remind ? time || "09:00" : undefined,
+      // Off today's list, so it gives up its place; it rejoins at the bottom.
+      order: undefined,
     });
     setMoveFor(null);
     onFlash(
@@ -365,9 +398,61 @@ export function DeskChecklist({
           <p className="muted small">Nothing on today's list yet.</p>
         ) : (
           <ul className="desk-checklist">
-            {todays.map((item) => (
-              <li key={item.id}>
+            {todays.map((item) => {
+              const dropHere =
+                dragging && dragging !== item.id && drop?.id === item.id ? drop.position : null;
+              return (
+              <li
+                key={item.id}
+                className={[dragging === item.id ? "dragging" : "", dropHere ? `drop-${dropHere}` : ""]
+                  .filter(Boolean)
+                  .join(" ") || undefined}
+                onDragOver={(e) => {
+                  if (!dragging || dragging === item.id) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  const position = dropPosition(e);
+                  setDrop((cur) =>
+                    cur?.id === item.id && cur.position === position ? cur : { id: item.id, position },
+                  );
+                }}
+                onDragLeave={(e) => {
+                  const next = e.relatedTarget as Node | null;
+                  if (next && e.currentTarget.contains(next)) return;
+                  setDrop((cur) => (cur?.id === item.id ? null : cur));
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragging && drop?.id === item.id) {
+                    onReorder(reorderIds(todays.map((i) => i.id), dragging, item.id, drop.position));
+                  }
+                  endDrag();
+                }}
+              >
                 <div className="desk-row">
+                  <button
+                    type="button"
+                    className="item-task-grip"
+                    draggable
+                    data-desk-grip={item.id}
+                    title="Drag to reorder"
+                    aria-label={`Reorder ${item.text}. Use the up and down arrow keys to move it.`}
+                    onDragStart={(e) => {
+                      setDragging(item.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/plain", item.id);
+                      const row = e.currentTarget.closest("li");
+                      if (row) e.dataTransfer.setDragImage(row, 16, row.offsetHeight / 2);
+                    }}
+                    onDragEnd={endDrag}
+                    onKeyDown={(e) => {
+                      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+                      e.preventDefault();
+                      nudge(item.id, e.key === "ArrowUp" ? -1 : 1);
+                    }}
+                  >
+                    <GripDots />
+                  </button>
                   <button
                     type="button"
                     className="desk-tickbox"
@@ -470,7 +555,8 @@ export function DeskChecklist({
                   />
                 )}
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
 

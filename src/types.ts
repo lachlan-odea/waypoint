@@ -80,10 +80,17 @@ export type Workspace = {
   icon?: import("./components/Icon").IconName;
 };
 
+// A task on a project. Assignee and due date are optional and independent
+// of the project's own: a task can belong to someone who isn't on the
+// project, and fall due before (or after) the project does.
 export type Milestone = {
   id: string;
   label: string;
   done: boolean;
+  // Designer id of whoever the task is assigned to.
+  assigneeId?: string;
+  // ISO date (YYYY-MM-DD).
+  dueDate?: string;
 };
 
 export type Comment = {
@@ -145,7 +152,8 @@ export type Notification = {
   recipientId: string;
   fromName: string;
   projectId: string;
-  kind: "comment" | "milestone" | "like" | "reply";
+  // "task": you were assigned a task on the project.
+  kind: "comment" | "milestone" | "like" | "reply" | "task";
   snippet: string;
   createdAt: string;
   read: boolean;
@@ -186,6 +194,10 @@ export type DeskItem = {
   // desk item leaves the project's status alone.
   projectId?: string;
   createdAt: string;
+  // Position on the Today list once the owner has dragged it into place.
+  // Items without one sit after those with one, oldest first, so new items
+  // arrive at the bottom. Cleared when an item is moved to another day.
+  order?: number;
 };
 
 // Where a social post is in its life. Mirrors the colour code the marketing

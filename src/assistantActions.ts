@@ -432,7 +432,12 @@ function projectMilestones(ctx: ActionContext, input: Input): Draft {
 
 function milestoneDone(ctx: ActionContext, input: Input): Draft {
   const p = project(ctx, input.project_id);
-  const q = str(input.milestone, 200).toLowerCase();
+  // get_project lists a task as "Label (assigned to X, due Y)"; the model may
+  // hand that whole line back, so drop the suffix before matching.
+  const q = str(input.milestone, 200)
+    .replace(/\s*\((?:assigned to|due) [^)]*\)$/i, "")
+    .trim()
+    .toLowerCase();
   const all = p.milestones ?? [];
   const exact = all.filter((m) => m.id === str(input.milestone, 200) || m.label.trim().toLowerCase() === q);
   const found = exact.length ? exact : all.filter((m) => q && m.label.toLowerCase().includes(q));

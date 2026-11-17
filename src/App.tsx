@@ -1976,6 +1976,12 @@ export default function App() {
                 ),
               })
             }
+            onToggleProjectTask={(projectId, taskId) =>
+              updateProject(projectId, (p) => ({
+                ...p,
+                milestones: p.milestones.map((m) => (m.id === taskId ? { ...m, done: !m.done } : m)),
+              }))
+            }
           />
         ) : view === "bigRocks" ? (
           <BigRocksView
