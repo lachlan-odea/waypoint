@@ -979,9 +979,12 @@ export default function App() {
       sessionDesignerId,
       seesAllConfidential,
       setConfidentialProjects,
-      (err) => {
-        console.warn("Couldn't load confidential projects", err);
-        setConfidentialProjects([]);
+      // The other listener's projects stay; just say which one failed.
+      (err, listener) => {
+        console.warn(
+          `Couldn't load confidential projects (${listener === "all" ? "all of them, as a super user" : "the ones assigned to you"})`,
+          err,
+        );
       },
     );
     return () => {

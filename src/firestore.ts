@@ -354,24 +354,50 @@ export async function deleteProject(p: Pick<Project, "id" | "confidential">): Pr
   await deleteDoc(doc(projectCol(p), p.id));
 }
 
-// The confidential projects this person may see: every one for a super
-// user, otherwise only those they're assigned to. The query has to say so
-// itself, because Firestore refuses a listener that could return a document
-// the rules wouldn't let this person read.
+// The confidential projects this person may see. Two listeners, merged:
+// the ones they're assigned to (everyone has this one), and for a super user
+// every one. Each query has to say what it asks for, because Firestore
+// refuses a listener that could return a document the rules wouldn't let
+// this person read. Kept separate so a failure of the super-user listener
+// can never hide someone's own projects; each failure is reported with the
+// listener's name.
 export function subscribeConfidentialProjects(
   designerId: string,
   everyone: boolean,
   onChange: (projects: Project[]) => void,
-  onError: (err: Error) => void,
+  onError: (err: Error, listener: "assigned" | "all") => void,
 ): () => void {
-  const q = everyone
-    ? confidentialProjectsCol()
-    : query(confidentialProjectsCol(), where("assigneeIds", "array-contains", designerId));
-  return onSnapshot(
-    q,
-    (snap) => onChange(snap.docs.map((d) => ({ ...withDefaultWorkspace(d.data() as Project), confidential: true }))),
-    onError,
+  let assigned: Project[] = [];
+  let all: Project[] = [];
+  const toProjects = (docs: { data: () => unknown }[]) =>
+    docs.map((d) => ({ ...withDefaultWorkspace(d.data() as Project), confidential: true }));
+  const emit = () => {
+    const byId = new Map<string, Project>();
+    [...all, ...assigned].forEach((p) => byId.set(p.id, p));
+    onChange([...byId.values()]);
+  };
+  const unsubAssigned = onSnapshot(
+    query(confidentialProjectsCol(), where("assigneeIds", "array-contains", designerId)),
+    (snap) => {
+      assigned = toProjects(snap.docs);
+      emit();
+    },
+    (err) => onError(err, "assigned"),
   );
+  const unsubAll = everyone
+    ? onSnapshot(
+        confidentialProjectsCol(),
+        (snap) => {
+          all = toProjects(snap.docs);
+          emit();
+        },
+        (err) => onError(err, "all"),
+      )
+    : () => {};
+  return () => {
+    unsubAssigned();
+    unsubAll();
+  };
 }
 
 export async function setNotification(n: Notification): Promise<void> {
