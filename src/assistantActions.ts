@@ -5,10 +5,10 @@
 // through the same save paths as the rest of the app (applyAssistantAction
 // in App.tsx), as that person.
 //
-// What it can propose: a new project; a project's status, due date,
-// priority or assignees; a comment; a project milestone ticked off; a
-// campaign milestone; a draft social post. There is nothing here that
-// deletes.
+// What it can propose: a new project, with its milestones; a project's
+// status, due date, priority or assignees; a comment; milestones added to
+// a project, or one ticked off; a campaign milestone; a draft social post.
+// There is nothing here that deletes.
 
 import type Anthropic from "@anthropic-ai/sdk";
 import type { MilestoneType, Priority, ProjectStatus } from "./types";
@@ -29,6 +29,8 @@ export type AssistantAction =
       dueDate: string;
       priority: Priority;
       assigneeIds: string[];
+      // Labels of the checklist the project starts with.
+      milestones: string[];
     }
   | {
       kind: "update_project";
@@ -40,6 +42,7 @@ export type AssistantAction =
       assigneeIds?: string[];
     }
   | { kind: "add_comment"; projectId: string; text: string }
+  | { kind: "add_milestones"; projectId: string; labels: string[] }
   | { kind: "set_milestone"; projectId: string; milestoneId: string; done: boolean }
   | { kind: "add_campaign_milestone"; campaignId: string; date: string; label: string; description: string; url: string }
   | {
@@ -104,6 +107,26 @@ export const ACTION_TOOLS: Anthropic.Tool[] = [
         brand: { type: "string" },
         content_types: { type: "array", items: { type: "string" }, description: "e.g. Web, Email, Video." },
         brief_url: { type: "string" },
+        milestones: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "The project's milestones, in order: its checklist of steps or tasks, each a short label. A milestone is a label and a tick, with no date or owner of its own.",
+        },
+      },
+    },
+  },
+  {
+    name: "propose_project_milestones",
+    description:
+      "Propose adding milestones to an existing project: its checklist of steps or tasks (people may call them tasks or to-dos). Each is a short label with no date or owner of its own. Only added if the person clicks Apply.",
+    input_schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["project_id", "milestones"],
+      properties: {
+        project_id: { type: "string" },
+        milestones: { type: "array", items: { type: "string" }, description: "The labels to add, in order." },
       },
     },
   },
@@ -194,6 +217,7 @@ export const ACTION_STATUS: Record<string, string> = {
   propose_create_project: "Drafting a new project",
   propose_update_project: "Drafting a change",
   propose_comment: "Drafting a comment",
+  propose_project_milestones: "Drafting milestones",
   propose_milestone_done: "Drafting a change",
   propose_campaign_milestone: "Drafting a milestone",
   propose_social_post: "Drafting a social post",
@@ -274,6 +298,21 @@ function option(value: string, options: string[], what: string): string {
 
 const day = (iso: string) => (iso ? formatShort(iso) : "None");
 
+// Milestone labels as asked for: trimmed, blanks and repeats dropped.
+function labels(v: unknown): string[] {
+  const seen = new Set<string>();
+  return strings(v)
+    .map((l) => l.slice(0, 160))
+    .filter((l) => {
+      const key = l.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+const bullets = (items: string[]) => items.map((l) => `• ${l}`).join("\n");
+
 function createProject(ctx: ActionContext, input: Input): Draft {
   const title = str(input.title, 160);
   if (!title) throw new Refused("A project needs a title.");
@@ -298,6 +337,7 @@ function createProject(ctx: ActionContext, input: Input): Draft {
     dueDate,
     priority: priority(input.priority) ?? "Normal",
     assigneeIds,
+    milestones: labels(input.milestones),
   };
   const details: [string, string][] = [
     ["Team", team[0].name],
@@ -310,6 +350,7 @@ function createProject(ctx: ActionContext, input: Input): Draft {
   if (contentTypes.length) details.push(["Content", contentTypes.join(", ")]);
   if (action.overview) details.push(["Overview", action.overview]);
   if (action.briefUrl) details.push(["Brief", action.briefUrl]);
+  if (action.milestones.length) details.push(["Milestones", bullets(action.milestones)]);
   return { action, title: `Create project “${title}”`, details };
 }
 
@@ -366,6 +407,26 @@ function comment(ctx: ActionContext, input: Input): Draft {
       ["Posted as", ctx.me.name],
       ["Comment", text],
     ],
+  };
+}
+
+function projectMilestones(ctx: ActionContext, input: Input): Draft {
+  const p = project(ctx, input.project_id);
+  const existing = new Set((p.milestones ?? []).map((m) => m.label.trim().toLowerCase()));
+  const asked = labels(input.milestones);
+  const fresh = asked.filter((l) => !existing.has(l.toLowerCase()));
+  if (asked.length === 0) throw new Refused("Give at least one milestone label.");
+  if (fresh.length === 0) {
+    throw new Refused("The project already has all of those milestones. Tell the person so.");
+  }
+  const details: [string, string][] = [["Add", bullets(fresh)]];
+  if (fresh.length < asked.length) {
+    details.push(["Skipped", `${asked.length - fresh.length} already on the project`]);
+  }
+  return {
+    action: { kind: "add_milestones", projectId: p.id, labels: fresh },
+    title: `Add ${fresh.length === 1 ? "a milestone" : `${fresh.length} milestones`} to “${p.title}”`,
+    details,
   };
 }
 
@@ -454,6 +515,7 @@ const PROPOSERS: Record<string, (ctx: ActionContext, input: Input) => Draft> = {
   propose_create_project: createProject,
   propose_update_project: updateProject,
   propose_comment: comment,
+  propose_project_milestones: projectMilestones,
   propose_milestone_done: milestoneDone,
   propose_campaign_milestone: campaignMilestone,
   propose_social_post: socialPost,
