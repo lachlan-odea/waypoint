@@ -787,7 +787,7 @@ button.item-strip-cell:hover {
   gap: 32px;
   margin-top: 8px;
 }
-.agenda-bucket-head {
+.agenda .agenda-bucket-head {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -808,7 +808,7 @@ button.item-strip-cell:hover {
   line-height: 1;
   padding: 7px 10px;
   border-radius: var(--radius);
-  background: var(--wtg-navy);
+  background: var(--wtg-blue);
   color: var(--wtg-white);
 }
 .agenda-bucket.late .agenda-tag {
@@ -816,7 +816,7 @@ button.item-strip-cell:hover {
   color: var(--wp-status-blocked-fg);
 }
 :root.dark-mode .agenda-tag {
-  background: var(--ink-100);
+  background: var(--wtg-periwinkle);
   color: var(--ink-900);
 }
 .agenda-day {
