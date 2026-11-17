@@ -99,7 +99,6 @@ type Props = {
   onSaveHub: (hub: Hub) => Promise<void>;
   onDeleteHub: (hubId: string) => Promise<void>;
   onUpdateDesignerHub: (designerId: string, hubId: string) => Promise<void>;
-  onClose: () => void;
 };
 
 function friendlyError(err: unknown): string {
@@ -118,7 +117,11 @@ function friendlyError(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-export function SettingsModal({
+// Settings is a full page (App's "settings" view) rather than a modal: it
+// grew past what a dialog holds comfortably. Personal settings come first,
+// then the super-user admin cards. The managers it launches (users, access
+// requests, types & tags…) are still modals over the page.
+export function SettingsPage({
   currentDesigner,
   isSuperUser,
   designers,
@@ -155,7 +158,6 @@ export function SettingsModal({
   onSaveHub,
   onDeleteHub,
   onUpdateDesignerHub,
-  onClose,
 }: Props) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [nextPassword, setNextPassword] = useState("");
@@ -172,17 +174,6 @@ export function SettingsModal({
   const [accessRequestsOpen, setAccessRequestsOpen] = useState(false);
   const openSuggestions = suggestions.filter(isOpenSuggestion).length;
   const waitingRequests = accessRequests.filter((r) => r.status === "pending").length;
-
-  useEffect(() => {
-    // Suspend the Settings Escape handler while a sub-modal is up — that
-    // modal owns Escape until it's closed.
-    if (manageUsersOpen || manageHubsOpen || manageSocialOpen || manageRocksOpen || accessRequestsOpen) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, manageUsersOpen, manageHubsOpen, manageSocialOpen, manageRocksOpen, accessRequestsOpen]);
 
   const myHub = hubs.find((h) => h.id === currentDesigner.hubId);
 
@@ -213,151 +204,10 @@ export function SettingsModal({
   }
 
   return (
-    <div className="modal-overlay">
-      <div className={`modal ${isSuperUser ? "" : "modal-narrow"}`}>
-        <header className="modal-head">
-          <h2 className="modal-title-static">Settings</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
-            <Icon name="close" size={16} />
-          </button>
-        </header>
-
-        <div className="modal-body">
-          {isSuperUser && (
-            <section className="modal-section">
-              <h3>Manage users</h3>
-              <p className="muted small">
-                Set roles (Super user / Reviewer) and team membership for
-                every designer on the platform. Opens in a dedicated window.
-              </p>
-              <div className="section-actions">
-                <button
-                  className="primary"
-                  onClick={() => setManageUsersOpen(true)}
-                >
-                  Manage users →
-                </button>
-              </div>
-            </section>
-          )}
-
-          {isSuperUser && (
-            <section className="modal-section">
-              <h3>Access requests</h3>
-              <p className="muted small">
-                {!canDecideAccess
-                  ? "Deciding requests needs the Super user flag on your own profile. Turn it on in Manage users."
-                  : waitingRequests === 0
-                    ? "Nobody is waiting to join Waypoint."
-                    : `${waitingRequests} ${waitingRequests === 1 ? "person is" : "people are"} waiting to join Waypoint.`}
-              </p>
-              {canDecideAccess && (
-                <div className="section-actions">
-                  <button
-                    className={waitingRequests > 0 ? "btn btn-primary" : "btn btn-secondary"}
-                    onClick={() => setAccessRequestsOpen(true)}
-                  >
-                    Review requests{waitingRequests > 0 ? ` (${waitingRequests})` : ""} →
-                  </button>
-                </div>
-              )}
-            </section>
-          )}
-
-          {isSuperUser && (
-            <section className="modal-section">
-              <h3>Types &amp; tags</h3>
-              <p className="muted small">
-                The shared lists behind the pickers. Opens in a dedicated
-                window.
-              </p>
-              <ul className="types-summary">
-                {[
-                  ["Category types", socialConfig.categories.length],
-                  ["Company hashtags", socialConfig.hashtags.length],
-                  ["Milestone types", socialConfig.milestoneTypes?.length ?? 0],
-                  ["Content types", socialConfig.contentTypes?.length ?? 0],
-                ].map(([label, n]) => (
-                  <li key={label}>
-                    <strong>{n}</strong> {label}
-                  </li>
-                ))}
-              </ul>
-              <div className="section-actions">
-                <button
-                  className="primary"
-                  onClick={() => setManageSocialOpen(true)}
-                >
-                  Manage types &amp; tags →
-                </button>
-              </div>
-            </section>
-          )}
-
-          {isSuperUser && <LinkedInSettingsSection channels={[...SOCIAL_CHANNELS]} />}
-
-          {isSuperUser && (
-            <section className="modal-section">
-              <h3>Big Rocks</h3>
-              <p className="muted small">
-                The few things the team is working towards. Campaigns and
-                projects are tagged with the rock they serve, and the Big Rocks
-                page reports what has been done for each. Opens in a dedicated
-                window.
-              </p>
-              {bigRocks.length > 0 && (
-                <div className="hub-summary">
-                  {bigRocks.map((r) => (
-                    <span key={r.id} className="hub-summary-item rock-tag">
-                      <i className="rock-dot" style={{ background: r.color }} aria-hidden="true" />
-                      {r.name}
-                      {r.retired ? " · retired" : ""}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="section-actions">
-                <button
-                  className="primary"
-                  onClick={() => setManageRocksOpen(true)}
-                >
-                  Manage Big Rocks →
-                </button>
-              </div>
-            </section>
-          )}
-
-          {isSuperUser && (
-            <section className="modal-section">
-              <h3>Locations &amp; time zones</h3>
-              <p className="muted small">
-                Locations are shared — adding one puts a live clock in every
-                teammate's sidebar. Assign people to a location from Manage
-                users. Opens in a dedicated window.
-              </p>
-              {hubs.length > 0 && (
-                <div className="hub-summary">
-                  {/* Same east-to-west order as the sidebar clocks. The
-                      editable table below stays alphabetical — that one is
-                      for finding a location, not reading the time. */}
-                  {sortHubsByOffset(hubs).map((h) => (
-                    <span key={h.id} className="hub-summary-item">
-                      <strong>{h.name}</strong> {hubClock(h)}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="section-actions">
-                <button
-                  className="primary"
-                  onClick={() => setManageHubsOpen(true)}
-                >
-                  Manage locations →
-                </button>
-              </div>
-            </section>
-          )}
-
+    <div className="settings-page">
+      <section className="settings-group-page" aria-labelledby="settings-you">
+        <h2 id="settings-you" className="settings-group-title">Your account</h2>
+        <div className="settings-cards">
           <section className="modal-section">
             <h3>Account</h3>
             <p className="muted small">
@@ -373,43 +223,10 @@ export function SettingsModal({
             </p>
           </section>
 
-          <section className="modal-section">
-            <h3>Suggest a feature</h3>
-            <p className="muted small">
-              Got an idea for Waypoint, something that could work better, or a bug
-              to report? Send it to the people who build it. Your name and the
-              version you're on go with it.
-            </p>
-            {isSuperUser && (
-              <p className="muted small">
-                {suggestions.length === 0
-                  ? "Nobody has sent a suggestion yet."
-                  : openSuggestions === 0
-                    ? `${suggestions.length} sent, all decided.`
-                    : `${openSuggestions} open of ${suggestions.length} sent.`}
-              </p>
-            )}
-            <div className="section-actions">
-              {isSuperUser && (
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setReviewSuggestionsOpen(true)}
-                >
-                  Review suggestions{openSuggestions > 0 ? ` (${openSuggestions})` : ""} →
-                </button>
-              )}
-              <button className="primary" onClick={() => setSuggestOpen(true)}>
-                <Icon name="lightbulb" size={14} /> Suggest a feature
-              </button>
-            </div>
-          </section>
-
           <ProfilePhotoSection
             currentDesigner={currentDesigner}
             onSave={onUpdatePhotoUrl}
           />
-
-          <OutlookAddInSection />
 
           <section className="modal-section">
             <h3>Display</h3>
@@ -510,18 +327,183 @@ export function SettingsModal({
               </button>
             </div>
           </section>
-        </div>
 
-        <footer className="modal-foot">
-          <span
-            className="muted small settings-version"
-            title={`Built ${new Date(APP_BUILT_AT).toLocaleString()}`}
-          >
-            {versionLabel()}
-          </span>
-          <button onClick={onClose}>Close</button>
-        </footer>
-      </div>
+          <OutlookAddInSection />
+
+          <section className="modal-section">
+            <h3>Suggest a feature</h3>
+            <p className="muted small">
+              Got an idea for Waypoint, something that could work better, or a bug
+              to report? Send it to the people who build it. Your name and the
+              version you're on go with it.
+            </p>
+            {isSuperUser && (
+              <p className="muted small">
+                {suggestions.length === 0
+                  ? "Nobody has sent a suggestion yet."
+                  : openSuggestions === 0
+                    ? `${suggestions.length} sent, all decided.`
+                    : `${openSuggestions} open of ${suggestions.length} sent.`}
+              </p>
+            )}
+            <div className="section-actions">
+              {isSuperUser && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setReviewSuggestionsOpen(true)}
+                >
+                  Review suggestions{openSuggestions > 0 ? ` (${openSuggestions})` : ""} →
+                </button>
+              )}
+              <button className="primary" onClick={() => setSuggestOpen(true)}>
+                <Icon name="lightbulb" size={14} /> Suggest a feature
+              </button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      {isSuperUser && (
+        <section className="settings-group-page" aria-labelledby="settings-admin">
+          <h2 id="settings-admin" className="settings-group-title">Workspace admin</h2>
+          <p className="muted small settings-group-sub">
+            Shared setup for everyone on Waypoint. Only super users see this.
+          </p>
+          <div className="settings-cards">
+            <section className="modal-section">
+              <h3>Manage users</h3>
+              <p className="muted small">
+                Set roles (Super user / Reviewer) and team membership for
+                every designer on the platform. Opens in a dedicated window.
+              </p>
+              <div className="section-actions">
+                <button
+                  className="primary"
+                  onClick={() => setManageUsersOpen(true)}
+                >
+                  Manage users →
+                </button>
+              </div>
+            </section>
+
+            <section className="modal-section">
+              <h3>Access requests</h3>
+              <p className="muted small">
+                {!canDecideAccess
+                  ? "Deciding requests needs the Super user flag on your own profile. Turn it on in Manage users."
+                  : waitingRequests === 0
+                    ? "Nobody is waiting to join Waypoint."
+                    : `${waitingRequests} ${waitingRequests === 1 ? "person is" : "people are"} waiting to join Waypoint.`}
+              </p>
+              {canDecideAccess && (
+                <div className="section-actions">
+                  <button
+                    className={waitingRequests > 0 ? "btn btn-primary" : "btn btn-secondary"}
+                    onClick={() => setAccessRequestsOpen(true)}
+                  >
+                    Review requests{waitingRequests > 0 ? ` (${waitingRequests})` : ""} →
+                  </button>
+                </div>
+              )}
+            </section>
+
+            <section className="modal-section">
+              <h3>Types &amp; tags</h3>
+              <p className="muted small">
+                The shared lists behind the pickers. Opens in a dedicated
+                window.
+              </p>
+              <ul className="types-summary">
+                {[
+                  ["Category types", socialConfig.categories.length],
+                  ["Company hashtags", socialConfig.hashtags.length],
+                  ["Milestone types", socialConfig.milestoneTypes?.length ?? 0],
+                  ["Content types", socialConfig.contentTypes?.length ?? 0],
+                ].map(([label, n]) => (
+                  <li key={label}>
+                    <strong>{n}</strong> {label}
+                  </li>
+                ))}
+              </ul>
+              <div className="section-actions">
+                <button
+                  className="primary"
+                  onClick={() => setManageSocialOpen(true)}
+                >
+                  Manage types &amp; tags →
+                </button>
+              </div>
+            </section>
+
+            <LinkedInSettingsSection channels={[...SOCIAL_CHANNELS]} />
+
+            <section className="modal-section">
+              <h3>Big Rocks</h3>
+              <p className="muted small">
+                The few things the team is working towards. Campaigns and
+                projects are tagged with the rock they serve, and the Big Rocks
+                page reports what has been done for each. Opens in a dedicated
+                window.
+              </p>
+              {bigRocks.length > 0 && (
+                <div className="hub-summary">
+                  {bigRocks.map((r) => (
+                    <span key={r.id} className="hub-summary-item rock-tag">
+                      <i className="rock-dot" style={{ background: r.color }} aria-hidden="true" />
+                      {r.name}
+                      {r.retired ? " · retired" : ""}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="section-actions">
+                <button
+                  className="primary"
+                  onClick={() => setManageRocksOpen(true)}
+                >
+                  Manage Big Rocks →
+                </button>
+              </div>
+            </section>
+
+            <section className="modal-section">
+              <h3>Locations &amp; time zones</h3>
+              <p className="muted small">
+                Locations are shared — adding one puts a live clock in every
+                teammate's sidebar. Assign people to a location from Manage
+                users. Opens in a dedicated window.
+              </p>
+              {hubs.length > 0 && (
+                <div className="hub-summary">
+                  {/* Same east-to-west order as the sidebar clocks. The
+                      editable table below stays alphabetical — that one is
+                      for finding a location, not reading the time. */}
+                  {sortHubsByOffset(hubs).map((h) => (
+                    <span key={h.id} className="hub-summary-item">
+                      <strong>{h.name}</strong> {hubClock(h)}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="section-actions">
+                <button
+                  className="primary"
+                  onClick={() => setManageHubsOpen(true)}
+                >
+                  Manage locations →
+                </button>
+              </div>
+            </section>
+          </div>
+        </section>
+      )}
+
+      <p
+        className="muted small settings-version"
+        title={`Built ${new Date(APP_BUILT_AT).toLocaleString()}`}
+      >
+        {versionLabel()}
+      </p>
 
       {manageUsersOpen && (
         <ManageUsersModal

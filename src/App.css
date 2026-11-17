@@ -6786,10 +6786,46 @@ a.button-link:hover {
   margin-top: 2px;
 }
 
-/* Build stamp in the Settings footer, pushed left of Close. */
+/* Settings page (App's "settings" view). Two groups — Your account, then
+   Workspace admin for super users — each a run of cards that flow into two
+   columns on a wide screen and one on a narrow one. Columns rather than a
+   grid so a tall card (Outlook add-in, LinkedIn) doesn't leave a hole
+   beside a short one. */
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 1200px;
+}
+.settings-group-title {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--wtg-blue);
+}
+.settings-group-title + .settings-group-sub {
+  margin: -10px 0 14px;
+}
+.settings-cards {
+  columns: 2 380px;
+  column-gap: 16px;
+}
+.settings-cards > .modal-section {
+  display: block;
+  break-inside: avoid;
+  margin: 0 0 16px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.settings-cards > .modal-section h3 {
+  margin-top: 0;
+}
+/* Build stamp at the foot of the Settings page. */
 .settings-version {
-  margin-right: auto;
-  align-self: center;
+  margin: 0;
 }
 
 /* ==========================================================================

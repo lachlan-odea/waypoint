@@ -112,7 +112,7 @@ import type { AssistantPage } from "./assistantTools";
 import { formatShort } from "./dates";
 import { findMentionedDesigners } from "./mentions";
 import { CreateProjectModal } from "./components/CreateProjectModal";
-import { SettingsModal } from "./components/SettingsModal";
+import { SettingsPage } from "./components/SettingsPage";
 import { Analytics } from "./components/Analytics";
 import { Dashboard } from "./components/Dashboard";
 import { BigRocksView } from "./components/BigRocksView";
@@ -227,7 +227,6 @@ export default function App() {
   }, [route?.kind, route?.id]);
   const [creating, setCreating] = useState(false);
   const [createInitial, setCreateInitial] = useState<Partial<Project> | undefined>();
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   // The assistant's shared gateway connection (/settings/assistant), set
@@ -1560,7 +1559,6 @@ export default function App() {
   function logout() {
     closeItem();
     setCreating(false);
-    setSettingsOpen(false);
     setView("myDesk");
     fbSignOut().catch(console.error);
   }
@@ -1636,6 +1634,7 @@ export default function App() {
     analytics: "Analytics",
     archived: "Archive",
     tools: "Tools",
+    settings: "Settings",
   };
   const assistantPage: AssistantPage = routedProject
     ? { kind: "project", id: routedProject.id, title: routedProject.title, tab: route?.tab ?? "overview" }
@@ -1795,7 +1794,8 @@ export default function App() {
             setNavOpen(false);
           }}
           onOpenSettings={() => {
-            setSettingsOpen(true);
+            closeItem();
+            setView("settings");
             setNavOpen(false);
           }}
           onLogout={logout}
@@ -1919,6 +1919,8 @@ export default function App() {
                 "Analytics"
               ) : view === "tools" ? (
                 "Tools"
+              ) : view === "settings" ? (
+                "Settings"
               ) : view === "archived" ? (
                 "Archived projects"
               ) : view === "executiveDashboard" ? (
@@ -1946,6 +1948,10 @@ export default function App() {
                 ? "Projects, the Social calendar and campaigns — filter by team and date range below"
                 : view === "tools"
                   ? `${tools.length} shared tool${tools.length === 1 ? "" : "s"} · anyone can add one`
+                : view === "settings"
+                  ? isSuperUser
+                    ? "Your account and preferences, and the shared setup behind every team"
+                    : "Your account and preferences"
                 : view === "archived"
                   ? `${archivedProjects.length} archived project${archivedProjects.length === 1 ? "" : "s"} · ${
                       archiveTeamFilter === ARCHIVE_ALL_TEAMS
@@ -1991,6 +1997,57 @@ export default function App() {
             socialPosts={socialPostsForUsage}
             socialCategories={socialConfig.categories}
             campaigns={campaigns}
+          />
+        ) : view === "settings" ? (
+          <SettingsPage
+            currentDesigner={currentDesigner}
+            isSuperUser={isSuperUser}
+            designers={workspace.designers}
+            superUsers={superUsers}
+            reviewers={reviewers}
+            workspaces={availableWorkspaces}
+            hubs={workspace.hubs}
+            socialConfig={socialConfig}
+            socialCategoryUsage={socialCategoryUsage}
+            onSaveSocialConfig={firestoreSetSocialConfig}
+            onRelabelSocialCategory={firestoreRelabelSocialPostCategory}
+            bigRocks={bigRocks}
+            bigRockUsage={bigRockUsage}
+            suggestions={suggestions}
+            onCreateSuggestion={(s) => firestoreCreateSuggestion(s).then(() => {})}
+            onUpdateSuggestion={firestoreUpdateSuggestion}
+            onDeleteSuggestion={firestoreDeleteSuggestion}
+            canDecideAccess={seesAllConfidential}
+            accessRequests={accessRequests}
+            onApproveAccessRequest={(request, linkProfileId) =>
+              firestoreApproveAccessRequest(
+                request,
+                { id: currentDesigner.id, name: currentDesigner.name },
+                linkProfileId,
+              )
+            }
+            onDeclineAccessRequest={(id) =>
+              firestoreDeclineAccessRequest(id, { id: currentDesigner.id, name: currentDesigner.name })
+            }
+            onDeleteAccessRequest={firestoreDeleteAccessRequest}
+            onSaveBigRocks={firestoreSaveBigRocks}
+            darkMode={darkMode}
+            onDarkModeChange={setDarkMode}
+            textSize={textSize}
+            onTextSizeChange={setTextSize}
+            onUpdateWorkspaceMembers={firestoreSetWorkspaceMembers}
+            onUpdatePhotoUrl={(url) =>
+              firestoreSetDesignerPhotoUrl(currentDesigner.id, url)
+            }
+            onUpdateDesignerSuperUser={firestoreSetDesignerSuperUser}
+            onUpdateDesignerReviewer={firestoreSetDesignerReviewer}
+            onCreateDesigner={(name, email) =>
+              firestoreCreatePlaceholderDesigner(name, email).then(() => {})
+            }
+            onDeleteDesigner={firestoreDeleteDesigner}
+            onSaveHub={firestoreSetHub}
+            onDeleteHub={firestoreDeleteHub}
+            onUpdateDesignerHub={firestoreSetDesignerHub}
           />
         ) : view === "tools" ? (
           <ToolsView
@@ -2510,60 +2567,6 @@ export default function App() {
             setCreateInitial(undefined);
           }}
           onCreate={createProject}
-        />
-      )}
-
-      {settingsOpen && (
-        <SettingsModal
-          currentDesigner={currentDesigner}
-          isSuperUser={isSuperUser}
-          designers={workspace.designers}
-          superUsers={superUsers}
-          reviewers={reviewers}
-          workspaces={availableWorkspaces}
-          hubs={workspace.hubs}
-          socialConfig={socialConfig}
-          socialCategoryUsage={socialCategoryUsage}
-          onSaveSocialConfig={firestoreSetSocialConfig}
-          onRelabelSocialCategory={firestoreRelabelSocialPostCategory}
-          bigRocks={bigRocks}
-          bigRockUsage={bigRockUsage}
-          suggestions={suggestions}
-          onCreateSuggestion={(s) => firestoreCreateSuggestion(s).then(() => {})}
-          onUpdateSuggestion={firestoreUpdateSuggestion}
-          onDeleteSuggestion={firestoreDeleteSuggestion}
-          canDecideAccess={seesAllConfidential}
-          accessRequests={accessRequests}
-          onApproveAccessRequest={(request, linkProfileId) =>
-            firestoreApproveAccessRequest(
-              request,
-              { id: currentDesigner.id, name: currentDesigner.name },
-              linkProfileId,
-            )
-          }
-          onDeclineAccessRequest={(id) =>
-            firestoreDeclineAccessRequest(id, { id: currentDesigner.id, name: currentDesigner.name })
-          }
-          onDeleteAccessRequest={firestoreDeleteAccessRequest}
-          onSaveBigRocks={firestoreSaveBigRocks}
-          darkMode={darkMode}
-          onDarkModeChange={setDarkMode}
-          textSize={textSize}
-          onTextSizeChange={setTextSize}
-          onUpdateWorkspaceMembers={firestoreSetWorkspaceMembers}
-          onUpdatePhotoUrl={(url) =>
-            firestoreSetDesignerPhotoUrl(currentDesigner.id, url)
-          }
-          onUpdateDesignerSuperUser={firestoreSetDesignerSuperUser}
-          onUpdateDesignerReviewer={firestoreSetDesignerReviewer}
-          onCreateDesigner={(name, email) =>
-            firestoreCreatePlaceholderDesigner(name, email).then(() => {})
-          }
-          onDeleteDesigner={firestoreDeleteDesigner}
-          onSaveHub={firestoreSetHub}
-          onDeleteHub={firestoreDeleteHub}
-          onUpdateDesignerHub={firestoreSetDesignerHub}
-          onClose={() => setSettingsOpen(false)}
         />
       )}
 
