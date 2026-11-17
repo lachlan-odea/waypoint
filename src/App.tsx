@@ -81,7 +81,7 @@ import {
   subscribeSocialPosts,
   subscribeWorkspace,
 } from "./firestore";
-import { duplicateCampaign as copyCampaign, isSocialMilestone, milestoneSocialPost } from "./campaigns";
+import { duplicateCampaign as copyCampaign, isSocialMilestone, milestoneSocialPost, newMilestoneId } from "./campaigns";
 import { publishCampaignPage } from "./campaignExport";
 import { ACTIVITY_PAGE_FILE_NAME, activityPageData, downloadActivityPage, newShareToken, publishActivityPage } from "./activityExport";
 import { SharePointGuideModal } from "./components/SharePointGuideModal";
@@ -91,6 +91,15 @@ import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { AppHeader } from "./components/AppHeader";
 import { ProjectCard } from "./components/ProjectCard";
 import { NotificationsPanel } from "./components/NotificationsPanel";
+import { AssistantPanel } from "./components/AssistantPanel";
+import {
+  removeAssistantConnection,
+  saveAssistantConnection,
+  subscribeAssistantConnection,
+  type AssistantConnection,
+} from "./assistant";
+import type { AssistantAction } from "./assistantActions";
+import { findMentionedDesigners } from "./mentions";
 import { CreateProjectModal } from "./components/CreateProjectModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { Analytics } from "./components/Analytics";
@@ -112,7 +121,7 @@ import { Login } from "./components/Login";
 import { ProjectPage } from "./components/pages/ProjectPage";
 import { CampaignPage } from "./components/pages/CampaignPage";
 import { EventPage } from "./components/pages/EventPage";
-import { closeItem, openItem, replaceItemTab, useItemRoute } from "./router";
+import { closeItem, itemHash, openItem, replaceItemTab, useItemRoute } from "./router";
 import { HelpTour } from "./components/HelpTour";
 import { showDesktopAlert } from "./desktopNotifications";
 import { tourFor } from "./helpTours";
@@ -194,6 +203,16 @@ export default function App() {
   const [createInitial, setCreateInitial] = useState<Partial<Project> | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  // The assistant's shared gateway connection (/settings/assistant), set
+  // up once by a super user from the panel.
+  const [assistantConnection, setAssistantConnection] = useState<AssistantConnection | null>(null);
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    return subscribeAssistantConnection(setAssistantConnection, (err) => {
+      console.warn("Couldn't load the assistant's connection", err);
+    });
+  }, [sessionDesignerId]);
   // Escape closes the drawer.
   useEffect(() => {
     if (!drawerOpen) return;
@@ -1194,6 +1213,126 @@ export default function App() {
     republishActivity(campaigns, events.filter((e) => e.id !== id));
   }
 
+  // A change the assistant proposed and the person approved (the Apply
+  // button on its card, AssistantPanel). Each goes through the same save
+  // as doing it by hand, against the item as it is now rather than as it
+  // was when proposed, and comes back with where to open the result.
+  function applyAssistantAction(action: AssistantAction): { ok: true; link?: string } | { ok: false; error: string } {
+    if (!currentDesigner) return { ok: false, error: "Sign in again and retry." };
+    const gone = (what: string) => ({ ok: false as const, error: `That ${what} no longer exists.` });
+    const now = new Date().toISOString();
+
+    if (action.kind === "create_project") {
+      const project: Project = {
+        id: `p-${Date.now()}`,
+        workspaceId: action.workspaceId,
+        title: action.title,
+        overview: action.overview,
+        client: action.client,
+        brand: action.brand,
+        contentTypes: action.contentTypes,
+        briefUrl: action.briefUrl,
+        dueDate: action.dueDate,
+        priority: action.priority,
+        assigneeIds: action.assigneeIds,
+        milestones: [],
+        comments: [],
+        createdAt: now,
+        source: "manual",
+      };
+      firestoreSetProject(project).catch(writeError);
+      return { ok: true, link: itemHash("project", project.id) };
+    }
+
+    if (action.kind === "create_social_post") {
+      firestoreSetSocialPost({
+        id: `sp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        month: action.month,
+        date: action.date,
+        channel: action.channel,
+        category: action.category || undefined,
+        topic: action.topic,
+        copy: action.copy,
+        notes: action.notes,
+        owner: action.owner,
+        screenshot: "",
+        asset: "",
+        ctaLink: "",
+        status: "draft",
+        evergreen: false,
+        createdAt: now,
+        source: "manual",
+      }).catch(writeError);
+      return { ok: true };
+    }
+
+    if (action.kind === "add_campaign_milestone") {
+      const campaign = campaigns.find((c) => c.id === action.campaignId);
+      if (!campaign) return gone("campaign");
+      const milestone = {
+        id: newMilestoneId(),
+        date: action.date,
+        label: action.label,
+        done: false,
+        ...(action.description ? { description: action.description } : {}),
+        ...(action.url ? { url: action.url } : {}),
+      };
+      saveCampaign({
+        ...campaign,
+        milestones: [...campaign.milestones, milestone].sort((a, b) => a.date.localeCompare(b.date)),
+      });
+      return { ok: true, link: itemHash("campaign", campaign.id) };
+    }
+
+    const project = findProject(action.projectId);
+    if (!project) return gone("project");
+    const link = itemHash("project", project.id);
+
+    if (action.kind === "update_project") {
+      firestoreSetProject({
+        ...project,
+        ...(action.status !== undefined ? { status: action.status } : {}),
+        ...(action.dueDate !== undefined ? { dueDate: action.dueDate } : {}),
+        ...(action.priority !== undefined ? { priority: action.priority } : {}),
+        ...(action.assigneeIds !== undefined ? { assigneeIds: action.assigneeIds } : {}),
+      }).catch(writeError);
+      return { ok: true, link };
+    }
+
+    if (action.kind === "set_milestone") {
+      if (!project.milestones.some((m) => m.id === action.milestoneId)) return gone("milestone");
+      firestoreSetProject({
+        ...project,
+        milestones: project.milestones.map((m) => (m.id === action.milestoneId ? { ...m, done: action.done } : m)),
+      }).catch(writeError);
+      return { ok: true, link };
+    }
+
+    // A comment, posted as the person, notifying whoever it @-mentions the
+    // way a hand-written one does.
+    firestoreSetProject({
+      ...project,
+      comments: [...project.comments, { id: `c-${Date.now()}`, author: currentDesigner.name, text: action.text, createdAt: now }],
+    }).catch(writeError);
+    const snippet = action.text.replace(/\s+/g, " ").trim();
+    addNotifications(
+      findMentionedDesigners(action.text, workspace?.designers ?? [])
+        .filter((d) => d.id !== currentDesigner.id)
+        .map((d) => ({
+          id: `n-${Date.now()}-${d.id}`,
+          workspaceId: project.workspaceId,
+          recipientId: d.id,
+          fromName: currentDesigner.name,
+          projectId: project.id,
+          kind: "comment" as const,
+          snippet: snippet.length > 80 ? `${snippet.slice(0, 79)}…` : snippet,
+          createdAt: now,
+          read: false,
+        })),
+    );
+    return { ok: true, link: itemHash("project", project.id, "comments") };
+  }
+
   function addNotifications(notifs: Notification[]) {
     if (notifs.length === 0) return;
     notifs.forEach((n) => firestoreSetNotification(n).catch(writeError));
@@ -1463,6 +1602,11 @@ export default function App() {
           onOpenEvent={openEvent}
           onOpenNotifications={() => {
             setNotificationsOpen(true);
+            setNavOpen(false);
+          }}
+          assistantOpen={assistantOpen}
+          onToggleAssistant={() => {
+            setAssistantOpen((o) => !o);
             setNavOpen(false);
           }}
           onOpenAnalytics={() => {
@@ -2231,6 +2375,30 @@ export default function App() {
           onClose={() => setManageRocksOpen(false)}
         />
       )}
+
+      {/* Always mounted, so the conversation survives closing the panel. */}
+      <AssistantPanel
+        open={assistantOpen}
+        data={{
+          me: currentDesigner,
+          designers: workspace.designers,
+          workspaces: availableWorkspaces,
+          projects: workspace.projects,
+          campaigns,
+          events,
+          socialPosts: socialPostsForUsage,
+          bigRocks,
+          milestoneTypes: socialConfig.milestoneTypes,
+          socialCategories: socialConfig.categories.map((c) => c.label),
+          contentTypes: socialConfig.contentTypes,
+        }}
+        onApplyAction={applyAssistantAction}
+        connection={assistantConnection}
+        canConfigure={isSuperUser}
+        onSaveConnection={(c) => saveAssistantConnection(c, currentDesigner.id)}
+        onRemoveConnection={removeAssistantConnection}
+        onClose={() => setAssistantOpen(false)}
+      />
 
       {notificationsOpen && (
         <NotificationsPanel

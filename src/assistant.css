@@ -1,0 +1,324 @@
+/* The assistant panel (components/AssistantPanel.tsx): docked to the right
+   edge over the page, without a scrim, so the page behind stays usable
+   while a question is open. Design-system rules apply: one radius, borders
+   in place of shadows, the tokens from App.css. */
+.assistant-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  width: min(420px, 100vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  color: var(--text);
+}
+
+.assistant-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 14px 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.assistant-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+}
+.assistant-title h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.assistant-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.assistant-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+.assistant-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.assistant-empty p {
+  margin: 0;
+}
+.assistant-hello {
+  font-size: 18px;
+  font-weight: 600;
+}
+.assistant-suggestions {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.assistant-suggestion {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.assistant-suggestion:hover {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+.assistant-suggestion:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.assistant-thread {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.assistant-msg {
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.assistant-msg p {
+  margin: 0;
+}
+/* The person's question: a tinted block on the right. The answer is plain
+   text on the panel, full width, so lists have room. */
+.assistant-msg.from-user {
+  align-self: flex-end;
+  max-width: 88%;
+  padding: 8px 12px;
+  background: var(--accent-wash);
+  border-radius: var(--radius);
+  white-space: pre-wrap;
+}
+.assistant-md {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.assistant-md ul,
+.assistant-md ol {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.assistant-md code {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 13px;
+  padding: 1px 4px;
+  background: var(--surface-2);
+  border-radius: 4px;
+}
+.assistant-link {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.assistant-status {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.assistant-error {
+  margin-top: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  background: var(--wp-status-blocked-bg);
+  color: var(--wp-status-blocked-fg);
+  border-radius: var(--radius);
+}
+.assistant-error p {
+  margin: 0;
+}
+
+.assistant-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 14px 6px;
+  border-top: 1px solid var(--border);
+}
+.assistant-input {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+}
+.assistant-input:focus {
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+.assistant-foot {
+  margin: 0;
+  padding: 0 14px 10px;
+}
+
+/* The header button that opens the panel: the sparkle and "Ask AI", both in
+   CargoWise Blue (Cobalt; Violet on dark surfaces, where Cobalt doesn't
+   read). The auto margins centre it in the space between the search and
+   the account controls. */
+.assistant-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  margin: 0 auto;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.assistant-toggle:hover,
+.assistant-toggle[aria-pressed="true"] {
+  background: var(--accent-wash);
+}
+.assistant-toggle[aria-pressed="true"] {
+  border-color: var(--accent);
+}
+.assistant-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* Phones: the header's top row is tight, so it sits with the account
+   controls instead of being centred. */
+@media (max-width: 720px) {
+  .assistant-toggle {
+    margin: 0 0 0 auto;
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 720px) {
+  .assistant-panel {
+    width: 100vw;
+    border-left: none;
+  }
+}
+
+/* The connection screen. */
+.assistant-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.assistant-setup p {
+  margin: 0;
+}
+.assistant-setup .assistant-error {
+  margin-top: 0;
+}
+.assistant-setup-actions,
+.assistant-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* A proposed change: a bordered card under the answer, with what will be
+   set and the buttons that decide it. */
+.assistant-proposal {
+  margin-top: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.assistant-proposal.is-applied,
+.assistant-proposal.is-dismissed {
+  border-color: var(--border);
+}
+.assistant-proposal.is-dismissed .assistant-proposal-title,
+.assistant-proposal.is-dismissed .assistant-proposal-details {
+  color: var(--muted);
+}
+.assistant-proposal-title {
+  font-weight: 600;
+}
+.assistant-proposal-details {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.assistant-proposal-details > div {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 8px;
+}
+.assistant-proposal-details dt {
+  color: var(--muted);
+}
+.assistant-proposal-details dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.assistant-proposal-actions {
+  display: flex;
+  gap: 8px;
+}
+.assistant-proposal-outcome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.assistant-proposal.is-applied .assistant-proposal-outcome {
+  color: var(--wp-status-live-fg);
+}
+.assistant-proposal-error {
+  font-size: 13px;
+  color: var(--wp-status-blocked-fg);
+}
