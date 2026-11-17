@@ -273,7 +273,7 @@
   padding: 0 14px 10px;
 }
 
-/* The button that opens the panel: a WiseTech Blue circle with the
+/* The button that opens the panel: a Cobalt circle (WiseTech Blue on hover) with the
    sparkle, fixed to the bottom-right corner of every page, with a soft
    Cobalt glow around it: the one place Waypoint uses one, asked for so
    the way in to the assistant catches the eye. On dark surfaces a Violet
@@ -290,7 +290,7 @@
   place-items: center;
   padding: 0;
   color: var(--wtg-white);
-  background: var(--wtg-blue);
+  background: var(--wtg-cobalt);
   border: 1px solid transparent;
   border-radius: 50%;
   box-shadow: var(--fab-glow);
@@ -304,7 +304,7 @@
     visibility 0s;
 }
 .assistant-fab:hover {
-  background: var(--wtg-cobalt);
+  background: var(--wtg-blue);
   transform: scale(1.06);
   --fab-glow: 0 0 28px 4px rgba(55, 30, 225, 0.5);
 }
