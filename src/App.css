@@ -584,7 +584,7 @@ textarea {
 }
 .icon-btn:hover {
   background: var(--surface-2);
-  color: var(--primary);
+  color: var(--link);
 }
 .sidebar-nav {
   padding: 12px;
@@ -720,7 +720,7 @@ textarea {
 }
 .designer-btn.active {
   background: rgba(55, 30, 225, 0.08);
-  color: var(--primary);
+  color: var(--link);
 }
 /* Views nested under another (Big Rocks under Executive Dashboard) open
    in a flyout beside the row on hover, focus or →, like the + New menu's
@@ -772,7 +772,7 @@ textarea {
   color: var(--primary);
 }
 .nav-flyout .new-menu-item.active .new-menu-hint {
-  color: var(--primary);
+  color: var(--link);
   opacity: 0.8;
 }
 .sidebar.collapsed .nav-flyout {
@@ -1201,7 +1201,7 @@ textarea {
   align-self: center;
   background: transparent;
   border: none;
-  color: var(--primary);
+  color: var(--link);
   font-size: 12px;
   cursor: pointer;
   text-decoration: none;
@@ -1944,7 +1944,7 @@ textarea {
 .assignee-chip.active {
   background: rgba(55, 30, 225, 0.08);
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--link);
 }
 /* Content types reuse the assignee chip, but without a leading avatar — the
    base rule's 3px left padding is there to seat one, and looks lopsided on a
@@ -1969,7 +1969,7 @@ textarea {
 .content-type-chips .assignee-chip.add-other:hover {
   border-style: solid;
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--link);
 }
 .content-type-other input {
   width: 100%;
@@ -2022,7 +2022,7 @@ textarea {
   transition: border-color 0.12s var(--ease), color 0.12s var(--ease), background 0.12s var(--ease);
 }
 .flag-btn:hover {
-  color: var(--primary);
+  color: var(--link);
   border-color: var(--primary);
 }
 .flag-btn.flagged {
@@ -2196,7 +2196,7 @@ textarea {
 }
 .share-btn:hover {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--link);
 }
 a.share-btn {
   display: inline-block;
@@ -2205,7 +2205,7 @@ a.share-btn {
 
 .mention {
   background: rgba(55, 30, 225, 0.1);
-  color: var(--primary);
+  color: var(--link);
   border-radius: var(--radius);
   padding: 0 4px;
   font-weight: 600;
@@ -2526,7 +2526,7 @@ a.share-btn {
 }
 .manage-user-tag.role {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--link);
   background: transparent;
   font-weight: 600;
 }
@@ -2750,7 +2750,7 @@ a.share-btn {
 .brief-link {
   font-size: 12px;
   margin-top: 2px;
-  color: var(--primary);
+  color: var(--link);
   text-decoration: none;
 }
 .brief-link:hover {
@@ -2775,7 +2775,7 @@ a.share-btn {
 }
 .overview-view a,
 .comment p a {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: none;
   word-break: break-word;
 }
@@ -2806,7 +2806,7 @@ a.share-btn {
   line-height: 1.45;
 }
 .field span.field-hint.warn {
-  color: #b4501f;
+  color: var(--high);
 }
 :root.dark-mode .field span.field-hint.warn {
   color: #ffbe98;
@@ -2898,7 +2898,7 @@ a.share-btn {
 .link-btn {
   background: transparent;
   border: none;
-  color: var(--primary);
+  color: var(--link);
   font-size: 12px;
   font-weight: 600;
 }
@@ -2962,7 +2962,7 @@ a.share-btn {
   cursor: pointer;
 }
 .comment-action-btn:hover {
-  color: var(--primary);
+  color: var(--link);
 }
 .comment-action-btn.danger:hover {
   color: var(--danger);
@@ -3460,7 +3460,7 @@ a.share-btn {
   align-self: flex-start;
   font-size: 11px;
   font-weight: 500;
-  color: var(--primary);
+  color: var(--link);
   background: rgba(55, 30, 225, 0.1);
   padding: 2px 8px;
   border-radius: var(--radius);
@@ -3635,7 +3635,7 @@ a.share-btn {
   padding: 3px 7px;
   border-radius: var(--radius);
   background: rgba(55, 30, 225, 0.12);
-  color: var(--primary);
+  color: var(--link);
   margin-top: 1px;
 }
 
@@ -3643,7 +3643,7 @@ a.share-btn {
    get the warmer colour. */
 .notify-tag.review {
   background: rgba(240, 132, 79, 0.14);
-  color: #b4501f;
+  color: var(--high);
 }
 
 .notify-body {
@@ -3757,7 +3757,7 @@ a.share-btn {
 
 .btn-mini:hover:not(:disabled) {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--link);
 }
 
 .btn-mini:disabled {
@@ -3910,7 +3910,7 @@ a.share-btn {
 .desk-link {
   background: none;
   border: 0;
-  color: var(--primary);
+  color: var(--link);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -3979,7 +3979,7 @@ a.share-btn {
 
 .desk-mtab.active {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--link);
   background: rgba(55, 30, 225, 0.08);
 }
 
@@ -4031,7 +4031,7 @@ a.share-btn {
 .desk-addtoday:hover {
   border-style: solid;
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--link);
   background: rgba(55, 30, 225, 0.06);
 }
 
@@ -4106,7 +4106,7 @@ a.share-btn {
   color: var(--brand-cherry);
 }
 .kpi.duesoon .kpi-value {
-  color: #b4501f;
+  color: var(--high);
 }
 .kpi.planning .kpi-value {
   color: var(--brand-blue);
@@ -4476,7 +4476,7 @@ a.share-btn {
 .metric-value {
   font-size: 32px;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--link);
 }
 
 .dashboard-main {
@@ -5397,7 +5397,7 @@ a.share-btn {
 }
 .asset-figure figcaption a,
 .asset-card-open {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -5534,7 +5534,7 @@ a.share-btn {
   white-space: nowrap;
 }
 .soc-card-project:hover:not(:disabled) {
-  color: var(--primary);
+  color: var(--link);
   background: var(--surface-2);
   border-color: var(--border);
   text-decoration: underline;
@@ -5545,6 +5545,9 @@ a.share-btn {
 .soc-card-project.compact {
   margin-left: 0;
   padding: 0;
+  /* WCAG 2.2 minimum target. */
+  min-width: 24px;
+  min-height: 24px;
   border: none;
   display: inline-grid;
   place-items: center;
@@ -5690,7 +5693,7 @@ a.share-btn {
   filter: brightness(1.2);
 }
 .soc-clear-filters {
-  color: var(--primary);
+  color: var(--link);
   font-size: 12px;
   cursor: pointer;
   margin-left: auto;
@@ -5947,7 +5950,7 @@ a.button-link:hover {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--primary);
+  color: var(--link);
   cursor: pointer;
   transition: background 0.12s var(--ease), border-color 0.12s var(--ease), color 0.12s var(--ease);
 }
@@ -5990,12 +5993,14 @@ a.button-link:hover {
 .soc-cell-camps {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  /* 20px buttons on a 24px pitch meet the WCAG 2.2 target-size spacing. */
+  gap: 4px;
   margin: -2px 0 2px;
 }
 .soc-cell-ms {
   display: inline-flex;
   align-items: center;
+  min-height: 20px;
   gap: 5px;
   max-width: 100%;
   padding: 1px 6px 1px 4px;
@@ -6105,7 +6110,7 @@ a.button-link:hover {
   cursor: pointer;
 }
 .field-hint.warn {
-  color: #b4501f;
+  color: var(--high);
 }
 @media (max-width: 1100px) {
   .soc-cell-ms-label {
@@ -6200,7 +6205,7 @@ a.button-link:hover {
   overflow-wrap: anywhere;
 }
 .camp-card-title:hover {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: underline;
 }
 .camp-card-dates {
@@ -6232,7 +6237,7 @@ a.button-link:hover {
   align-self: flex-start;
   font-size: 12px;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--link);
   text-decoration: none;
 }
 .camp-card-sharepoint:hover {
@@ -6290,7 +6295,7 @@ a.button-link:hover {
   font-size: 13px;
   font-weight: 700;
   background: var(--surface-2);
-  color: var(--primary);
+  color: var(--link);
   border: 1px solid var(--border);
 }
 .sp-step.done .sp-step-num {
@@ -6352,7 +6357,7 @@ a.button-link:hover {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--primary);
+  color: var(--link);
   cursor: pointer;
 }
 .camp-ms-post:hover {
@@ -6405,14 +6410,14 @@ a.button-link:hover {
   color: var(--muted);
 }
 .camp-card-ms-row.overdue .camp-card-ms-date {
-  color: #b4501f;
+  color: var(--high);
   font-weight: 700;
 }
 .camp-card-more {
   align-self: flex-start;
   padding: 0;
   cursor: pointer;
-  color: var(--primary);
+  color: var(--link);
 }
 .camp-card-more:hover {
   color: var(--primary-hover);
@@ -6523,7 +6528,7 @@ a.button-link:hover {
 }
 .camp-card-project:hover:not(:disabled) {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--link);
 }
 .camp-card-project.dangling {
   color: var(--muted);
@@ -6577,7 +6582,7 @@ a.button-link:hover {
   overflow-wrap: anywhere;
 }
 .camp-mini-name:hover {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: underline;
 }
 .camp-mini-when {
@@ -6607,7 +6612,7 @@ a.button-link:hover {
   color: var(--text);
 }
 .camp-mini-overdue {
-  color: #b4501f;
+  color: var(--high);
   font-weight: 700;
 }
 .camp-mini-next {
@@ -6749,7 +6754,7 @@ a.button-link:hover {
   white-space: nowrap;
 }
 .camp-ms-card.overdue .camp-ms-card-camp {
-  color: #b4501f;
+  color: var(--high);
   font-weight: 700;
 }
 /* Milestone cards drag between days on the Campaigns grid. */
@@ -7328,7 +7333,7 @@ a.button-link:hover {
 }
 .ev-followup {
   font-weight: 700;
-  color: #b4501f;
+  color: var(--high);
 }
 :root.dark-mode .ev-followup {
   color: var(--brand-peach);
@@ -7769,7 +7774,7 @@ a.button-link:hover {
 }
 .it-check-list li.fail .it-check-mark,
 .it-checks-failing {
-  color: #b4501f;
+  color: var(--high);
 }
 .it-check-detail {
   color: var(--muted);
@@ -8031,7 +8036,7 @@ a.button-link:hover {
   display: inline-block;
   border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius);
-  color: var(--ink-400);
+  color: var(--muted);
   font-family: var(--font-mono);
   font-size: 9px;
   text-align: center;
@@ -8251,14 +8256,14 @@ a.button-link:hover {
 .priority-badge.low,
 .task-priority.low {
   background: var(--surface-2);
-  color: var(--ink-700);
+  color: var(--text);
 }
 .card-due {
   font-size: 12px;
   color: var(--muted);
 }
 .card-due.overdue {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
   font-weight: 500;
 }
 .card-overdue-chip {
@@ -8297,7 +8302,7 @@ a.button-link:hover {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-600);
+  color: var(--text);
 }
 .card-next-milestone {
   font-size: 13px;
@@ -8575,7 +8580,7 @@ a.button-link:hover {
   text-transform: uppercase;
   background: transparent;
   border: 1px solid var(--border);
-  color: var(--ink-600);
+  color: var(--text);
 }
 .badge {
   font-family: var(--font-mono);
@@ -8686,7 +8691,7 @@ a.button-link:hover {
 .field label,
 .flabel,
 .asset-field > .field > span {
-  color: var(--ink-800);
+  color: var(--text);
   font-size: 13px;
   font-weight: 600;
   text-transform: none;
@@ -8699,7 +8704,7 @@ a.button-link:hover {
   color: var(--muted);
 }
 .field span.field-hint.warn {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .field input,
 .field select,
@@ -8799,7 +8804,7 @@ a.button-link:hover {
 .danger {
   background: var(--surface);
   border-color: var(--wp-status-blocked-bg);
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .modal-foot .danger:hover,
 .danger:hover {
@@ -8808,7 +8813,7 @@ a.button-link:hover {
   color: var(--wp-status-blocked-fg);
 }
 .delete-confirm-prompt {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .modal-head .icon-btn {
   background: transparent;
@@ -8822,7 +8827,7 @@ a.button-link:hover {
   gap: 14px;
 }
 .login-error {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 
 /* ── My Desk, Dashboard, Analytics ───────────────────────────────────── */
@@ -8853,7 +8858,7 @@ a.button-link:hover {
 .dashboard-section h3 svg {
   vertical-align: -3px;
   margin-right: 4px;
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .mydesk-greeting h2 {
   font-size: 32px;
@@ -8882,10 +8887,10 @@ a.button-link:hover {
 }
 .kpi.urgent .kpi-value,
 .kpi.overdue .kpi-value {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .kpi.duesoon .kpi-value {
-  color: #b4501f;
+  color: var(--high);
 }
 .kpi.planning .kpi-value,
 .kpi.live .kpi-value,
@@ -9098,7 +9103,7 @@ a.button-link:hover {
   background: var(--wtg-blue);
 }
 .ev-followup {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .ev-chip {
   border-radius: var(--radius);
@@ -9355,7 +9360,7 @@ a.button-link:hover {
   font-size: 10.5px;
 }
 .ev-cal-region {
-  color: var(--ink-600);
+  color: var(--text);
   border-color: var(--border-strong);
   --category: var(--ink-500);
 }
@@ -9389,10 +9394,10 @@ a.button-link:hover {
   color: var(--muted);
 }
 .ev-cal-owed {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .ev-cal-card .soc-card-links {
-  color: var(--ink-500);
+  color: var(--muted);
 }
 :root.dark-mode .ev-cal-card .soc-card-title {
   color: var(--text);
@@ -9609,7 +9614,7 @@ a.button-link:hover {
   white-space: nowrap;
 }
 .mywork-table .mono.late {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .mywork-late {
   display: block;
@@ -10173,7 +10178,7 @@ a.button-link:hover {
   border-color: var(--wp-status-blocked-fg);
 }
 .ler-cal-cell.blackout .ler-cal-add {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .ler-cal-cell.today .ler-cal-daynum {
   background: var(--wtg-cobalt);
@@ -11068,7 +11073,7 @@ a.ex-row {
   margin-top: auto;
   padding-top: 10px;
   font-size: 11px;
-  color: var(--ink-400);
+  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -11163,4 +11168,73 @@ a.ex-row {
 }
 .tool-tone-opt.active {
   border-color: var(--accent);
+}
+
+/* ==========================================================================
+   Accessibility: user-chosen colours as text
+
+   Category, type and campaign colours come from Types & tags, so any of
+   them can be a deep ink (navy, Cobalt, maroon) or a pale tint. As text
+   they need adjusting per theme to reach 4.5:1: a touch darker on the
+   light page, mixed most of the way to white on slate. !important because
+   the colour arrives as an inline style.
+   ========================================================================== */
+:root:not(.dark-mode) .soc-category {
+  color: color-mix(in srgb, var(--category) 80%, black) !important;
+}
+:root.dark-mode .soc-category {
+  color: color-mix(in srgb, var(--category) 45%, white) !important;
+  border-color: color-mix(in srgb, var(--category) 55%, white) !important;
+  filter: none;
+}
+:root.dark-mode .soc-type-pill:not(.active) {
+  color: color-mix(in srgb, var(--category) 45%, white) !important;
+  filter: none;
+}
+:root:not(.dark-mode) .soc-type-pill:not(.active):not(.empty) {
+  color: color-mix(in srgb, var(--category) 75%, black) !important;
+}
+:root.dark-mode .soc-cell-ms {
+  color: color-mix(in srgb, var(--camp) 45%, white) !important;
+}
+/* A type with nothing in it was faded with opacity, which took its label
+   below 3:1. Keep the label readable and say "empty" with a dashed edge. */
+.soc-type-pill.empty:not(.active) {
+  opacity: 1;
+  color: var(--muted) !important;
+  border-style: dashed;
+}
+:root.dark-mode .soc-cell.today .soc-day {
+  color: #fff;
+}
+
+/* Week rows in the month calendars exist for assistive tech only; the
+   cells still sit directly in the parent grid (see calendarRows.tsx). */
+.cal-row {
+  display: contents;
+}
+
+/* Keyboard / screen-reader button laid over each Social calendar card
+   (SocialPostCard.tsx). It takes focus and Enter/Space; the pointer passes
+   through to the card so clicking and dragging work as before. */
+.soc-card {
+  position: relative;
+}
+.soc-card-open {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  pointer-events: none;
+}
+.soc-card-open:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.soc-card-project {
+  position: relative;
+  z-index: 1;
 }

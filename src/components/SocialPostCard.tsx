@@ -11,6 +11,7 @@ import { socialPostTitle } from "../socialPosts";
 import { LinkedInGlyph } from "./LinkedInGlyph";
 import { firstEmbeddableImage } from "../assetLinks";
 import { socialStatusTone } from "../statusTone";
+import { chipStyle } from "../contrast";
 
 type Props = {
   post: SocialPost;
@@ -108,14 +109,6 @@ export function SocialPostCard({
 
   // The project link is a real button inside the card, and a button can't
   // nest inside a button, so the card itself is a keyboard-operable div.
-  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (e.target !== e.currentTarget) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onClick();
-    }
-  }
-
   const projectLink = projectTitle && (
     <button
       type="button"
@@ -137,9 +130,11 @@ export function SocialPostCard({
   );
 
   return (
+    // The card itself isn't a button: it holds the project button, and a
+    // button can't contain another. Mouse clicks and drags land on the card
+    // as before; keyboard and screen-reader users get the overlay button,
+    // which ignores the pointer (pointer-events: none in the CSS).
     <div
-      role="button"
-      tabIndex={0}
       className={`soc-card ${detailed ? "detailed" : ""} ${
         post.status === "cancelled" ? "cancelled" : ""
       } ${dragging ? "dragging" : ""} ${dimmed ? "dimmed" : ""}`}
@@ -151,7 +146,6 @@ export function SocialPostCard({
         ["--status" as string]: status.color,
       } as React.CSSProperties}
       onClick={onClick}
-      onKeyDown={handleKeyDown}
       draggable
       onDragStart={(e) => {
         writeDraggedSocialPostId(e, post.id);
@@ -160,8 +154,17 @@ export function SocialPostCard({
       onDragEnd={() => setDragging(false)}
       title={title}
     >
+      <button
+        type="button"
+        className="soc-card-open"
+        aria-label={`Open post: ${title}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+      />
       <div className="soc-card-top">
-        <span className="soc-chip" style={{ background: channelColor }}>
+        <span className="soc-chip" style={chipStyle(channelColor)}>
           {post.channel || "No channel"}
         </span>
         <span

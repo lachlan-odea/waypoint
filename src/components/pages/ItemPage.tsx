@@ -112,15 +112,19 @@ export function ItemPage({
           </div>
           {chips && <div className="item-chips">{chips}</div>}
         </div>
-        <dl className="item-facts">
-          {facts.map((f) => (
-            <div key={f.label} className="item-fact">
-              <dt>{f.label}</dt>
-              <dd>{f.value}</dd>
-            </div>
-          ))}
+        {/* The actions sit beside the facts, not inside the <dl>: a
+            description list may only hold dt/dd groups. */}
+        <div className="item-facts-row">
+          <dl className="item-facts">
+            {facts.map((f) => (
+              <div key={f.label} className="item-fact">
+                <dt>{f.label}</dt>
+                <dd>{f.value}</dd>
+              </div>
+            ))}
+          </dl>
           {actions && <div className="item-band-actions">{actions}</div>}
-        </dl>
+        </div>
       </header>
 
       <nav className="item-tabs" aria-label={`${kind} views`}>

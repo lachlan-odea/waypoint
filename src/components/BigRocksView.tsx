@@ -145,7 +145,7 @@ export function BigRocksView({
         </div>
         <div className="an-panel">
           <div className="an-panel-body">
-            <div className="an-table-wrap">
+            <div className="an-table-wrap" tabIndex={0} role="region" aria-label="The rocks">
               <table className="an-table br-table">
                 <thead>
                   <tr>

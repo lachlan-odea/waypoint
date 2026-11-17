@@ -76,7 +76,7 @@
 .kit-flabel {
   font-weight: 600;
   font-size: 13px;
-  color: var(--ink-800);
+  color: var(--text);
 }
 .kit-hint {
   font-size: 12px;
@@ -88,7 +88,7 @@
   font-weight: 400;
 }
 .kit-hint.warn {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .kit-links {
   display: flex;
@@ -251,7 +251,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  color: var(--ink-700);
+  color: var(--text);
   cursor: pointer;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
@@ -312,7 +312,7 @@
   font-size: 12px;
   font-weight: 600;
   background: var(--surface-2);
-  color: var(--ink-700);
+  color: var(--text);
   white-space: nowrap;
 }
 .kit-chip.line {
@@ -614,7 +614,7 @@
   height: 22px;
   border-radius: 50%;
   background: var(--ink-200);
-  color: var(--ink-700);
+  color: var(--text);
   font-size: 9px;
   font-weight: 700;
   display: inline-flex;
@@ -690,7 +690,7 @@
   padding: 2px;
 }
 .kit-pchip button:hover {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 
 /* Gantt (section schedule and the cross-webinar tracker) */

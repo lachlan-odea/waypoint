@@ -24,7 +24,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .ex-attention .an-panel-head h3 {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 
 /* Rows */
@@ -82,7 +82,7 @@
 }
 .ex-what {
   font-weight: 400;
-  color: var(--ink-600);
+  color: var(--text);
 }
 .ex-row-sub {
   font-size: 12px;
@@ -109,7 +109,7 @@
   max-width: 170px;
 }
 .ex-note.bad {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .ex-note.warn {
   color: #8a4b00;
@@ -254,7 +254,7 @@
 .ex-stage b {
   font-size: 18px;
   font-weight: 400;
-  color: var(--ink-400);
+  color: var(--muted);
 }
 .ex-stage.on b {
   color: var(--heading);
@@ -279,7 +279,7 @@
   color: var(--heading);
 }
 .ex-mini.alert .ex-mini-value {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .ex-mini-label {
   font-size: 11px;

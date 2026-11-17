@@ -11,6 +11,7 @@ import {
 import { brandColor } from "../constants";
 import { eventStatusTone } from "../statusTone";
 import { Icon } from "./Icon";
+import { chipStyle } from "../contrast";
 
 type Props = {
   event: MarketingEvent;
@@ -72,7 +73,7 @@ export function EventCalendarCard({ event: e, day, today, campaign, onClick, com
       title={title}
     >
       <div className="soc-card-top">
-        <span className="soc-chip" style={{ background: division }}>
+        <span className="soc-chip" style={chipStyle(division)}>
           {e.division || "Event"}
         </span>
         {compact ? (

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { LiveEventBlackout, LiveEventRequest } from "../types";
 import { blackoutRange, blackoutsOn } from "../liveEventRequests";
 import { Icon } from "./Icon";
+import { CalendarRows } from "./calendarRows";
 
 type Props = {
   requests: LiveEventRequest[];
@@ -131,21 +132,23 @@ export function LiveEventCalendar({
         </div>
       </div>
 
-      <div className="ler-cal-grid" role="grid" aria-label={`Live events in ${monthLabel(month)}`}>
-        {WEEKDAYS.map((d) => (
-          <div key={d} className="ler-cal-wd" role="columnheader">
-            {d}
-          </div>
-        ))}
-        {cells.map((iso, i) => {
-          if (!iso) return <div key={`pad-${i}`} className="ler-cal-cell empty" role="gridcell" />;
+      <div className="ler-cal-grid" role="table" aria-label={`Live events in ${monthLabel(month)}`}>
+        <div role="row" className="cal-row">
+          {WEEKDAYS.map((d) => (
+            <div key={d} className="ler-cal-wd" role="columnheader">
+              {d}
+            </div>
+          ))}
+        </div>
+        <CalendarRows cells={cells.map((iso, i) => {
+          if (!iso) return <div key={`pad-${i}`} className="ler-cal-cell empty" role="cell" />;
           const periods = blackoutsOn(iso, blackouts);
           const items = byDate.get(iso) ?? [];
           const past = iso < today;
           return (
             <div
               key={iso}
-              role="gridcell"
+              role="cell"
               className={`ler-cal-cell ${past ? "past" : ""} ${iso === today ? "today" : ""} ${periods.length ? "blackout" : ""}`}
             >
               <div className="ler-cal-daybar">
@@ -190,7 +193,7 @@ export function LiveEventCalendar({
               })}
             </div>
           );
-        })}
+        })} />
       </div>
 
       {blackoutsError ? (

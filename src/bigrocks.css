@@ -177,7 +177,7 @@
   color: var(--ink-300);
 }
 .ex-rock-num.alert b {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .ex-rock-track {
   display: block;
@@ -227,7 +227,7 @@
   );
 }
 .ex-rock-none .ex-rock-head b {
-  color: var(--ink-700);
+  color: var(--text);
 }
 :root.dark-mode .ex-rock-head b,
 :root.dark-mode .ex-rock-num b {

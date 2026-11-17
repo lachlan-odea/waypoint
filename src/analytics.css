@@ -60,7 +60,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  color: var(--ink-700);
+  color: var(--text);
   cursor: pointer;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
@@ -154,7 +154,7 @@
   color: var(--heading);
 }
 .an-stat.alert .an-stat-value {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .an-stat-sub {
   font-size: 14px;
@@ -255,7 +255,7 @@
   color: var(--muted);
 }
 .an-watch-date.late {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .an-watch-main {
   flex: 1;

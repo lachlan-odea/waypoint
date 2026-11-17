@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Designer } from "../types";
+import { readableTextOn } from "../contrast";
 
 type Props = {
   designer: Designer;
@@ -26,7 +27,7 @@ export function Avatar({ designer, className = "dot-avatar", title, size }: Prop
   return (
     <span
       className={className}
-      style={{ background: designer.color, ...style }}
+      style={{ background: designer.color, color: readableTextOn(designer.color), ...style }}
       title={title ?? designer.name}
     >
       {designer.initials}

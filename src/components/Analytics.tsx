@@ -706,7 +706,7 @@ export function Analytics({
             {rangeCampaigns.length === 0 ? (
               <Empty>No campaigns in this range.</Empty>
             ) : (
-              <div className="an-table-wrap">
+              <div className="an-table-wrap" tabIndex={0} role="region" aria-label="Campaign progress">
                 <table className="an-table">
                   <thead>
                     <tr>
@@ -838,6 +838,9 @@ function GaugeStat({
       <div className="an-gauge" aria-hidden>
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart
+            // Decorative (the figure is in the text beside it), so keep
+            // Recharts from making the hidden SVG a tab stop.
+            accessibilityLayer={false}
             innerRadius="72%"
             outerRadius="100%"
             data={[{ value: pct, fill: theme.gaugeFill }]}

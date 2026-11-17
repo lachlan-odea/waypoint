@@ -270,7 +270,7 @@ export function LinkedInAnalyticsSection({ socialPosts, from, to, rangeLabel }: 
                   {best.length === 0 ? (
                     <p className="an-empty">No posts on this page were published in that range.</p>
                   ) : (
-                    <div className="an-table-wrap">
+                    <div className="an-table-wrap" tabIndex={0} role="region" aria-label="Top posts by impressions">
                       <table className="an-table li-ins-table">
                         <thead>
                           <tr>
