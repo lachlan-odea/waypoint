@@ -19,6 +19,12 @@ import { projectContentTypes } from "./contentTypes";
 import { EVENT_CHECKLIST, eventPhase } from "./events";
 import { SEC_BY_KEY } from "./webinarKit";
 
+// The page the person has open beside the panel: a project, campaign,
+// webinar or event, or one of the list pages (My Desk, a board…).
+export type AssistantPage =
+  | { kind: "project" | "campaign" | "webinar" | "event"; id: string; title: string; tab: string }
+  | { kind: "list"; title: string };
+
 // The app's data at the moment a question is asked.
 export type AssistantData = {
   me: Designer;
@@ -30,6 +36,8 @@ export type AssistantData = {
   events: MarketingEvent[];
   socialPosts: SocialPost[];
   bigRocks: BigRock[];
+  // What they're looking at as they ask.
+  page: AssistantPage | null;
   // The person's local date, YYYY-MM-DD.
   today: string;
 };
@@ -103,7 +111,7 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
   {
     name: "find_projects",
     description:
-      "List projects from the team boards, earliest due date first. Every filter is optional and they combine. Use this for questions about what is due, who is working on what, or to find a project's id by name. Returns one summary row per project; call get_project for a project's overview, milestones and comments.",
+      "List projects from the team boards, earliest due date first. Every filter is optional and they combine. Use this for questions about what is due, who is working on what, or to find a project's id by name. Returns one summary row per project; call get_project for a project's overview, tasks and comments.",
     input_schema: {
       type: "object",
       additionalProperties: false,
@@ -125,7 +133,7 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
   {
     name: "get_project",
     description:
-      "Everything about one project: overview, brief link, people, milestones, recent comments, and the campaigns and events it is doing work for.",
+      "Everything about one project: overview, brief link, people, tasks (listed as milestones, each with its assignee and due date if it has them), recent comments, and the campaigns and events it is doing work for.",
     input_schema: {
       type: "object",
       additionalProperties: false,
@@ -582,6 +590,19 @@ export function runAssistantTool(
 
 // ── What the model is told about Waypoint ──────────────────────────────
 
+// The open page, in words. It is read afresh for every question, so it
+// follows the person as they move around with the panel open.
+function pageLine(page: AssistantPage | null): string {
+  if (!page) return "";
+  // The title is something a person typed: keep it to one plain line.
+  const title = page.title.replace(/[\r\n"]+/g, " ").trim().slice(0, 160);
+  if (page.kind === "list") {
+    return `Right now the person is on the ${title} page, with no single project, campaign or event open. If they say "this project" or "this page" and it isn't clear from the conversation which item they mean, ask.`;
+  }
+  const tool = page.kind === "project" ? "get_project" : page.kind === "event" ? "get_event" : "get_campaign";
+  return `Right now the person has the ${page.kind} "${title}" (id ${page.id}) open, on its ${page.tab} tab. "This ${page.kind}", "this", "here", "this page" and a request that names no item ("assign all the tasks to Sam", "summarise the comments") mean that ${page.kind}: call ${tool} with that id to read it, without asking which one they mean. The open page can change between messages; this is the one open as they ask this question.`;
+}
+
 export function assistantSystemPrompt(data: AssistantData, timeZone: string): string {
   const teams = data.workspaces.map((w) => w.name || w.id).join(", ");
   const people = data.designers
@@ -591,7 +612,7 @@ export function assistantSystemPrompt(data: AssistantData, timeZone: string): st
   return `You are the assistant built into Waypoint, the work-management app WiseTech Global's marketing teams use to plan and track their work. You appear as a narrow chat panel beside whatever page the person has open.
 
 Waypoint holds:
-- Projects: pieces of work on a team's board (teams include ${teams || "Design, Video and Marketing"}). Each has a status (planning, active, on hold, completed, cancelled), a priority, a due date, assignees, reviewers, milestones and a comment thread.
+- Projects: pieces of work on a team's board (teams include ${teams || "Design, Video and Marketing"}). Each has a status (planning, active, on hold, completed, cancelled), a priority, a due date, assignees, reviewers, tasks and a comment thread. A task is a short label and a tick, and can have its own assignee and due date.
 - Campaigns: a named run of dates with dated milestones and contributing projects. A webinar is a campaign worked through the webinar kit, with a go-live date, a stage and nine sections from brief to results.
 - Events: trade shows and conferences the team attends, sponsors or exhibits at, with leads, cost, results and a checklist.
 - The Social calendar: LinkedIn posts planned for the brand channels.
@@ -599,7 +620,7 @@ Waypoint holds:
 
 You can read all of this through your tools, and you answer from what they return. You can also help with the thinking and writing around the work: drafting a brief, post copy or a status update, summarising a thread, or working out what to do first.
 
-You can make some changes, but never directly. Your "propose_" tools put a card in the chat describing the change, with Apply and Dismiss buttons, and nothing is saved until the person clicks Apply. You can propose: a new project, including its milestones; a change to a project's status, due date, priority or assignees; a comment on a project; adding milestones to a project; ticking off a project milestone; a new milestone on a campaign; and a new draft social post. A project's milestones are its checklist of steps, which people may call tasks or to-dos: each is a short label and a tick, with no date, owner or priority of its own, so don't offer to set those on a milestone. A campaign's milestones are different: each has a date and a type. When you propose something:
+You can make some changes, but never directly. Your "propose_" tools put a card in the chat describing the change, with Apply and Dismiss buttons, and nothing is saved until the person clicks Apply. You can propose: a new project, including its tasks; a change to a project's status, due date, priority or assignees; a comment on a project; adding tasks to a project; assigning a project's tasks to someone or giving them a due date, one task, several or all of them at once; ticking off a task; a new milestone on a campaign; and a new draft social post. A project's tasks are what the tools call its milestones, and people may also call them to-dos or steps. A task's assignee doesn't have to be one of the project's assignees. A campaign's milestones are different: each has a date and a type. When you propose something:
 - Propose only what the person asked for. If they ask a question, answer it; don't propose changes they didn't request.
 - Look the item up first so you have the right id and its current values. If more than one item could be meant, or something that matters is missing (which team a new project belongs to, which date), ask before proposing.
 - After proposing, say in a sentence what the card will do and that it needs their Apply. Never say a change has been made: you can't see whether they applied it until a later message tells you.
@@ -607,6 +628,8 @@ You can make some changes, but never directly. Your "propose_" tools put a card 
 Anything else (deleting, editing events, creating campaigns or webinars, changing a campaign's dates, editing an existing post) you can't do. Say so in a sentence and point to where it's done in the app.
 
 The person you're talking to is ${data.me.name} (id ${data.me.id}). "Me", "my" and "mine" mean them. Today is ${data.today}${timeZone ? ` in their time zone (${timeZone})` : ""}; work out "this week", "next month" and "overdue" from that date, treating a week as Monday to Sunday.
+
+${pageLine(data.page)}
 
 People on Waypoint, as name (id): ${people}. The tools take either a name or an id. Event leads and social post owners are free text and may not be on this list.
 
