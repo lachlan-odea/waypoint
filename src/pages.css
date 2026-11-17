@@ -694,15 +694,23 @@ button.item-strip-cell:hover {
   color: var(--wtg-cobalt);
   box-shadow: var(--focus-ring);
 }
-.item-tasks li.dragging {
+.item-tasks li.dragging,
+.desk-checklist li.dragging {
   opacity: 0.4;
 }
-/* Where the dragged task will land: a cobalt line above or below the row. */
-.item-tasks li.drop-before {
+/* Where the dragged row will land: a cobalt line above or below it. Used by
+   project tasks and the My Desk To Do list. */
+.item-tasks li.drop-before,
+.desk-checklist li.drop-before {
   box-shadow: inset 0 2px 0 var(--wtg-cobalt);
 }
-.item-tasks li.drop-after {
+.item-tasks li.drop-after,
+.desk-checklist li.drop-after {
   box-shadow: inset 0 -2px 0 var(--wtg-cobalt);
+}
+/* On the To Do list the grip sits flush with the row's own padding. */
+.desk-row > .item-task-grip {
+  margin: 0 -4px 0 -4px;
 }
 /* A task's assignee and due date, between its label and its tools. The
    controls stay quiet until hovered so a long list still reads as a list. */

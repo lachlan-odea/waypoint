@@ -22,6 +22,8 @@ import { copyText, projectShareUrl } from "../../share";
 import { socialPostTitle } from "../../socialPosts";
 import { Avatar } from "../Avatar";
 import { Icon } from "../Icon";
+import { GripDots } from "../DragGrip";
+import { dropPosition, reorderIds } from "../../dragReorder";
 import { LinkifiedText } from "../LinkifiedText";
 import { ProjectDetailModal } from "../ProjectDetailModal";
 import { BigRockChips } from "../BigRockPicker";
@@ -236,16 +238,10 @@ export function ProjectPage({
     setTaskDrop(null);
   }
   function dropTask(fromId: string, toId: string, position: "before" | "after") {
-    if (fromId === toId) return;
     onChange((p) => {
-      const list = p.milestones.slice();
-      const from = list.findIndex((m) => m.id === fromId);
-      if (from < 0) return p;
-      const [moved] = list.splice(from, 1);
-      const to = list.findIndex((m) => m.id === toId);
-      if (to < 0) return p;
-      list.splice(position === "after" ? to + 1 : to, 0, moved);
-      return { ...p, milestones: list };
+      const ids = reorderIds(p.milestones.map((m) => m.id), fromId, toId, position);
+      const byId = new Map(p.milestones.map((m) => [m.id, m]));
+      return { ...p, milestones: ids.map((id) => byId.get(id)!) };
     });
   }
   function moveTask(id: string, dir: -1 | 1) {
@@ -436,8 +432,7 @@ export function ProjectPage({
                         if (!draggingTaskId || draggingTaskId === m.id) return;
                         e.preventDefault();
                         e.dataTransfer.dropEffect = "move";
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const position = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+                        const position = dropPosition(e);
                         setTaskDrop((cur) => (cur?.id === m.id && cur.position === position ? cur : { id: m.id, position }));
                       }}
                       onDragLeave={(e) => {
@@ -477,9 +472,7 @@ export function ProjectPage({
                           );
                         }}
                       >
-                        <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true">
-                          {[3, 8, 13].flatMap((y) => [2, 8].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.5" />))}
-                        </svg>
+                        <GripDots />
                       </button>
                       <button
                         type="button"

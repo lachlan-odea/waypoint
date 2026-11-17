@@ -184,6 +184,10 @@ export type DeskItem = {
   // desk item leaves the project's status alone.
   projectId?: string;
   createdAt: string;
+  // Position on the Today list once the owner has dragged it into place.
+  // Items without one sit after those with one, oldest first, so new items
+  // arrive at the bottom. Cleared when an item is moved to another day.
+  order?: number;
 };
 
 // Where a social post is in its life. Mirrors the colour code the marketing

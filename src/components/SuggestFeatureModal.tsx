@@ -186,7 +186,7 @@ export function SuggestFeatureModal({ currentDesigner, onSubmit, onClose }: Prop
                   type="text"
                   value={where}
                   maxLength={WHERE_MAX}
-                  placeholder="e.g. Social calendar, My Desk → Checklist, a project page"
+                  placeholder="e.g. Social calendar, My Desk → To Do, a project page"
                   onChange={(e) => setWhere(e.target.value)}
                   disabled={busy}
                 />

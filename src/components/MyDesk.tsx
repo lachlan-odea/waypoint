@@ -305,6 +305,22 @@ export function MyDesk({
     });
   }
 
+  // Today's list in a new order: number every item by its place and save
+  // the ones whose number changed, in one batch so the list never shows
+  // half-reordered. The subscription picks the local write up at once, so
+  // the drop shows straight away.
+  function reorderDeskItems(ids: string[]) {
+    const place = new Map(ids.map((id, i) => [id, i]));
+    const changed = deskItems
+      .filter((i) => place.has(i.id) && i.order !== place.get(i.id))
+      .map((i) => ({ ...i, order: place.get(i.id)! }));
+    if (changed.length === 0) return;
+    applyDeskItemChanges(changed.map(stripUndefined), []).catch((err) => {
+      console.error(err);
+      setFlash("Couldn't save the new order — check your connection.");
+    });
+  }
+
   function removeDeskItem(id: string) {
     deleteDeskItem(id).catch((err) => {
       console.error(err);
@@ -495,7 +511,7 @@ export function MyDesk({
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "work", label: "My work", count: myProjects.length },
-    { id: "checklist", label: "Checklist", count: openDeskCount },
+    { id: "checklist", label: "To Do", count: openDeskCount },
     ...(showCampaigns ? [{ id: "campaigns", label: "Campaigns", count: myCampaigns.length }] : []),
     { id: "notifications", label: "Notifications", count: notifications.length + reviewProjects.length },
   ];
@@ -610,7 +626,7 @@ export function MyDesk({
       >
         {deskError && (
           <div className="desk-banner error">
-            Your checklist isn't syncing: {deskError}
+            Your To Do list isn't syncing: {deskError}
           </div>
         )}
         {flash && <div className="desk-banner">{flash}</div>}
@@ -843,12 +859,12 @@ export function MyDesk({
                 title="Today's list"
                 aside={
                   <button type="button" className="desk-link" onClick={() => setTab("checklist")}>
-                    Open checklist
+                    Open To Do
                   </button>
                 }
               >
                 {todayItems.length === 0 ? (
-                  <EmptyNote>Nothing on today's list. Add something on the Checklist tab.</EmptyNote>
+                  <EmptyNote>Nothing on today's list. Add something on the To Do tab.</EmptyNote>
                 ) : (
                   <ul className="desk-peek">
                     {todayItems.slice(0, 6).map((i) => (
@@ -866,7 +882,7 @@ export function MyDesk({
                 )}
                 {todayItems.length > 6 && (
                   <p className="item-hint">
-                    +{todayItems.length - 6} more on the Checklist tab
+                    +{todayItems.length - 6} more on the To Do tab
                   </p>
                 )}
               </SideCard>
@@ -963,6 +979,7 @@ export function MyDesk({
               projects={workspace.projects}
               onAdd={(text) => addDeskItem(text)}
               onPatch={patchDeskItem}
+              onReorder={reorderDeskItems}
               onRemove={removeDeskItem}
               onOpenProject={onOpenProject}
               onFlash={setFlash}
