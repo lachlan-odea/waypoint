@@ -254,7 +254,7 @@ export function SettingsModal({
               {canDecideAccess && (
                 <div className="section-actions">
                   <button
-                    className={waitingRequests > 0 ? "primary" : ""}
+                    className={waitingRequests > 0 ? "btn btn-primary" : "btn btn-secondary"}
                     onClick={() => setAccessRequestsOpen(true)}
                   >
                     Review requests{waitingRequests > 0 ? ` (${waitingRequests})` : ""} →

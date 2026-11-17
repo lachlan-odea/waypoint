@@ -193,17 +193,25 @@ export function AccessRequestsModal({
                       )}
                       <div className="suggestion-controls">
                         {pending && (
-                          <>
-                            <button className="primary" onClick={() => approve(r)} disabled={busy}>
+                          <div className="access-request-decide">
+                            <button
+                              className="btn btn-primary"
+                              onClick={() => approve(r)}
+                              disabled={busy}
+                            >
                               {busy ? "Working…" : "Approve"}
                             </button>
-                            <button onClick={() => decline(r)} disabled={busy}>
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() => decline(r)}
+                              disabled={busy}
+                            >
                               Decline
                             </button>
-                          </>
+                          </div>
                         )}
                         <button
-                          className="btn btn-secondary suggestion-remove"
+                          className="btn btn-secondary suggestion-remove access-request-remove"
                           onClick={() => remove(r)}
                           disabled={busy}
                           title="Remove this request"
