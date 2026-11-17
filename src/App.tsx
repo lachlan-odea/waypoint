@@ -37,6 +37,8 @@ import {
   setDesignerSuperUser as firestoreSetDesignerSuperUser,
   setNotification as firestoreSetNotification,
   setProject as firestoreSetProject,
+  moveProject as firestoreMoveProject,
+  subscribeConfidentialProjects,
   setWorkspaceMembers as firestoreSetWorkspaceMembers,
   relabelSocialPostCategory as firestoreRelabelSocialPostCategory,
   setSocialConfig as firestoreSetSocialConfig,
@@ -169,7 +171,22 @@ function sortByPriorityThenDue(a: Project, b: Project): number {
 }
 
 export default function App() {
-  const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
+  const [liveWorkspace, setWorkspace] = useState<WorkspaceData | null>(null);
+  // Confidential projects come from their own listener (only the ones this
+  // person may see; see subscribeConfidentialProjects) and are merged in
+  // here, so every board, search, dashboard and export treats them like any
+  // other project without knowing where they came from. During a move
+  // between collections a project can briefly be in both; the confidential
+  // copy wins.
+  const [confidentialProjects, setConfidentialProjects] = useState<Project[]>([]);
+  const workspace = useMemo<WorkspaceData | null>(() => {
+    if (!liveWorkspace || confidentialProjects.length === 0) return liveWorkspace;
+    const secret = new Set(confidentialProjects.map((p) => p.id));
+    return {
+      ...liveWorkspace,
+      projects: [...liveWorkspace.projects.filter((p) => !secret.has(p.id)), ...confidentialProjects],
+    };
+  }, [liveWorkspace, confidentialProjects]);
   // null = not signed in. undefined = still waiting for the initial auth
   // state-change callback (Firebase persists across reloads but the
   // restoration is async). We distinguish so the login screen doesn't
@@ -949,6 +966,33 @@ export default function App() {
     return !!email && (SUPER_USER_EMAILS as readonly string[]).includes(email);
   }, [currentDesigner]);
 
+  // Who sees every confidential project. Firestore rules trust only the
+  // stored isSuperUser flag (not the SUPER_USER_EMAILS bootstrap), so the
+  // app asks the same question or its listener would be refused.
+  const seesAllConfidential = !!currentDesigner?.isSuperUser;
+
+  // The confidential projects this person may see. Re-subscribes when they
+  // become (or stop being) a super user, who sees every one.
+  useEffect(() => {
+    if (!sessionDesignerId) return;
+    const unsubscribe = subscribeConfidentialProjects(
+      sessionDesignerId,
+      seesAllConfidential,
+      setConfidentialProjects,
+      // The other listener's projects stay; just say which one failed.
+      (err, listener) => {
+        console.warn(
+          `Couldn't load confidential projects (${listener === "all" ? "all of them, as a super user" : "the ones assigned to you"})`,
+          err,
+        );
+      },
+    );
+    return () => {
+      unsubscribe();
+      setConfidentialProjects([]);
+    };
+  }, [sessionDesignerId, seesAllConfidential]);
+
   // Feature suggestions and bug reports, for Settings. Only super users
   // review them, so only they subscribe; everyone else just sends.
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -1014,11 +1058,15 @@ export default function App() {
   function updateProject(id: string, updater: (p: Project) => Project) {
     const project = findProject(id);
     if (!project) return;
-    firestoreSetProject(updater(project)).catch(writeError);
+    const next = updater(project);
+    // Marking a project confidential (or not) moves it between collections.
+    const save = !!next.confidential !== !!project.confidential ? firestoreMoveProject : firestoreSetProject;
+    save(next).catch(writeError);
   }
 
   function deleteProject(id: string) {
-    firestoreDeleteProject(id).catch(writeError);
+    const project = findProject(id);
+    if (project) firestoreDeleteProject(project).catch(writeError);
     closeItem();
   }
 
@@ -1345,9 +1393,19 @@ export default function App() {
     return { ok: true, link: itemHash("project", project.id, "comments") };
   }
 
+  // Notifications are readable by anyone signed in, so one about a
+  // confidential project goes only to someone who can open it, and never
+  // carries the comment or task text.
   function addNotifications(notifs: Notification[]) {
-    if (notifs.length === 0) return;
-    notifs.forEach((n) => firestoreSetNotification(n).catch(writeError));
+    const safe = notifs.flatMap((n) => {
+      const project = findProject(n.projectId);
+      if (!project?.confidential) return [n];
+      const canSee =
+        project.assigneeIds.includes(n.recipientId) ||
+        !!workspace?.designers.find((d) => d.id === n.recipientId)?.isSuperUser;
+      return canSee ? [{ ...n, snippet: "Confidential project" }] : [];
+    });
+    safe.forEach((n) => firestoreSetNotification(n).catch(writeError));
   }
 
   function clearAllNotifications() {
@@ -1641,6 +1699,7 @@ export default function App() {
               <ProjectPage
                 key={routedProject.id}
                 project={routedProject}
+                isSuperUser={seesAllConfidential}
                 designers={workspace.designers}
                 reviewers={reviewers}
                 workspaces={availableWorkspaces}

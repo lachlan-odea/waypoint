@@ -53,6 +53,9 @@ type Props = {
   onTab: (id: string) => void;
   strip?: StripCell[];
   stripLabel?: string;
+  // A full-width strip across the top of the band for something everyone
+  // opening the page must see first, such as a confidential project.
+  notice?: ReactNode;
   children: ReactNode;
 };
 
@@ -72,6 +75,7 @@ export function ItemPage({
   onTab,
   strip,
   stripLabel,
+  notice,
   children,
 }: Props) {
   return (
@@ -93,7 +97,8 @@ export function ItemPage({
       </nav>
       )}
 
-      <header className="item-band">
+      <header className={`item-band${notice ? " has-notice" : ""}`}>
+        {notice}
         {nav && <div className="item-band-nav">{nav}</div>}
         <div className="item-band-main">
           <div className="eyebrow item-band-eyebrow">{eyebrow}</div>
