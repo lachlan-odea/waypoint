@@ -497,6 +497,9 @@ export function MyDesk({
     (i) => !i.done && !i.remind && i.date <= today,
   );
   const openDeskCount = todayItems.length;
+  // Everything the To Do tab lists: every open ad hoc item, whatever its
+  // day, and every open project task assigned to you.
+  const toDoCount = deskItems.filter((i) => !i.done).length + myProjectTasks.length;
 
   const currentDesigner = workspace.designers.find(
     (d) => d.id === currentDesignerId,
@@ -511,7 +514,7 @@ export function MyDesk({
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "work", label: "My work", count: myProjects.length },
-    { id: "checklist", label: "To Do", count: openDeskCount },
+    { id: "checklist", label: "To Do", count: toDoCount },
     ...(showCampaigns ? [{ id: "campaigns", label: "Campaigns", count: myCampaigns.length }] : []),
     { id: "notifications", label: "Notifications", count: notifications.length + reviewProjects.length },
   ];
@@ -973,14 +976,20 @@ export function MyDesk({
                 />
               </div>
             )}
-            {/* The personal checklist — Today / Upcoming / Completed. */}
+            {/* Everything to do, by when it's due: project tasks assigned
+                to you and your own ad hoc items. */}
             <DeskChecklist
               items={deskItems}
               projects={workspace.projects}
-              onAdd={(text) => addDeskItem(text)}
+              projectTasks={myProjectTasks}
+              designers={workspace.designers}
+              workspaces={workspaces}
+              currentDesignerId={currentDesignerId}
+              onAdd={(text, date) => addDeskItem(text, date ? { date } : undefined)}
               onPatch={patchDeskItem}
               onReorder={reorderDeskItems}
               onRemove={removeDeskItem}
+              onToggleProjectTask={onToggleProjectTask}
               onOpenProject={onOpenProject}
               onFlash={setFlash}
             />
