@@ -17,7 +17,9 @@ export type SidebarView =
   | "socialCalendar"
   | "analytics"
   | "archived"
-  | "tools";
+  | "tools"
+  // Opened from the header's account menu, not a sidebar row.
+  | "settings";
 
 type Props = {
   currentDesigner: Designer;

@@ -38,6 +38,8 @@ import {
   milestonesCsv,
   milestonesInRange,
 } from "../csvExport";
+import { chipStyle } from "../contrast";
+import { CalendarRows } from "./calendarRows";
 
 type Props = {
   campaigns: Campaign[];
@@ -590,7 +592,7 @@ export function CampaignsView({
                   <div className="camp-card-top">
                     <span
                       className="soc-chip"
-                      style={{ background: brandColor(c.brand || "No brand") }}
+                      style={chipStyle(brandColor(c.brand || "No brand"))}
                       title="Brand"
                     >
                       {c.brand || "No brand"}
@@ -742,15 +744,17 @@ export function CampaignsView({
       </div>
       <div
         className={`soc-grid camps-cal ${hoverCampaignId ? "hovering" : ""}`}
-        role="grid"
+        role="table"
         aria-label={monthLabel}
       >
-        {WEEKDAYS.map((d) => (
-          <div key={d} className="soc-weekday" role="columnheader">
-            {d}
-          </div>
-        ))}
-        {cells.map((iso, i) => {
+        <div role="row" className="cal-row">
+          {WEEKDAYS.map((d) => (
+            <div key={d} className="soc-weekday" role="columnheader">
+              {d}
+            </div>
+          ))}
+        </div>
+        <CalendarRows cells={cells.map((iso, i) => {
           if (iso === null) {
             return <div key={`pad-${i}`} className="soc-cell pad" aria-hidden />;
           }
@@ -759,7 +763,7 @@ export function CampaignsView({
           return (
             <div
               key={iso}
-              role="gridcell"
+              role="cell"
               className={`soc-cell camp-cell drop-target ${iso === today ? "today" : ""} ${
                 weekend ? "weekend" : ""
               } ${dropOver === iso ? "drop-over" : ""}`}
@@ -838,7 +842,7 @@ export function CampaignsView({
               )}
             </div>
           );
-        })}
+        })} />
       </div>
         </>
       )}

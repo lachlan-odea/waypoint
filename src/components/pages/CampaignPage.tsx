@@ -946,7 +946,8 @@ function Timeline({ campaign, today, color }: { campaign: Campaign; today: strin
             style={{ left: pos(m.date) }}
             title={`${m.label} · ${formatShort(m.date)}${m.done ? " · done" : m.date < today ? " · overdue" : ""}`}
             tabIndex={0}
-            aria-label={`${m.label}, ${formatShort(m.date)}`}
+            role="img"
+            aria-label={`${m.label}, ${formatShort(m.date)}${m.done ? ", done" : m.date < today ? ", overdue" : ""}`}
           />
         ))}
         {today >= lo && today <= hi && <span className="item-tl-today" style={{ left: pos(today) }} title="Today" />}

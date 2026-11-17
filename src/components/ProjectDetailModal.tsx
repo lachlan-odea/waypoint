@@ -33,6 +33,7 @@ import { AssigneePicker } from "./AssigneePicker";
 import { BigRockPicker } from "./BigRockPicker";
 import { Icon } from "./Icon";
 import { socialStatusTone } from "../statusTone";
+import { chipStyle } from "../contrast";
 
 type Props = {
   project: Project;
@@ -998,7 +999,7 @@ export function ProjectDetailModal({
                       >
                         <span
                           className="soc-chip"
-                          style={{ background: brandColor(c.brand || "No brand") }}
+                          style={chipStyle(brandColor(c.brand || "No brand"))}
                         >
                           {c.brand || "No brand"}
                         </span>
@@ -1043,7 +1044,7 @@ export function ProjectDetailModal({
                       >
                         <span
                           className="soc-chip"
-                          style={{ background: socialChannelColor(p.channel) }}
+                          style={chipStyle(socialChannelColor(p.channel))}
                         >
                           {p.channel || "No channel"}
                         </span>

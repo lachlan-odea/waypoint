@@ -35,6 +35,7 @@ import { csvFileName, downloadCsv, eventsCsv, eventsInRange } from "../csvExport
 import { seedEventsIfMissing } from "../firestore";
 import { Icon } from "./Icon";
 import { eventStatusTone } from "../statusTone";
+import { CalendarRows } from "./calendarRows";
 
 type Props = {
   events: MarketingEvent[];
@@ -704,13 +705,15 @@ export function EventsView({
               Click an event to open it · use + on a day to add one there
             </span>
           </div>
-          <div className="soc-grid ev-cal" role="grid" aria-label={calTitle}>
-            {WEEKDAYS.map((d) => (
-              <div key={d} className="soc-weekday" role="columnheader">
-                {d}
-              </div>
-            ))}
-            {cells.map((iso, i) => {
+          <div className="soc-grid ev-cal" role="table" aria-label={calTitle}>
+            <div role="row" className="cal-row">
+              {WEEKDAYS.map((d) => (
+                <div key={d} className="soc-weekday" role="columnheader">
+                  {d}
+                </div>
+              ))}
+            </div>
+            <CalendarRows cells={cells.map((iso, i) => {
               if (iso === null) {
                 return <div key={`pad-${i}`} className="soc-cell pad" aria-hidden />;
               }
@@ -719,7 +722,7 @@ export function EventsView({
               return (
                 <div
                   key={iso}
-                  role="gridcell"
+                  role="cell"
                   className={`soc-cell ev-cell ${iso === today ? "today" : ""} ${
                     weekend ? "weekend" : ""
                   }`}
@@ -759,7 +762,7 @@ export function EventsView({
                   )}
                 </div>
               );
-            })}
+            })} />
           </div>
           {tbcThisMonth.length > 0 && (
             <div className="ev-tbc">

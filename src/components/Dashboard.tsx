@@ -350,7 +350,7 @@ export function Dashboard({ workspace, campaigns, events, socialPosts, bigRocks,
       <Section eyebrow="Across the teams" title="Teams and projects" summary={`${live.length} live project${live.length === 1 ? "" : "s"} across ${workspaces.length} team${workspaces.length === 1 ? "" : "s"} · ${projects.length} on the boards in all`}>
         <div className="an-grid">
           <Panel title="By team" aside="Click a team to open its board">
-            <div className="an-table-wrap">
+            <div className="an-table-wrap" tabIndex={0} role="region" aria-label="Teams and projects by team">
               <table className="an-table ex-teams">
                 <thead>
                   <tr>

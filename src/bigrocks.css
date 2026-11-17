@@ -50,7 +50,7 @@
   height: auto;
 }
 .br-table tr.selected td {
-  background: var(--cobalt-050);
+  background: var(--accent-wash);
 }
 .br-table tr.retired b {
   color: var(--muted);
@@ -71,7 +71,7 @@
 .br-empty h2 {
   margin: 6px 0 10px;
   font-size: 22px;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .br-empty p {
   color: var(--muted);
@@ -138,7 +138,7 @@
 .ex-rock-head b {
   font-size: 15px;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
   line-height: 1.25;
 }
 .ex-rock-desc {
@@ -166,7 +166,7 @@
   font-weight: 400;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .ex-rock-num small {
   font-size: 11px;
@@ -177,13 +177,13 @@
   color: var(--ink-300);
 }
 .ex-rock-num.alert b {
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }
 .ex-rock-track {
   display: block;
   height: 6px;
   border-radius: var(--radius);
-  background: var(--ink-100);
+  background: var(--surface-2);
   overflow: hidden;
 }
 /* The "not on any rock" row has one figure; it sits in the first figure
@@ -227,7 +227,7 @@
   );
 }
 .ex-rock-none .ex-rock-head b {
-  color: var(--ink-700);
+  color: var(--text);
 }
 :root.dark-mode .ex-rock-head b,
 :root.dark-mode .ex-rock-num b {

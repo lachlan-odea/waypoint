@@ -34,6 +34,7 @@ import {
 } from "../csvExport";
 import { Icon } from "./Icon";
 import { socialStatusTone } from "../statusTone";
+import { CalendarRows } from "./calendarRows";
 
 type Props = {
   // Only used for owner suggestions in the post editor.
@@ -893,21 +894,23 @@ export function SocialCalendar({
 
           <div
             className={`soc-grid ${hoverCampaignId ? "hovering" : ""}`}
-            role="grid"
+            role="table"
             aria-label={monthLabel}
           >
-            {WEEKDAYS.map((d) => (
-              <div key={d} className="soc-weekday" role="columnheader">
-                {d}
-              </div>
-            ))}
-            {cells.map((iso, i) =>
+            <div role="row" className="cal-row">
+              {WEEKDAYS.map((d) => (
+                <div key={d} className="soc-weekday" role="columnheader">
+                  {d}
+                </div>
+              ))}
+            </div>
+            <CalendarRows cells={cells.map((iso, i) =>
               iso === null ? (
                 <div key={`pad-${i}`} className="soc-cell pad" aria-hidden />
               ) : (
                 <div
                   key={iso}
-                  role="gridcell"
+                  role="cell"
                   className={`soc-cell drop-target ${
                     iso === today ? "today" : ""
                   } ${isWeekend(iso) ? "weekend" : ""} ${
@@ -984,7 +987,7 @@ export function SocialCalendar({
                   </div>
                 </div>
               ),
-            )}
+            )} />
           </div>
 
           <div

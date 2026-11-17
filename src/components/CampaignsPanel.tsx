@@ -3,6 +3,7 @@ import type { Campaign, Project } from "../types";
 import { brandColor } from "../constants";
 import { formatShort, todayIso } from "../dates";
 import { PHASE_LABEL, campaignPhase, spanDays, type CampaignPhase } from "../campaigns";
+import { chipStyle } from "../contrast";
 
 type Props = {
   // Every campaign; the panel picks the ones that touch `projects`.
@@ -164,7 +165,7 @@ export function CampaignsPanel({
                 style={{ ["--camp" as string]: color } as React.CSSProperties}
               >
                 <div className="camp-mini-top">
-                  <span className="soc-chip" style={{ background: brandColor(c.brand || "No brand") }}>
+                  <span className="soc-chip" style={chipStyle(brandColor(c.brand || "No brand"))}>
                     {c.brand || "No brand"}
                   </span>
                   <span className={`camp-phase ${phase}`}>

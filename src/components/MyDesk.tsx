@@ -43,6 +43,7 @@ import {
   ItemPage,
   SideCard,
 } from "./pages/ItemPage";
+import { chipStyle } from "../contrast";
 
 interface MyDeskProps {
   workspace: WorkspaceData;
@@ -770,7 +771,7 @@ export function MyDesk({
                             </div>
                             <span
                               className="priority-badge"
-                              style={{ backgroundColor: getStatusColor(p.priority) }}
+                              style={chipStyle(getStatusColor(p.priority))}
                             >
                               {p.priority}
                             </span>

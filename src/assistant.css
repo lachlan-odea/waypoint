@@ -426,5 +426,5 @@
 }
 .assistant-proposal-error {
   font-size: 13px;
-  color: var(--wp-status-blocked-fg);
+  color: var(--danger);
 }

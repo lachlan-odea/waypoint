@@ -6,7 +6,7 @@
   gap: 6px;
 }
 .help-btn svg {
-  color: var(--wtg-cobalt);
+  color: var(--link);
 }
 
 .tour {
@@ -58,7 +58,7 @@
   margin: 0;
   font-size: 16px;
   font-weight: 700;
-  color: var(--wtg-blue);
+  color: var(--heading);
 }
 .tour-card p {
   margin: 0;
