@@ -1,7 +1,10 @@
 /* The assistant panel (components/AssistantPanel.tsx): docked to the right
    edge over the page, without a scrim, so the page behind stays usable
    while a question is open. Design-system rules apply: one radius, borders
-   in place of shadows, the tokens from App.css. */
+   in place of shadows, the tokens from App.css.
+   It is set apart from the page it sits over by colour: a WiseTech Blue
+   header band, an accent edge, and a tinted body on which the white cards,
+   answers' proposals and the question box stand out. */
 .assistant-panel {
   position: fixed;
   top: 0;
@@ -11,8 +14,10 @@
   width: min(420px, 100vw);
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
+  /* The tint is laid over the surface so the panel stays opaque in dark
+     mode, where the wash is translucent. */
+  background: linear-gradient(var(--accent-wash), var(--accent-wash)), var(--surface);
+  border-left: 2px solid var(--accent);
   color: var(--text);
 }
 
@@ -22,19 +27,46 @@
   justify-content: space-between;
   gap: 10px;
   padding: 14px 14px 14px 18px;
-  border-bottom: 1px solid var(--border);
+  background: var(--wtg-blue);
+  color: var(--wtg-white);
 }
 .assistant-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--accent);
+  color: var(--wtg-periwinkle);
 }
 .assistant-title h2 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--wtg-white);
+}
+/* The band's buttons: white on blue in both themes. */
+.assistant-head .icon-btn {
+  color: var(--wtg-white);
+}
+.assistant-head .icon-btn:hover,
+.assistant-head .icon-btn[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--wtg-white);
+}
+.assistant-head .btn-secondary,
+:root.dark-mode .assistant-head .btn-secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.45);
+  color: var(--wtg-white);
+}
+.assistant-head .btn-secondary:hover:not(:disabled),
+:root.dark-mode .assistant-head .btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--wtg-white);
+  color: var(--wtg-white);
+}
+.assistant-head button:focus-visible {
+  outline: 2px solid var(--wtg-white);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 .assistant-head-actions {
   display: flex;
@@ -84,7 +116,7 @@
 }
 .assistant-suggestion:hover {
   border-color: var(--accent);
-  background: var(--accent-wash);
+  color: var(--accent);
 }
 .assistant-suggestion:focus-visible {
   outline: none;
@@ -107,13 +139,14 @@
 .assistant-msg p {
   margin: 0;
 }
-/* The person's question: a tinted block on the right. The answer is plain
+/* The person's question: a Cobalt block on the right. The answer is plain
    text on the panel, full width, so lists have room. */
 .assistant-msg.from-user {
   align-self: flex-end;
   max-width: 88%;
   padding: 8px 12px;
-  background: var(--accent-wash);
+  background: var(--primary);
+  color: var(--wtg-white);
   border-radius: var(--radius);
   white-space: pre-wrap;
 }
@@ -134,7 +167,7 @@
   font-family: "DM Mono", ui-monospace, monospace;
   font-size: 13px;
   padding: 1px 4px;
-  background: var(--surface-2);
+  background: var(--surface);
   border-radius: 4px;
 }
 .assistant-link {
@@ -168,7 +201,7 @@
 .assistant-context {
   margin: 0;
   padding: 8px 14px 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -183,7 +216,7 @@
   align-items: flex-end;
   gap: 8px;
   padding: 12px 14px 6px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-strong);
 }
 .assistant-input {
   flex: 1;
