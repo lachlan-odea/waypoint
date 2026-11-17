@@ -27,10 +27,6 @@ type Props = {
   onOpenCampaign: (id: string) => void;
   onOpenEvent: (id: string) => void;
   onOpenNotifications: () => void;
-  // The assistant's chat panel (AssistantPanel): the button opens and
-  // closes it, and stays lit while it's open.
-  assistantOpen: boolean;
-  onToggleAssistant: () => void;
   onOpenAnalytics: () => void;
   onOpenSettings: () => void;
   onLogout: () => void;
@@ -75,8 +71,6 @@ export function AppHeader({
   onOpenCampaign,
   onOpenEvent,
   onOpenNotifications,
-  assistantOpen,
-  onToggleAssistant,
   onOpenAnalytics,
   onOpenSettings,
   onLogout,
@@ -278,18 +272,6 @@ export function AppHeader({
           </ul>
         )}
       </div>
-
-      {/* The assistant, centred in the space between the search and the
-          account controls. */}
-      <button
-        type="button"
-        className="assistant-toggle"
-        onClick={onToggleAssistant}
-        aria-pressed={assistantOpen}
-      >
-        <Icon name="sparkles" size={18} />
-        <span>Ask AI</span>
-      </button>
 
       <div className="app-header-right">
         {actions && <div className="app-header-actions">{actions}</div>}
