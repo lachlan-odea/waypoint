@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Designer } from "../types";
-import {
-  claimDesignerProfile,
-  createDesignerProfile,
-  loadDesigner,
-  loadDesignerProfiles,
-} from "../firestore";
 import { resetPassword, signIn, signUp } from "../firebase";
+import { ALLOWED_EMAIL_DOMAIN } from "../constants";
 import { HORIZONTAL_VIEWBOX, WaypointLogo } from "./brand/WaypointLogo";
 import { MARK_BARS, WORDMARK } from "./brand/wordmark";
 import { WiseTechLogo } from "./brand/WiseTechLogo";
@@ -17,10 +11,11 @@ import "../login.css";
 // an intro where the mark draws itself, the wordmark reveals, and the logo
 // flies into its place on the card. Sign-up and password reset keep their
 // existing Firebase flows.
-
-// Restrict signups to the team's email domain. Loosen / remove if you want
-// outside collaborators to be able to register themselves.
-const ALLOWED_EMAIL_DOMAIN = "wisetechglobal.com";
+//
+// "Request access" creates an account but lets nobody in: the person lands
+// on AccessPending to verify their email and wait for a super user. The
+// domain check here is only a friendly early answer; Firestore rules hold
+// the real one.
 
 // Clicks on the card's logo needed to reveal the trophy, and the longest gap
 // allowed between them for the clicks to count as "in a row".
@@ -47,7 +42,7 @@ function friendlyError(err: unknown): string {
       case "auth/invalid-credential":
         return "Email or password is incorrect.";
       case "auth/email-already-in-use":
-        return "An account with that email already exists. Try Sign in.";
+        return "There's already an account with that email. Sign in to see where your access stands.";
       case "auth/weak-password":
         return "Password needs to be at least 6 characters.";
       case "auth/too-many-requests":
@@ -217,9 +212,6 @@ export function Login({ onSignedIn }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [claimId, setClaimId] = useState<string>("");
-  const [legacyProfiles, setLegacyProfiles] = useState<Designer[]>([]);
-  const [profilesLoading, setProfilesLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
@@ -244,21 +236,6 @@ export function Login({ onSignedIn }: Props) {
   useEffect(() => {
     if (introDone) emailRef.current?.focus();
   }, [mode, introDone]);
-
-  // Lazily load the existing designers for the claim picker the first time
-  // the person opens Create account.
-  useEffect(() => {
-    if (mode !== "signup" || legacyProfiles.length > 0 || profilesLoading) return;
-    setProfilesLoading(true);
-    loadDesignerProfiles()
-      .then((ps) => {
-        // Only the legacy seed profiles (ids like d-something), not people
-        // who've already signed up with a Firebase UID.
-        setLegacyProfiles(ps.filter((p) => /^d-/.test(p.id)));
-      })
-      .catch((err) => console.warn("Couldn't load designer profiles", err))
-      .finally(() => setProfilesLoading(false));
-  }, [mode, legacyProfiles.length, profilesLoading]);
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -288,24 +265,13 @@ export function Login({ onSignedIn }: Props) {
 
     setBusy(true);
     try {
-      if (mode === "signin") {
-        const user = await signIn(trimmedEmail, password);
-        const designer = await loadDesigner(user.uid);
-        if (!designer) {
-          throw new Error(
-            "Your account exists but no Waypoint profile was found. Ask an admin to invite you again.",
-          );
-        }
-        onSignedIn(designer.id);
-      } else {
-        const user = await signUp(trimmedEmail, password);
-        if (claimId) {
-          await claimDesignerProfile(claimId, user.uid, trimmedEmail);
-        } else {
-          await createDesignerProfile(user.uid, name.trim(), trimmedEmail);
-        }
-        onSignedIn(user.uid);
-      }
+      // Either way the auth listener in App.tsx takes over: a member goes
+      // into Waypoint, anyone else to the access request screen.
+      const user =
+        mode === "signin"
+          ? await signIn(trimmedEmail, password)
+          : await signUp(trimmedEmail, password, name.trim());
+      onSignedIn(user.uid);
     } catch (err) {
       console.error(err);
       setError(friendlyError(err));
@@ -343,15 +309,6 @@ export function Login({ onSignedIn }: Props) {
     if (egg.count >= EGG_CLICKS) {
       egg.count = 0;
       setTrophyShown(true);
-    }
-  }
-
-  // Auto-fill the name when an existing profile is picked.
-  function onClaimChange(id: string) {
-    setClaimId(id);
-    if (id) {
-      const profile = legacyProfiles.find((p) => p.id === id);
-      if (profile) setName(profile.name);
     }
   }
 
@@ -405,22 +362,22 @@ export function Login({ onSignedIn }: Props) {
           </div>
 
           <div className="lg-card-head">
-            <h2>{signin ? "Sign in" : "Create your account"}</h2>
+            <h2>{signin ? "Sign in" : "Request access"}</h2>
             <p>
               {signin
                 ? "Welcome back. Pick up where your plan left off."
-                : `Use your @${ALLOWED_EMAIL_DOMAIN} email. Pick an existing profile to keep its work.`}
+                : `Use your @${ALLOWED_EMAIL_DOMAIN} email. We'll ask you to verify it, then a Waypoint admin approves your request.`}
             </p>
           </div>
 
           <form className="lg-form" onSubmit={handleSubmit} noValidate>
             {!signin && (
               <label className="lg-field">
-                <span>{claimId ? "Display name (from existing profile)" : "Display name"}</span>
+                <span>Your name</span>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  disabled={busy || !!claimId}
+                  disabled={busy}
                   placeholder="e.g. Jess Duguid"
                   autoComplete="name"
                 />
@@ -456,24 +413,6 @@ export function Login({ onSignedIn }: Props) {
                 </button>
               </div>
             )}
-            {!signin && legacyProfiles.length > 0 && (
-              <label className="lg-field">
-                <span>Claim an existing profile (optional)</span>
-                <select value={claimId} onChange={(e) => onClaimChange(e.target.value)} disabled={busy}>
-                  <option value="">— New profile —</option>
-                  {legacyProfiles.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-                <small>
-                  Picking your existing profile keeps all of that designer's projects, comments and
-                  notifications attached to you.
-                </small>
-              </label>
-            )}
-
             {error && (
               <p className="lg-error" role="alert">
                 {error}
@@ -483,7 +422,7 @@ export function Login({ onSignedIn }: Props) {
 
             <div className="lg-actions">
               <button className="lg-btn lg-btn-primary" type="submit" disabled={busy}>
-                {busy ? (signin ? "Signing in…" : "Creating account…") : signin ? "Sign in" : "Create account"}
+                {busy ? (signin ? "Signing in…" : "Sending request…") : signin ? "Sign in" : "Request access"}
               </button>
               <div className="lg-or" aria-hidden="true">
                 <span />
@@ -496,7 +435,7 @@ export function Login({ onSignedIn }: Props) {
                 disabled={busy}
                 onClick={() => switchMode(signin ? "signup" : "signin")}
               >
-                {signin ? "Create an account" : "Back to sign in"}
+                {signin ? "Request access" : "Back to sign in"}
               </button>
             </div>
           </form>

@@ -1,5 +1,5 @@
 import { onRequest } from "firebase-functions/v2/https";
-import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/firestore";
+import { onDocumentCreated, onDocumentUpdated, onDocumentWritten } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
@@ -634,6 +634,105 @@ export const notifySuggestion = onDocumentCreated(
       } catch (err) {
         logger.error("Suggestion email not sent", { to: d.email, suggestionId, error: String(err) });
       }
+    }
+  },
+);
+
+// ── Access requests ────────────────────────────────────────────────────
+// Someone asked to join Waypoint from the sign-in page (src/firestore.ts
+// createAccessRequest). Firestore rules have already checked the address
+// is verified and on the allowed domain. Super users decide in Settings →
+// Access requests; approving creates the person's profile, which is what
+// lets them in.
+
+type AccessRequestDoc = {
+  name?: string;
+  email?: string;
+  status?: string;
+  createdAt?: string;
+  decidedByName?: string;
+};
+
+// Tell the super users someone is waiting. Super users always get this,
+// even with membership emails off: nobody else can let the person in.
+export const notifyAccessRequest = onDocumentCreated(
+  {
+    document: "accessRequests/{uid}",
+    region: "us-central1",
+    secrets: MAIL_SECRETS,
+  },
+  async (event) => {
+    const doc = event.data?.data() as AccessRequestDoc | undefined;
+    if (!doc || doc.status !== "pending") return;
+    const uid = event.params.uid;
+    const name = (doc.name ?? "").trim() || "Someone";
+    const email = (doc.email ?? "").trim();
+
+    const designers = await allDesigners();
+    const recipients = [...designers.values()].filter((d) => d.isSuperUser === true && !!d.email);
+    if (recipients.length === 0) {
+      logger.warn("Access request received but no super user to email", { uid });
+      return;
+    }
+
+    const content: EmailContent = {
+      kicker: "Access request",
+      heading: `${name} wants to join Waypoint`,
+      intro: `${name} asked for access from the Waypoint sign-in page and has verified their email address. They can't see anything until a super user approves them in Settings → Access requests.`,
+      rows: [
+        ["Name", name],
+        ["Email", email],
+        ["Asked", doc.createdAt ? formatDate(doc.createdAt) : ""],
+      ],
+      ctaLabel: "Review in Waypoint",
+      ctaUrl: WAYPOINT_APP_URL,
+    };
+
+    for (const d of recipients) {
+      try {
+        await sendMail({
+          to: [d.email as string],
+          subject: `[Waypoint] Access request from ${name}`,
+          html: renderEmail(firstNameOf(d), content),
+        });
+      } catch (err) {
+        logger.error("Access request email not sent", { to: d.email, uid, error: String(err) });
+      }
+    }
+  },
+);
+
+// Tell the person they're in, the moment a request turns approved.
+export const notifyAccessApproved = onDocumentUpdated(
+  {
+    document: "accessRequests/{uid}",
+    region: "us-central1",
+    secrets: MAIL_SECRETS,
+  },
+  async (event) => {
+    const before = event.data?.before.data() as AccessRequestDoc | undefined;
+    const after = event.data?.after.data() as AccessRequestDoc | undefined;
+    if (!after || after.status !== "approved" || before?.status === "approved") return;
+    const email = (after.email ?? "").trim();
+    if (!email) return;
+    const approver = (after.decidedByName ?? "").trim();
+
+    const content: EmailContent = {
+      kicker: "Welcome",
+      heading: "You're in: your Waypoint access is approved",
+      intro: `${approver || "A Waypoint admin"} approved your request. Sign in with the email and password you chose when you asked for access.`,
+      rows: [["Sign in as", email]],
+      ctaLabel: "Open Waypoint",
+      ctaUrl: WAYPOINT_APP_URL,
+    };
+    try {
+      await sendMail({
+        to: [email],
+        subject: "[Waypoint] Your access is approved",
+        html: renderEmail(firstNameOf({ name: after.name }), content),
+      });
+    } catch (err) {
+      logger.error("Access approved email not sent", { uid: event.params.uid, error: String(err) });
     }
   },
 );
