@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Campaign, Designer, Project } from "../types";
 import { Avatar } from "./Avatar";
+import { Icon } from "./Icon";
 import { writeDraggedProjectId } from "../dnd";
 import { brandColor } from "../constants";
 
@@ -90,6 +91,11 @@ export function ProjectCard({
           Due {formatDate(project.dueDate)}
         </span>
       </div>
+      {project.confidential && (
+        <span className="card-confidential" title="Confidential: only its assignees and super users can see it">
+          <Icon name="lock" size={11} /> Confidential
+        </span>
+      )}
       <h4 className="card-title">{project.title}</h4>
       <p className="card-client">{project.client}</p>
       {teamBadge && (

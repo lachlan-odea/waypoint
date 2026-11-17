@@ -7,15 +7,55 @@ rules_version = '2';
 // collections require sign-in for both read and write.
 service cloud.firestore {
   match /databases/{database}/documents {
+    // A super user: the isSuperUser flag stored on their own designer doc.
+    // The app also treats SUPER_USER_EMAILS (src/constants.ts) as super
+    // users, but the rules only trust the stored flag, so a bootstrap admin
+    // must have it set (Settings → Super users) to see confidential projects.
+    function isSuperUser() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/designers/$(request.auth.uid))
+        && get(/databases/$(database)/documents/designers/$(request.auth.uid)).data.get("isSuperUser", false) == true;
+    }
+    // Who may see a confidential project: its assignees and super users.
+    function canSeeConfidential(data) {
+      return request.auth != null
+        && (request.auth.uid in data.assigneeIds || isSuperUser());
+    }
+
+    // Super users can see every confidential project, so only a super user
+    // may grant or remove the flag; anyone signed in can still edit the
+    // rest of a profile (name, colour, photo, hub).
     match /designers/{designerId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow create: if request.auth != null
+        && (request.resource.data.get("isSuperUser", false) != true || isSuperUser());
+      allow update: if request.auth != null
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["isSuperUser"]) || isSuperUser());
+      allow delete: if request.auth != null;
     }
     match /workspaces/{workspaceId} {
       allow read, write: if request.auth != null;
     }
+    // A confidential project never lives here: it's in
+    // /confidentialProjects below, so a document flagged confidential can't
+    // be written to the collection every signed-in user can read.
     match /projects/{projectId} {
-      allow read, write: if request.auth != null;
+      allow read, delete: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.get("confidential", false) != true;
+    }
+    // Confidential Comms projects: readable and writable only by their
+    // assignees and super users. The app's listener asks for exactly that
+    // (array-contains on assigneeIds, or everything for a super user), which
+    // is why a query here can be allowed at all. Writes must keep the flag
+    // and must leave the writer able to see the result, so nobody can mark a
+    // project they're not on confidential.
+    match /confidentialProjects/{projectId} {
+      allow read, delete: if canSeeConfidential(resource.data);
+      allow create: if canSeeConfidential(request.resource.data)
+        && request.resource.data.confidential == true;
+      allow update: if canSeeConfidential(resource.data)
+        && request.resource.data.confidential == true;
     }
     match /notifications/{notificationId} {
       allow read, write: if request.auth != null;

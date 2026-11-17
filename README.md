@@ -15,6 +15,11 @@ Each team has a board: a column per person, you first, with the team's campaigns
 
 The **+ New** menu in the header creates a project, a campaign, an event or a social post. Beside it, **Help** opens a guided tour of the page on screen: each step spotlights a part of the page and explains it, with the page still live underneath (`src/components/HelpTour.tsx`; the steps per page are in `src/helpTours.ts`).
 
+### Confidential projects
+A project on the Comms team can be marked **Confidential** (Status & schedule on its Overview tab). Only its assignees and super users can see it: everyone else doesn't get it at all, so it isn't on their board, in search, on the dashboards, in exports or available to Ask AI. Its page carries a red "Confidential project" strip across the header and a Confidential chip, and its board card a lock. To mark a project you must be on it (or be a super user), so you can't lock yourself out; anyone who can see it can lift the mark. A project moved off Comms keeps the mark until someone lifts it.
+
+This is enforced by Firestore, not just hidden: a confidential project is stored in `/confidentialProjects` instead of `/projects` (`setProject` / `moveProject` in `src/firestore.ts` pick the collection from `project.confidential`; marking or unmarking moves the document in one batch), and `firestore.rules` lets only its assignees and super users read or write it. The app subscribes to it separately (`subscribeConfidentialProjects`: the ones you're assigned to, or all of them for a super user) and merges it into the project list in `App.tsx`. Notifications are readable by everyone, so one about a confidential project goes only to people who can open it and says "Confidential project" instead of the comment or task text. The membership email goes only to newly added assignees, and a move between collections sends nothing (`movedAt`). "Super user" here means the `isSuperUser` flag stored on the designer doc: the rules don't know about `SUPER_USER_EMAILS`, and only a super user can now grant or remove that flag.
+
 ### Pages
 A project, a campaign or an event opens as its own page, at `#project/<id>/<tab>`, `#campaign/<id>/<tab>` or `#event/<id>/<tab>` (`src/router.ts`). Each page has the same shape (`src/components/pages/ItemPage.tsx`): breadcrumbs, a header band with the name, a countdown to the key date and the facts that matter, tabs, a stage strip, then the body as a main column with side cards for **Status & schedule**, **Ready when** (what has to be true before the item is done, with progress), **Links** and **Manage**.
 
@@ -140,6 +145,8 @@ firebase deploy --only firestore:rules
 ```
 
 A new collection is denied until its rule is live, so any PR that adds one says so.
+
+**Confidential projects deploy in this order.** 1. Make sure every admin who should see confidential projects has the super user flag stored on their profile (Settings → Super users), including anyone who is an admin only through `SUPER_USER_EMAILS`: once the rules are live only an existing super user can grant it. 2. `firebase deploy --only firestore:rules,functions`. 3. Deploy the app. Until step 2, marking a project confidential fails with a permission error.
 
 **Cloud Functions** live in `functions/` (Node 22). Deploy with:
 
