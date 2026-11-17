@@ -42,7 +42,6 @@ import {
   ItemGrid,
   ItemPage,
   SideCard,
-  type StripCell,
 } from "./pages/ItemPage";
 
 interface MyDeskProps {
@@ -77,7 +76,7 @@ interface MyDeskProps {
 
 // The desk is built on the same shell as a project, campaign or event page
 // (ItemPage): a header band with the greeting, the next deadline and the
-// day's numbers; tabs; a strip of the week ahead; then the body. Overview
+// day's numbers; tabs; then the body. Overview
 // is the landing tab — what needs attention, with today's list and what
 // needs you down the side — and the rest is one tab each.
 type DeskTab = "overview" | "work" | "checklist" | "campaigns" | "notifications";
@@ -87,9 +86,6 @@ const TABS: readonly DeskTab[] = ["overview", "work", "checklist", "campaigns", 
 
 // How far ahead the owner's milestone list looks.
 const MILESTONE_HORIZON_DAYS = 14;
-
-// How many days the strip shows, today first.
-const STRIP_DAYS = 7;
 
 const PRIORITY_ORDER: Record<string, number> = {
   Urgent: 0,
@@ -571,41 +567,6 @@ export function MyDesk({
     { label: "Today's list", value: <b className="mono">{openDeskCount}</b> },
   ];
 
-  // The week ahead: a cell per day with what's due and what's on your list.
-  // Overdue work, when there is any, sits first in red.
-  const strip: StripCell[] = [];
-  if (overdueTasks.length > 0) {
-    strip.push({
-      key: "overdue",
-      n: "!",
-      label: "Overdue",
-      detail: `${overdueTasks.length} project${overdueTasks.length === 1 ? "" : "s"}`,
-      state: "late",
-      title: overdueTasks.map((p) => p.title).join(", "),
-      onClick: () => setTab("work"),
-    });
-  }
-  for (let i = 0; i < STRIP_DAYS; i++) {
-    const iso = shiftIso(today, i);
-    const date = new Date(`${iso}T00:00:00`);
-    const due = myProjects.filter((p) => p.dueDate === iso);
-    const items = deskItems.filter((it) => !it.done && it.date === iso).length;
-    const parts: string[] = [];
-    if (due.length > 0) parts.push(`${due.length} due`);
-    if (items > 0) parts.push(`${items} on list`);
-    strip.push({
-      key: iso,
-      n: date.toLocaleDateString(undefined, { weekday: "short" }),
-      label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : formatShort(iso),
-      detail: parts.length > 0 ? parts.join(" · ") : "Clear",
-      state: i === 0 ? "current" : due.length > 0 ? "open" : "na",
-      active: i === 0,
-      title: due.length > 0 ? due.map((p) => p.title).join(", ") : undefined,
-      onClick:
-        due.length > 0 ? () => setTab("work") : items > 0 ? () => setTab("checklist") : undefined,
-    });
-  }
-
   const peekNotifications = sortNotifications(notifications).slice(0, 4);
   const peekReviews = reviewProjects.slice(0, 3);
 
@@ -647,8 +608,6 @@ export function MyDesk({
         tabs={tabs}
         tab={here}
         onTab={(id) => setTab(id as DeskTab)}
-        strip={strip}
-        stripLabel="The week ahead"
       >
         {deskError && (
           <div className="desk-banner error">
