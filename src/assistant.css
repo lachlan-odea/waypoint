@@ -1,6 +1,6 @@
 /* The assistant panel (components/AssistantPanel.tsx): docked to the right
-   edge over the page, without a scrim, so the page behind stays usable
-   while a question is open. Design-system rules apply: one radius, borders
+   edge over the page. The page behind is dimmed but still usable while a
+   question is open. Design-system rules apply: one radius, borders
    in place of shadows, the tokens from App.css.
    It is set apart from the page it sits over by colour: a WiseTech Blue
    header band, an accent edge, and a tinted body on which the white cards,
@@ -19,6 +19,38 @@
   background: linear-gradient(var(--accent-wash), var(--accent-wash)), var(--surface);
   border-left: 2px solid var(--accent);
   color: var(--text);
+  /* Closed: off the right edge. It slides in when opened and back out when
+     closed; visibility waits for the slide out to finish. */
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform var(--slide) var(--ease), visibility 0s linear var(--slide);
+  --slide: 260ms;
+}
+.assistant-panel.is-open {
+  transform: none;
+  visibility: visible;
+  transition: transform var(--slide) var(--ease);
+}
+
+/* The page behind, greyed a little while the panel is open. */
+.assistant-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 89;
+  background: rgba(14, 23, 38, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms var(--ease);
+}
+.assistant-scrim.is-open {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistant-panel,
+  .assistant-panel.is-open,
+  .assistant-scrim {
+    transition: none;
+  }
 }
 
 .assistant-head {

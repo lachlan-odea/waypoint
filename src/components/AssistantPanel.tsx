@@ -166,17 +166,22 @@ export function AssistantPanel({
     input.current?.focus();
   }
 
-  if (!open) return null;
-
   const empty = messages.length === 0;
   const firstName = data.me.name.trim().split(/\s+/)[0] || "there";
   const page = data.page;
   const suggestions = (page && PAGE_SUGGESTIONS[page.kind]) ?? SUGGESTIONS;
 
+  // Always rendered, so it can slide in and out: closed, it sits off the
+  // right edge, hidden and inert.
   return (
+    <>
+    {/* Dims the page to bring the panel forward. It doesn't take clicks,
+        so the page stays usable while a question is open. */}
+    <div className={`assistant-scrim${open ? " is-open" : ""}`} aria-hidden="true" />
     <aside
-      className="assistant-panel"
+      className={`assistant-panel${open ? " is-open" : ""}`}
       aria-label="Waypoint assistant"
+      inert={!open}
       // Escape closes the panel only while the keyboard is in it, so it
       // doesn't also close when Escape dismisses a window on the page.
       onKeyDown={(e) => {
@@ -339,6 +344,7 @@ export function AssistantPanel({
         </>
       )}
     </aside>
+    </>
   );
 }
 
