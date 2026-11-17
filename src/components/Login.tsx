@@ -439,24 +439,6 @@ export function Login({ onSignedIn }: Props) {
               </button>
             </div>
           </form>
-
-          <p className="lg-card-foot">
-            {signin ? (
-              <>
-                New to Waypoint?{" "}
-                <button type="button" className="lg-link" onClick={() => switchMode("signup")}>
-                  Request access
-                </button>
-              </>
-            ) : (
-              <>
-                Already have access?{" "}
-                <button type="button" className="lg-link" onClick={() => switchMode("signin")}>
-                  Sign in
-                </button>
-              </>
-            )}
-          </p>
         </div>
       </div>
 
