@@ -227,6 +227,27 @@ export function ProjectPage({
       milestones: p.milestones.map((m) => (m.id === id ? { ...m, dueDate: dueDate || undefined } : m)),
     }));
   }
+  // Drag to reorder. Only the grip starts a drag (the row holds inputs);
+  // the row under the pointer shows a line where the task will land.
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [taskDrop, setTaskDrop] = useState<{ id: string; position: "before" | "after" } | null>(null);
+  function endTaskDrag() {
+    setDraggingTaskId(null);
+    setTaskDrop(null);
+  }
+  function dropTask(fromId: string, toId: string, position: "before" | "after") {
+    if (fromId === toId) return;
+    onChange((p) => {
+      const list = p.milestones.slice();
+      const from = list.findIndex((m) => m.id === fromId);
+      if (from < 0) return p;
+      const [moved] = list.splice(from, 1);
+      const to = list.findIndex((m) => m.id === toId);
+      if (to < 0) return p;
+      list.splice(position === "after" ? to + 1 : to, 0, moved);
+      return { ...p, milestones: list };
+    });
+  }
   function moveTask(id: string, dir: -1 | 1) {
     onChange((p) => {
       const list = p.milestones.slice();
@@ -397,10 +418,69 @@ export function ProjectPage({
                 <EmptyNote>No tasks yet. Add the steps this project goes through.</EmptyNote>
               ) : (
                 <ul className="item-tasks">
-                  {tasks.map((m, i) => {
+                  {tasks.map((m) => {
                     const owner = taskOwner(m);
+                    const dropHere =
+                      draggingTaskId && draggingTaskId !== m.id && taskDrop?.id === m.id ? taskDrop.position : null;
                     return (
-                    <li key={m.id} className={m.done ? "done" : taskLate(m) ? "late" : ""}>
+                    <li
+                      key={m.id}
+                      className={[
+                        m.done ? "done" : taskLate(m) ? "late" : "",
+                        draggingTaskId === m.id ? "dragging" : "",
+                        dropHere ? `drop-${dropHere}` : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onDragOver={(e) => {
+                        if (!draggingTaskId || draggingTaskId === m.id) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const position = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+                        setTaskDrop((cur) => (cur?.id === m.id && cur.position === position ? cur : { id: m.id, position }));
+                      }}
+                      onDragLeave={(e) => {
+                        const next = e.relatedTarget as Node | null;
+                        if (next && e.currentTarget.contains(next)) return;
+                        setTaskDrop((cur) => (cur?.id === m.id ? null : cur));
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (draggingTaskId && taskDrop?.id === m.id) dropTask(draggingTaskId, m.id, taskDrop.position);
+                        endTaskDrag();
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="item-task-grip"
+                        draggable
+                        data-task-grip={m.id}
+                        title="Drag to reorder"
+                        aria-label={`Reorder ${m.label}. Use the up and down arrow keys to move it.`}
+                        onDragStart={(e) => {
+                          setDraggingTaskId(m.id);
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", m.id);
+                          // Drag the whole row, not just the grip.
+                          const row = e.currentTarget.closest("li");
+                          if (row) e.dataTransfer.setDragImage(row, 16, row.offsetHeight / 2);
+                        }}
+                        onDragEnd={endTaskDrag}
+                        onKeyDown={(e) => {
+                          if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+                          e.preventDefault();
+                          moveTask(m.id, e.key === "ArrowUp" ? -1 : 1);
+                          // The row moves in the DOM; keep the keyboard on its grip.
+                          requestAnimationFrame(() =>
+                            document.querySelector<HTMLElement>(`[data-task-grip="${m.id}"]`)?.focus(),
+                          );
+                        }}
+                      >
+                        <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true">
+                          {[3, 8, 13].flatMap((y) => [2, 8].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.5" />))}
+                        </svg>
+                      </button>
                       <button
                         type="button"
                         className="item-tick"
@@ -469,24 +549,6 @@ export function ProjectPage({
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm"
-                          aria-label={`Move ${m.label} up`}
-                          disabled={i === 0}
-                          onClick={() => moveTask(m.id, -1)}
-                        >
-                          <Icon name="chevron-down" size={14} className="flip" />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          aria-label={`Move ${m.label} down`}
-                          disabled={i === tasks.length - 1}
-                          onClick={() => moveTask(m.id, 1)}
-                        >
-                          <Icon name="chevron-down" size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
                           onClick={() => startEditTask(m.id, m.label)}
                           aria-label={`Edit ${m.label}`}
                         >
@@ -524,8 +586,8 @@ export function ProjectPage({
                 </button>
               </form>
               <p className="item-hint">
-                Click a task to rename it. Enter saves, Escape cancels. Whoever you assign a task to is notified and
-                sees it on My Desk.
+                Drag a task by its handle to reorder. Click a task to rename it; Enter saves, Escape cancels. Whoever
+                you assign a task to is notified and sees it on My Desk.
               </p>
             </SideCard>
           }
