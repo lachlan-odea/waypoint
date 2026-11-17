@@ -21,13 +21,18 @@ interface DeskChecklistProps {
   // Open project tasks assigned to this person, listed beside their own
   // ad hoc items.
   projectTasks: { project: Project; task: Milestone }[];
+  // The person's own order for the agenda: its groups (project ids, and
+  // "adhoc") and their project tasks ("projectId:taskId"). Anything not
+  // listed keeps its default place after what is.
+  order: { groups: string[]; tasks: string[] };
+  onOrder: (patch: { groups?: string[]; tasks?: string[] }) => void;
   designers: Designer[];
   workspaces: Workspace[];
   currentDesignerId: string;
   // A new ad hoc item, for `date` (YYYY-MM-DD) or today when omitted.
   onAdd: (text: string, date?: string) => void;
   onPatch: (id: string, patch: Partial<DeskItem>) => void;
-  // Today's list in its new order (item ids, top first).
+  // One day's ad hoc items in their new order (item ids, top first).
   onReorder: (ids: string[]) => void;
   onRemove: (id: string) => void;
   // Flags a project task done (or not) on its project.
@@ -261,10 +266,37 @@ function byPlace(a: DeskItem, b: DeskItem): number {
   );
 }
 
+// The ad hoc group's key in the saved group order; the rest are project ids.
+const AD_HOC = "adhoc";
+
+const taskKey = (project: Project, task: Milestone) => `${project.id}:${task.id}`;
+
+// Where a key sits in a saved order. Unranked keys come after ranked ones
+// (Infinity - Infinity is NaN, which falls through to the next tiebreak).
+function rank(order: string[], key: string): number {
+  const at = order.indexOf(key);
+  return at < 0 ? Infinity : at;
+}
+
+// One day's (or one project's) new sequence folded back into the order for
+// everything: the slots those keys held are refilled in their new sequence
+// and nothing else moves.
+function mergeOrder(all: string[], next: string[]): string[] {
+  const moving = new Set(next);
+  let i = 0;
+  return all.map((key) => (moving.has(key) ? next[i++] : key));
+}
+
+type AgendaGroup =
+  | { key: typeof AD_HOC; desk: DeskItem[] }
+  | { key: string; project: Project; tasks: Milestone[] };
+
 export function DeskChecklist({
   items,
   projects,
   projectTasks,
+  order,
+  onOrder,
   designers,
   workspaces,
   currentDesignerId,
@@ -284,23 +316,23 @@ export function DeskChecklist({
   const [draft, setDraft] = useState("");
   const [undo, setUndo] = useState<{ label: string; revert: () => void } | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
-  // Drag to reorder today's ad hoc items: the one being dragged and where it
-  // would land.
-  const [dragging, setDragging] = useState<string | null>(null);
-  const [drop, setDrop] = useState<{ id: string; position: "before" | "after" } | null>(null);
+  // Drag to reorder: what's being dragged and where it would land. The
+  // scope is the list a thing can move within (a day's ad hoc items, one
+  // project's tasks on a day, or a day's groups), so a drag can't cross
+  // into another list.
+  const [dragging, setDragging] = useState<{ scope: string; id: string } | null>(null);
+  const [drop, setDrop] = useState<{
+    scope: string;
+    id: string;
+    position: "before" | "after";
+  } | null>(null);
 
   const today = todayIso();
   const me = designers.find((d) => d.id === currentDesignerId);
 
-  // The ad hoc items that can be dragged into an order: today's, less any
-  // reminder still waiting for its time.
-  const todays = useMemo(
-    () => items.filter((i) => !i.done && !i.remind && i.date <= today).sort(byPlace),
-    [items, today],
-  );
   const openDesk = useMemo(() => items.filter((i) => !i.done), [items]);
 
-  const buckets = useMemo(() => {
+  const { buckets, groupKeys, taskKeys } = useMemo(() => {
     // Weeks run Monday to Sunday, like the calendars elsewhere in Waypoint.
     const dow = (new Date(`${today}T00:00:00`).getDay() + 6) % 7;
     const tomorrow = shiftIso(today, 1);
@@ -339,7 +371,15 @@ export function DeskChecklist({
       })),
     ];
 
-    return BUCKETS.map((bucket) => {
+    // Your own order where you've set one; otherwise ad hoc first, then
+    // projects by name, and a project's tasks as the project lists them.
+    const groupTitle = (g: AgendaGroup) => ("project" in g ? g.project.title : "");
+    const byGroup = (a: AgendaGroup, b: AgendaGroup) =>
+      rank(order.groups, a.key) - rank(order.groups, b.key) ||
+      Number(a.key !== AD_HOC) - Number(b.key !== AD_HOC) ||
+      groupTitle(a).localeCompare(groupTitle(b));
+
+    const buckets = BUCKETS.map((bucket) => {
       const mine = entries.filter((e) => bucketOf(e.date) === bucket.id);
       const dates = [...new Set(mine.map((e) => e.date))].sort();
       return {
@@ -350,24 +390,41 @@ export function DeskChecklist({
           const desk = onDay
             .flatMap((e) => (e.kind === "desk" ? [e.item] : []))
             .sort((a, b) => Number(!!a.remind) - Number(!!b.remind) || byPlace(a, b));
-          const byProject = new Map<string, { project: Project; tasks: Milestone[] }>();
+          const byProject = new Map<string, { key: string; project: Project; tasks: Milestone[] }>();
           onDay.forEach((e) => {
             if (e.kind !== "task") return;
-            const group = byProject.get(e.project.id) ?? { project: e.project, tasks: [] };
+            const group =
+              byProject.get(e.project.id) ?? { key: e.project.id, project: e.project, tasks: [] };
             group.tasks.push(e.task);
             byProject.set(e.project.id, group);
           });
-          return {
-            date,
-            desk,
-            groups: [...byProject.values()].sort((a, b) =>
-              a.project.title.localeCompare(b.project.title),
+          const groups: AgendaGroup[] = [...byProject.values()].map((g) => ({
+            ...g,
+            tasks: [...g.tasks].sort(
+              (a, b) =>
+                rank(order.tasks, taskKey(g.project, a)) -
+                  rank(order.tasks, taskKey(g.project, b)) || 0,
             ),
-          };
+          }));
+          if (desk.length > 0) groups.push({ key: AD_HOC, desk });
+          return { date, groups: groups.sort(byGroup) };
         }),
       };
     }).filter((b) => b.count > 0);
-  }, [items, projectTasks, today]);
+
+    // Every group and every project task on the agenda, in the order they
+    // show: what a reorder within one day is folded back into.
+    const shown = buckets.flatMap((b) => b.days.flatMap((d) => d.groups));
+    const firstOfEach = [...new Map(shown.map((g) => [g.key, g])).values()];
+    const groupKeys = firstOfEach.sort(byGroup).map((g) => g.key);
+    const taskKeys = shown
+      .flatMap((g) => ("project" in g ? g.tasks.map((t) => taskKey(g.project, t)) : []))
+      .map((key, at) => ({ key, at }))
+      .sort((a, b) => rank(order.tasks, a.key) - rank(order.tasks, b.key) || a.at - b.at)
+      .map((t) => t.key);
+
+    return { buckets, groupKeys, taskKeys };
+  }, [items, projectTasks, order, today]);
 
   const completed = useMemo(
     () =>
@@ -385,16 +442,95 @@ export function DeskChecklist({
     setDrop(null);
   }
 
-  // Move one place up or down from the keyboard, keeping focus on the grip.
-  function nudge(id: string, dir: -1 | 1) {
-    const ids = todays.map((i) => i.id);
-    const at = ids.indexOf(id);
-    const to = at + dir;
-    if (at < 0 || to < 0 || to >= ids.length) return;
-    onReorder(reorderIds(ids, id, ids[to], dir < 0 ? "before" : "after"));
-    requestAnimationFrame(() =>
-      document.querySelector<HTMLElement>(`[data-desk-grip="${id}"]`)?.focus(),
-    );
+  // Everything needed to make one thing (a row, or a whole group) movable
+  // within its list: the classes that show it being dragged or dropped on,
+  // the drop handlers for its element, and the grip it's dragged by. `ids`
+  // is the list in its current order; `commit` saves a new one. A list of
+  // one has nothing to reorder, so it gets no grip.
+  function sortable(
+    scope: string,
+    id: string,
+    ids: string[],
+    commit: (ids: string[]) => void,
+  ) {
+    const on = ids.length > 1 && ids.includes(id);
+    const inScope = on && dragging?.scope === scope;
+    const dragged = inScope && dragging?.id === id;
+    const dropHere =
+      inScope && !dragged && drop?.scope === scope && drop.id === id ? drop.position : null;
+
+    // Move one place up or down from the keyboard, keeping focus on the grip.
+    const nudge = (dir: -1 | 1) => {
+      const at = ids.indexOf(id);
+      const to = at + dir;
+      if (to < 0 || to >= ids.length) return;
+      commit(reorderIds(ids, id, ids[to], dir < 0 ? "before" : "after"));
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>(`[data-desk-grip="${scope}|${id}"]`)?.focus(),
+      );
+    };
+
+    return {
+      className: [dragged ? "dragging" : "", dropHere ? `drop-${dropHere}` : ""]
+        .filter(Boolean)
+        .join(" "),
+      target: !on
+        ? {}
+        : {
+            onDragOver: (e: React.DragEvent<HTMLElement>) => {
+              if (!dragging || dragging.scope !== scope || dragging.id === id) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              const position = dropPosition(e);
+              setDrop((cur) =>
+                cur?.scope === scope && cur.id === id && cur.position === position
+                  ? cur
+                  : { scope, id, position },
+              );
+            },
+            onDragLeave: (e: React.DragEvent<HTMLElement>) => {
+              const next = e.relatedTarget as Node | null;
+              if (next && e.currentTarget.contains(next)) return;
+              setDrop((cur) => (cur?.scope === scope && cur.id === id ? null : cur));
+            },
+            onDrop: (e: React.DragEvent<HTMLElement>) => {
+              if (!dragging || dragging.scope !== scope) return;
+              e.preventDefault();
+              if (drop?.scope === scope && drop.id === id) {
+                commit(reorderIds(ids, dragging.id, id, drop.position));
+              }
+              endDrag();
+            },
+          },
+      // `whole` is the element that moves with the pointer: the row, or the
+      // group with everything in it.
+      grip: (label: string, whole: string) =>
+        on && (
+          <button
+            type="button"
+            className="item-task-grip"
+            draggable
+            data-desk-grip={`${scope}|${id}`}
+            title="Drag to reorder"
+            aria-label={`Reorder ${label}. Use the up and down arrow keys to move it.`}
+            onDragStart={(e) => {
+              setDragging({ scope, id });
+              e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setData("text/plain", id);
+              const el = e.currentTarget.closest<HTMLElement>(whole);
+              if (el) e.dataTransfer.setDragImage(el, 16, Math.min(el.offsetHeight / 2, 20));
+            }}
+            onDragEnd={endDrag}
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+              e.preventDefault();
+              nudge(e.key === "ArrowUp" ? -1 : 1);
+            }}
+          >
+            <GripDots />
+          </button>
+        ),
+    };
   }
 
   function submitAdd() {
@@ -497,85 +633,16 @@ export function DeskChecklist({
     </span>
   );
 
-  function deskRow(item: DeskItem, orderable: boolean) {
-    const dropHere =
-      orderable && dragging && dragging !== item.id && drop?.id === item.id
-        ? drop.position
-        : null;
+  // `ids` is the day's ad hoc items that can be put in an order: all but a
+  // reminder still waiting for its time.
+  function deskRow(item: DeskItem, scope: string, ids: string[]) {
+    const sort = sortable(scope, item.id, ids, onReorder);
     const linked = item.projectId ? projects.find((p) => p.id === item.projectId) : undefined;
     const waiting = item.remind || item.date > today;
     return (
-      <li
-        key={item.id}
-        className={
-          [dragging === item.id ? "dragging" : "", dropHere ? `drop-${dropHere}` : ""]
-            .filter(Boolean)
-            .join(" ") || undefined
-        }
-        onDragOver={
-          orderable
-            ? (e) => {
-                if (!dragging || dragging === item.id) return;
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-                const position = dropPosition(e);
-                setDrop((cur) =>
-                  cur?.id === item.id && cur.position === position
-                    ? cur
-                    : { id: item.id, position },
-                );
-              }
-            : undefined
-        }
-        onDragLeave={
-          orderable
-            ? (e) => {
-                const next = e.relatedTarget as Node | null;
-                if (next && e.currentTarget.contains(next)) return;
-                setDrop((cur) => (cur?.id === item.id ? null : cur));
-              }
-            : undefined
-        }
-        onDrop={
-          orderable
-            ? (e) => {
-                e.preventDefault();
-                if (dragging && drop?.id === item.id) {
-                  onReorder(
-                    reorderIds(todays.map((i) => i.id), dragging, item.id, drop.position),
-                  );
-                }
-                endDrag();
-              }
-            : undefined
-        }
-      >
+      <li key={item.id} className={sort.className || undefined} {...sort.target}>
         <div className="desk-row agenda-row">
-          {orderable && (
-            <button
-              type="button"
-              className="item-task-grip"
-              draggable
-              data-desk-grip={item.id}
-              title="Drag to reorder"
-              aria-label={`Reorder ${item.text}. Use the up and down arrow keys to move it.`}
-              onDragStart={(e) => {
-                setDragging(item.id);
-                e.dataTransfer.effectAllowed = "move";
-                e.dataTransfer.setData("text/plain", item.id);
-                const row = e.currentTarget.closest("li");
-                if (row) e.dataTransfer.setDragImage(row, 16, row.offsetHeight / 2);
-              }}
-              onDragEnd={endDrag}
-              onKeyDown={(e) => {
-                if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-                e.preventDefault();
-                nudge(item.id, e.key === "ArrowUp" ? -1 : 1);
-              }}
-            >
-              <GripDots />
-            </button>
-          )}
+          {sort.grip(item.text, "li")}
           <button
             type="button"
             className="desk-tickbox"
@@ -695,11 +762,17 @@ export function DeskChecklist({
     );
   }
 
-  function taskRow(project: Project, task: Milestone) {
+  // `keys` is this project's tasks on this day, in the order shown. The
+  // order is yours alone: the project keeps its own.
+  function taskRow(project: Project, task: Milestone, scope: string, keys: string[]) {
     const late = !!task.dueDate && task.dueDate < today;
+    const sort = sortable(scope, taskKey(project, task), keys, (next) =>
+      onOrder({ tasks: mergeOrder(taskKeys, next) }),
+    );
     return (
-      <li key={`${project.id}-${task.id}`}>
+      <li key={task.id} className={sort.className || undefined} {...sort.target}>
         <div className="desk-row agenda-row">
+          {sort.grip(task.label, "li")}
           <button
             type="button"
             className="desk-tickbox"
@@ -786,6 +859,13 @@ export function DeskChecklist({
           </div>
         )}
 
+        {buckets.length > 0 && (
+          <p className="desk-hint agenda-hint">
+            Drag a task, or a whole project by its name, to put your list in
+            the order you'll work through it. The order is yours alone.
+          </p>
+        )}
+
         {buckets.length === 0 ? (
           <p className="muted small">
             Nothing to do. Add an ad hoc task above; tasks assigned to you on a
@@ -807,44 +887,60 @@ export function DeskChecklist({
                       {day.date ? dayLabel(day.date) : "Any time"}
                     </div>
                     <div className="agenda-groups">
-                      {day.desk.length > 0 && (
-                        <div className="agenda-group">
-                          <div className="agenda-group-head">
-                            <b>Ad hoc</b> in <b>My Desk</b>
+                      {day.groups.map((group) => {
+                        const where = `${bucket.id}:${day.date}`;
+                        // A whole group moves among the day's groups, and
+                        // takes that place on every other day too.
+                        const sort = sortable(
+                          `group:${where}`,
+                          group.key,
+                          day.groups.map((g) => g.key),
+                          (next) => onOrder({ groups: mergeOrder(groupKeys, next) }),
+                        );
+                        const cls = `agenda-group ${sort.className}`;
+                        if (!("project" in group)) {
+                          const ids = group.desk.filter((i) => !i.remind).map((i) => i.id);
+                          return (
+                            <div key={group.key} className={cls} {...sort.target}>
+                              <div className="agenda-group-head">
+                                {sort.grip("your ad hoc tasks", ".agenda-group")}
+                                <b>Ad hoc</b> in <b>My Desk</b>
+                              </div>
+                              <ul className="desk-checklist">
+                                {group.desk.map((item) => deskRow(item, `desk:${where}`, ids))}
+                              </ul>
+                            </div>
+                          );
+                        }
+                        const { project, tasks } = group;
+                        const keys = tasks.map((t) => taskKey(project, t));
+                        return (
+                          <div key={group.key} className={cls} {...sort.target}>
+                            <div className="agenda-group-head">
+                              {sort.grip(project.title || "Untitled project", ".agenda-group")}
+                              <button
+                                type="button"
+                                className="agenda-group-link"
+                                onClick={() => onOpenProject(project.id)}
+                                title="Open the project"
+                              >
+                                {project.title || "Untitled project"}
+                              </button>
+                              {teamName(project) && (
+                                <>
+                                  {" "}
+                                  in <b>{teamName(project)}</b>
+                                </>
+                              )}
+                            </div>
+                            <ul className="desk-checklist">
+                              {tasks.map((task) =>
+                                taskRow(project, task, `task:${where}:${project.id}`, keys),
+                              )}
+                            </ul>
                           </div>
-                          <ul className="desk-checklist">
-                            {day.desk.map((item) =>
-                              deskRow(
-                                item,
-                                bucket.id === "today" && !item.remind && todays.length > 1,
-                              ),
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                      {day.groups.map(({ project, tasks }) => (
-                        <div key={project.id} className="agenda-group">
-                          <div className="agenda-group-head">
-                            <button
-                              type="button"
-                              className="agenda-group-link"
-                              onClick={() => onOpenProject(project.id)}
-                              title="Open the project"
-                            >
-                              {project.title || "Untitled project"}
-                            </button>
-                            {teamName(project) && (
-                              <>
-                                {" "}
-                                in <b>{teamName(project)}</b>
-                              </>
-                            )}
-                          </div>
-                          <ul className="desk-checklist">
-                            {tasks.map((task) => taskRow(project, task))}
-                          </ul>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

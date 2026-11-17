@@ -20,6 +20,7 @@ import type {
   Campaign,
   Designer,
   DeskItem,
+  DeskOrder,
   EventItinerary,
   Hub,
   ItineraryAddition,
@@ -496,14 +497,28 @@ export async function setWorkspaceMembers(
 
 export function subscribeDeskItems(
   ownerId: string,
-  onChange: (items: DeskItem[]) => void,
+  // The person's saved agenda order rides along: it lives in the same
+  // collection (see DeskOrder), so it arrives in the same snapshot.
+  onChange: (items: DeskItem[], order: DeskOrder | null) => void,
   onError: (err: Error) => void,
 ): () => void {
   return onSnapshot(
     query(deskItemsCol(), where("ownerId", "==", ownerId)),
-    (snap) => onChange(snap.docs.map((d) => d.data() as DeskItem)),
+    (snap) => {
+      const docs = snap.docs.map((d) => d.data() as DeskItem | DeskOrder);
+      const isOrder = (d: DeskItem | DeskOrder): d is DeskOrder =>
+        (d as DeskOrder).kind === "order";
+      onChange(
+        docs.filter((d): d is DeskItem => !isOrder(d)),
+        docs.find(isOrder) ?? null,
+      );
+    },
     onError,
   );
+}
+
+export async function saveDeskOrder(order: DeskOrder): Promise<void> {
+  await setDoc(doc(deskItemsCol(), order.id), order);
 }
 
 export async function setDeskItem(item: DeskItem): Promise<void> {

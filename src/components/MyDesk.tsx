@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   Campaign,
   DeskItem,
+  DeskOrder,
   Notification,
   Project,
   ProjectStatus,
@@ -23,6 +24,7 @@ import { DeskChecklist, KEEP_COMPLETED_DAYS } from "./DeskChecklist";
 import {
   applyDeskItemChanges,
   deleteDeskItem,
+  saveDeskOrder,
   setDeskItem,
   subscribeDeskItems,
 } from "../firestore";
@@ -119,6 +121,9 @@ function stripUndefined<T extends object>(obj: T): T {
   ) as T;
 }
 
+// Before anyone has dragged anything: the agenda's default order.
+const NO_ORDER = { groups: [], tasks: [] };
+
 function newDeskItemId(): string {
   return `desk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -140,6 +145,7 @@ export function MyDesk({
   onStatusChange,
 }: MyDeskProps) {
   const [deskItems, setDeskItems] = useState<DeskItem[]>([]);
+  const [deskOrder, setDeskOrder] = useState<DeskOrder | null>(null);
   const [deskError, setDeskError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
@@ -172,8 +178,9 @@ export function MyDesk({
     if (!currentDesignerId) return;
     return subscribeDeskItems(
       currentDesignerId,
-      (items) => {
+      (items, order) => {
         setDeskItems(items);
+        setDeskOrder(order);
         setDeskError(null);
       },
       (err) => {
@@ -305,7 +312,7 @@ export function MyDesk({
     });
   }
 
-  // Today's list in a new order: number every item by its place and save
+  // One day's ad hoc items in a new order: number every item by its place and save
   // the ones whose number changed, in one batch so the list never shows
   // half-reordered. The subscription picks the local write up at once, so
   // the drop shows straight away.
@@ -316,6 +323,22 @@ export function MyDesk({
       .map((i) => ({ ...i, order: place.get(i.id)! }));
     if (changed.length === 0) return;
     applyDeskItemChanges(changed.map(stripUndefined), []).catch((err) => {
+      console.error(err);
+      setFlash("Couldn't save the new order — check your connection.");
+    });
+  }
+
+  // The To Do agenda's groups or project tasks in a new order. Yours
+  // alone: a project's own task order isn't touched.
+  function reorderAgenda(patch: { groups?: string[]; tasks?: string[] }) {
+    saveDeskOrder({
+      id: `desk-order-${currentDesignerId}`,
+      ownerId: currentDesignerId,
+      kind: "order",
+      groups: deskOrder?.groups ?? [],
+      tasks: deskOrder?.tasks ?? [],
+      ...patch,
+    }).catch((err) => {
       console.error(err);
       setFlash("Couldn't save the new order — check your connection.");
     });
@@ -982,6 +1005,8 @@ export function MyDesk({
               items={deskItems}
               projects={workspace.projects}
               projectTasks={myProjectTasks}
+              order={deskOrder ?? NO_ORDER}
+              onOrder={reorderAgenda}
               designers={workspace.designers}
               workspaces={workspaces}
               currentDesignerId={currentDesignerId}

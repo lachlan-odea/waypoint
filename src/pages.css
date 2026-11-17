@@ -761,17 +761,20 @@ button.item-strip-cell:hover {
   box-shadow: var(--focus-ring);
 }
 .item-tasks li.dragging,
-.desk-checklist li.dragging {
+.desk-checklist li.dragging,
+.agenda-group.dragging {
   opacity: 0.4;
 }
 /* Where the dragged row will land: a cobalt line above or below it. Used by
    project tasks and the My Desk To Do list. */
 .item-tasks li.drop-before,
-.desk-checklist li.drop-before {
+.desk-checklist li.drop-before,
+.agenda-group.drop-before {
   box-shadow: inset 0 2px 0 var(--wtg-cobalt);
 }
 .item-tasks li.drop-after,
-.desk-checklist li.drop-after {
+.desk-checklist li.drop-after,
+.agenda-group.drop-after {
   box-shadow: inset 0 -2px 0 var(--wtg-cobalt);
 }
 /* On the To Do list the grip sits flush with the row's own padding. */
@@ -781,6 +784,9 @@ button.item-strip-cell:hover {
 /* ── My Desk To Do: the agenda ───────────────────────────────────────
    Project tasks and ad hoc items in one list: a tag per "due" band, the
    day down the left, then each project's tasks under its name. */
+.agenda-hint {
+  margin: 0 0 4px;
+}
 .agenda {
   display: flex;
   flex-direction: column;
@@ -842,6 +848,7 @@ button.item-strip-cell:hover {
   min-width: 0;
 }
 .agenda-group-head {
+  position: relative;
   padding: 0 8px;
   margin-bottom: 2px;
   font-size: 13.5px;
@@ -949,7 +956,8 @@ button.item-strip-cell:hover {
 }
 /* The grip hangs in the gutter so every tickbox stays in one column, and
    only shows on the row you're on. */
-.agenda-row > .item-task-grip {
+.agenda-row > .item-task-grip,
+.agenda-group-head > .item-task-grip {
   position: absolute;
   left: -14px;
   top: 50%;
@@ -958,7 +966,9 @@ button.item-strip-cell:hover {
   opacity: 0;
 }
 .agenda-row:hover > .item-task-grip,
-.agenda-row > .item-task-grip:focus-visible {
+.agenda-row > .item-task-grip:focus-visible,
+.agenda-group-head:hover > .item-task-grip,
+.agenda-group-head > .item-task-grip:focus-visible {
   opacity: 1;
 }
 .desk-addrow .agenda-adddate {
@@ -973,7 +983,8 @@ button.item-strip-cell:hover {
   .agenda-groups {
     padding-left: 10px;
   }
-  .agenda-row > .item-task-grip {
+  .agenda-row > .item-task-grip,
+  .agenda-group-head > .item-task-grip {
     opacity: 1;
   }
   .desk-addrow .agenda-adddate {
