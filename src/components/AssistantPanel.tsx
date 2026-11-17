@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   AssistantError,
   askAssistant,
@@ -84,6 +84,15 @@ export function AssistantPanel({
   useEffect(() => {
     if (open && !showSetup) input.current?.focus();
   }, [open, showSetup]);
+
+  // The question box is as tall as what's in it: two lines when empty,
+  // growing as the person types, up to the max-height in assistant.css.
+  useLayoutEffect(() => {
+    const el = input.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
+  }, [draft, open, showSetup, connection]);
 
   // Keep the newest text in view as it arrives.
   useEffect(() => {

@@ -2,9 +2,8 @@
    edge over the page. The page behind is dimmed but still usable while a
    question is open. Design-system rules apply: one radius, borders
    in place of shadows, the tokens from App.css.
-   It is set apart from the page it sits over by colour: a WiseTech Blue
-   header band, an accent edge, and a tinted body on which the white cards,
-   answers' proposals and the question box stand out. */
+   It is set apart from the page it sits over by a WiseTech Blue header
+   band, an accent edge, and the dimming of the page behind it. */
 .assistant-panel {
   position: fixed;
   top: 0;
@@ -14,9 +13,7 @@
   width: min(420px, 100vw);
   display: flex;
   flex-direction: column;
-  /* The tint is laid over the surface so the panel stays opaque in dark
-     mode, where the wash is translucent. */
-  background: linear-gradient(var(--accent-wash), var(--accent-wash)), var(--surface);
+  background: var(--surface);
   border-left: 2px solid var(--accent);
   color: var(--text);
   /* Closed: off the right edge. It slides in when opened and back out when
@@ -148,7 +145,7 @@
 }
 .assistant-suggestion:hover {
   border-color: var(--accent);
-  color: var(--accent);
+  background: var(--accent-wash);
 }
 .assistant-suggestion:focus-visible {
   outline: none;
@@ -171,14 +168,13 @@
 .assistant-msg p {
   margin: 0;
 }
-/* The person's question: a Cobalt block on the right. The answer is plain
+/* The person's question: a tinted block on the right. The answer is plain
    text on the panel, full width, so lists have room. */
 .assistant-msg.from-user {
   align-self: flex-end;
   max-width: 88%;
   padding: 8px 12px;
-  background: var(--primary);
-  color: var(--wtg-white);
+  background: var(--accent-wash);
   border-radius: var(--radius);
   white-space: pre-wrap;
 }
@@ -199,7 +195,7 @@
   font-family: "DM Mono", ui-monospace, monospace;
   font-size: 13px;
   padding: 1px 4px;
-  background: var(--surface);
+  background: var(--surface-2);
   border-radius: 4px;
 }
 .assistant-link {
@@ -233,7 +229,7 @@
 .assistant-context {
   margin: 0;
   padding: 8px 14px 0;
-  border-top: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -248,12 +244,17 @@
   align-items: flex-end;
   gap: 8px;
   padding: 12px 14px 6px;
-  border-top: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border);
 }
+/* Two lines to start; it grows with what's typed (AssistantPanel sets the
+   height) up to about ten lines, then scrolls. */
 .assistant-input {
   flex: 1;
   min-width: 0;
   resize: none;
+  box-sizing: border-box;
+  max-height: 220px;
+  overflow-y: auto;
   padding: 8px 10px;
   font-size: 14px;
   line-height: 1.4;
