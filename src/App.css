@@ -10566,6 +10566,15 @@ a.button-link:hover {
 .suggestion-status.access-status-approved {
   color: var(--success, #067647);
 }
+/* Approve and Decline sit together on the left; Remove stays on the right,
+   also on a decided request where there's nothing else in the row. */
+.access-request-decide {
+  display: flex;
+  gap: 8px;
+}
+.access-request-remove {
+  margin-left: auto;
+}
 
 /* ── LinkedIn: publishing, the Performance tab, Settings ───────────────── */
 
