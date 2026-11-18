@@ -584,6 +584,9 @@ export default function App() {
   const [exportRequest, setExportRequest] = useState(0);
   // The dashboard opens the Campaigns page straight onto its Webinars view.
   const [campaignsViewRequest, setCampaignsViewRequest] = useState<{ view: "cards" | "calendar" | "webinars"; seq: number } | undefined>();
+  // The rock the Big Rocks page opens on, when a dashboard rock was clicked.
+  // Cleared by the sidebar, so its Big Rocks row opens on the first rock.
+  const [bigRockFocus, setBigRockFocus] = useState<string | null>(null);
   const requestSeq = useRef(0);
   const nextRequest = () => ++requestSeq.current;
 
@@ -1762,7 +1765,15 @@ export default function App() {
         }
         onSelectView={(v) => {
           closeItem();
+          // The Campaigns row always lands on the cards, not whichever tab
+          // the page last remembered; Webinars has its own row beside it.
+          setBigRockFocus(null);
+          if (v === "campaigns") setCampaignsViewRequest({ view: "cards", seq: nextRequest() });
           setView(v);
+          setNavOpen(false);
+        }}
+        onOpenWebinars={() => {
+          openWebinars();
           setNavOpen(false);
         }}
         onNew={startNew}
@@ -2162,6 +2173,7 @@ export default function App() {
             onOpenEvent={openEvent}
             onOpenSocialPost={openSocialPost}
             onManage={isSuperUser ? () => setManageRocksOpen(true) : undefined}
+            initialRockId={bigRockFocus}
           />
         ) : view === "executiveDashboard" ? (
           <Dashboard
@@ -2181,7 +2193,10 @@ export default function App() {
             onOpenView={setView}
             onOpenWebinars={openWebinars}
             bigRocks={bigRocks}
-            onOpenBigRocks={() => setView("bigRocks")}
+            onOpenBigRocks={(rockId) => {
+              setBigRockFocus(rockId);
+              setView("bigRocks");
+            }}
           />
         ) : view === "socialCalendar" ? (
           <SocialCalendar

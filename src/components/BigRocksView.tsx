@@ -7,7 +7,7 @@ import type {
   SocialPost,
   WorkspaceData,
 } from "../types";
-import { rockWork, unattributed, type RockWork } from "../bigRocks";
+import { UNATTRIBUTED, rockWork, unattributed, type RockWork } from "../bigRocks";
 import { PHASE_LABEL, campaignPhase } from "../campaigns";
 import { brandColor, projectStatusLabel, socialStatusMeta } from "../constants";
 import { eventPhase, eventStatusMeta, formatEventDates } from "../events";
@@ -38,9 +38,10 @@ type Props = {
   onOpenSocialPost: (id: string) => void;
   // Super users only: open the editor.
   onManage?: () => void;
+  // The rock to open on (or UNATTRIBUTED for the work on no rock), when
+  // arriving from one of the Executive Dashboard's rocks.
+  initialRockId?: string | null;
 };
-
-const UNATTRIBUTED = "__none__";
 
 function isLive(p: Project): boolean {
   return !p.archived && ["active", "planning"].includes(p.status ?? "active");
@@ -57,6 +58,7 @@ export function BigRocksView({
   onOpenEvent,
   onOpenSocialPost,
   onManage,
+  initialRockId,
 }: Props) {
   const today = todayIso();
   const lists = { projects: workspace.projects, campaigns, socialPosts, events };
@@ -77,7 +79,7 @@ export function BigRocksView({
 
   // The rock whose lists are showing. Falls back to the first live rock
   // when nothing's been picked or the pick has since been removed.
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(initialRockId ?? null);
   const selectedKey =
     picked && (picked === UNATTRIBUTED || works.some((w) => w.rock.id === picked))
       ? picked

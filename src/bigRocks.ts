@@ -96,6 +96,10 @@ export function rockWork(rock: BigRock, lists: WorkLists): RockWork {
 // Projects and campaigns no rock claims, directly or through a campaign.
 // Archived projects are left out; the caller narrows further (to live
 // work, say) as its report needs.
+// Stands in for a rock id where the Big Rocks page selects the work on no
+// rock at all.
+export const UNATTRIBUTED = "__none__";
+
 export function unattributed(
   works: RockWork[],
   lists: Pick<WorkLists, "projects" | "campaigns">,
