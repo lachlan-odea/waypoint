@@ -29,7 +29,10 @@ import {
   cleanDomain,
   describeWebinar,
   kitSpeakers,
+  liveRows,
+  matchLive,
   oauthHeader,
+  parseLiveRef,
   pickUrl,
   resultsFromFunnel,
   resultsFromMetrics,
@@ -37,6 +40,7 @@ import {
   splitTitle,
   type KitDoc,
   type KitSpeaker,
+  type LiveRow,
   type Metric,
   type Results,
 } from "./twentythreeText";
@@ -494,6 +498,120 @@ export const twentyThreeCreateWebinar = onCall(
   },
 );
 
+// ── Linking a webinar that already exists ──────────────────────────────
+
+// How far to look through the workspace’s webinars for a pasted link.
+const LINK_PAGE_SIZE = 100;
+const LINK_MAX_PAGES = 10;
+
+// Link the kit to a webinar that was set up in TwentyThree by hand, from
+// its link or id, so Add speakers and Pull results work for it. Nothing is
+// changed in TwentyThree.
+export const twentyThreeLinkWebinar = onCall(
+  { region: REGION, cors: ALLOWED_ORIGINS, secrets: TT_SECRETS, invoker: "public", timeoutSeconds: 120 },
+  async (req): Promise<{ liveId: string; url: string; name: string }> => {
+    const caller = await requireSignedIn(req);
+    const input = (req.data ?? {}) as { campaignId?: unknown; link?: unknown };
+    const campaignId = typeof input.campaignId === "string" ? input.campaignId.trim() : "";
+    const link = typeof input.link === "string" ? input.link.trim().slice(0, 2000) : "";
+    if (!campaignId || campaignId.includes("/")) throw new HttpsError("invalid-argument", "Which webinar?");
+    const wanted = parseLiveRef(link);
+    if (!wanted) {
+      throw new HttpsError("invalid-argument", "Paste the webinar’s link from TwentyThree, or its ID.");
+    }
+    const c = creds();
+
+    const ref = db().collection("campaigns").doc(campaignId);
+    const lockRef = db().collection("twentythreePrivate").doc(campaignId);
+    const before = ((await ref.get()).data() as { webinar?: KitDoc } | undefined)?.webinar;
+    if (!before) throw new HttpsError("not-found", "That webinar no longer exists.");
+    if (before.values?.landing?.ttLiveId) {
+      throw new HttpsError("already-exists", "This webinar is already linked to TwentyThree. Unlink it first.");
+    }
+
+    let found: LiveRow | undefined;
+    try {
+      // An id in what was pasted is the quick way in.
+      for (const id of wanted.ids.slice(0, 5)) {
+        try {
+          const res = await tt(
+            c,
+            "GET",
+            "/live/list",
+            { live_id: id, include_private_p: "true", use_full_urls_p: "true" },
+            "look up",
+          );
+          found = liveRows(res.data, c.domain).find((r) => r.liveId === id);
+        } catch (err) {
+          // No such webinar is an answer, not a failure.
+          const refused = err instanceof TwentyThreeError && (err.status === 401 || err.status === 403);
+          if (refused || !(err instanceof TwentyThreeError)) throw err;
+        }
+        if (found) break;
+      }
+      // Otherwise, the webinar whose page the link opens.
+      for (let p = 1; !found && wanted.path && p <= LINK_MAX_PAGES; p++) {
+        const res = await tt(
+          c,
+          "GET",
+          "/live/list",
+          { include_private_p: "true", use_full_urls_p: "true", p: String(p), size: String(LINK_PAGE_SIZE) },
+          "list webinars",
+        );
+        const rows = liveRows(res.data, c.domain);
+        found = matchLive(rows, wanted.path);
+        if (rows.length < LINK_PAGE_SIZE) break;
+      }
+    } catch (err) {
+      fail(err, "look up the webinar");
+    }
+    if (!found) {
+      throw new HttpsError(
+        "not-found",
+        "No webinar in TwentyThree matches that. Check the link, or paste the webinar’s ID: the number in its address when it’s open in TwentyThree.",
+      );
+    }
+    const { liveId, name, url } = found;
+
+    const at = new Date().toISOString();
+    await db().runTransaction(async (tx) => {
+      const [snap, lock] = await Promise.all([tx.get(ref), tx.get(lockRef)]);
+      const k = (snap.data() as { webinar?: KitDoc } | undefined)?.webinar;
+      if (!k) throw new HttpsError("not-found", "That webinar no longer exists.");
+      if (k.values?.landing?.ttLiveId) {
+        throw new HttpsError("already-exists", "This webinar is already linked to TwentyThree. Unlink it first.");
+      }
+      const started = Number((lock.data() as { startedAt?: number } | undefined)?.startedAt ?? 0);
+      if (Date.now() - started < LOCK_MS) {
+        throw new HttpsError("aborted", "This webinar is being created in TwentyThree right now. Give it a minute.");
+      }
+      const patch: Record<string, unknown> = {
+        "webinar.values.landing.ttLiveId": liveId,
+        "webinar.values.landing.ttAt": at,
+        "webinar.values.landing.ttLinked": true,
+        "webinar.activity": [
+          {
+            id: `a-${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`,
+            section: "landing",
+            what: "linked an existing webinar in TwentyThree",
+            detail: name,
+            by: caller.uid,
+            at,
+          },
+          ...(Array.isArray(k.activity) ? k.activity : []),
+        ].slice(0, 300),
+        "webinar.updatedAt": at,
+      };
+      if (url) {
+        patch["webinar.values.landing.ttUrl"] = url;
+        if (!String(k.values?.landing?.landingLink ?? "").trim()) patch["webinar.values.landing.landingLink"] = url;
+      }
+      tx.update(ref, patch);
+    });
+    return { liveId, url, name };
+  },
+);
+
 // Send the kit’s speakers to a webinar that’s already been created: the
 // ones added to the kit since, or held back for want of an email address.
 export const twentyThreeAddSpeakers = onCall(
@@ -507,7 +625,7 @@ export const twentyThreeAddSpeakers = onCall(
     const kit = (snap.data() as { webinar?: KitDoc } | undefined)?.webinar;
     if (!kit) throw new HttpsError("not-found", "That webinar no longer exists.");
     const liveId = String(kit.values?.landing?.ttLiveId ?? "").trim();
-    if (!liveId) throw new HttpsError("failed-precondition", "Create the webinar in TwentyThree first.");
+    if (!liveId) throw new HttpsError("failed-precondition", "Create the webinar in TwentyThree, or link it, first.");
 
     // Who’s already there, so nobody is added twice.
     let existing: Listed[] = [];
@@ -519,7 +637,7 @@ export const twentyThreeAddSpeakers = onCall(
       if (!token) {
         throw new HttpsError(
           "not-found",
-          "That webinar couldn’t be found in TwentyThree. If it was deleted there, choose Unlink and create it again.",
+          "That webinar couldn’t be found in TwentyThree. If it was deleted there, choose Unlink, then create or link it again.",
         );
       }
       const listed = await tt(
@@ -577,7 +695,7 @@ export const twentyThreePullResults = onCall(
     const kit = ((await ref.get()).data() as { webinar?: KitDoc } | undefined)?.webinar;
     if (!kit) throw new HttpsError("not-found", "That webinar no longer exists.");
     const liveId = String(kit.values?.landing?.ttLiveId ?? "").trim();
-    if (!liveId) throw new HttpsError("failed-precondition", "Create the webinar in TwentyThree first.");
+    if (!liveId) throw new HttpsError("failed-precondition", "Create the webinar in TwentyThree, or link it, first.");
 
     let results: Results = {};
     try {

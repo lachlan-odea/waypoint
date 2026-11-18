@@ -8,6 +8,7 @@ import {
   twentyThreeAddSpeakers,
   twentyThreeCreateWebinar,
   twentyThreeErrorMessage,
+  twentyThreeLinkWebinar,
   twentyThreePullResults,
   type TwentyThreeCreateResult,
 } from "../../twentyThree";
@@ -18,6 +19,9 @@ import type { KitApi } from "./kitApi";
 // webinar in TwentyThree from what the section holds (title, summary,
 // bullets, speakers, hero image). The function writes the webinar's id and
 // address back onto the kit, so this card reads its state from there.
+// "Link existing" does the same for a webinar that was set up in
+// TwentyThree by hand: it's looked up from its link or id, and nothing is
+// sent across.
 
 const str = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
 
@@ -26,7 +30,10 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
   const v = ctx.V("landing");
   const liveId = str(v.ttLiveId);
   const url = str(v.ttUrl);
+  // Linked to a webinar that was already in TwentyThree, not created from here.
+  const linked = v.ttLinked === true;
   const [open, setOpen] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,14 +76,15 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
   }
 
   function unlink() {
-    if (!window.confirm("Unlink this webinar from TwentyThree? The webinar stays in TwentyThree; Waypoint just forgets it, so a new one can be created.")) {
+    if (!window.confirm("Unlink this webinar from TwentyThree? The webinar stays in TwentyThree; Waypoint just forgets it, so a new one can be created or another linked.")) {
       return;
     }
     setWarnings([]);
     setNote(null);
     setError(null);
     api.update(
-      (k) => setKitValue(setKitValue(setKitValue(k, "landing", "ttLiveId", undefined), "landing", "ttUrl", undefined), "landing", "ttAt", undefined),
+      (k) =>
+        (["ttLiveId", "ttUrl", "ttAt", "ttLinked"] as const).reduce((acc, key) => setKitValue(acc, "landing", key, undefined), k),
       "unlinked the webinar from TwentyThree",
       "",
       "landing",
@@ -86,8 +94,16 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
   return (
     <div className="item-card kit-tt">
       <div className="kit-tt-main">
-        <h3>{liveId ? "Landing page created in TwentyThree" : "Generate the landing page"}</h3>
-        {liveId ? (
+        <h3>
+          {!liveId ? "Generate the landing page" : linked ? "Linked to a webinar in TwentyThree" : "Landing page created in TwentyThree"}
+        </h3>
+        {liveId && linked ? (
+          <p>
+            {str(v.ttAt) ? `Linked ${formatShort(str(v.ttAt).slice(0, 10))}. ` : ""}
+            The page was set up in TwentyThree, so nothing here is sent across except speakers, with Add speakers. Results
+            can be pulled in the Results section.
+          </p>
+        ) : liveId ? (
           <p>
             {str(v.ttAt) ? `Created ${formatShort(str(v.ttAt).slice(0, 10))}. ` : ""}
             It’s private until Digital reviews and publishes it in TwentyThree. Later changes here aren’t sent across.
@@ -95,7 +111,8 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
         ) : (
           <p>
             Creates this webinar in TwentyThree with the title, summary, ‘What you’ll learn’ bullets, speakers and hero
-            image from this section. It’s created private, for Digital to review and publish.
+            image from this section. It’s created private, for Digital to review and publish. Already set up in
+            TwentyThree? Link it instead.
           </p>
         )}
         {!liveId && missing.length > 0 && <p className="kit-hint warn">Still to fill in: {missing.join(", ")}.</p>}
@@ -136,17 +153,34 @@ export function TwentyThreeCard({ api }: { api: KitApi }) {
             )}
           </>
         ) : (
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={readOnly || !title}
-            title={!title ? "Add a webinar title first" : undefined}
-            onClick={() => setOpen(true)}
-          >
-            <Icon name="rocket" size={16} /> Generate landing page
-          </button>
+          <>
+            <button type="button" className="btn btn-secondary" disabled={readOnly} onClick={() => setLinking(true)}>
+              <Icon name="link" size={16} /> Link existing
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={readOnly || !title}
+              title={!title ? "Add a webinar title first" : undefined}
+              onClick={() => setOpen(true)}
+            >
+              <Icon name="rocket" size={16} /> Generate landing page
+            </button>
+          </>
         )}
       </div>
+      {linking && (
+        <LinkDialog
+          api={api}
+          onClose={() => setLinking(false)}
+          onLinked={(name) => {
+            setWarnings([]);
+            setError(null);
+            setNote(name ? `Linked to “${name}” in TwentyThree.` : "Linked to the webinar in TwentyThree.");
+            setLinking(false);
+          }}
+        />
+      )}
       {open && (
         <CreateDialog
           api={api}
@@ -291,8 +325,85 @@ function CreateDialog({
   );
 }
 
+// "Link existing": point the kit at a webinar that's already in
+// TwentyThree, from its link or id.
+function LinkDialog({ api, onClose, onLinked }: { api: KitApi; onClose: () => void; onLinked: (name: string) => void }) {
+  const id = useId();
+  // The kit's own Landing page link is usually the one wanted.
+  const [link, setLink] = useState(() => str(api.ctx.V("landing").landingLink));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && !busy) onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, busy]);
+
+  const ready = !!link.trim();
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ready || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      onLinked((await twentyThreeLinkWebinar(api.campaign.id, link.trim())).name);
+    } catch (err) {
+      setError(twentyThreeErrorMessage(err));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="modal-overlay confirm-overlay">
+      <form className="modal confirm-modal kit-tt-modal" role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} onSubmit={submit}>
+        <header className="modal-head">
+          <h2 className="modal-title-static" id={`${id}-title`}>
+            Link a webinar that’s already in TwentyThree
+          </h2>
+        </header>
+        <div className="modal-body">
+          <label className="field">
+            <span>Webinar link or ID</span>
+            <input
+              type="text"
+              inputMode="url"
+              value={link}
+              disabled={busy}
+              autoFocus
+              placeholder="Paste the webinar’s link from TwentyThree"
+              aria-describedby={`${id}-hint`}
+              onChange={(e) => setLink(e.target.value)}
+            />
+          </label>
+          <p className="muted small" id={`${id}-hint`}>
+            Its registration page link, its address when it’s open in TwentyThree, or just its ID. Nothing is changed in
+            TwentyThree: this only lets Waypoint add speakers to it and pull its results.
+          </p>
+          {error && (
+            <p className="kit-hint warn" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+        <footer className="modal-foot">
+          <button type="button" onClick={onClose} disabled={busy}>
+            Cancel
+          </button>
+          <button type="submit" className="primary" disabled={!ready || busy}>
+            {busy ? "Linking…" : "Link webinar"}
+          </button>
+        </footer>
+      </form>
+    </div>
+  );
+}
+
 // "Pull results", on the kit’s Results section: fills the Performance
-// numbers from TwentyThree for a webinar that was created from Waypoint.
+// numbers from TwentyThree for a webinar that was created or linked there.
 export function TwentyThreeResultsCard({ api }: { api: KitApi }) {
   const { ctx, readOnly } = api;
   const liveId = str(ctx.V("landing").ttLiveId);
@@ -329,7 +440,7 @@ export function TwentyThreeResultsCard({ api }: { api: KitApi }) {
             {pulledAt ? ` Last pulled ${formatShort(pulledAt.slice(0, 10))}.` : ""}
           </p>
         ) : (
-          <p>Available for a webinar created with Generate landing page, in the Landing page section.</p>
+          <p>Available once the webinar is created or linked in TwentyThree, in the Landing page section.</p>
         )}
         {note && <p role="status">{note}</p>}
         {missing.length > 0 && <p>Not available from TwentyThree, so fill in by hand: {missing.join(", ")}.</p>}

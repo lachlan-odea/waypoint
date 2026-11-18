@@ -146,6 +146,66 @@ export function pickUrl(data: unknown, domain: string): string {
   return "";
 }
 
+// ── Linking a webinar that already exists ──────────────────────────────
+
+// What someone pasted to say which webinar: its id, or a link to it. A
+// link gives the ids it carries (TwentyThree’s own pages for a webinar have
+// its id in the address) and the path to match a public page by.
+export type LiveRef = { ids: string[]; path: string };
+
+const pagePath = (pathname: string): string => {
+  let p = pathname;
+  try {
+    p = decodeURIComponent(pathname);
+  } catch {
+    // Left as written.
+  }
+  return p.replace(/\/+$/, "").toLowerCase();
+};
+
+export function parseLiveRef(raw: string): LiveRef | null {
+  const s = raw.trim();
+  if (!s) return null;
+  if (/^\d{1,20}$/.test(s)) return { ids: [s], path: "" };
+  let u: URL;
+  try {
+    u = new URL(/^https?:\/\//i.test(s) ? s : `https://${s}`);
+  } catch {
+    return null;
+  }
+  if (!u.hostname.includes(".")) return null;
+  const parts = [...u.pathname.split("/"), ...u.hash.replace(/^#/, "").split(/[/?&=]/), ...u.searchParams.values()];
+  const ids = [...new Set(parts.filter((p) => /^\d{3,20}$/.test(p)))];
+  const path = pagePath(u.pathname);
+  return ids.length || path ? { ids, path } : null;
+}
+
+// One webinar from a /live/list answer.
+export type LiveRow = { liveId: string; name: string; url: string };
+
+export function liveRows(data: unknown, domain: string): LiveRow[] {
+  return (Array.isArray(data) ? data : [])
+    .filter((r): r is Record<string, unknown> => !!r && typeof r === "object")
+    .map((r) => ({
+      liveId: text(typeof r.live_id === "number" ? String(r.live_id) : r.live_id),
+      name: text(r.name) || text(r.title),
+      url: pickUrl(r, domain),
+    }))
+    .filter((r) => r.liveId);
+}
+
+// The webinar whose page is at `path`, whatever host the link was on.
+export function matchLive(rows: LiveRow[], path: string): LiveRow | undefined {
+  if (!path) return undefined;
+  return rows.find((r) => {
+    try {
+      return !!r.url && pagePath(new URL(r.url).pathname) === path;
+    } catch {
+      return false;
+    }
+  });
+}
+
 // ── Results ────────────────────────────────────────────────────────────
 
 export type Metric = { metric: string; value: string; formated: string };
