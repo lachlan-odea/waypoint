@@ -31,7 +31,18 @@ export async function twentyThreeCreateWebinar(input: TwentyThreeCreateInput): P
   return (await call(input)).data;
 }
 
-export type TwentyThreeSpeakersResult = { speakersAdded: number; headshotsAdded: number; warnings: string[] };
+export type TwentyThreeLinkResult = { liveId: string; url: string; name: string };
+
+// Link the kit to a webinar that already exists in TwentyThree, from its
+// link or id. Nothing is changed in TwentyThree.
+export async function twentyThreeLinkWebinar(campaignId: string, link: string): Promise<TwentyThreeLinkResult> {
+  const call = httpsCallable<{ campaignId: string; link: string }, TwentyThreeLinkResult>(functions, "twentyThreeLinkWebinar", {
+    timeout: 120_000,
+  });
+  return (await call({ campaignId, link })).data;
+}
+
+export type TwentyThreeSpeakersResult ={ speakersAdded: number; headshotsAdded: number; warnings: string[] };
 
 // Send the kit’s speakers to a webinar that already exists in TwentyThree,
 // skipping anyone it already lists.
