@@ -233,20 +233,44 @@ const RATE = /(^|_)(rate|percent|pct|share|ratio)(_|$)/;
 const TIME = /engag|watch|view_?time|play_?time|duration/;
 
 // TwentyThree’s webinar metrics come as a list of named numbers, and the
-// names aren’t in its reference. They’re matched here by what they say;
-// anything unmatched is left for a person to fill in.
+// names aren’t in its reference. The ones below were read from what the
+// API sends back (logged by twentyThreePullResults). Its analytics page
+// has Total, Live and On demand tabs, each showing Page Views,
+// Registrants, Viewers and Avg. Engagement; those are the `combined_`,
+// `live_` and `recording_` `conversion_` metrics, so the kit reads the
+// same numbers the page shows.
+//
+// Not the lookalikes: `recording_view_count` counts plays, not viewers,
+// and `recording_avg_timeline_engagement` isn’t the average watch time.
+const NAMED: Record<Exclude<ResultKey, "qna" | "polls">, string> = {
+  pageViews: "combined_conversion_visits",
+  regs: "combined_conversion_conversions",
+  atts: "live_conversion_views",
+  odViews: "recording_conversion_views",
+  liveEng: "live_conversion_engagement_per_view",
+  odEng: "recording_conversion_engagement_per_view",
+  leads: "combined_total_identified_profiles",
+};
+
+// A field is read from its named metric; if TwentyThree doesn’t send
+// that one, from the first metric whose name says the same thing.
+// Anything unmatched is left for a person to fill in.
 export function resultsFromMetrics(metrics: Metric[]): Results {
   const out: Results = {};
   const rows = metrics
     .map((m) => ({ key: String(m.metric ?? "").toLowerCase(), value: m.value }))
     .filter((m) => m.key);
-  const find = (test: (key: string) => boolean) => rows.find((m) => test(m.key) && count(m.value) != null);
+  const find = (field: ResultKey, test: (key: string) => boolean) => {
+    const name = (NAMED as Partial<Record<ResultKey, string>>)[field];
+    const named = name ? rows.find((m) => m.key === name && count(m.value) != null) : undefined;
+    return named ?? rows.find((m) => test(m.key) && count(m.value) != null);
+  };
   const num = (field: ResultKey, test: (key: string) => boolean) => {
-    const m = find(test);
+    const m = find(field, test);
     if (m) out[field] = count(m.value)!;
   };
   const time = (field: ResultKey, test: (key: string) => boolean) => {
-    const m = find(test);
+    const m = find(field, test);
     if (!m) return;
     const secs = count(m.value)!;
     if (secs > 0) out[field] = duration(secs);
