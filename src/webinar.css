@@ -1513,6 +1513,42 @@
   line-height: 1.5;
   color: var(--kit-late);
 }
+/* Pull history: each pull of results, with its numbers. */
+.kit-tt-log {
+  margin-top: 4px;
+  font-size: 13px;
+}
+.kit-tt-log summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+}
+.kit-tt-log-scroll {
+  margin-top: 8px;
+  overflow-x: auto;
+}
+.kit-tt-log table {
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+.kit-tt-log th,
+.kit-tt-log td {
+  padding: 6px 14px 6px 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-weight: 400;
+  color: var(--text);
+}
+.kit-tt-log thead th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.kit-tt-log .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 .kit-tt-actions {
   display: flex;
   align-items: center;

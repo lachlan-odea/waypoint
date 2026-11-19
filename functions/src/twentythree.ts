@@ -680,6 +680,9 @@ const RESULT_LABELS: Record<keyof Results, string> = {
   leads: "Leads identified",
 };
 
+// How many past pulls the kit keeps.
+const MAX_PULLS = 100;
+
 // Fill the kit’s Performance numbers from TwentyThree: the webinar’s own
 // metrics, the Audience funnel for page visits and registrations, and
 // counts of the questions asked and poll answers given. A number
@@ -753,6 +756,11 @@ export const twentyThreePullResults = onCall(
         if (!k) return;
         const patch: Record<string, unknown> = { "webinar.values.results.ttPulledAt": at, "webinar.updatedAt": at };
         for (const key of found) patch[`webinar.values.results.${key}`] = results[key];
+        // The log of pulls, newest first: the numbers as they were each time.
+        patch["webinar.ttPulls"] = [
+          { at, by: caller.uid, values: Object.fromEntries(found.map((key) => [key, results[key]])) },
+          ...(Array.isArray(k.ttPulls) ? k.ttPulls : []),
+        ].slice(0, MAX_PULLS);
         patch["webinar.activity"] = [
           {
             id: `a-${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`,
