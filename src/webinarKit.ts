@@ -573,7 +573,7 @@ export const SECTIONS: SectionSpec[] = [
       { t: "metrics" },
       { k: "qna", t: "num", label: "Q&A questions asked", third: true },
       { k: "polls", t: "num", label: "Poll responses", third: true },
-      { k: "leads", t: "num", label: "Leads identified", third: true },
+      { k: "chat", t: "num", label: "Chat messages", third: true },
       { k: "dropoff", t: "area", label: "Drop-off points (live and on-demand)", rows: 2 },
       { k: "cta", t: "area", label: "CTA performance", rows: 2 },
       { k: "leadConv", t: "text", label: "Lead conversion rate", ph: "e.g. 8% of attendees became opportunities", half: true },

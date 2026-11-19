@@ -677,7 +677,7 @@ const RESULT_LABELS: Record<keyof Results, string> = {
   odEng: "On-demand average engagement",
   qna: "Q&A questions asked",
   polls: "Poll responses",
-  leads: "Leads identified",
+  chat: "Chat messages",
 };
 
 // How many past pulls the kit keeps.
