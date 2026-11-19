@@ -11,6 +11,7 @@ export type KitDoc = {
   values?: Record<string, Record<string, unknown>>;
   items?: { kind?: string; list?: string; order?: number; at?: string; d?: Record<string, unknown> }[];
   activity?: unknown[];
+  ttPulls?: unknown[];
 };
 
 // ── OAuth 1.0a ─────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from "react";
-import { has, lines, setKitValue } from "../../webinarKit";
+import { SEC_BY_KEY, has, lines, setKitValue } from "../../webinarKit";
 import { formatShort } from "../../dates";
 import { localTimeZone, supportedTimeZones, timeZoneOffsetLabel } from "../../timezones";
 import {
@@ -402,12 +402,26 @@ function LinkDialog({ api, onClose, onLinked }: { api: KitApi; onClose: () => vo
   );
 }
 
+// When a pull happened, to the minute, in the reader's own time zone.
+function stamp(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 // "Pull results", on the kit’s Results section: fills the Performance
 // numbers from TwentyThree for a webinar that was created or linked there.
+// Each pull is kept on the kit (ttPulls), so the numbers can be read as
+// they were at the time.
 export function TwentyThreeResultsCard({ api }: { api: KitApi }) {
   const { ctx, readOnly } = api;
   const liveId = str(ctx.V("landing").ttLiveId);
-  const pulledAt = str(ctx.V("results").ttPulledAt);
+  const pulls = Array.isArray(api.kit.ttPulls) ? api.kit.ttPulls.filter((p) => p && p.at && p.values) : [];
+  const pulledAt = pulls[0]?.at ?? str(ctx.V("results").ttPulledAt);
+  // The numbers any pull brought back, in the order the section lists them.
+  const columns = (SEC_BY_KEY.results?.fields ?? []).filter(
+    (f): f is typeof f & { k: string } => !!f.k && pulls.some((p) => p.values[f.k!] !== undefined),
+  );
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
@@ -437,7 +451,7 @@ export function TwentyThreeResultsCard({ api }: { api: KitApi }) {
         {liveId ? (
           <p>
             Fills in the Performance numbers below from TwentyThree, replacing what’s there.
-            {pulledAt ? ` Last pulled ${formatShort(pulledAt.slice(0, 10))}.` : ""}
+            {pulledAt ? ` Last pulled ${stamp(pulledAt)}.` : ""}
           </p>
         ) : (
           <p>Available once the webinar is created or linked in TwentyThree, in the Landing page section.</p>
@@ -448,6 +462,46 @@ export function TwentyThreeResultsCard({ api }: { api: KitApi }) {
           <p className="kit-hint warn" role="alert">
             {error}
           </p>
+        )}
+        {pulls.length > 0 && (
+          <details className="kit-tt-log">
+            <summary>
+              Pull history ({pulls.length})
+            </summary>
+            <div className="kit-tt-log-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Pulled</th>
+                    <th scope="col">By</th>
+                    {columns.map((f) => (
+                      <th scope="col" key={f.k} className="num">
+                        {f.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pulls.map((p, i) => (
+                    <tr key={`${p.at}-${i}`}>
+                      <th scope="row">
+                        <time dateTime={p.at}>{stamp(p.at)}</time>
+                      </th>
+                      <td>{api.designers.find((d) => d.id === p.by)?.name ?? "—"}</td>
+                      {columns.map((f) => {
+                        const value = p.values[f.k];
+                        return (
+                          <td key={f.k} className="num">
+                            {value === undefined ? "—" : typeof value === "number" ? value.toLocaleString() : value}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
         )}
       </div>
       {liveId && !readOnly && (

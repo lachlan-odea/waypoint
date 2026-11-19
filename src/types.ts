@@ -521,6 +521,14 @@ export type KitActivity = {
   at: string;
 };
 
+// One "Pull results" from TwentyThree: when, who, and the numbers it
+// brought back, keyed by the Results field they filled (regs, atts, …).
+export type KitPull = {
+  at: string;
+  by?: string;
+  values: Record<string, number | string>;
+};
+
 export type KitSectionState = {
   status?: KitSectionStatus;
   // A due date set by hand, overriding the kit's schedule (YYYY-MM-DD).
@@ -564,6 +572,9 @@ export type WebinarKit = {
   files: KitFile[];
   notes: KitNote[];
   activity: KitActivity[];
+  // Every pull of results from TwentyThree, newest first. Written by the
+  // twentyThreePullResults function.
+  ttPulls?: KitPull[];
   archived?: boolean;
   createdAt: string;
   updatedAt: string;
