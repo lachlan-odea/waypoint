@@ -211,7 +211,7 @@ export function matchLive(rows: LiveRow[], path: string): LiveRow | undefined {
 
 export type Metric = { metric: string; value: string; formated: string };
 
-type ResultKey = "pageViews" | "regs" | "atts" | "odViews" | "liveEng" | "odEng" | "qna" | "polls" | "leads";
+type ResultKey = "pageViews" | "regs" | "atts" | "odViews" | "liveEng" | "odEng" | "qna" | "polls" | "chat";
 
 // Kit field (values.results) → the number or duration found for it.
 export type Results = Partial<Record<ResultKey, number | string>>;
@@ -249,7 +249,7 @@ const NAMED: Record<Exclude<ResultKey, "qna" | "polls">, string> = {
   odViews: "recording_conversion_views",
   liveEng: "live_conversion_engagement_per_view",
   odEng: "recording_conversion_engagement_per_view",
-  leads: "combined_total_identified_profiles",
+  chat: "number_of_chat_messages",
 };
 
 // A field is read from its named metric; if TwentyThree doesn’t send
@@ -281,7 +281,7 @@ export function resultsFromMetrics(metrics: Metric[]): Results {
   num("atts", (k) => /attend|participant/.test(k) && plain(k) && !ON_DEMAND.test(k));
   num("pageViews", (k) => /visit|page_?view/.test(k) && plain(k));
   num("odViews", (k) => ON_DEMAND.test(k) && /view|play|attend/.test(k) && plain(k));
-  num("leads", (k) => /identified/.test(k) && plain(k));
+  num("chat", (k) => /chat/.test(k) && plain(k));
   num("qna", (k) => /question/.test(k) && plain(k));
   num("polls", (k) => /poll/.test(k) && /answer|response|vote/.test(k) && plain(k));
   time("liveEng", (k) => TIME.test(k) && average(k) && !ON_DEMAND.test(k) && !RATE.test(k));
