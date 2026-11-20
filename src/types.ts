@@ -140,6 +140,13 @@ export type Project = {
   // so the membership-email function knows the "new" document isn't new
   // and doesn't email everyone on it again.
   movedAt?: string;
+  // Set by Push to Basecamp on the project's page: the project is created
+  // in the team's Basecamp account, its assignees are added to it, and its
+  // name, overview, due date and archived state are kept in step there
+  // (functions/src/basecamp.ts). Off or
+  // missing, Basecamp never hears of it. Never set on a confidential
+  // project, which isn't sent anywhere.
+  syncToBasecamp?: boolean;
   milestones: Milestone[];
   comments: Comment[];
   createdAt: string;

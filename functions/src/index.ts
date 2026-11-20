@@ -760,3 +760,16 @@ export {
 // Creating a webinar’s registration page from its kit, or linking one that
 // already exists; see twentythree.ts.
 export { twentyThreeAddSpeakers, twentyThreeCreateWebinar, twentyThreeLinkWebinar, twentyThreePullResults } from "./twentythree";
+
+// ── Basecamp ───────────────────────────────────────────────────────────
+// The other team's projects mirrored into the Basecamp view, and Waypoint
+// projects switched on for it created and kept up to date there; see
+// basecamp.ts.
+export {
+  basecampAuthCallback,
+  basecampConnect,
+  basecampDisconnect,
+  basecampHourlySync,
+  basecampPushProject,
+  basecampSyncNow,
+} from "./basecamp";

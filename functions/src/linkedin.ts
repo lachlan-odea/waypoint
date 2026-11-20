@@ -60,14 +60,14 @@ const SCOPES = [
 
 // Keep in step with WAYPOINT_APP_URL in index.ts.
 const APP_URL = "https://lachlan-odea.github.io/waypoint/";
-const ALLOWED_ORIGINS = [
+export const ALLOWED_ORIGINS = [
   "https://lachlan-odea.github.io",
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
 ];
 
 // Keep in step with SUPER_USER_EMAILS in src/constants.ts.
-const SUPER_USER_EMAILS = ["lachlan.odea@wisetechglobal.com"];
+export const SUPER_USER_EMAILS = ["lachlan.odea@wisetechglobal.com"];
 
 // Keep in step with DEFAULT_LINKEDIN_PAGES in src/linkedin.ts: which page a
 // channel posts to until /settings/linkedin says otherwise.

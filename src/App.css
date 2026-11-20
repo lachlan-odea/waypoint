@@ -2413,6 +2413,10 @@ a.share-btn {
   gap: 8px;
   margin: 8px 0 12px;
 }
+.manage-user-rename {
+  flex: none;
+  margin-bottom: 12px;
+}
 .manage-users-add {
   display: flex;
   align-items: center;

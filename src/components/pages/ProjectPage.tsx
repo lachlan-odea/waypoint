@@ -28,6 +28,8 @@ import { LinkifiedText } from "../LinkifiedText";
 import { ProjectDetailModal } from "../ProjectDetailModal";
 import { BigRockChips } from "../BigRockPicker";
 import { rocksFor } from "../../bigRocks";
+import { useBasecampLink, useBasecampStatus } from "../../basecamp";
+import "../../basecamp.css";
 import {
   EmptyNote,
   ItemGrid,
@@ -138,6 +140,28 @@ export function ProjectPage({
   // Marking it needs you to be able to see it afterwards; Firestore refuses
   // otherwise, so say so before they try.
   const canMarkConfidential = isSuperUser || project.assigneeIds.includes(currentDesignerId);
+  // Basecamp: offered once it's connected, and kept on show for a project
+  // that's switched on or was ever sent, so its state is never hidden.
+  const basecamp = useBasecampStatus().status;
+  const basecampLink = useBasecampLink(project.id);
+  const basecampOn = !!project.syncToBasecamp;
+  const offerBasecamp = basecamp?.connected === true || basecampOn || !!basecampLink?.basecampId;
+  const basecampMissing = basecampOn ? (basecampLink?.peopleMissing ?? []) : [];
+  const basecampHint = confidential
+    ? "Confidential projects are never sent to Basecamp"
+    : !basecampOn
+      ? basecampLink?.basecampId
+        ? "No longer kept in step. The Basecamp project is still there"
+        : "Creates this project in Basecamp, adds its assignees and keeps it in step"
+      : basecampLink?.basecampId
+        ? basecampLink.remote?.status === "missing"
+          ? "Basecamp no longer has this project: it was trashed or deleted there"
+          : "In Basecamp. Its name, overview, due date, archived state and assignees follow this project"
+        : basecamp?.connected !== true
+          ? "Waiting for Basecamp to be connected"
+          : basecampLink?.state === "failed"
+            ? "Couldn't be created in Basecamp yet. It's tried again every hour"
+            : "Creating it in Basecamp…";
 
   const tasks = project.milestones;
   const tasksDone = tasks.filter((m) => m.done).length;
@@ -896,7 +920,12 @@ export function ProjectPage({
                                   checked={confidential}
                                   disabled={!confidential && !canMarkConfidential}
                                   onChange={(e) =>
-                                    onChange((p) => ({ ...p, confidential: e.target.checked || undefined }))
+                                    onChange((p) => ({
+                                      ...p,
+                                      confidential: e.target.checked || undefined,
+                                      // A confidential project is never sent to Basecamp.
+                                      syncToBasecamp: e.target.checked ? undefined : p.syncToBasecamp,
+                                    }))
                                   }
                                 />
                                 <span className="item-hint">
@@ -907,6 +936,58 @@ export function ProjectPage({
                                       : "Assign yourself first to make it confidential"}
                                 </span>
                               </label>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(offerBasecamp
+                      ? [
+                          {
+                            label: "Basecamp",
+                            value: (
+                              <div className="item-basecamp">
+                                <span className="item-hint">{basecampHint}</span>
+                                {basecampMissing.length > 0 && (
+                                  <span className="item-hint">
+                                    Not added to the Basecamp project: {basecampMissing.join("; ")}
+                                  </span>
+                                )}
+                                <div className="item-basecamp-actions">
+                                  {!basecampOn && (
+                                    <button
+                                      type="button"
+                                      className="btn-mini primary"
+                                      disabled={confidential}
+                                      onClick={() => onChange((p) => ({ ...p, syncToBasecamp: true }))}
+                                    >
+                                      Push to Basecamp
+                                    </button>
+                                  )}
+                                  {basecampLink?.appUrl && (
+                                    <a
+                                      className="bc-open"
+                                      href={basecampLink.appUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      Open in Basecamp
+                                      <Icon name="external-link" size={13} />
+                                    </a>
+                                  )}
+                                  {basecampOn && (
+                                    <button
+                                      type="button"
+                                      className="link-btn"
+                                      onClick={() => onChange((p) => ({ ...p, syncToBasecamp: undefined }))}
+                                    >
+                                      Stop syncing
+                                    </button>
+                                  )}
+                                </div>
+                                {basecampOn && basecampLink?.error && (
+                                  <span className="field-hint warn">{basecampLink.error}</span>
+                                )}
+                              </div>
                             ),
                           },
                         ]

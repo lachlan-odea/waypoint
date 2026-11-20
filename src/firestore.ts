@@ -565,6 +565,21 @@ export async function setDesignerSuperUser(
   );
 }
 
+// Change the name on someone's profile, and the initials on their avatar
+// with it. Offered to super users in Manage users; same trust model as
+// setDesignerSuperUser.
+export async function renameDesigner(designerId: string, name: string): Promise<void> {
+  const trimmed = name.trim().replace(/\s+/g, " ");
+  if (!trimmed) throw new Error("A name is required.");
+  const initials = trimmed
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  await setDoc(doc(designersCol(), designerId), { name: trimmed, initials: initials || "??" }, { merge: true });
+}
+
 // Flip the reviewer flag on a designer doc. Same trust model as
 // setDesignerSuperUser — gated by the UI, not Firestore rules.
 export async function setDesignerReviewer(

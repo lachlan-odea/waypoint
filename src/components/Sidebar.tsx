@@ -14,6 +14,7 @@ export type SidebarView =
   | "board"
   | "campaigns"
   | "events"
+  | "basecamp"
   | "socialCalendar"
   | "analytics"
   | "archived"
@@ -63,6 +64,7 @@ const VIEW_NAV: NavItem[] = [
     children: [{ view: "campaigns", label: "Webinars", icon: "video-camera", hint: "The webinar pipeline, worked through the 2026 kit", webinars: true }],
   },
   { view: "events", label: "Events", icon: "calendar" },
+  { view: "basecamp", label: "Basecamp", icon: "group-user-people" },
   { view: "socialCalendar", label: "Social calendar", icon: "file" },
   { view: "archived", label: "Archived", icon: "archive-documents-box-big" },
   { view: "tools", label: "Tools", icon: "browser" },

@@ -37,6 +37,7 @@ import {
   setDesignerEmailAlerts as firestoreSetDesignerEmailAlerts,
   setDesignerReviewer as firestoreSetDesignerReviewer,
   setDesignerSuperUser as firestoreSetDesignerSuperUser,
+  renameDesigner as firestoreRenameDesigner,
   setNotification as firestoreSetNotification,
   setProject as firestoreSetProject,
   moveProject as firestoreMoveProject,
@@ -127,6 +128,7 @@ import type { BlackoutDraft } from "./components/LiveEventBlackoutModal";
 import { publicBlackouts } from "./liveEventRequests";
 import { LiveEventFormModal } from "./components/LiveEventFormModal";
 import { EventsView } from "./components/EventsView";
+import { BasecampView } from "./components/BasecampView";
 import { NewMenu, type NewKind } from "./components/NewMenu";
 import { Login } from "./components/Login";
 import { ProjectPage } from "./components/pages/ProjectPage";
@@ -1633,6 +1635,7 @@ export default function App() {
     board: `${currentWorkspaceName} board`,
     campaigns: "Campaigns",
     events: "Events",
+    basecamp: "Basecamp",
     socialCalendar: "Social calendar",
     analytics: "Analytics",
     archived: "Archive",
@@ -1944,6 +1947,8 @@ export default function App() {
                 "Campaigns"
               ) : view === "events" ? (
                 "Events"
+              ) : view === "basecamp" ? (
+                "Basecamp"
               ) : (
                 <>
                   {currentDesigner.name}
@@ -1981,6 +1986,8 @@ export default function App() {
                           ? "Marketing campaigns and their milestones, month by month"
                           : view === "events"
                             ? "Trade shows and conferences — what's booked, what's on, what needs following up"
+                            : view === "basecamp"
+                              ? "The other team's projects in Basecamp, and the Waypoint projects sent there"
                             : `${myProjects.length} project${myProjects.length === 1 ? "" : "s"} assigned · ${currentWorkspaceName}`}
               {" · live"}
             </p>
@@ -2051,6 +2058,26 @@ export default function App() {
               firestoreSetDesignerPhotoUrl(currentDesigner.id, url)
             }
             onUpdateDesignerSuperUser={firestoreSetDesignerSuperUser}
+            onRenameDesigner={async (designerId, name) => {
+              const was = workspace.designers.find((d) => d.id === designerId)?.name;
+              await firestoreRenameDesigner(designerId, name);
+              const now = name.trim().replace(/\s+/g, " ");
+              // A comment records its author by name, and that name is how
+              // the author is recognised as its owner, so their comments
+              // are renamed with them. Skipped when someone else has the
+              // old name too, as there'd be no telling whose are whose.
+              if (!was || was === now || workspace.designers.some((d) => d.id !== designerId && d.name === was)) return;
+              await Promise.all(
+                workspace.projects
+                  .filter((p) => p.comments.some((c) => c.author === was))
+                  .map((p) =>
+                    firestoreSetProject({
+                      ...p,
+                      comments: p.comments.map((c) => (c.author === was ? { ...c, author: now } : c)),
+                    }),
+                  ),
+              );
+            }}
             onUpdateDesignerReviewer={firestoreSetDesignerReviewer}
             onCreateDesigner={(name, email) =>
               firestoreCreatePlaceholderDesigner(name, email).then(() => {})
@@ -2233,6 +2260,13 @@ export default function App() {
             onCreateHandled={() => setNewEventRequest(0)}
             exportRequest={exportRequest}
             onExportHandled={() => setExportRequest(0)}
+          />
+        ) : view === "basecamp" ? (
+          <BasecampView
+            projects={workspace.projects}
+            isSuperUser={isSuperUser}
+            onOpenProject={openProject}
+            onOpenSettings={() => setView("settings")}
           />
         ) : view === "campaigns" ? (
           <CampaignsView
