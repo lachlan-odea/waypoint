@@ -1,0 +1,80 @@
+/* The Basecamp view (BasecampView.tsx) and the Sync to Basecamp row on a
+   project page. Built from the shared tokens and the table the LinkedIn
+   Performance tab already uses, so it follows dark mode with them. */
+
+.bc-section .section-head {
+  flex-wrap: wrap;
+}
+.bc-sync {
+  margin-left: auto;
+}
+.bc-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+.bc-controls .filter-quick {
+  margin: 0;
+}
+.bc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 560px;
+}
+.bc-table {
+  min-width: 720px;
+}
+.bc-name {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+}
+.bc-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  max-width: 64ch;
+  margin-top: 2px;
+  color: var(--muted);
+  white-space: pre-line;
+}
+.bc-nowrap {
+  white-space: nowrap;
+}
+.bc-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--link);
+  font-weight: 600;
+  text-decoration: none;
+}
+.bc-open:hover {
+  text-decoration: underline;
+}
+.bc-open:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius);
+}
+
+/* Project page → Details → Basecamp. */
+.item-basecamp {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.item-basecamp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}

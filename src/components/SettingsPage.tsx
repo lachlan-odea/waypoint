@@ -35,6 +35,7 @@ import {
   SOCIAL_CHANNELS,
 } from "../constants";
 import { LinkedInSettingsSection } from "./LinkedInSettingsSection";
+import { BasecampSettingsSection } from "./BasecampSettingsSection";
 
 type Props = {
   currentDesigner: Designer;
@@ -90,6 +91,7 @@ type Props = {
     designerId: string,
     isSuperUser: boolean,
   ) => Promise<void>;
+  onRenameDesigner: (designerId: string, name: string) => Promise<void>;
   onUpdateDesignerReviewer: (
     designerId: string,
     isReviewer: boolean,
@@ -152,6 +154,7 @@ export function SettingsPage({
   onUpdateWorkspaceMembers,
   onUpdatePhotoUrl,
   onUpdateDesignerSuperUser,
+  onRenameDesigner,
   onUpdateDesignerReviewer,
   onCreateDesigner,
   onDeleteDesigner,
@@ -437,6 +440,8 @@ export function SettingsPage({
 
             <LinkedInSettingsSection channels={[...SOCIAL_CHANNELS]} />
 
+            <BasecampSettingsSection />
+
             <section className="modal-section">
               <h3>Big Rocks</h3>
               <p className="muted small">
@@ -514,6 +519,7 @@ export function SettingsPage({
           hubs={hubs}
           currentDesignerId={currentDesigner.id}
           onUpdateDesignerSuperUser={onUpdateDesignerSuperUser}
+          onRenameDesigner={onRenameDesigner}
           onUpdateDesignerReviewer={onUpdateDesignerReviewer}
           onUpdateWorkspaceMembers={onUpdateWorkspaceMembers}
           onUpdateDesignerHub={onUpdateDesignerHub}
@@ -1034,6 +1040,7 @@ type ManageUsersModalProps = {
     designerId: string,
     isSuperUser: boolean,
   ) => Promise<void>;
+  onRenameDesigner: (designerId: string, name: string) => Promise<void>;
   onUpdateDesignerReviewer: (
     designerId: string,
     isReviewer: boolean,
@@ -1060,6 +1067,7 @@ function ManageUsersModal({
   currentDesignerId,
   onUpdateDesignerHub,
   onUpdateDesignerSuperUser,
+  onRenameDesigner,
   onUpdateDesignerReviewer,
   onUpdateWorkspaceMembers,
   onCreateDesigner,
@@ -1160,7 +1168,7 @@ function ManageUsersModal({
         </header>
         <div className="modal-body">
           <p className="muted small" style={{ marginTop: 0 }}>
-            Click a user to change their roles, location and teams. Anyone
+            Click a user to change their name, roles, location and teams. Anyone
             can be assigned to a project regardless of team, but only team
             members appear as columns on that team's board. A team with no
             members chosen stays open to everyone.
@@ -1313,6 +1321,11 @@ function ManageUsersModal({
               </button>
               {open && (
               <div className="manage-user-editor" id={editorId}>
+              <RenameUserField
+                name={d.name}
+                busy={busyKey === `name:${d.id}`}
+                onSave={(name) => run(`name:${d.id}`, () => onRenameDesigner(d.id, name))}
+              />
               <div className="manage-user-chips">
                 <div className="manage-user-chip-group">
                   <span className="manage-user-chip-label">Role</span>
@@ -1538,5 +1551,46 @@ function OutlookAddInSection() {
         </a>
       </div>
     </section>
+  );
+}
+
+// Manage users → a user's editor: the name on their profile. It's what
+// shows on their avatar, in pickers and on their comments, so a super user
+// can correct it without the person having to sign up again.
+function RenameUserField({
+  name,
+  busy,
+  onSave,
+}: {
+  name: string;
+  busy: boolean;
+  onSave: (name: string) => void;
+}) {
+  const [value, setValue] = useState(name);
+  const next = value.trim().replace(/\s+/g, " ");
+  const changed = next !== "" && next !== name;
+  return (
+    <div className="manage-users-add manage-user-rename">
+      <input
+        type="text"
+        aria-label="Name"
+        placeholder="Full name"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && changed && !busy) onSave(next);
+          if (e.key === "Escape" && value !== name) {
+            // Put the name back first; a second Escape closes the window.
+            e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
+            setValue(name);
+          }
+        }}
+        disabled={busy}
+      />
+      <button className="primary" onClick={() => onSave(next)} disabled={!changed || busy}>
+        {busy ? "Saving…" : "Save name"}
+      </button>
+    </div>
   );
 }

@@ -403,6 +403,29 @@ service cloud.firestore {
       allow read: if isMember();
       allow write: if false;
     }
+    // Basecamp (functions/src/basecamp.ts), on the same footing as LinkedIn.
+    // The connected account's token lives in /basecampPrivate and is only
+    // ever touched by the functions. What they publish for the app (the
+    // connection's status, the mirror of Basecamp's projects, and which
+    // Basecamp project each switched-on Waypoint project became) is
+    // read-only to members, so nobody can fake a connection or point a
+    // project's "Open in Basecamp" link somewhere else. Confidential
+    // projects are never sent, so nothing about them appears here.
+    match /basecampPrivate/{docId} {
+      allow read, write: if false;
+    }
+    match /basecamp/{docId} {
+      allow read: if isMember();
+      allow write: if false;
+    }
+    match /basecampProjects/{basecampId} {
+      allow read: if isMember();
+      allow write: if false;
+    }
+    match /basecampLinks/{projectId} {
+      allow read: if isMember();
+      allow write: if false;
+    }
     // My Desk checklist items are private to one person, so unlike the
     // collections above these are locked to their owner rather than to any
     // signed-in user. Reads are constrained by the ownerId == uid filter the
