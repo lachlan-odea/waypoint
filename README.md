@@ -122,10 +122,11 @@ Firestore collections: `designers`, `workspaces`, `projects`, `notifications`, `
 
 ```bash
 npm install
+cp .env.example .env.local   # then fill in VITE_FIREBASE_API_KEY
 npm run dev        # http://localhost:5173/waypoint/
 ```
 
-The Firebase web config in `src/firebase.ts` is a public project identifier, not a secret; access is gated by Firestore rules and membership. You sign in to the same project as production, so be deliberate about test data.
+The Firebase web API key isn't kept in the repo. `src/firebase.ts` reads it from `VITE_FIREBASE_API_KEY` at build time: locally from `.env.local` (git-ignored; the value is the browser key under Firebase console → Project settings → Your apps), and for deploys from the repository variable of the same name (GitHub → Settings → Secrets and variables → Actions → Variables), which `deploy.yml` passes to the build. The key still ships in the built app, as every Firebase web key does: it identifies the project and is not a secret; access is gated by Firestore rules and membership. You sign in to the same project as production, so be deliberate about test data.
 
 ## Who can get in
 
