@@ -650,7 +650,7 @@
 
   function loadAdditions() {
     if (!ADDITIONS_URL) return Promise.resolve();
-    return fetch(ADDITIONS_URL + "&pageSize=300", { cache: "no-store" })
+    return fetch(ADDITIONS_URL + "?pageSize=300", { cache: "no-store" })
       .then(function (res) {
         if (!res.ok) throw new Error("HTTP " + res.status);
         return res.json();
@@ -670,7 +670,7 @@
 
   function loadTravel() {
     if (!TRAVEL_URL) return Promise.resolve();
-    return fetch(TRAVEL_URL + "&pageSize=300", { cache: "no-store" })
+    return fetch(TRAVEL_URL + "?pageSize=300", { cache: "no-store" })
       .then(function (res) {
         if (!res.ok) throw new Error("HTTP " + res.status);
         return res.json();
@@ -717,8 +717,7 @@
     Object.keys(data).forEach(function (k) { fields[k] = { stringValue: data[k] }; });
     var url = TRAVEL_URL;
     if (id) {
-      var at = TRAVEL_URL.indexOf("?");
-      url = TRAVEL_URL.slice(0, at) + "/" + encodeURIComponent(id) + TRAVEL_URL.slice(at);
+      url = TRAVEL_URL + "/" + encodeURIComponent(id);
     }
     sendingTravel = true;
     travelError = "";
@@ -744,8 +743,7 @@
 
   // Taking an entry off the page: a DELETE of the one document.
   function removeTravel(id) {
-    var at = TRAVEL_URL.indexOf("?");
-    var url = TRAVEL_URL.slice(0, at) + "/" + encodeURIComponent(id) + TRAVEL_URL.slice(at);
+    var url = TRAVEL_URL + "/" + encodeURIComponent(id);
     confirmTravel = null;
     fetch(url, { method: "DELETE" })
       .then(function (res) {

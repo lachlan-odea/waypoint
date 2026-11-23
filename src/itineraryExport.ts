@@ -14,20 +14,20 @@ import { ITINERARY_FOOTER, TRAVEL_STATEMENT, sortItems } from "./itinerary";
 // names Waypoint. Its __ITINERARY_*__ markers are filled in below.
 
 function itineraryPageUrl(shareToken: string): string {
-  const { projectId, apiKey } = firebaseConfig;
+  const { projectId } = firebaseConfig;
   return (
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
-    `/documents/itineraryPages/${shareToken}?key=${apiKey}`
+    `/documents/itineraryPages/${shareToken}`
   );
 }
 
 // The page's additions collection, listed and added to by readers through
 // the same REST API. The rules take a create from anyone with the token.
 function itineraryAdditionsUrl(shareToken: string): string {
-  const { projectId, apiKey } = firebaseConfig;
+  const { projectId } = firebaseConfig;
   return (
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
-    `/documents/itineraryPages/${shareToken}/additions?key=${apiKey}`
+    `/documents/itineraryPages/${shareToken}/additions`
   );
 }
 
@@ -98,10 +98,10 @@ export function publishItineraryPage(event: MarketingEvent): Promise<void> {
 // Attendees' travel and accommodation entries, listed, added to and
 // corrected by readers through the same REST API.
 function itineraryTravelUrl(shareToken: string): string {
-  const { projectId, apiKey } = firebaseConfig;
+  const { projectId } = firebaseConfig;
   return (
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
-    `/documents/itineraryPages/${shareToken}/travel?key=${apiKey}`
+    `/documents/itineraryPages/${shareToken}/travel`
   );
 }
 

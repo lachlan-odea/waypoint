@@ -29,10 +29,10 @@ import { newShareToken } from "./campaignExport";
 export { newShareToken };
 
 function activityPageUrl(shareToken: string): string {
-  const { projectId, apiKey } = firebaseConfig;
+  const { projectId } = firebaseConfig;
   return (
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
-    `/documents/activityPages/${shareToken}?key=${apiKey}`
+    `/documents/activityPages/${shareToken}`
   );
 }
 
@@ -41,10 +41,10 @@ function activityPageUrl(shareToken: string): string {
 // deliverables, and who owns the campaign in each team. Both hang off the
 // public copy, so they share its token: a new token starts them afresh.
 function activityCollectionUrl(shareToken: string, name: "deliverables" | "teamOwners"): string {
-  const { projectId, apiKey } = firebaseConfig;
+  const { projectId } = firebaseConfig;
   return (
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
-    `/documents/activityPages/${shareToken}/${name}?key=${apiKey}`
+    `/documents/activityPages/${shareToken}/${name}`
   );
 }
 

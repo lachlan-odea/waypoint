@@ -20,20 +20,20 @@ export function newIntakeToken(): string {
 }
 
 function submitUrl(): string {
-  const { projectId, apiKey } = firebaseConfig;
+  const { projectId } = firebaseConfig;
   return (
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
-    `/documents/liveEventRequests?key=${apiKey}`
+    `/documents/liveEventRequests`
   );
 }
 
 // Where the form reads the no-booking periods: the public copy Waypoint
 // keeps under the current token (see publishLiveEventPublic).
 function publicUrl(token: string): string {
-  const { projectId, apiKey } = firebaseConfig;
+  const { projectId } = firebaseConfig;
   return (
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
-    `/documents/liveEventPublic/${encodeURIComponent(token)}?key=${apiKey}`
+    `/documents/liveEventPublic/${encodeURIComponent(token)}`
   );
 }
 
