@@ -20,13 +20,14 @@ import { setCampaignPage } from "./firestore";
 // downloaded file. Its __CAMPAIGN_*__ markers are filled in below.
 
 // Where the page reads its campaign: one document over Firestore's REST
-// API. The web API key is a public project identifier (see firebase.ts);
-// access is the rules' job.
+// API. The URL carries no API key: Firestore takes a signed-out request
+// without one and leaves access to the rules, so none is baked into the
+// file that goes up to SharePoint.
 function campaignPageUrl(shareToken: string): string {
-  const { projectId, apiKey } = firebaseConfig;
+  const { projectId } = firebaseConfig;
   return (
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)` +
-    `/documents/campaignPages/${shareToken}?key=${apiKey}`
+    `/documents/campaignPages/${shareToken}`
   );
 }
 
