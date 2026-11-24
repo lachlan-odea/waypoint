@@ -83,6 +83,13 @@ export default defineConfig({
       workbox: {
         navigateFallback: '/waypoint/index.html',
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,ico,webp}'],
+        // Workbox leaves any file over 2 MiB out of the precache, and this
+        // version of the plugin fails the build when it does. The main
+        // bundle is about 2.2 MB, so without this the app's own code
+        // wouldn't be available offline. Splitting the bundle is the
+        // longer-term answer; until then the limit sits above it with room
+        // to grow.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
     }),
   ],
