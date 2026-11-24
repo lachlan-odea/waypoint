@@ -38,7 +38,7 @@ const TOURS: Record<string, Tour> = {
     steps: [
       { target: ".topbar .search", title: "Find a project", body: "Search by title, client, brand or content type. The board filters as you type." },
       { target: ".camps-panel", title: "Campaigns this team feeds", body: "The campaigns any of this team's live projects contribute to, with their next milestone. Open one to see the whole campaign." },
-      { target: ".team-section", title: "The team", body: "A column per person, you first. Drag a card between columns to reassign it, onto your own column to claim it, or into Unassigned to free it up. Your work across every team is on My Desk. Collapse the section with the arrow; it stays collapsed until you open it again." },
+      { target: ".team-section", title: "The team", body: "A column per person, you first. Drag a card between columns to reassign it, onto your own column to claim it, or into Unassigned to free it up. Switch to Calendar for a month of when the team's projects and their tasks fall due, for everyone or one person. Your work across every team is on My Desk. Collapse the section with the arrow; it stays collapsed until you open it again." },
       { target: ".planning-section", title: "Planning, On hold, Completed", body: "Below the board, work that isn't live yet, work that's paused and work that's done. Collapse the ones you don't need; open a project to move it between stages." },
       NEW,
       NAV,
