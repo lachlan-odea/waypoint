@@ -28,6 +28,8 @@ import {
   monthTitle,
 } from "../events";
 import { EventModal } from "./EventModal";
+import { majorState } from "../majorEvent";
+import type { KitState } from "../webinarKit";
 import { EventCalendarCard } from "./EventCalendarCard";
 import { ItineraryModal } from "./ItineraryModal";
 import { ExportCsvModal } from "./ExportCsvModal";
@@ -100,6 +102,28 @@ function spendLabel(e: MarketingEvent): string {
   if (e.investmentUsd === undefined) return "—";
   const approx = e.currency && e.currency !== "USD" ? "≈ " : "";
   return `${approx}${formatUsd(e.investmentUsd)}`;
+}
+
+// A major event's progress through its workflow, where other events show
+// their checklist.
+function WorkflowBar({ st }: { st: KitState }) {
+  const late = st.late.length;
+  return (
+    <div className="ev-check" title={`${st.done} of ${st.total} workflow sections done${late ? `, ${late} overdue` : ""}`}>
+      <div className="ev-check-bar" aria-hidden>
+        <div className={`ev-check-fill ${st.done === st.total ? "full" : ""}`} style={{ width: `${st.total ? (st.done / st.total) * 100 : 0}%` }} />
+      </div>
+      <span className="ev-check-n">
+        {st.done}/{st.total}
+        {late > 0 && !st.parked && (
+          <>
+            {" · "}
+            <span className="ev-followup">{late} overdue</span>
+          </>
+        )}
+      </span>
+    </div>
+  );
 }
 
 // The ten-step checklist as a bar, with what's still owed after the event.
@@ -849,25 +873,31 @@ export function EventsView({
                         {onNow && ph !== "cancelled" && <span className="ev-now">now</span>}
                       </td>
                       <td className="ev-td-name">
-                        <span className="ev-name">{e.name}</span>
+                        <span className="ev-name">
+                          {e.name}
+                          {e.major && <span className="ev-tag ev-major">Major event</span>}
+                        </span>
                         {e.location && <span className="ev-sub muted small">{e.location}</span>}
                         <span className="ev-row-actions">
-                          <button
-                            type="button"
-                            className="btn-mini"
-                            onClick={(ev) => {
-                              ev.stopPropagation();
-                              setItineraryFor(e.id);
-                            }}
-                            onKeyDown={(ev) => ev.stopPropagation()}
-                            title={
-                              e.itinerary
-                                ? "Open the attendee itinerary"
-                                : "Draft an attendee itinerary from this event"
-                            }
-                          >
-                            {e.itinerary ? "Itinerary" : "Generate itinerary"}
-                          </button>
+                          {/* The attendee itinerary is for events the team travels to. */}
+                          {!e.major && (
+                            <button
+                              type="button"
+                              className="btn-mini"
+                              onClick={(ev) => {
+                                ev.stopPropagation();
+                                setItineraryFor(e.id);
+                              }}
+                              onKeyDown={(ev) => ev.stopPropagation()}
+                              title={
+                                e.itinerary
+                                  ? "Open the attendee itinerary"
+                                  : "Draft an attendee itinerary from this event"
+                              }
+                            >
+                              {e.itinerary ? "Itinerary" : "Generate itinerary"}
+                            </button>
+                          )}
                           {e.itinerarySharePointUrl && (
                             <a
                               className="camp-card-sharepoint"
@@ -901,7 +931,7 @@ export function EventsView({
                         {e.opps ?? "—"}
                       </td>
                       <td className="ev-td-check">
-                        <ChecklistBar done={checklistDone(e)} missing={missing} />
+                        {e.major ? <WorkflowBar st={majorState(e, today)!} /> : <ChecklistBar done={checklistDone(e)} missing={missing} />}
                       </td>
                     </tr>
                   );
@@ -968,8 +998,9 @@ export function EventsView({
                           </>
                         )}
                       </p>
-                      {(e.sponsor || e.booth || e.attendAndSell || e.speakingOpportunity) && (
+                      {(e.major || e.sponsor || e.booth || e.attendAndSell || e.speakingOpportunity) && (
                         <div className="ev-card-tags">
+                          {e.major && <span className="ev-tag ev-major">Major event</span>}
                           {e.sponsor && (
                             <span className="ev-tag" title={e.sponsorNote}>
                               Sponsor{e.sponsorNote ? ` · ${e.sponsorNote}` : ""}
@@ -1006,20 +1037,23 @@ export function EventsView({
                           <dd title={e.campaignCode}>{e.campaignCode ?? "—"}</dd>
                         </div>
                       </dl>
-                      <ChecklistBar done={checklistDone(e)} missing={missing} />
+                      {e.major ? <WorkflowBar st={majorState(e, today)!} /> : <ChecklistBar done={checklistDone(e)} missing={missing} />}
                       <div className="ev-card-actions">
-                        <button
-                          type="button"
-                          className="btn-mini"
-                          onClick={() => setItineraryFor(e.id)}
-                          title={
-                            e.itinerary
-                              ? "Open the attendee itinerary"
-                              : "Draft an attendee itinerary from this event"
-                          }
-                        >
-                          {e.itinerary ? "Itinerary" : "Generate itinerary"}
-                        </button>
+                        {/* The attendee itinerary is for events the team travels to. */}
+                        {!e.major && (
+                          <button
+                            type="button"
+                            className="btn-mini"
+                            onClick={() => setItineraryFor(e.id)}
+                            title={
+                              e.itinerary
+                                ? "Open the attendee itinerary"
+                                : "Draft an attendee itinerary from this event"
+                            }
+                          >
+                            {e.itinerary ? "Itinerary" : "Generate itinerary"}
+                          </button>
+                        )}
                         {e.itinerarySharePointUrl && (
                           <a
                             className="camp-card-sharepoint"

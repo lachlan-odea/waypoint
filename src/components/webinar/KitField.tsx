@@ -1,12 +1,9 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
-import type { KitItem, KitValue } from "../../types";
+import type { KitItem, KitValue, WebinarKit } from "../../types";
 import {
   EMAIL_SEQ,
   FORMATS,
-  KINDS,
-  LINKS,
   RUNSHEET_ROWS,
-  ROLES,
   fieldValue,
   fmtDur,
   fmtNum,
@@ -17,8 +14,10 @@ import {
   ratio,
   type FieldSpec,
   type ItemFieldSpec,
+  type KindSpec,
+  type KitDef,
 } from "../../webinarKit";
-import { formatShort, shiftIso } from "../../dates";
+import { formatShort, shiftIso, todayIso } from "../../dates";
 import { Icon } from "../Icon";
 import { Avatar } from "../Avatar";
 import type { KitApi } from "./kitApi";
@@ -75,11 +74,13 @@ function Draft({
 }
 
 function Shell({
+  def,
   f,
   id,
   children,
   aside,
 }: {
+  def: KitDef;
   f: Pick<FieldSpec, "label" | "hint" | "links" | "half" | "third" | "role">;
   id?: string;
   children: ReactNode;
@@ -91,23 +92,23 @@ function Shell({
       {f.label && (
         <div className="kit-field-top">
           {id ? <label htmlFor={id}>{f.label}</label> : <span className="kit-flabel">{f.label}</span>}
-          {f.role && <span className="kit-role">{ROLES[f.role]?.short ?? f.role}</span>}
+          {f.role && <span className="kit-role">{def.roles[f.role]?.short ?? f.role}</span>}
           {aside}
         </div>
       )}
       {children}
       {f.hint && <span className="kit-hint">{f.hint}</span>}
-      <HintLinks links={f.links} />
+      <HintLinks def={def} links={f.links} />
     </div>
   );
 }
 
-function HintLinks({ links }: { links?: boolean | string[] }) {
+function HintLinks({ def, links }: { def: KitDef; links?: boolean | string[] }) {
   if (!Array.isArray(links) || !links.length) return null;
   return (
     <span className="kit-hint kit-links">
       {links.map((k) => {
-        const l = LINKS[k];
+        const l = def.links[k];
         return l ? (
           <a key={k} href={l[1]} target="_blank" rel="noopener noreferrer">
             {l[0]} <Icon name="external-link" size={11} />
@@ -147,7 +148,7 @@ export function KitField({ f, sec, api }: Props) {
         <div className="kit-fhead">
           <h3>{f.label}</h3>
           {f.hint && <p>{f.hint}</p>}
-          <HintLinks links={f.links} />
+          <HintLinks def={api.def} links={f.links} />
         </div>
       );
     case "metrics":
@@ -156,11 +157,38 @@ export function KitField({ f, sec, api }: Props) {
       return <EmailMetrics api={api} />;
     case "group":
       return <Group f={f} sec={sec} api={api} />;
+    case "task":
+      return <Task f={f} sec={sec} api={api} />;
+    case "table":
+      return (
+        <Shell def={api.def} f={f}>
+          <div className="kit-reftable-wrap">
+            <table className="kit-reftable">
+              <thead>
+                <tr>
+                  {(f.head ?? []).map((h) => (
+                    <th key={h} scope="col">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(f.body ?? []).map((row) => (
+                  <tr key={row[0]}>
+                    {row.map((cell, i) => (i === 0 ? <th key={i} scope="row">{cell}</th> : <td key={i}>{cell}</td>))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Shell>
+      );
     case "text":
     case "url":
     case "series":
       return (
-        <Shell f={f} id={id}>
+        <Shell def={api.def} f={f} id={id}>
           <Draft
             value={str(value)}
             onCommit={(v) => commit(v)}
@@ -195,7 +223,7 @@ export function KitField({ f, sec, api }: Props) {
       );
     case "asset":
       return (
-        <Shell f={f} id={id}>
+        <Shell def={api.def} f={f} id={id}>
           <Draft
             value={str(value)}
             onCommit={(v) => commit(v)}
@@ -219,7 +247,7 @@ export function KitField({ f, sec, api }: Props) {
       );
     case "num":
       return (
-        <Shell f={f} id={id}>
+        <Shell def={api.def} f={f} id={id}>
           <Draft
             value={str(value)}
             onCommit={(v) => commit(num(v) ?? undefined)}
@@ -245,7 +273,7 @@ export function KitField({ f, sec, api }: Props) {
       );
     case "date":
       return (
-        <Shell f={f} id={id}>
+        <Shell def={api.def} f={f} id={id}>
           <input
             id={id}
             type="date"
@@ -260,6 +288,7 @@ export function KitField({ f, sec, api }: Props) {
       const count = f.t === "list" ? lines(str(value)).length : null;
       return (
         <Shell
+          def={api.def}
           f={f}
           id={id}
           aside={
@@ -291,7 +320,7 @@ export function KitField({ f, sec, api }: Props) {
     }
     case "select":
       return (
-        <Shell f={f} id={id}>
+        <Shell def={api.def} f={f} id={id}>
           <select id={id} value={str(value)} disabled={readOnly} onChange={(e) => commit(e.target.value)}>
             <option value="">{f.ph ?? "Select…"}</option>
             {optPairs(f.opts).map(([v, l]) => (
@@ -305,7 +334,7 @@ export function KitField({ f, sec, api }: Props) {
     case "multi": {
       const vals = Array.isArray(value) ? value : [];
       return (
-        <Shell f={f}>
+        <Shell def={api.def} f={f}>
           <div className="kit-multi" role="group" aria-label={f.label}>
             {optPairs(f.opts).map(([v, l]) => {
               const on = vals.includes(v);
@@ -334,7 +363,7 @@ export function KitField({ f, sec, api }: Props) {
             <input type="checkbox" checked={!!value} disabled={readOnly} onChange={(e) => commit(e.target.checked)} />
             <span>
               {f.label}
-              {f.role && <span className="kit-role">{ROLES[f.role]?.short}</span>}
+              {f.role && <span className="kit-role">{api.def.roles[f.role]?.short}</span>}
             </span>
           </label>
           {f.after !== undefined && (
@@ -347,7 +376,7 @@ export function KitField({ f, sec, api }: Props) {
     }
     case "copyasset":
       return (
-        <Shell f={f} id={id}>
+        <Shell def={api.def} f={f} id={id}>
           <div className="kit-stack">
             <Draft
               value={str(part("copy"))}
@@ -389,7 +418,7 @@ export function KitField({ f, sec, api }: Props) {
       const by = str(part("by"));
       const approver = api.designers.find((d) => d.id === by);
       return (
-        <Shell f={f}>
+        <Shell def={api.def} f={f}>
           <div className="kit-stack">
             <label className="kit-check">
               <input
@@ -426,7 +455,7 @@ export function KitField({ f, sec, api }: Props) {
     }
     case "checklist":
       return (
-        <Shell f={f}>
+        <Shell def={api.def} f={f}>
           <div className="kit-stack">
             {(f.items ?? []).map((label, i) => (
               <div key={label} className="kit-stack tight">
@@ -468,7 +497,7 @@ export function KitField({ f, sec, api }: Props) {
     case "emailseq": {
       const od = !!part("od");
       return (
-        <Shell f={f}>
+        <Shell def={api.def} f={f}>
           <div className="kit-stack">
             <label className="kit-check">
               <input type="checkbox" checked={od} disabled={readOnly} onChange={(e) => setPart("od", e.target.checked, "On-demand setting")} />
@@ -552,7 +581,77 @@ export function KitField({ f, sec, api }: Props) {
 function seriesOptions(api: KitApi): string[] {
   // Series names already in use come through the pipeline; the field also
   // accepts anything typed.
-  return api.kit.series ? [api.kit.series] : [];
+  const series = (api.kit as Partial<WebinarKit>).series;
+  return series ? [series] : [];
+}
+
+// One task of a workflow section: the tick, and (as the workflow asks of
+// every task) a named owner, a due date and somewhere to record the
+// approval or the link. Stored as the field's value plus its parts.
+function Task({ f, sec, api }: Props) {
+  const { readOnly } = api;
+  const key = f.k ?? "";
+  const v = api.ctx.V(sec);
+  const done = !!v[key];
+  const who = str(v[`${key}|who`]);
+  const due = str(v[`${key}|due`]);
+  const note = str(v[`${key}|note`]);
+  const name = f.short ?? f.label ?? key;
+  const late = !done && !!due && due < todayIso();
+  return (
+    <div className={`kit-field kit-task ${done ? "done" : ""}`}>
+      <label className="kit-check">
+        <input type="checkbox" checked={done} disabled={readOnly} onChange={(e) => api.setValue(sec, key, e.target.checked, name)} />
+        <span>{f.label}</span>
+      </label>
+      <div className="kit-task-meta">
+        <select
+          value={who}
+          disabled={readOnly}
+          aria-label={`Owner of: ${name}`}
+          onChange={(e) => api.setValue(sec, `${key}|who`, e.target.value, `${name} · owner`)}
+        >
+          <option value="">Owner</option>
+          {api.designers.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+        <input
+          type="date"
+          value={due}
+          disabled={readOnly}
+          className={late ? "late" : ""}
+          aria-label={`Due date of: ${name}`}
+          title={late ? "Overdue" : "Due date"}
+          onChange={(e) => api.setValue(sec, `${key}|due`, e.target.value, `${name} · due date`)}
+        />
+        <Draft
+          value={note}
+          onCommit={(val) => api.setValue(sec, `${key}|note`, val, `${name} · note`)}
+          render={(d, set, commit) => (
+            <div className="kit-inrow">
+              <input
+                type="text"
+                value={d}
+                placeholder="Approval, link or note"
+                aria-label={`Approval, link or note for: ${name}`}
+                disabled={readOnly}
+                autoComplete="off"
+                onChange={(e) => set(e.target.value)}
+                onBlur={commit}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                }}
+              />
+              <OpenLink href={d} />
+            </div>
+          )}
+        />
+      </div>
+    </div>
+  );
 }
 
 // ── Calculated blocks ───────────────────────────────────────────────────
@@ -616,8 +715,9 @@ function EmailMetrics({ api }: { api: KitApi }) {
 // ── Repeatable rows ─────────────────────────────────────────────────────
 
 function Group({ f, sec, api, bare }: { f: FieldSpec; sec: string; api: KitApi; bare?: boolean }) {
-  const K = KINDS[f.kind ?? ""];
+  const K = api.def.kinds[f.kind ?? ""];
   if (!K) return null;
+  const format = FORMATS[(api.kit as Partial<WebinarKit>).format ?? ""];
   const list = api.ctx.items(f.kind!, f.list);
   const { readOnly } = api;
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -677,18 +777,23 @@ function Group({ f, sec, api, bare }: { f: FieldSpec; sec: string; api: KitApi; 
             Add the kit’s three post slots
           </button>
         )}
+        {!readOnly && K.starter && !list.length && (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => api.addMany(f.kind!, K.starter!.rows, sec)}>
+            {K.starter.label}
+          </button>
+        )}
         {K.max && <span className="kit-total">{list.length} of {K.max}</span>}
         {f.kind === "ros" && (
           <span className="kit-total">
             Total {list.reduce((s, it) => s + (num(it.d.mins) ?? 0), 0)} min
-            {FORMATS[api.kit.format] ? ` · format guide ${FORMATS[api.kit.format].dur}` : ""}
+            {format ? ` · format guide ${format.dur}` : ""}
           </span>
         )}
       </div>
     </div>
   );
   if (bare) return body;
-  return <Shell f={f}>{body}</Shell>;
+  return <Shell def={api.def} f={f}>{body}</Shell>;
 }
 
 function GroupItem({
@@ -703,7 +808,7 @@ function GroupItem({
   onConfirm,
 }: {
   f: FieldSpec;
-  K: (typeof KINDS)[string];
+  K: KindSpec;
   it: KitItem;
   idx: number;
   count: number;

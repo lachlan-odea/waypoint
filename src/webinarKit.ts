@@ -1,6 +1,7 @@
 import type {
   Campaign,
   CampaignMilestone,
+  KitCore,
   KitItem,
   KitSectionStatus,
   KitStage,
@@ -160,6 +161,8 @@ export type KindSpec = {
   empty: string;
   max?: number;
   defaults?: Record<string, KitValue>;
+  // Rows to start an empty list from, offered as a button beside Add.
+  starter?: { label: string; rows: Record<string, KitValue>[] };
   title: (d: Record<string, KitValue>, i: number) => string;
   fields: Record<string, ItemFieldSpec>;
 };
@@ -264,7 +267,7 @@ export const KINDS: Record<string, KindSpec> = {
 export type FieldType =
   | "text" | "url" | "date" | "num" | "area" | "list" | "select" | "multi" | "check"
   | "heading" | "copyasset" | "approval" | "checklist" | "emailseq" | "metrics" | "emailmetrics"
-  | "group" | "series" | "asset";
+  | "group" | "series" | "asset" | "task" | "table";
 
 export type FieldSpec = {
   // Value key. Project-level fields (p) are stored on the kit itself (or
@@ -291,8 +294,13 @@ export type FieldSpec = {
   items?: string[];
   links?: boolean | string[];
   extra?: boolean;
+  // task: the short form of the task, for the section's "Ready when" list.
+  short?: string;
+  // table: a reference table, read only.
+  head?: string[];
+  body?: string[][];
   // Only shown when true for the kit.
-  show?: (kit: WebinarKit) => boolean;
+  show?: (kit: KitCore) => boolean;
   // Who fills this in, when it isn't the section's owner.
   role?: string;
   // Due within N days of go-live (post-promotion checks).
@@ -300,8 +308,10 @@ export type FieldSpec = {
 };
 
 export type Ctx = {
-  kit: WebinarKit;
-  campaign: Campaign;
+  kit: KitCore;
+  // A project-level value (a FieldSpec with `p`): from the kit itself, or
+  // from the campaign or event it sits on (its name, an event's dates).
+  root: (key: string) => KitValue | undefined;
   V: (sec: string) => Record<string, KitValue>;
   items: (kind: string, list?: string) => KitItem[];
 };
@@ -314,8 +324,12 @@ export type SectionSpec = {
   owner: string;
   with: string[];
   timing: string;
-  start: { a: "prod" | "live"; w?: number; d?: number };
-  due: { a: "prod" | "live"; w?: number; d?: number };
+  // Counted from one of the definition's anchors: a webinar's "live"
+  // (go-live) or "prod" (recording), a major event's "live" or "end".
+  // `exact` keeps the date on the day it falls, weekend or not: an event
+  // day is the event day.
+  start: { a: string; w?: number; d?: number; exact?: boolean };
+  due: { a: string; w?: number; d?: number; exact?: boolean };
   intro: string;
   filesHint?: string;
   fields: FieldSpec[];
@@ -366,7 +380,9 @@ const FORMAT_OPTS: [string, string][] = Object.entries(FORMATS).map(([k, f]) => 
 const DELIVERY_OPTS: [string, string][] = Object.entries(DELIVERY);
 const STAGE_OPTS: [string, string][] = STAGES.map((s) => [s.k, s.label]);
 const PHASE_OPTS: [string, string][] = Object.entries(PHASES);
-const prerec = (kit: WebinarKit) => kit.delivery === "prerecorded";
+// The webinar kit's own fields, for the webinar sections' rules below.
+const wk = (c: Ctx) => c.kit as WebinarKit;
+const prerec = (kit: KitCore) => (kit as WebinarKit).delivery === "prerecorded";
 const activeSpeakers = (c: Ctx) => c.items("speaker").filter((s) => s.d.status !== "Declined");
 
 export const SECTIONS: SectionSpec[] = [
@@ -401,7 +417,7 @@ export const SECTIONS: SectionSpec[] = [
       { k: "partnerCheck", t: "check", label: "Partner or association involvement flagged with Partner & Industry Marketing" },
     ],
     reqs: (c) => {
-      const p = c.kit, v = c.V("brief");
+      const p = wk(c), v = c.V("brief");
       return [
         ["Working title", has(p.wt)], ["Series type", has(p.type)], ["Live or pre-recorded", has(p.delivery)],
         ["Target audience", Array.isArray(v.audience) && v.audience.length > 0], ["Region and timezone", has(p.sessions)],
@@ -445,7 +461,7 @@ export const SECTIONS: SectionSpec[] = [
       { k: "landingLink", t: "url", label: "Landing page link", role: "digital", hint: "Added by Digital once the registration page is live." },
     ],
     reqs: (c) => {
-      const p = c.kit, v = c.V("landing"), sp = activeSpeakers(c);
+      const p = wk(c), v = c.V("landing"), sp = activeSpeakers(c);
       return [
         ["Date, time and time zone", has(p.goLive) && has(p.sessions)], ["Final webinar title", has(p.ft)], ["Summary", has(v.summary)],
         ["‘What you’ll learn’ bullets", lines(v.learn).length >= 3], ["Speaker bios", sp.length > 0 && sp.every((s) => has(s.d.bio))],
@@ -469,7 +485,7 @@ export const SECTIONS: SectionSpec[] = [
       { k: "finalSlides", t: "url", label: "Final slides link", role: "design", hint: "Provided by Design.", half: true },
     ],
     reqs: (c) => {
-      const p = c.kit, v = c.V("confirm"), sp = activeSpeakers(c);
+      const p = wk(c), v = c.V("confirm"), sp = activeSpeakers(c);
       return [["All speakers confirmed", sp.length > 0 && sp.every((s) => s.d.status === "Confirmed")], ["Format confirmed", has(p.format)], ["Run of show", c.items("ros").length > 0], ["Final slides link", has(v.finalSlides)]];
     },
   },
@@ -525,7 +541,7 @@ export const SECTIONS: SectionSpec[] = [
       { k: "up23", t: "check", label: "Final edit uploaded to TwentyThree", role: "digital", show: prerec },
     ],
     reqs: (c) => {
-      const p = c.kit, v = c.V("final"), pre = prerec(p);
+      const p = wk(c), v = c.V("final"), pre = prerec(p);
       const r: [string, boolean][] = [["Sign-off date", has(v.signoff)], ["Dry run #1 booked", has(v.dry1)], [pre ? "Recording date" : "Go-live date", has(pre ? p.recordDate : p.goLive)]];
       if (pre) r.push(["Final edit link", has(v.finalEdit)], ["Uploaded to TwentyThree", !!v.up23]);
       return r;
@@ -629,6 +645,75 @@ export const KIT_ROOT_KEYS = new Set([
   "wt", "ft", "sessions", "duration", "folder",
 ]);
 
+// ── Definitions ─────────────────────────────────────────────────────────
+// What makes one kind of kit different from another: its sections and
+// their fields, the roles that own them, the repeatable rows, and the
+// dates its schedule counts from. The kit components and the helpers below
+// work from a definition, so the same page runs the webinar kit and the
+// major event workflow (majorEventKit.ts).
+
+export type KeyDate = { d: string; label: string; cls: string };
+
+export type KitDef = {
+  id: string;
+  sections: SectionSpec[];
+  secByKey: Record<string, SectionSpec>;
+  roles: Record<string, { label: string; short: string; hint: string }>;
+  kinds: Record<string, KindSpec>;
+  links: Record<string, [string, string]>;
+  // The project-level details card on the Overview.
+  ovFields: FieldSpec[];
+  // The role the project lead stands in for when nobody is named in it.
+  leadRole: string;
+  // The dates sections count from, by SectionSpec anchor.
+  anchors: (kit: KitCore) => Record<string, string>;
+  // How far lead times stretch or shrink (1 = as written).
+  scale: (kit: KitCore) => number;
+  // Dated moments drawn as diamonds above the schedule.
+  keyDates: (kit: KitCore) => KeyDate[];
+  legend: { cls: string; label: string }[];
+  // "webinar" / "major event", and what its anchor date is called.
+  noun: string;
+  anchorLabel: string;
+};
+
+const sv = (x: unknown) => (typeof x === "string" ? x : "");
+
+export const WEBINAR_DEF: KitDef = {
+  id: "webinar",
+  sections: SECTIONS,
+  secByKey: SEC_BY_KEY,
+  roles: ROLES,
+  kinds: KINDS,
+  links: LINKS,
+  ovFields: OV_FIELDS,
+  leadRole: "pmm",
+  anchors: (k) => {
+    const kit = k as WebinarKit;
+    const live = kit.goLive || "";
+    const rec = kit.delivery === "prerecorded" ? kit.recordDate || "" : "";
+    return { live, prod: rec || live };
+  },
+  scale: (k) => (TYPES[(k as WebinarKit).type]?.lead ?? 10) / 10,
+  keyDates: (k) => {
+    const kit = k as WebinarKit;
+    const v = kit.values.final ?? {};
+    const out: KeyDate[] = [];
+    if (sv(v.signoff)) out.push({ d: sv(v.signoff), label: "Sign-off", cls: "rec" });
+    if (sv(v.dry1)) out.push({ d: sv(v.dry1), label: "Dry run #1", cls: "rec" });
+    if (sv(v.dry2)) out.push({ d: sv(v.dry2), label: "Dry run #2", cls: "rec" });
+    if (kit.delivery === "prerecorded" && kit.recordDate) out.push({ d: kit.recordDate, label: "Recording", cls: "rec" });
+    if (kit.goLive) out.push({ d: kit.goLive, label: "Go-live", cls: "" });
+    return out;
+  },
+  legend: [
+    { cls: "rec", label: "Recording / dry runs" },
+    { cls: "", label: "Go-live" },
+  ],
+  noun: "webinar",
+  anchorLabel: "go-live date",
+};
+
 // ── Identity ────────────────────────────────────────────────────────────
 
 export const WEBINAR_CATEGORY = "Webinar";
@@ -713,12 +798,6 @@ function snapFwd(iso: string): string {
   return d === 6 ? shiftIso(iso, 2) : d === 0 ? shiftIso(iso, 1) : iso;
 }
 
-function anchors(kit: WebinarKit): { live: string; prod: string } {
-  const live = kit.goLive || "";
-  const rec = kit.delivery === "prerecorded" ? kit.recordDate || "" : "";
-  return { live, prod: rec || live };
-}
-
 function offsetDays(x: { w?: number; d?: number }, scale: number): number {
   return x.w !== undefined ? Math.round(x.w * 7 * (x.w < 0 ? scale : 1)) : (x.d ?? 0);
 }
@@ -728,14 +807,16 @@ export type SectionSchedule = { start: string; due: string; kitDue: string; cust
 // Start and due for every section: counted back from go-live (or the
 // recording for production sections), scaled by the type's lead time,
 // unless someone set a due date by hand.
-export function schedule(kit: WebinarKit): Record<string, SectionSchedule> {
+export function schedule(kit: KitCore, def: KitDef = WEBINAR_DEF): Record<string, SectionSchedule> {
   const out: Record<string, SectionSchedule> = {};
-  const a = anchors(kit);
-  const scale = (TYPES[kit.type]?.lead ?? 10) / 10;
-  for (const s of SECTIONS) {
+  const a = def.anchors(kit);
+  const scale = def.scale(kit);
+  for (const s of def.sections) {
     const sa = a[s.start.a], da = a[s.due.a];
-    let start = sa ? snapFwd(shiftIso(sa, offsetDays(s.start, scale))) : "";
-    const kitDue = da ? snapBack(shiftIso(da, offsetDays(s.due, scale))) : "";
+    const startAt = sa ? shiftIso(sa, offsetDays(s.start, scale)) : "";
+    const dueAt = da ? shiftIso(da, offsetDays(s.due, scale)) : "";
+    let start = startAt && !s.start.exact ? snapFwd(startAt) : startAt;
+    const kitDue = dueAt && !s.due.exact ? snapBack(dueAt) : dueAt;
     const ov = kit.sec[s.k]?.due || "";
     const due = ov || kitDue;
     if (start && due && start > due) start = due;
@@ -744,7 +825,7 @@ export function schedule(kit: WebinarKit): Record<string, SectionSchedule> {
   return out;
 }
 
-export const secStatus = (kit: WebinarKit, k: string): KitSectionStatus => kit.sec[k]?.status ?? "todo";
+export const secStatus = (kit: KitCore, k: string): KitSectionStatus => kit.sec[k]?.status ?? "todo";
 
 export type SectionInfo = {
   s: SectionSpec;
@@ -772,9 +853,9 @@ function daysBetween(a: string, b: string): number {
   return Math.round((new Date(`${b}T00:00:00`).getTime() - new Date(`${a}T00:00:00`).getTime()) / 86400000);
 }
 
-export function kitState(kit: WebinarKit, today = todayIso()): KitState {
-  const sch = schedule(kit);
-  const infos: SectionInfo[] = SECTIONS.map((s) => {
+export function kitState(kit: KitCore, today = todayIso(), def: KitDef = WEBINAR_DEF): KitState {
+  const sch = schedule(kit, def);
+  const infos: SectionInfo[] = def.sections.map((s) => {
     const st = secStatus(kit, s.k);
     const due = sch[s.k].due;
     const open = st !== "done" && st !== "na";
@@ -790,7 +871,10 @@ export function kitState(kit: WebinarKit, today = todayIso()): KitState {
   const late = infos.filter((i) => i.late);
   const risk = infos.filter((i) => (i.open && i.st === "blocked") || (i.soon && i.st === "todo"));
   const next = infos.filter((i) => i.open).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999"))[0] ?? null;
-  const parked = PARKED_STAGES.includes(kit.stage) || !!kit.archived;
+  // A major event has no stage of its own: its event's status says whether
+  // it is off, so only archiving parks it here.
+  const stage = (kit as Partial<WebinarKit>).stage;
+  const parked = (!!stage && PARKED_STAGES.includes(stage)) || !!kit.archived;
   const health = parked
     ? null
     : late.length
@@ -803,29 +887,31 @@ export function kitState(kit: WebinarKit, today = todayIso()): KitState {
 
 // Who's responsible for a section: the person assigned to it, else the
 // owning role's team, else the lead for Product Marketing sections.
-export function sectionPeople(kit: WebinarKit, s: SectionSpec): string[] {
+export function sectionPeople(kit: KitCore, s: SectionSpec, def: KitDef = WEBINAR_DEF): string[] {
   const who = kit.sec[s.k]?.who;
   if (who) return [who];
   const team = kit.team[s.owner] ?? [];
   if (team.length) return team;
-  if (s.owner === "pmm" && kit.lead) return [kit.lead];
+  if (s.owner === def.leadRole && kit.lead) return [kit.lead];
   return [];
 }
 
-export function isMineKit(kit: WebinarKit, me: string): boolean {
+export function isMineKit(kit: KitCore, me: string): boolean {
   if (kit.lead === me) return true;
   return Object.values(kit.team).some((list) => list.includes(me));
 }
 
-export function isMineSection(kit: WebinarKit, s: SectionSpec, me: string): boolean {
-  if (sectionPeople(kit, s).includes(me)) return true;
+export function isMineSection(kit: KitCore, s: SectionSpec, me: string, def: KitDef = WEBINAR_DEF): boolean {
+  if (sectionPeople(kit, s, def).includes(me)) return true;
   return s.with.some((role) => (kit.team[role] ?? []).includes(me));
 }
 
-export function ctxFor(campaign: Campaign, kit: WebinarKit): Ctx {
+// The kit's values and rows, sorted, with `root` answering for the
+// project-level fields.
+export function kitCtx(kit: KitCore, root: Ctx["root"]): Ctx {
   return {
     kit,
-    campaign,
+    root,
     V: (sec) => kit.values[sec] ?? {},
     items: (kind, list) =>
       kit.items
@@ -834,19 +920,21 @@ export function ctxFor(campaign: Campaign, kit: WebinarKit): Ctx {
   };
 }
 
+export function ctxFor(campaign: Campaign, kit: WebinarKit): Ctx {
+  return kitCtx(kit, (key) =>
+    key === "name" ? campaign.name : (kit as unknown as Record<string, KitValue | undefined>)[key],
+  );
+}
+
 // The value a field shows: project-level fields from the kit root (the
 // campaign's name for "name"), the rest from the section's values.
 export function fieldValue(c: Ctx, f: FieldSpec, sec: string, key = f.k ?? ""): KitValue | undefined {
-  if (f.p) {
-    if (key === "name") return c.campaign.name;
-    return (c.kit as unknown as Record<string, KitValue | undefined>)[key];
-  }
-  return c.V(sec)[key];
+  return f.p ? c.root(key) : c.V(sec)[key];
 }
 
 // ── Mutations (pure: return the next kit) ───────────────────────────────
 
-export function setKitValue(kit: WebinarKit, sec: string, key: string, value: KitValue | undefined): WebinarKit {
+export function setKitValue<K extends KitCore>(kit: K, sec: string, key: string, value: KitValue | undefined): K {
   const cur = kit.values[sec] ?? {};
   const next = { ...cur };
   if (value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) delete next[key];
@@ -854,15 +942,15 @@ export function setKitValue(kit: WebinarKit, sec: string, key: string, value: Ki
   return { ...kit, values: { ...kit.values, [sec]: next } };
 }
 
-export function setKitRoot(kit: WebinarKit, key: string, value: KitValue | undefined): WebinarKit {
+export function setKitRoot<K extends KitCore>(kit: K, key: string, value: KitValue | undefined): K {
   const k = kit as unknown as Record<string, unknown>;
   const next = { ...k } as Record<string, unknown>;
   if (key === "ep") next.ep = num(value) ?? undefined;
   else next[key] = value ?? "";
-  return next as unknown as WebinarKit;
+  return next as unknown as K;
 }
 
-export function addActivity(kit: WebinarKit, section: string, what: string, detail = "", by?: string): WebinarKit {
+export function addActivity<K extends KitCore>(kit: K, section: string, what: string, detail = "", by?: string): K {
   const entry = { id: newKitId("a"), section, what, detail: detail || undefined, by, at: new Date().toISOString() };
   return { ...kit, activity: [entry, ...kit.activity].slice(0, 300), updatedAt: entry.at };
 }

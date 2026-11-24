@@ -13,7 +13,7 @@ import {
   type TwentyThreeCreateResult,
 } from "../../twentyThree";
 import { Icon } from "../Icon";
-import type { KitApi } from "./kitApi";
+import type { WebinarKitApi as KitApi } from "./kitApi";
 
 // "Generate landing page", on the kit's Landing page section: creates the
 // webinar in TwentyThree from what the section holds (title, summary,

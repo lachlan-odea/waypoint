@@ -1,5 +1,5 @@
 import type { KitSectionStatus } from "../../types";
-import { ROLES, type SectionSpec } from "../../webinarKit";
+import { ROLES, type KitDef, type SectionSpec } from "../../webinarKit";
 import type { WpStatus } from "../pages/ItemPage";
 
 // Small shared helpers for the kit components, kept out of the component
@@ -14,10 +14,10 @@ export const KIT_STATUS_CHIP: Record<KitSectionStatus, WpStatus> = {
   na: "draft",
 };
 
-export function whoLine(s: SectionSpec): string {
-  const withs = s.with.map((r) => ROLES[r].label);
+export function whoLine(s: SectionSpec, roles: KitDef["roles"] = ROLES): string {
+  const withs = s.with.map((r) => roles[r].label);
   const joined = withs.length ? ` with ${withs.join(", ").replace(/, ([^,]*)$/, " and $1")}` : "";
-  return `Completed by ${ROLES[s.owner].label}${joined} · ${s.timing}`;
+  return `Completed by ${roles[s.owner].label}${joined} · ${s.timing}`;
 }
 
 export function pad(n: number): string {
