@@ -56,6 +56,12 @@ export type Designer = {
   // this person (functions/src/index.ts). Missing means yes; switched off
   // from My Desk → Notifications.
   emailAlerts?: boolean;
+  // Set on a profile made from Manage users (createWaypointUser in
+  // functions/src/users.ts), whose account starts on a password the super
+  // user set and emailed to them. Waypoint shows them nothing but the change-password
+  // screen until they've chosen their own, which clears the flag. Missing
+  // means they chose their own password when they signed up.
+  mustChangePassword?: boolean;
 };
 
 // Stamped on every project, campaign and event save by src/firestore.ts:

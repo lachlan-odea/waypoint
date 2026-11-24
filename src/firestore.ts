@@ -550,6 +550,17 @@ export async function setDesignerEmailAlerts(
   );
 }
 
+// Clears the flag that holds someone added from Manage users at the
+// change-password screen (src/components/ForcePasswordChange.tsx), on
+// their own profile, once Firebase has taken the password they chose.
+// Written as false rather than removed so it's plain in the console that
+// their first sign-in happened.
+export async function clearMustChangePassword(): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("Not signed in.");
+  await setDoc(doc(designersCol(), uid), { mustChangePassword: false }, { merge: true });
+}
+
 // Flip the super-user flag on a designer doc. Gated to existing super users
 // at the UI layer; the Firestore rules currently allow any signed-in user to
 // write to a designer doc, so this is trust-based and would need a stricter

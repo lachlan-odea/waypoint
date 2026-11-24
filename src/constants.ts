@@ -51,6 +51,12 @@ export const SUPER_USER_EMAILS = [
 // the person hears it before creating an account.
 export const ALLOWED_EMAIL_DOMAIN = "wisetechglobal.com";
 
+// How short a password Firebase will take. Manage users (the starting
+// password a super user gives a new account), the change-password screen
+// and Settings all check it before asking Firebase; keep in step with
+// MIN_PASSWORD_LENGTH in functions/src/users.ts.
+export const MIN_PASSWORD_LENGTH = 6;
+
 // Seed workspaces written into Firestore on first load. Once they exist
 // they're managed in the /workspaces collection; this list only acts as
 // the initial set. The first id is treated as the default workspace for

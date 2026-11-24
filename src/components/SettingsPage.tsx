@@ -30,12 +30,19 @@ import {
 } from "../timezones";
 import { Icon } from "./Icon";
 import {
+  ALLOWED_EMAIL_DOMAIN,
+  MIN_PASSWORD_LENGTH,
   OUTLOOK_ADDIN_MANIFEST_URL,
   OUTLOOK_ADDIN_STORE_URL,
   SOCIAL_CHANNELS,
 } from "../constants";
 import { LinkedInSettingsSection } from "./LinkedInSettingsSection";
 import { BasecampSettingsSection } from "./BasecampSettingsSection";
+
+// What adding someone from Manage users did, so the modal can say so: an
+// account was made for them (and whether the welcome email went), or it
+// was a profile with no account, for someone who isn't on Waypoint yet.
+export type CreateUserResult = { account: boolean; emailed: boolean };
 
 type Props = {
   currentDesigner: Designer;
@@ -96,7 +103,7 @@ type Props = {
     designerId: string,
     isReviewer: boolean,
   ) => Promise<void>;
-  onCreateDesigner: (name: string, email?: string) => Promise<void>;
+  onCreateDesigner: (name: string, email?: string, password?: string) => Promise<CreateUserResult>;
   onDeleteDesigner: (designerId: string) => Promise<void>;
   onSaveHub: (hub: Hub) => Promise<void>;
   onDeleteHub: (hubId: string) => Promise<void>;
@@ -182,8 +189,8 @@ export function SettingsPage({
 
   async function savePassword() {
     setError(null);
-    if (nextPassword.length < 6) {
-      setError("New password must be at least 6 characters.");
+    if (nextPassword.length < MIN_PASSWORD_LENGTH) {
+      setError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
     if (nextPassword !== confirmPassword) {
@@ -1049,7 +1056,7 @@ type ManageUsersModalProps = {
     workspaceId: string,
     memberIds: string[],
   ) => Promise<void>;
-  onCreateDesigner: (name: string, email?: string) => Promise<void>;
+  onCreateDesigner: (name: string, email?: string, password?: string) => Promise<CreateUserResult>;
   onDeleteDesigner: (designerId: string) => Promise<void>;
   onClose: () => void;
 };
@@ -1091,6 +1098,12 @@ function ManageUsersModal({
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  // The starting password for the account, typed by the super user for
+  // this one person. Only asked for (and only sent) with an email.
+  const [newPassword, setNewPassword] = useState("");
+  // What the last add did, in a sentence: whether they got an account and
+  // whether the welcome email went out.
+  const [note, setNote] = useState<string | null>(null);
   // Name / email filter, and the one row whose editor is expanded. Rows
   // collapse to a summary of what's assigned so the list stays scannable.
   const [query, setQuery] = useState("");
@@ -1111,14 +1124,17 @@ function ManageUsersModal({
     workspaces.map((w) => [w.id, new Set(w.memberIds ?? [])]),
   );
 
-  async function run<T>(key: string, op: () => Promise<T>) {
+  // Returns what the operation gave back, or undefined when it failed —
+  // the error is shown rather than thrown.
+  async function run<T>(key: string, op: () => Promise<T>): Promise<T | undefined> {
     setBusyKey(key);
     setError(null);
     try {
-      await op();
+      return await op();
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : String(err));
+      return undefined;
     } finally {
       setBusyKey(null);
     }
@@ -1134,18 +1150,49 @@ function ManageUsersModal({
     );
   }
 
+  // An email address means a real account: Waypoint creates their sign-in
+  // on the starting password typed here, emails it to them and makes them
+  // a member straight away. No address means the profile only — someone who should
+  // show up in pickers and on team rosters but isn't on Waypoint yet.
   async function submitNew() {
     const name = newName.trim();
+    const email = newEmail.trim();
     if (!name) return;
-    await run("create", () => onCreateDesigner(name, newEmail.trim() || undefined));
+    if (email && !email.toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+      setNote(null);
+      setError(`A Waypoint account needs an @${ALLOWED_EMAIL_DOMAIN} address.`);
+      return;
+    }
+    if (email && newPassword.length < MIN_PASSWORD_LENGTH) {
+      setNote(null);
+      setError(`Give them a starting password of at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
+    }
+    setNote(null);
+    const result = await run("create", () =>
+      onCreateDesigner(name, email || undefined, email ? newPassword : undefined),
+    );
+    // run() shows the error rather than throwing; leave the form filled
+    // in so it can be corrected rather than typed again.
+    if (!result) return;
+    const { account, emailed } = result;
+    setNote(
+      !account
+        ? `${name} has a profile but no Waypoint account. They can be assigned work now, and when they ask for access you can hand them this profile.`
+        : emailed
+          ? `${name} is in. We've emailed ${email} the starting password you set; Waypoint asks them to choose their own the first time they sign in.`
+          : `${name} is in, but the welcome email didn't send. Tell them to sign in as ${email} with the starting password you set — Waypoint asks them to choose their own.`,
+    );
     setNewName("");
     setNewEmail("");
+    setNewPassword("");
     setAdding(false);
   }
 
   function cancelNew() {
     setNewName("");
     setNewEmail("");
+    setNewPassword("");
     setAdding(false);
   }
 
@@ -1168,6 +1215,12 @@ function ManageUsersModal({
         </header>
         <div className="modal-body">
           <p className="muted small" style={{ marginTop: 0 }}>
+            <strong>Add user</strong> with an @{ALLOWED_EMAIL_DOMAIN} address creates their
+            Waypoint account there and then, on a starting password you choose: they're emailed
+            it and asked to choose their own the first time they sign in. Leave the address out to set up a
+            profile for someone who isn't on Waypoint yet.
+          </p>
+          <p className="muted small">
             Click a user to change their name, roles, location and teams. Anyone
             can be assigned to a project regardless of team, but only team
             members appear as columns on that team's board. A team with no
@@ -1216,7 +1269,7 @@ function ManageUsersModal({
                 />
                 <input
                   type="email"
-                  placeholder="Email (optional)"
+                  placeholder="Work email — makes their account (optional)"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   onKeyDown={(e) => {
@@ -1225,19 +1278,47 @@ function ManageUsersModal({
                   }}
                   disabled={busyKey === "create"}
                 />
+                {/* Only an account needs a password. Shown as typed, not
+                    masked: it's about to be emailed to them, and a typo
+                    here would lock them out before they start. */}
+                {newEmail.trim() && (
+                  <input
+                    type="text"
+                    placeholder={`Starting password (at least ${MIN_PASSWORD_LENGTH} characters)`}
+                    aria-label="Starting password"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newName.trim()) void submitNew();
+                      if (e.key === "Escape") cancelNew();
+                    }}
+                    disabled={busyKey === "create"}
+                  />
+                )}
                 <button onClick={cancelNew} disabled={busyKey === "create"}>
                   Cancel
                 </button>
                 <button
                   className="primary"
                   onClick={submitNew}
-                  disabled={!newName.trim() || busyKey === "create"}
+                  disabled={
+                    !newName.trim() ||
+                    (!!newEmail.trim() && newPassword.length < MIN_PASSWORD_LENGTH) ||
+                    busyKey === "create"
+                  }
                 >
                   {busyKey === "create" ? "Adding…" : "Add"}
                 </button>
               </div>
             )}
           </div>
+          {note && (
+            <p className="muted small manage-users-note" role="status">
+              {note}
+            </p>
+          )}
           {designers.length > 0 && (
             <p className="muted small manage-users-count">
               {query.trim()
@@ -1292,6 +1373,16 @@ function ManageUsersModal({
                 {/* Only what's assigned. The full set of toggles lives in
                     the editor below, one click away. */}
                 <span className="manage-user-tags">
+                  {/* Added here with an account, and still on the starting
+                      password: they haven't signed in yet. */}
+                  {d.mustChangePassword && (
+                    <span
+                      className="manage-user-tag pending"
+                      title="Still on the starting password. Waypoint asks them to choose their own the first time they sign in."
+                    >
+                      Hasn't signed in
+                    </span>
+                  )}
                   {isSuper && <span className="manage-user-tag role">Super user</span>}
                   {isReviewerActive && (
                     <span className="manage-user-tag role">Reviewer</span>
