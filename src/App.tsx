@@ -2412,7 +2412,6 @@ export default function App() {
                   const projects = activeProjects
                     .filter((p) => p.assigneeIds.includes(d.id))
                     .sort(sortByPriorityThenDue);
-                  const visibleProjects = projects.slice(0, 5);
                   return (
                     <div
                       key={d.id}
@@ -2434,10 +2433,10 @@ export default function App() {
                         </div>
                       </header>
                       <div className="team-col-cards">
-                        {visibleProjects.length === 0 && (
+                        {projects.length === 0 && (
                           <p className="muted small">No projects.</p>
                         )}
-                        {visibleProjects.map((p) => (
+                        {projects.map((p) => (
                           <ProjectCard
                             key={p.id}
                             project={p}
@@ -2472,7 +2471,7 @@ export default function App() {
                     {unassigned.length === 0 && (
                       <p className="muted small">Drop here to unassign.</p>
                     )}
-                    {unassigned.slice(0, 5).map((p) => (
+                    {unassigned.map((p) => (
                       <ProjectCard
                         key={p.id}
                         project={p}
