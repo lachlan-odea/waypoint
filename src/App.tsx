@@ -148,6 +148,8 @@ const LAUNCH_REQUEST_ID = new URLSearchParams(window.location.search).get("reque
 import { NewWebinarModal } from "./components/webinar/NewWebinarModal";
 import { Icon } from "./components/Icon";
 import { AccessPending } from "./components/AccessPending";
+import { ForcePasswordChange } from "./components/ForcePasswordChange";
+import { createWaypointUser } from "./userAdmin";
 import { Avatar } from "./components/Avatar";
 import { readDraggedProjectId } from "./dnd";
 import { contentTypesSearchText } from "./contentTypes";
@@ -1602,6 +1604,15 @@ export default function App() {
     );
   }
 
+  // Added from Manage users and signing in for the first time: their
+  // password is the starting one a super user set and emailed to them, so
+  // nothing else opens until they've chosen their own. Clearing the flag
+  // (ForcePasswordChange) lets the profile's snapshot drop them straight
+  // into the app.
+  if (currentDesigner.mustChangePassword) {
+    return <ForcePasswordChange designer={currentDesigner} />;
+  }
+
   const routedProject =
     route?.kind === "project"
       ? (workspace.projects.find((p) => p.id === route.id) ?? null)
@@ -2079,9 +2090,19 @@ export default function App() {
               );
             }}
             onUpdateDesignerReviewer={firestoreSetDesignerReviewer}
-            onCreateDesigner={(name, email) =>
-              firestoreCreatePlaceholderDesigner(name, email).then(() => {})
-            }
+            // An address means a whole account: the Cloud Function makes
+            // their sign-in on the starting password, their profile (so
+            // they're a member at once) and the email that tells them.
+            // Without one it's the profile only, as before, for someone
+            // who isn't on Waypoint yet.
+            onCreateDesigner={async (name, email, password) => {
+              if (!email) {
+                await firestoreCreatePlaceholderDesigner(name);
+                return { account: false, emailed: false };
+              }
+              const { emailed } = await createWaypointUser(name, email, password ?? "");
+              return { account: true, emailed };
+            }}
             onDeleteDesigner={firestoreDeleteDesigner}
             onSaveHub={firestoreSetHub}
             onDeleteHub={firestoreDeleteHub}

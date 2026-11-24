@@ -773,3 +773,9 @@ export {
   basecampPushProject,
   basecampSyncNow,
 } from "./basecamp";
+
+// ── Users ──────────────────────────────────────────────────────────────
+// Adding someone to Waypoint outright — their account, their profile
+// and the email that tells them — from Settings → Manage users; see
+// users.ts.
+export { createWaypointUser } from "./users";

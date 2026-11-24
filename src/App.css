@@ -2472,6 +2472,16 @@ a.share-btn {
 .manage-users-count {
   margin: 0;
 }
+/* What the last Add user did: who got an account, and whether the welcome
+   email went out. */
+.manage-users-note {
+  margin: 0 0 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
 .manage-users {
   gap: 6px;
 }
@@ -2536,6 +2546,11 @@ a.share-btn {
 }
 .manage-user-tag .muted {
   font-size: 11px;
+}
+/* Added with an account but still on the starting password. */
+.manage-user-tag.pending {
+  border-style: dashed;
+  color: var(--muted);
 }
 .manage-user-caret {
   color: var(--muted);
