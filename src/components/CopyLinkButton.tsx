@@ -7,7 +7,7 @@ import { Icon } from "./Icon";
 // signs in.
 type Props = {
   url: string;
-  // What the link points at, for the tooltip: "campaign", "webinar"…
+  // What the link points at, for the tooltip: "campaign", "webinar"â€¦
   noun: string;
 };
 
