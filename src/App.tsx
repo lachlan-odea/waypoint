@@ -124,6 +124,7 @@ import { SocialCalendar } from "./components/SocialCalendar";
 import { CampaignsView } from "./components/CampaignsView";
 import { CampaignsPanel } from "./components/CampaignsPanel";
 import { LiveEventRequestsPanel } from "./components/LiveEventRequestsPanel";
+import { TeamCalendar } from "./components/TeamCalendar";
 import type { BlackoutDraft } from "./components/LiveEventBlackoutModal";
 import { publicBlackouts } from "./liveEventRequests";
 import { LiveEventFormModal } from "./components/LiveEventFormModal";
@@ -282,6 +283,22 @@ export default function App() {
     setTeamCollapsedState(next);
     try {
       localStorage.setItem("waypoint.board.teamCollapsed", next ? "1" : "0");
+    } catch {
+      // per-browser preference only
+    }
+  }
+  // The Team section as a column per person, or as a month of due dates.
+  const [teamView, setTeamViewState] = useState<"columns" | "calendar">(() => {
+    try {
+      return localStorage.getItem("waypoint.board.teamView") === "calendar" ? "calendar" : "columns";
+    } catch {
+      return "columns";
+    }
+  });
+  function setTeamView(next: "columns" | "calendar") {
+    setTeamViewState(next);
+    try {
+      localStorage.setItem("waypoint.board.teamView", next);
     } catch {
       // per-browser preference only
     }
@@ -2398,14 +2415,42 @@ export default function App() {
                     <span className={`collapse-icon ${teamCollapsed ? "" : "expanded"}`}>▶</span>
                   </button>
                   <h2>Team</h2>
+                  {!teamCollapsed && (
+                    <div className="view-seg" role="group" aria-label="Team layout">
+                      <button
+                        type="button"
+                        aria-pressed={teamView === "columns"}
+                        onClick={() => setTeamView("columns")}
+                      >
+                        Columns
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={teamView === "calendar"}
+                        onClick={() => setTeamView("calendar")}
+                      >
+                        Calendar
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <span className="muted small">
                   {teamCollapsed
                     ? `${otherDesigners.length} teammate${otherDesigners.length === 1 ? "" : "s"} · ${activeProjects.length} active project${activeProjects.length === 1 ? "" : "s"} · expand to reassign`
-                    : "Drag a card to reassign it · drop one on your own column to claim it"}
+                    : teamView === "calendar"
+                      ? "When the team's active projects and their open tasks fall due · click one to open it"
+                      : "Drag a card to reassign it · drop one on your own column to claim it"}
                 </span>
               </div>
-              {!teamCollapsed && (
+              {!teamCollapsed && teamView === "calendar" && (
+                <TeamCalendar
+                  projects={activeProjects}
+                  team={teamColumnDesigners}
+                  designers={workspace.designers}
+                  onOpenProject={openProject}
+                />
+              )}
+              {!teamCollapsed && teamView === "columns" && (
               <div className="team-columns">
                 {teamColumnDesigners.map((d) => {
                   const mine = d.id === sessionDesignerId;
