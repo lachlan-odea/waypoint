@@ -38,7 +38,7 @@ import { ActivityPortalLink, ActivityPortalListItem } from "../ActivityPortalLin
 import { useActivityPortal } from "../../activityPortal";
 import { LinkifiedText } from "../LinkifiedText";
 import { CampaignModal } from "../CampaignModal";
-import { cleanMilestones } from "../../campaigns";
+import { cleanMilestones, isSocialMilestone, withoutSocialPost } from "../../campaigns";
 import { CampaignMilestonesEditor } from "../CampaignMilestonesEditor";
 import { ProjectPicker } from "../ProjectPicker";
 import { BigRockChips } from "../BigRockPicker";
@@ -410,6 +410,11 @@ function PlainCampaignPage({
   function toggleMilestone(id: string) {
     onSave({ ...campaign, milestones: campaign.milestones.map((m) => (m.id === id ? { ...m, done: !m.done } : m)) });
   }
+  // A milestone whose post was deleted gets a new draft: saving it without
+  // the old post's id makes the save create one.
+  function redraftPost(id: string) {
+    onSave({ ...campaign, milestones: withoutSocialPost(campaign.milestones, id) });
+  }
 
   const reqs: [string, boolean][] = [
     ["Named", !!campaign.name.trim()],
@@ -537,7 +542,12 @@ function PlainCampaignPage({
                             <b>{m.label}</b>
                             <span className="item-hint">{late ? `${-daysUntil(m.date)!} days overdue` : m.date === today ? "Today" : `in ${daysUntil(m.date)} days`}</span>
                           </span>
-                          <MilestonePostLink milestone={m} socialPosts={socialPosts} onOpen={onOpenSocialPost} />
+                          <MilestonePostLink
+                            milestone={m}
+                            socialPosts={socialPosts}
+                            onOpen={onOpenSocialPost}
+                            onRedraft={isSocialMilestone(m, milestoneTypes) ? () => redraftPost(m.id) : undefined}
+                          />
                         </li>
                       );
                     })}
@@ -726,6 +736,11 @@ function MilestonesTab({
   function toggle(id: string) {
     onSave({ ...campaign, milestones: campaign.milestones.map((m) => (m.id === id ? { ...m, done: !m.done } : m)) });
   }
+  // A milestone whose post was deleted gets a new draft: saving it without
+  // the old post's id makes the save create one.
+  function redraftPost(id: string) {
+    onSave({ ...campaign, milestones: withoutSocialPost(campaign.milestones, id) });
+  }
 
   if (draft) {
     return (
@@ -799,7 +814,12 @@ function MilestonesTab({
                             Open ↗
                           </a>
                         )}
-                        <MilestonePostLink milestone={m} socialPosts={socialPosts} onOpen={onOpenSocialPost} />
+                        <MilestonePostLink
+                          milestone={m}
+                          socialPosts={socialPosts}
+                          onOpen={onOpenSocialPost}
+                          onRedraft={isSocialMilestone(m, milestoneTypes) ? () => redraftPost(m.id) : undefined}
+                        />
                       </span>
                     </span>
                     <span className="item-ms-state">

@@ -6386,6 +6386,13 @@ a.button-link:hover {
   color: var(--muted);
   cursor: default;
 }
+/* "Post deleted" with its "Redraft post" button, kept together as one item. */
+.camp-ms-post-gone {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .camp-ms-row input.camp-ms-url {
   width: 190px;
 }
@@ -7091,6 +7098,7 @@ a.button-link:hover {
   .camp-ms-row > .camp-ms-url,
   .camp-ms-row > .camp-ms-desc,
   .camp-ms-row > .camp-ms-post,
+  .camp-ms-row > .camp-ms-post-gone,
   .camp-ms-row > .camp-ms-post-hint {
     grid-column: 1 / -1;
   }
