@@ -17,9 +17,11 @@ import {
   PHASE_LABEL,
   campaignOverlaps,
   campaignPhase,
+  isSocialMilestone,
   milestonesOn,
   monthBounds,
   spanDays,
+  withoutSocialPost,
 } from "../campaigns";
 import { CampaignModal } from "./CampaignModal";
 import { MilestonePostLink } from "./MilestonePostLink";
@@ -294,6 +296,12 @@ export function CampaignsView({
     if (!campaignOverlaps(campaign, from, to)) {
       setMonth(campaign.startDate.slice(0, 7));
     }
+  }
+
+  // A milestone whose post was deleted gets a new draft: saving it without
+  // the old post's id makes the save create one.
+  function redraftPost(campaign: Campaign, milestoneId: string) {
+    onSave({ ...campaign, milestones: withoutSocialPost(campaign.milestones, milestoneId) });
   }
 
   function toggleMilestone(campaign: Campaign, milestoneId: string) {
@@ -702,6 +710,11 @@ export function CampaignsView({
                               milestone={m}
                               socialPosts={socialPosts}
                               onOpen={openSocialPost}
+                              onRedraft={
+                                isSocialMilestone(m, milestoneTypes)
+                                  ? () => redraftPost(c, m.id)
+                                  : undefined
+                              }
                             />
                           </li>
                         ))}

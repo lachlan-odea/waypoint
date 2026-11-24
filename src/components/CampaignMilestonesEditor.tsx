@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { CampaignMilestone, MilestoneType, SocialPost } from "../types";
-import { isSocialMilestone, newMilestoneId } from "../campaigns";
+import { isSocialMilestone, newMilestoneId, withoutSocialPost } from "../campaigns";
 import { shiftIso } from "../dates";
 import { MilestonePostLink } from "./MilestonePostLink";
 import { MilestonePostDeleteDialog } from "./MilestonePostDeleteDialog";
@@ -135,7 +135,18 @@ export function CampaignMilestonesEditor({
               </select>
               {m.socialPostId ? (
                 onOpenSocialPost && (
-                  <MilestonePostLink milestone={m} socialPosts={socialPosts ?? []} onOpen={onOpenSocialPost} />
+                  <MilestonePostLink
+                    milestone={m}
+                    socialPosts={socialPosts ?? []}
+                    onOpen={onOpenSocialPost}
+                    // Cutting the link is enough here: the row then reads
+                    // "Creates a draft social post on save", and the save does.
+                    onRedraft={
+                      isSocialMilestone(m, milestoneTypes)
+                        ? () => onChange(withoutSocialPost(milestones, m.id))
+                        : undefined
+                    }
+                  />
                 )
               ) : isSocialMilestone(m, milestoneTypes) ? (
                 <span className="field-hint camp-ms-post-hint">Creates a draft social post on save</span>

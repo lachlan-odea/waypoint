@@ -36,6 +36,21 @@ export function milestoneSocialPost(
   };
 }
 
+// The milestones with one of them cut loose from its (deleted) social post.
+// Saving the campaign then drafts it a new one, as it does for any social
+// milestone that has no post yet.
+export function withoutSocialPost(
+  milestones: CampaignMilestone[],
+  milestoneId: string,
+): CampaignMilestone[] {
+  return milestones.map((m) => {
+    if (m.id !== milestoneId) return m;
+    const rest = { ...m };
+    delete rest.socialPostId;
+    return rest;
+  });
+}
+
 // Date maths for placing campaigns on a month grid. Pure functions, no
 // React.
 

@@ -1158,7 +1158,8 @@ export default function App() {
   // milestones get their Social calendar post: one is created the first
   // time a milestone is saved as a social type, and moved along when the
   // milestone's date changes. A post someone has since deleted is left
-  // deleted rather than recreated. `deletePostIds` are posts whose
+  // deleted rather than recreated, until "Redraft post" saves the milestone
+  // without its post id, which drafts a new one. `deletePostIds` are posts whose
   // milestones were removed in the editor with "delete the post too".
   // Refresh the marketing activity page's public copy after a campaign or
   // event changes. Nothing is written until the page has a token.
