@@ -1586,3 +1586,98 @@
     grid-column: auto;
   }
 }
+
+/* -- Workflow tasks (the major event workflow's sections) ---------------- */
+/* A task: its tick and wording, then who owns it, when it's due and where
+   the approval or link is recorded. */
+.kit-task {
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.kit-task .kit-check span {
+  line-height: 1.5;
+}
+.kit-task.done .kit-check span {
+  color: var(--muted);
+}
+.kit-task-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 180px) 150px minmax(0, 1fr);
+  gap: 8px;
+  padding-left: 28px;
+}
+.kit-field .kit-task-meta input:not([type="checkbox"]),
+.kit-field .kit-task-meta select {
+  font-size: 13px;
+  min-height: 32px;
+  padding: 4px 8px;
+}
+.kit-task-meta input.late {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+/* A read-only reference table inside a section (the promotion plan). */
+.kit-reftable-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.kit-reftable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.kit-reftable thead th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.kit-reftable tbody th,
+.kit-reftable td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  text-align: left;
+  line-height: 1.45;
+}
+.kit-reftable tbody th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.kit-reftable tbody tr:last-child th,
+.kit-reftable tbody tr:last-child td {
+  border-bottom: 0;
+}
+/* The Events list's mark for a WiseTech Global Major Event. */
+.ev-tag.ev-major {
+  margin-left: 8px;
+  border-color: transparent;
+  background: var(--accent-wash);
+  color: var(--wtg-cobalt);
+}
+.ev-card-tags .ev-tag.ev-major {
+  margin-left: 0;
+}
+@media (max-width: 720px) {
+  .kit-task-meta {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .kit-task-meta > .kit-inrow {
+    grid-column: 1 / -1;
+  }
+}
+/* The workflow's twelve sections don't fit one row of the stage strip:
+   two even rows of six, where there is room, not eleven and a stray. */
+@media (min-width: 900px) {
+  .item-strip:has(> :nth-child(12):last-child) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}

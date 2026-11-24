@@ -146,6 +146,7 @@ import { allSeries, kitOf } from "./webinarKit";
 // is taken off the address bar below.
 const LAUNCH_REQUEST_ID = new URLSearchParams(window.location.search).get("request");
 import { NewWebinarModal } from "./components/webinar/NewWebinarModal";
+import { NewMajorEventModal } from "./components/major/NewMajorEventModal";
 import { Icon } from "./components/Icon";
 import { AccessPending } from "./components/AccessPending";
 import { ForcePasswordChange } from "./components/ForcePasswordChange";
@@ -222,6 +223,7 @@ export default function App() {
   const [tourOpen, setTourOpen] = useState(false);
   // + New → Campaign → Webinar: the Start a webinar form, from anywhere.
   const [newWebinarOpen, setNewWebinarOpen] = useState(false);
+  const [newMajorEventOpen, setNewMajorEventOpen] = useState(false);
   useEffect(() => {
     setTourOpen(false);
   }, [route?.kind, route?.id, view]);
@@ -606,6 +608,10 @@ export default function App() {
     }
     if (kind === "webinar") {
       setNewWebinarOpen(true);
+      return;
+    }
+    if (kind === "majorEvent") {
+      setNewMajorEventOpen(true);
       return;
     }
     closeItem();
@@ -1903,6 +1909,7 @@ export default function App() {
                 projects={workspace.projects}
                 workspaces={availableWorkspaces}
                 bigRocks={bigRocks}
+                currentDesignerId={currentDesigner.id}
                 tab={route.tab}
                 onTab={(t) => replaceItemTab("event", routedEvent.id, t)}
                 onBack={() => {
@@ -2707,6 +2714,18 @@ export default function App() {
             saveCampaign(c);
             setNewWebinarOpen(false);
             openItem("campaign", c.id, "brief");
+          }}
+        />
+      )}
+      {newMajorEventOpen && (
+        <NewMajorEventModal
+          designers={workspace.designers}
+          currentDesignerId={currentDesigner.id}
+          onCancel={() => setNewMajorEventOpen(false)}
+          onCreate={(e) => {
+            saveEvent(e);
+            setNewMajorEventOpen(false);
+            openItem("event", e.id, "brief");
           }}
         />
       )}

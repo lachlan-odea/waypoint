@@ -552,7 +552,34 @@ export type KitSectionState = {
   at?: string;
 };
 
-export type WebinarKit = {
+// What every kit stores, whichever workflow it follows: the webinar kit
+// on a campaign, the major event workflow on an event. The sections, their
+// fields and the roles come from the kit's definition (KitDef in
+// webinarKit.ts); this is the state the kit components read and write.
+export type KitCore = {
+  // The date every due date counts back from (YYYY-MM-DD): a webinar's
+  // go-live, a major event's first day.
+  goLive: string;
+  // The project folder on SharePoint.
+  folder: string;
+  // Designer id of the project lead.
+  lead?: string;
+  // Designer ids per role (the definition's roles).
+  team: Record<string, string[]>;
+  sec: Record<string, KitSectionState>;
+  // Field values per section key, keyed by field key (composite keys like
+  // "approval|ok" for a field's parts).
+  values: Record<string, Record<string, KitValue>>;
+  items: KitItem[];
+  files: KitFile[];
+  notes: KitNote[];
+  activity: KitActivity[];
+  archived?: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WebinarKit = KitCore & {
   stage: KitStage;
   // TYPES key: tl, pdd, mpu.
   type: string;
@@ -563,34 +590,30 @@ export type WebinarKit = {
   phase: string;
   series: string;
   ep?: number;
-  // The date every due date counts back from (YYYY-MM-DD).
-  goLive: string;
   // For a pre-recorded webinar, production sections are due against this.
   recordDate: string;
-  // Working title, final title, sessions and time zones, duration, folder.
+  // Working title, final title, sessions and time zones, duration.
   wt: string;
   ft: string;
   sessions: string;
   duration: string;
-  folder: string;
-  // Designer id of the project lead.
-  lead?: string;
-  // Designer ids per role (ROLES key in webinarKit.ts).
-  team: Record<string, string[]>;
-  sec: Record<string, KitSectionState>;
-  // Field values per section key, keyed by field key (composite keys like
-  // "approval|ok" for a field's parts).
-  values: Record<string, Record<string, KitValue>>;
-  items: KitItem[];
-  files: KitFile[];
-  notes: KitNote[];
-  activity: KitActivity[];
   // Every pull of results from TwentyThree, newest first. Written by the
   // twentyThreePullResults function.
   ttPulls?: KitPull[];
-  archived?: boolean;
-  createdAt: string;
-  updatedAt: string;
+};
+
+// The workspace of a WiseTech Global Major Event: the twelve sections of
+// the Major Event Workflow, from the brief and budget to close-out. Lives
+// on the event document as `major`; see majorEventKit.ts. The event's own
+// dates are the source of truth: `goLive` and `end` are copies of its
+// start and end, refreshed on every save, so the schedule can be worked
+// out from the kit alone.
+export type MajorEventKit = KitCore & {
+  // The event's last day (YYYY-MM-DD). Close-out is due against it.
+  end: string;
+  // The shared task tracker the workflow asks approvals and links to be
+  // recorded in, if the team keeps one outside Waypoint.
+  tracker: string;
 };
 
 // A webinar speaker, saved once in /speakers so they can be added to any
@@ -725,6 +748,11 @@ export type MarketingEvent = {
   opps?: number;
   oppsBreakdown?: string;
   notes?: string;
+  // Set on a WiseTech Global Major Event: an event the company hosts
+  // itself (around 400 guests, a livestream and a recording), planned
+  // through the Major Event Workflow instead of the trade-show checklist.
+  // Its page is the kit's twelve sections; see majorEventKit.ts.
+  major?: MajorEventKit;
   checklist: EventChecklist;
   // The on-site plan for attendees (stand shifts, sessions, meetings,
   // meals), edited from the event and put on SharePoint as a page. Travel

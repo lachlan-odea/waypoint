@@ -47,6 +47,7 @@ import { MilestonePostLink } from "../MilestonePostLink";
 import { ProjectCard } from "../ProjectCard";
 import { useKitApi } from "../webinar/kitApi";
 import { KitSection } from "../webinar/KitSection";
+import { TwentyThreeCard, TwentyThreeResultsCard } from "../webinar/TwentyThreeCard";
 import { pad } from "../webinar/kitUi";
 import { KitActivityTab, KitFilesTab, KitHealthChip, KitManage, KitOverview } from "../webinar/KitOverview";
 import { NewWebinarModal } from "../webinar/NewWebinarModal";
@@ -291,7 +292,11 @@ function WebinarCampaignPage({
         stripLabel="Kit sections"
       >
         {sectionTab ? (
-          <KitSection sectionKey={sectionTab} api={api} />
+          <KitSection
+            sectionKey={sectionTab}
+            api={api}
+            extra={sectionTab === "landing" ? <TwentyThreeCard api={api} /> : sectionTab === "results" ? <TwentyThreeResultsCard api={api} /> : undefined}
+          />
         ) : here === "details" ? (
           <CampaignModal
             inline

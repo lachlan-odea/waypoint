@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "./Icon";
 
-export type NewKind = "project" | "campaign" | "webinar" | "event" | "post";
+export type NewKind = "project" | "campaign" | "webinar" | "event" | "majorEvent" | "post";
 
 type Props = {
   onPick: (kind: NewKind) => void;
@@ -22,13 +22,18 @@ const ITEMS: Item[] = [
     // Hover or focus Campaign and this slides out beside it.
     children: [{ kind: "webinar", label: "Webinar", hint: "A campaign worked through the 2026 webinar kit, ready to brief" }],
   },
-  { kind: "event", label: "Event", hint: "A trade show or conference" },
+  {
+    kind: "event",
+    label: "Event",
+    hint: "A trade show or conference",
+    children: [{ kind: "majorEvent", label: "Major event", hint: "A WiseTech Global hosted event, planned through the Major Event Workflow" }],
+  },
   { kind: "post", label: "Social post", hint: "A post on the Social calendar" },
 ];
 
 // The one "+ New" button, in the sidebar and the page header: opens a small
 // menu of the things you can create. An item with children (Campaign →
-// Webinar) shows them in a flyout beside it on hover, focus or →. Closes on
+// Webinar, Event → Major event) shows them in a flyout beside it on hover, focus or →. Closes on
 // a pick, on Escape, or on a click anywhere else.
 export function NewMenu({ onPick, variant, collapsed }: Props) {
   const [open, setOpen] = useState(false);
@@ -75,7 +80,7 @@ export function NewMenu({ onPick, variant, collapsed }: Props) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        title="New project, campaign, webinar, event or social post"
+        title="New project, campaign, webinar, event, major event or social post"
       >
         {variant === "nav" && collapsed ? "+" : "+ New"}
       </button>

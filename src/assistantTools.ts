@@ -17,7 +17,8 @@ import type {
 import { projectStatusLabel, socialStatusMeta } from "./constants";
 import { projectContentTypes } from "./contentTypes";
 import { EVENT_CHECKLIST, eventPhase } from "./events";
-import { SEC_BY_KEY } from "./webinarKit";
+import { majorState } from "./majorEvent";
+import { SEC_BY_KEY, STATUS } from "./webinarKit";
 
 // The page the person has open beside the panel: a project, campaign,
 // webinar or event, or one of the list pages (My Desk, a board…).
@@ -493,8 +494,15 @@ function getEvent(b: Bench, input: Input) {
   const e = b.events.find((x) => x.id === id);
   if (!e) return { error: `No event with the id "${id}". Use find_events to get its id.` };
   const campaign = b.campaigns.find((c) => c.id === e.campaignId);
+  // A WiseTech Global Major Event is worked through its workflow's twelve
+  // sections, not the trade-show checklist.
+  const major = majorState(e, b.today);
   return compact({
     ...eventRow(b, e),
+    kind: major ? "WiseTech Global Major Event" : undefined,
+    workflow: major?.infos.map(
+      (i) => `${String(i.s.n).padStart(2, "0")} ${i.s.title}: ${STATUS[i.st]}${i.due ? `, due ${i.due}` : ""}${i.late ? " (overdue)" : ""}`,
+    ),
     audience: clip(e.audience, 600),
     sponsor: e.sponsor ? e.sponsorNote || "yes" : "",
     booth: e.booth ? e.boothNote || "yes" : "",
@@ -511,7 +519,7 @@ function getEvent(b: Bench, input: Input) {
     opportunitiesBreakdown: e.oppsBreakdown,
     notes: clip(e.notes, 3000),
     bigRocks: b.rockNames(e.bigRockIds),
-    checklist: EVENT_CHECKLIST.map((item) => `${e.checklist?.[item.key] ? "[done]" : "[open]"} ${item.label}`),
+    checklist: major ? undefined : EVENT_CHECKLIST.map((item) => `${e.checklist?.[item.key] ? "[done]" : "[open]"} ${item.label}`),
     projects: (e.projectIds ?? [])
       .map((pid) => b.projects.find((p) => p.id === pid))
       .filter(b.visible)
@@ -614,7 +622,7 @@ export function assistantSystemPrompt(data: AssistantData, timeZone: string): st
 Waypoint holds:
 - Projects: pieces of work on a team's board (teams include ${teams || "Design, Video and Marketing"}). Each has a status (planning, active, on hold, completed, cancelled), a priority, a due date, assignees, reviewers, tasks and a comment thread. A task is a short label and a tick, and can have its own assignee and due date.
 - Campaigns: a named run of dates with dated milestones and contributing projects. A webinar is a campaign worked through the webinar kit, with a go-live date, a stage and nine sections from brief to results.
-- Events: trade shows and conferences the team attends, sponsors or exhibits at, with leads, cost, results and a checklist.
+- Events: trade shows and conferences the team attends, sponsors or exhibits at, with leads, cost, results and a checklist. A WiseTech Global Major Event is an event the company hosts itself, planned through the twelve sections of the Major Event Workflow; get_event gives each section's status and due date in place of the checklist.
 - The Social calendar: LinkedIn posts planned for the brand channels.
 - Big Rocks: the few strategic priorities the work is tagged against.
 

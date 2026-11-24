@@ -1,9 +1,8 @@
 import { useMemo } from "react";
-import type { Campaign, Designer, KitItem, KitSectionState, KitValue, Speaker, WebinarKit } from "../../types";
+import type { Campaign, Designer, KitCore, KitItem, KitSectionState, KitValue, Speaker, WebinarKit } from "../../types";
 import {
-  KINDS,
-  SEC_BY_KEY,
   STATUS,
+  WEBINAR_DEF,
   addActivity,
   ctxFor,
   newKitId,
@@ -11,20 +10,25 @@ import {
   setKitValue,
   withKit,
   type Ctx,
+  type KitDef,
 } from "../../webinarKit";
 
-// Everything a kit component can do to the campaign's kit, as one object.
-// Each call builds the next kit from the current one and hands the whole
-// campaign to onSave (App.saveCampaign), so the live subscription brings
-// it back. Activity is logged on the kit at the same time.
+// Everything a kit component can do to a kit, as one object. Each call
+// builds the next kit from the current one and hands it to the host (the
+// campaign a webinar kit sits on, the event a major event kit sits on),
+// which saves its whole document so the live subscription brings it back.
+// Activity is logged on the kit at the same time.
 export type KitApi = {
-  campaign: Campaign;
-  kit: WebinarKit;
+  // Which workflow this kit follows: its sections, roles and rows.
+  def: KitDef;
+  // The id of the campaign or event the kit sits on.
+  hostId: string;
+  kit: KitCore;
   ctx: Ctx;
   designers: Designer[];
   me: string;
   readOnly: boolean;
-  update: (fn: (kit: WebinarKit) => WebinarKit, what?: string, detail?: string, section?: string) => void;
+  update: (fn: (kit: KitCore) => KitCore, what?: string, detail?: string, section?: string) => void;
   setValue: (sec: string, key: string, value: KitValue | undefined, label?: string) => void;
   setRoot: (key: string, value: KitValue | undefined, label?: string) => void;
   setName: (name: string) => void;
@@ -45,41 +49,67 @@ export type KitApi = {
   saveSpeakerFromItem: (item: KitItem) => void;
 };
 
+// A webinar's API: the kit's own fields are known, and the campaign is at
+// hand for the parts only a webinar has (TwentyThree, the briefing doc).
+export type WebinarKitApi = KitApi & { campaign: Campaign; kit: WebinarKit };
+
 export type KitExtras = {
   speakers: Speaker[];
   saveSpeaker: (speaker: Speaker) => void;
 };
 
-export function useKitApi(
-  campaign: Campaign,
-  kit: WebinarKit,
+const NO_EXTRAS: KitExtras = { speakers: [], saveSpeaker: () => {} };
+
+// What the kit sits on, as far as the API needs to know.
+export type KitHost = {
+  id: string;
+  // Save this kit on the host's document.
+  commit: (kit: KitCore) => void;
+  // A project-level field: its value, and saving a new one. Some live on
+  // the kit, some on the host (its name, an event's dates and venue).
+  root: (key: string) => KitValue | undefined;
+  setRoot: (kit: KitCore, key: string, value: KitValue | undefined) => void;
+  rename: (kit: KitCore, name: string) => void;
+};
+
+export function useKitCore(
+  def: KitDef,
+  kit: KitCore,
+  host: KitHost,
   designers: Designer[],
   me: string,
-  onSave: (campaign: Campaign) => void,
   readOnly = false,
-  extras: KitExtras = { speakers: [], saveSpeaker: () => {} },
+  extras: KitExtras = NO_EXTRAS,
 ): KitApi {
   const { speakers, saveSpeaker } = extras;
   return useMemo(() => {
     const update: KitApi["update"] = (fn, what, detail, section = "") => {
       let next = fn(kit);
       if (what) next = addActivity(next, section, what, detail, me);
-      onSave(withKit(campaign, next));
+      host.commit(next);
     };
     const label = (sec: string, key: string, fallback?: string) =>
-      fallback ?? SEC_BY_KEY[sec]?.fields.find((f) => f.k === key)?.label ?? key;
+      fallback ?? def.secByKey[sec]?.fields.find((f) => f.k === key)?.label ?? key;
+    const siblingsOf = (k: KitCore, kind: string, list?: string) =>
+      k.items.filter((i) => i.kind === kind && (list ? i.list === list : !i.list));
     const api: KitApi = {
-      campaign,
+      def,
+      hostId: host.id,
       kit,
-      ctx: ctxFor(campaign, kit),
+      ctx: {
+        kit,
+        root: host.root,
+        V: (sec) => kit.values[sec] ?? {},
+        items: (kind, list) => siblingsOf(kit, kind, list).sort((a, b) => a.order - b.order || a.at.localeCompare(b.at)),
+      },
       designers,
       me,
       readOnly,
       update,
       setValue: (sec, key, value, lbl) =>
         update((k) => setKitValue(k, sec, key, value), "updated", label(sec, key, lbl), sec),
-      setRoot: (key, value, lbl) => update((k) => setKitRoot(k, key, value), "updated", lbl ?? key, ""),
-      setName: (name) => onSave(withKit({ ...campaign, name }, addActivity(kit, "", "renamed the webinar", name, me))),
+      setRoot: (key, value, lbl) => host.setRoot(addActivity(kit, "", "updated", lbl ?? key, me), key, value),
+      setName: (name) => host.rename(addActivity(kit, "", `renamed the ${def.noun}`, name, me), name),
       setSection: (sec, patch, what, detail) =>
         update(
           (k) => ({ ...k, sec: { ...k.sec, [sec]: { ...(k.sec[sec] ?? {}), ...patch, by: me, at: new Date().toISOString() } } }),
@@ -90,33 +120,33 @@ export function useKitApi(
       addItem: (kind, list, extra, section = "") =>
         update(
           (k) => {
-            const siblings = k.items.filter((i) => i.kind === kind && (list ? i.list === list : !i.list));
+            const siblings = siblingsOf(k, kind, list);
             const item: KitItem = {
               id: newKitId("i"),
               kind,
               list,
               order: siblings.length ? Math.max(...siblings.map((i) => i.order)) + 1 : 1,
-              d: { ...(KINDS[kind]?.defaults ?? {}), ...(extra ?? {}) },
+              d: { ...(def.kinds[kind]?.defaults ?? {}), ...(extra ?? {}) },
               by: me,
               at: new Date().toISOString(),
             };
             return { ...k, items: [...k.items, item] };
           },
           "added",
-          KINDS[kind]?.noun ?? kind,
+          def.kinds[kind]?.noun ?? kind,
           section,
         ),
       addMany: (kind, rows, section = "") =>
         update(
           (k) => {
-            const siblings = k.items.filter((i) => i.kind === kind && !i.list);
+            const siblings = siblingsOf(k, kind);
             let order = siblings.length ? Math.max(...siblings.map((i) => i.order)) : 0;
             const at = new Date().toISOString();
             const items = rows.map((d) => ({
               id: newKitId("i"),
               kind,
               order: ++order,
-              d: { ...(KINDS[kind]?.defaults ?? {}), ...d },
+              d: { ...(def.kinds[kind]?.defaults ?? {}), ...d },
               by: me,
               at,
             }));
@@ -130,9 +160,7 @@ export function useKitApi(
         update((k) => {
           const it = k.items.find((i) => i.id === id);
           if (!it) return k;
-          const list = k.items
-            .filter((i) => i.kind === it.kind && (it.list ? i.list === it.list : !i.list))
-            .sort((a, b) => a.order - b.order || a.at.localeCompare(b.at));
+          const list = siblingsOf(k, it.kind, it.list).sort((a, b) => a.order - b.order || a.at.localeCompare(b.at));
           const idx = list.findIndex((i) => i.id === id);
           const j = idx + dir;
           if (j < 0 || j >= list.length) return k;
@@ -145,7 +173,7 @@ export function useKitApi(
         update(
           (k) => ({ ...k, items: k.items.filter((i) => i.id !== id) }),
           "removed",
-          KINDS[kit.items.find((i) => i.id === id)?.kind ?? ""]?.noun ?? "an item",
+          def.kinds[kit.items.find((i) => i.id === id)?.kind ?? ""]?.noun ?? "an item",
           section,
         ),
       setItem: (id, col, value) =>
@@ -182,7 +210,7 @@ export function useKitApi(
         ),
       removeNote: (id) => update((k) => ({ ...k, notes: k.notes.filter((n) => n.id !== id) })),
       setLead: (id) => update((k) => ({ ...k, lead: id }), id ? "set the project lead" : "cleared the project lead"),
-      setTeam: (role, ids) => update((k) => ({ ...k, team: { ...k.team, [role]: ids } }), "updated the team", role),
+      setTeam: (role, ids) => update((k) => ({ ...k, team: { ...k.team, [role]: ids } }), "updated the team", def.roles[role]?.label ?? role),
       speakers,
       saveSpeakerFromItem: (item) => {
         const str = (v: KitValue | undefined) => (typeof v === "string" ? v : "");
@@ -213,7 +241,31 @@ export function useKitApi(
       },
     };
     return api;
-  }, [campaign, kit, designers, me, onSave, readOnly, speakers, saveSpeaker]);
+  }, [def, kit, host, designers, me, readOnly, speakers, saveSpeaker]);
+}
+
+// The API for a webinar: the webinar kit on its campaign.
+export function useKitApi(
+  campaign: Campaign,
+  kit: WebinarKit,
+  designers: Designer[],
+  me: string,
+  onSave: (campaign: Campaign) => void,
+  readOnly = false,
+  extras: KitExtras = NO_EXTRAS,
+): WebinarKitApi {
+  const host = useMemo<KitHost>(
+    () => ({
+      id: campaign.id,
+      commit: (k) => onSave(withKit(campaign, k as WebinarKit)),
+      root: ctxFor(campaign, kit).root,
+      setRoot: (k, key, value) => onSave(withKit(campaign, setKitRoot(k as WebinarKit, key, value))),
+      rename: (k, name) => onSave(withKit({ ...campaign, name }, k as WebinarKit)),
+    }),
+    [campaign, kit, onSave],
+  );
+  const core = useKitCore(WEBINAR_DEF, kit, host, designers, me, readOnly, extras);
+  return useMemo(() => ({ ...core, campaign, kit }), [core, campaign, kit]);
 }
 
 export const statusLabel = (st: keyof typeof STATUS) => STATUS[st];

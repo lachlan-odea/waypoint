@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Suspense, lazy, useMemo, useState } from "react";
 import type {
   BigRock,
   Campaign,
@@ -21,7 +21,8 @@ import {
   formatEventDates,
   formatUsd,
 } from "../../events";
-import { daysUntil, formatShort, todayIso } from "../../dates";
+import { majorKitOf } from "../../majorEvent";
+import { formatShort, todayIso } from "../../dates";
 import { Icon } from "../Icon";
 import { ActivityPortalLink } from "../ActivityPortalLink";
 import { LinkifiedText } from "../LinkifiedText";
@@ -40,7 +41,7 @@ import {
   type StripCell,
   type WpStatus,
 } from "./ItemPage";
-import { countdownFor } from "./countdown";
+import { eventCountdown } from "./countdown";
 
 type Props = {
   event: MarketingEvent;
@@ -50,6 +51,7 @@ type Props = {
   projects: Project[];
   workspaces: Workspace[];
   bigRocks: BigRock[];
+  currentDesignerId: string;
   tab: string;
   onTab: (tab: string) => void;
   onBack: () => void;
@@ -68,7 +70,24 @@ const STATUS_CHIP: Record<EventStatus, WpStatus> = {
   cancelled: "blocked",
 };
 
-export function EventPage({
+// The major event page and the workflow's tasks behind it, fetched the
+// first time one is opened, not with the app.
+const MajorEventPage = lazy(() => import("../major/MajorEventPage").then((m) => ({ default: m.MajorEventPage })));
+
+// A WiseTech Global Major Event is worked through its workflow's sections
+// (MajorEventPage); every other event through the checklist below.
+export function EventPage(props: Props) {
+  const { event } = props;
+  const kit = useMemo(() => majorKitOf(event), [event]);
+  if (!kit) return <PlainEventPage {...props} />;
+  return (
+    <Suspense fallback={null}>
+      <MajorEventPage {...props} kit={kit} />
+    </Suspense>
+  );
+}
+
+function PlainEventPage({
   event,
   events,
   campaigns,
@@ -97,26 +116,7 @@ export function EventPage({
   const [itineraryOpen, setItineraryOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const countdown =
-    phase === "cancelled"
-      ? { value: "Off", label: "event cancelled" }
-      : !event.startDate
-        ? { value: "TBC", label: event.tbcMonth ? `pencilled for ${monthName(event.tbcMonth)}` : `dates to be confirmed · ${event.year}` }
-        : phase === "live"
-          ? { value: "On now", label: `until ${formatShort(event.endDate)}` }
-          : phase === "done"
-            ? countdownFor(daysUntil(event.endDate), {
-                none: "",
-                before: "days to the end",
-                today: "ends today",
-                after: "days since the event",
-              })
-            : countdownFor(daysUntil(event.startDate), {
-                none: "no start date",
-                before: "days to the event",
-                today: "starts today",
-                after: "days since it started",
-              });
+  const countdown = eventCountdown(event, phase);
 
   function setChecklist(key: keyof EventChecklist, value: boolean) {
     onSave({ ...event, checklist: { ...event.checklist, [key]: value } });
@@ -589,9 +589,4 @@ function Stat({ label, value, prefix = "" }: { label: string; value: number | un
       <span className="item-stat-label">{label}</span>
     </div>
   );
-}
-
-function monthName(month: string): string {
-  const [y, m] = month.split("-").map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }

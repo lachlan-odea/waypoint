@@ -1,10 +1,7 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { KitSectionStatus } from "../../types";
 import { pad, whoLine } from "./kitUi";
 import {
-  ROLES,
-  SECTIONS,
-  SEC_BY_KEY,
   STATUS,
   STATUS_ORDER,
   kitState,
@@ -18,14 +15,14 @@ import { Icon } from "../Icon";
 import { EmptyNote, ItemGrid, KeyValues, ReadyCount, ReadyWhen, SideCard, StatusChip } from "../pages/ItemPage";
 import { KitField } from "./KitField";
 import type { KitApi } from "./kitApi";
-import { TwentyThreeCard, TwentyThreeResultsCard } from "./TwentyThreeCard";
 
 // One kit section as the campaign page's body: the fields in the main
 // column; status, schedule, owner and the "ready when" list up the side;
-// files and notes for the section below them.
+// files and notes for the section below them. `extra` sits above the
+// fields, for a card only one workflow has (a webinar's TwentyThree cards).
 
-export function KitSection({ sectionKey, api }: { sectionKey: string; api: KitApi }) {
-  const s = SEC_BY_KEY[sectionKey];
+export function KitSection({ sectionKey, api, extra }: { sectionKey: string; api: KitApi; extra?: ReactNode }) {
+  const s = api.def.secByKey[sectionKey];
   if (!s) return null;
   const fields = s.fields.filter((f) => !f.show || f.show(api.kit));
   return (
@@ -34,14 +31,13 @@ export function KitSection({ sectionKey, api }: { sectionKey: string; api: KitAp
         <div className="kit-sec">
           <div className="kit-sec-head">
             <div className="eyebrow">
-              Section {pad(s.n)} of {pad(SECTIONS.length)}
+              Section {pad(s.n)} of {pad(api.def.sections.length)}
             </div>
             <h2>{s.title}</h2>
-            <p className="kit-who">{whoLine(s)}</p>
+            <p className="kit-who">{whoLine(s, api.def.roles)}</p>
             {s.intro && <p className="kit-intro">{s.intro}</p>}
           </div>
-          {s.k === "landing" && <TwentyThreeCard api={api} />}
-          {s.k === "results" && <TwentyThreeResultsCard api={api} />}
+          {extra}
           <div className="item-card kit-formcard">
             <div className="kit-fields">
               {fields.map((f, i) => (
@@ -66,9 +62,10 @@ function SectionSide({ s, api }: { s: SectionSpec; api: KitApi }) {
   const { kit, readOnly } = api;
   const today = todayIso();
   const st = kit.sec[s.k]?.status ?? "todo";
-  const sch = schedule(kit)[s.k];
-  const info = kitState(kit, today).infos.find((i) => i.s.k === s.k)!;
-  const people = sectionPeople(kit, s).map((id) => api.designers.find((d) => d.id === id)).filter((d) => !!d);
+  const { roles } = api.def;
+  const sch = schedule(kit, api.def)[s.k];
+  const info = kitState(kit, today, api.def).infos.find((i) => i.s.k === s.k)!;
+  const people = sectionPeople(kit, s, api.def).map((id) => api.designers.find((d) => d.id === id)).filter((d) => !!d);
   const reqs = s.reqs(api.ctx);
   const ok = reqs.filter((r) => r[1]).length;
   const [editingDue, setEditingDue] = useState(false);
@@ -100,7 +97,7 @@ function SectionSide({ s, api }: { s: SectionSpec; api: KitApi }) {
               value: (
                 <span className="item-stack">
                   {!sch.due ? (
-                    <span className="item-hint">Set a go-live date to schedule this section.</span>
+                    <span className="item-hint">Set the {api.def.anchorLabel} to schedule this section.</span>
                   ) : (
                     <>
                       <span className="kit-row">
@@ -152,7 +149,7 @@ function SectionSide({ s, api }: { s: SectionSpec; api: KitApi }) {
               label: "Owner",
               value: (
                 <span className="item-stack">
-                  <span className="item-hint">{ROLES[s.owner].label}</span>
+                  <span className="item-hint">{roles[s.owner].label}</span>
                   {people.map((d) => (
                     <span key={d.id} className="item-person">
                       <Avatar designer={d} size={20} /> {d.name}
@@ -185,7 +182,7 @@ function SectionSide({ s, api }: { s: SectionSpec; api: KitApi }) {
                       <span className="kit-row wrap">
                         {s.with.map((r) => (
                           <span key={r} className="kit-chip line">
-                            {ROLES[r].label}
+                            {roles[r].label}
                           </span>
                         ))}
                       </span>
@@ -257,7 +254,7 @@ export function KitFilesCard({ section, api, hint, all }: { section: string; api
                   </a>
                   <span className="item-hint">
                     {host}
-                    {all && f.section ? ` · ${pad(SEC_BY_KEY[f.section]?.n ?? 0)} ${SEC_BY_KEY[f.section]?.short ?? ""}` : all ? " · General" : ""}
+                    {all && f.section ? ` · ${pad(api.def.secByKey[f.section]?.n ?? 0)} ${api.def.secByKey[f.section]?.short ?? ""}` : all ? " · General" : ""}
                     {by ? ` · ${by.name}` : ""} · {timeAgo(f.at)}
                   </span>
                 </span>
@@ -284,7 +281,7 @@ export function KitFilesCard({ section, api, hint, all }: { section: string; api
               {all && (
                 <select value={target} onChange={(e) => setTarget(e.target.value)} aria-label="Add to">
                   <option value="">General</option>
-                  {SECTIONS.map((x) => (
+                  {api.def.sections.map((x) => (
                     <option key={x.k} value={x.k}>
                       {pad(x.n)} · {x.title}
                     </option>

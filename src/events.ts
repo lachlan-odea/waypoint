@@ -113,6 +113,9 @@ export function eventPhase(e: MarketingEvent, today: string): EventStatus {
 // Past events the team still owes something on: a feedback form, a report
 // or logged results. Returns what's missing, in the checklist's words.
 export function followUpMissing(e: MarketingEvent, today: string): string[] {
+  // A major event closes out through its workflow's last section, not the
+  // trade-show checklist, so it never owes anything here.
+  if (e.major) return [];
   if (eventPhase(e, today) !== "done") return [];
   return EVENT_CHECKLIST.filter(
     (item) => item.followUp && !e.checklist?.[item.key],

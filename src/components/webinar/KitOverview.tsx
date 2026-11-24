@@ -1,13 +1,11 @@
 import { useState } from "react";
-import type { Campaign, WebinarKit } from "../../types";
+import type { Campaign, KitCore, WebinarKit } from "../../types";
 import {
-  OV_FIELDS,
-  ROLES,
-  SEC_BY_KEY,
   STATUS,
   kitName,
   kitState,
   sectionPeople,
+  type KeyDate,
   type KitState,
 } from "../../webinarKit";
 import { formatShort, shiftIso, timeAgo, todayIso } from "../../dates";
@@ -42,7 +40,7 @@ export function KitOverview({
   onOpenEpisode?: (campaignId: string, section: string) => void;
 }) {
   const today = todayIso();
-  const st = kitState(api.kit, today);
+  const st = kitState(api.kit, today, api.def);
   return (
     <ItemGrid
       main={
@@ -55,7 +53,7 @@ export function KitOverview({
           </SideCard>
           <SideCard title="Project details">
             <div className="kit-fields">
-              {OV_FIELDS.filter((f) => !f.show || f.show(api.kit)).map((f) => (
+              {api.def.ovFields.filter((f) => !f.show || f.show(api.kit)).map((f) => (
                 <KitField key={f.k} f={f} sec="" api={api} />
               ))}
             </div>
@@ -98,7 +96,7 @@ function UpNext({ api, st, onSection }: { api: KitApi; st: KitState; onSection: 
   return (
     <ul className="kit-next">
       {open.map((i) => {
-        const people = sectionPeople(api.kit, i.s).map((id) => api.designers.find((d) => d.id === id)).filter((d) => !!d);
+        const people = sectionPeople(api.kit, i.s, api.def).map((id) => api.designers.find((d) => d.id === id)).filter((d) => !!d);
         return (
           <li key={i.s.k}>
             <button type="button" onClick={() => onSection(i.s.k)}>
@@ -106,7 +104,7 @@ function UpNext({ api, st, onSection }: { api: KitApi; st: KitState; onSection: 
               <span className="kit-nmain">
                 <span className="kit-nl">{i.s.title}</span>
                 <span className="kit-no">
-                  {ROLES[i.s.owner].label}
+                  {api.def.roles[i.s.owner].label}
                   {people[0] ? ` · ${people[0].name}` : ""} · {STATUS[i.st]}
                 </span>
               </span>
@@ -141,7 +139,6 @@ export function KitGantt({
   onOpenEpisode?: (campaignId: string, section: string) => void;
 }) {
   const today = todayIso();
-  const s = (x: unknown) => (typeof x === "string" ? x : "");
 
   // Each block to draw: a kit, its state, its key dates, and where a click goes.
   type Block = {
@@ -149,21 +146,12 @@ export function KitGantt({
     label: string;
     sub: string;
     current: boolean;
-    kit: WebinarKit;
+    kit: KitCore;
     st: KitState;
-    events: { d: string; label: string; cls: string }[];
+    events: KeyDate[];
     open: (section: string) => void;
   };
-  const eventsOf = (kit: WebinarKit) => {
-    const v = kit.values.final ?? {};
-    const out: Block["events"] = [];
-    if (s(v.signoff)) out.push({ d: s(v.signoff), label: "Sign-off", cls: "rec" });
-    if (s(v.dry1)) out.push({ d: s(v.dry1), label: "Dry run #1", cls: "rec" });
-    if (s(v.dry2)) out.push({ d: s(v.dry2), label: "Dry run #2", cls: "rec" });
-    if (kit.delivery === "prerecorded" && kit.recordDate) out.push({ d: kit.recordDate, label: "Recording", cls: "rec" });
-    if (kit.goLive) out.push({ d: kit.goLive, label: "Go-live", cls: "" });
-    return out;
-  };
+  const eventsOf = api.def.keyDates;
   const blocks: Block[] =
     episodes && episodes.length > 1
       ? episodes.map((e) => ({
@@ -172,18 +160,18 @@ export function KitGantt({
           sub: kitName(e.campaign),
           current: e.current,
           kit: e.kit,
-          st: e.current ? st : kitState(e.kit, today),
+          st: e.current ? st : kitState(e.kit, today, api.def),
           events: eventsOf(e.kit),
           open: (section) => (e.current ? onSection?.(section) : onOpenEpisode?.(e.campaign.id, section)),
         }))
-      : [{ id: api.campaign.id, label: "", sub: "", current: true, kit: api.kit, st, events: eventsOf(api.kit), open: (section) => onSection?.(section) }];
+      : [{ id: api.hostId, label: "", sub: "", current: true, kit: api.kit, st, events: eventsOf(api.kit), open: (section) => onSection?.(section) }];
   const stacked = blocks.length > 1;
 
   const dates = blocks
     .flatMap((b) => [...b.st.infos.map((i) => i.start), ...b.st.infos.map((i) => i.due), ...b.events.map((e) => e.d)])
     .filter(Boolean)
     .sort();
-  if (!dates.length) return <EmptyNote>Add a go-live date to see the schedule.</EmptyNote>;
+  if (!dates.length) return <EmptyNote>Add the {api.def.anchorLabel} to see the schedule.</EmptyNote>;
   let lo = dates[0], hi = dates[dates.length - 1];
   if (today < lo && days(today, lo) < 60) lo = today;
   if (today > hi && days(hi, today) < 60) hi = today;
@@ -281,12 +269,11 @@ export function KitGantt({
         <span>
           <i className="kit-ring" /> Overdue
         </span>
-        <span>
-          <i className="kit-dia rec" /> Recording / dry runs
-        </span>
-        <span>
-          <i className="kit-dia" /> Go-live
-        </span>
+        {api.def.legend.map((l) => (
+          <span key={l.label}>
+            <i className={`kit-dia ${l.cls}`} /> {l.label}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -331,7 +318,7 @@ function TeamEditor({ api }: { api: KitApi }) {
           )}
         </div>
       </div>
-      {Object.entries(ROLES).map(([k, r]) => {
+      {Object.entries(api.def.roles).map(([k, r]) => {
         const ids = kit.team[k] ?? [];
         const people = ids.map((id) => designers.find((d) => d.id === id)).filter((d) => !!d);
         return (
@@ -386,7 +373,7 @@ export function KitActivityList({ api, max }: { api: KitApi; max: number }) {
     <ul className="kit-act">
       {rows.map((e) => {
         const by = e.by ? api.designers.find((d) => d.id === e.by) : undefined;
-        const s = SEC_BY_KEY[e.section];
+        const s = api.def.secByKey[e.section];
         return (
           <li key={e.id}>
             {by ? <Avatar designer={by} size={22} /> : <span className="kit-av-txt">WP</span>}
