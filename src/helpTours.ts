@@ -125,7 +125,7 @@ const TOURS: Record<string, Tour> = {
   campaign: {
     title: "Campaign",
     steps: [
-      { target: ".item-band", title: "The campaign at a glance", body: "Brand, type and phase, a countdown to launch or the end, and the facts: dates, milestones done, owner and linked projects. Open its page in the marketing activity portal from here." },
+      { target: ".item-band", title: "The campaign at a glance", body: "Brand, type and phase, a countdown to launch or the end, and the facts: dates, milestones done, owner and linked projects. Open its page in the marketing activity portal from here, or use Copy link to share the page." },
       { target: ".item-strip", title: "Milestones as the strip", body: "Every milestone in date order, with its date and whether it's done, late or today. Click one to go to the Milestones tab." },
       { target: ".item-tabs", title: "Tabs", body: "Overview, Details (the editor, including milestones), Milestones to tick off, and the Projects doing the work." },
       { target: ".item-grid-main", title: "Up next and the schedule", body: "The next milestones to do, the campaign drawn as a timeline bar with its milestones and today, and the description." },
@@ -136,7 +136,7 @@ const TOURS: Record<string, Tour> = {
   webinar: {
     title: "Webinar",
     steps: [
-      { target: ".item-band", title: "The webinar at a glance", body: "Series and episode, type and delivery, a countdown to go-live, the stage and health, and the facts: go-live, recording, sections done, lead. Briefing document downloads sections 01, 02, 04 and 05 as Word. In a series, the episode pills switch episodes and Show all stacks every episode on the schedule." },
+      { target: ".item-band", title: "The webinar at a glance", body: "Series and episode, type and delivery, a countdown to go-live, the stage and health, and the facts: go-live, recording, sections done, lead. Briefing document downloads sections 01, 02, 04 and 05 as Word, and Copy link shares the page. In a series, the episode pills switch episodes and Show all stacks every episode on the schedule." },
       { target: ".item-strip", title: "The nine kit sections", body: "Brief, Core message, Landing page, Speakers & assets, Runsheet, Pre-promo, Final checks, Post-promo, Results. Each shows its status and due date, counted back from go-live. Click one to open it." },
       { target: ".item-grid-main", title: "Schedule, details and team", body: "On the Overview: every section as a bar from start to due with the key dates above, the project-level details, and the team by role. Section owners come from these roles." },
       { target: ".item-grid-top", title: "Up next and activity", body: "The sections due soonest, and who did what recently." },

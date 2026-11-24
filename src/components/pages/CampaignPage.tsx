@@ -35,6 +35,8 @@ import { daysUntil, formatShort, shiftIso, todayIso } from "../../dates";
 import { Avatar } from "../Avatar";
 import { Icon } from "../Icon";
 import { ActivityPortalLink, ActivityPortalListItem } from "../ActivityPortalLink";
+import { CopyLinkButton } from "../CopyLinkButton";
+import { itemShareUrl } from "../../share";
 import { useActivityPortal } from "../../activityPortal";
 import { LinkifiedText } from "../LinkifiedText";
 import { CampaignModal } from "../CampaignModal";
@@ -278,6 +280,7 @@ function WebinarCampaignPage({
               <Icon name="download" size={14} /> Briefing document
             </button>
             <ActivityPortalLink kind="campaign" id={campaign.id} />
+            <CopyLinkButton url={itemShareUrl("campaign", campaign.id)} noun="webinar" />
             {kit.folder && (
               <a className="btn btn-ghost btn-sm" href={kit.folder} target="_blank" rel="noopener noreferrer">
                 <Icon name="folder" size={14} /> Project folder
@@ -493,7 +496,12 @@ function PlainCampaignPage({
         </>
       }
       facts={facts}
-      actions={<ActivityPortalLink kind="campaign" id={campaign.id} />}
+      actions={
+        <>
+          <ActivityPortalLink kind="campaign" id={campaign.id} />
+          <CopyLinkButton url={itemShareUrl("campaign", campaign.id)} noun="campaign" />
+        </>
+      }
       tabs={tabs}
       tab={tab}
       onTab={onTab}

@@ -1,3 +1,5 @@
+import { itemHash, type ItemKind } from "./router";
+
 // A shareable link to a single project. Deliberately just a deep link into
 // the app, not a public token: the recipient still has to sign in, so sharing
 // a link grants no access on its own and there's nothing to revoke. App.tsx's
@@ -10,6 +12,13 @@
 export function projectShareUrl(projectId: string): string {
   const base = import.meta.env.BASE_URL || "/";
   return `${window.location.origin}${base}?project=${encodeURIComponent(projectId)}`;
+}
+
+// The same for a campaign or event: the address of its page, which is a hash
+// route (see router.ts), so it opens straight onto the page after sign-in.
+export function itemShareUrl(kind: ItemKind, id: string): string {
+  const base = import.meta.env.BASE_URL || "/";
+  return `${window.location.origin}${base}${itemHash(kind, id)}`;
 }
 
 // navigator.clipboard is unavailable outside a secure context, which includes
